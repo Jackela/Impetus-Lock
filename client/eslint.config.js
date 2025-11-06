@@ -19,5 +19,28 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Architecture Guard: Component Layer Boundaries
+      // Prevents components/ (presentational) from importing features/ (business logic)
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/features/**"],
+              message:
+                "Components (presentational layer) must not import from features (business logic layer). " +
+                "Use props/callbacks for data and event handling instead.",
+            },
+            {
+              group: ["**/services/**"],
+              message:
+                "Components must not directly import services. " +
+                "Use custom hooks from features/ layer to access services.",
+            },
+          ],
+        },
+      ],
+    },
   },
 ]);

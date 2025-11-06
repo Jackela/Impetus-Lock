@@ -6,7 +6,7 @@ Article III (TDD): These tests drive the implementation of health endpoint.
 
 from fastapi.testclient import TestClient
 
-from server.main import app
+from server.api.main import app
 
 client = TestClient(app)
 

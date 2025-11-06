@@ -44,6 +44,10 @@ jobs:
         working-directory: ./server
         run: poetry run ruff format --check
 
+      - name: Run import-linter (Architecture Guard)
+        working-directory: ./server
+        run: poetry run lint-imports
+
       # Frontend lint
       - name: Set up Node.js
         uses: actions/setup-node@v4

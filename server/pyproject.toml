@@ -18,6 +18,7 @@ httpx = "^0.27.0"
 ruff = "^0.8.0"
 mypy = "^1.11.0"
 types-requests = "^2.32.0"
+import-linter = "^2.0"
 
 [tool.ruff]
 line-length = 100
@@ -46,6 +47,50 @@ pretty = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+
+[tool.importlinter]
+root_package = "server"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture: Domain Layer Independence"
+type = "forbidden"
+source_modules = ["server.domain"]
+forbidden_modules = [
+    "server.application",
+    "server.infrastructure",
+    "server.api",
+]
+ignore_imports = []
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture: Application Layer Dependencies"
+type = "forbidden"
+source_modules = ["server.application"]
+forbidden_modules = [
+    "server.api",
+    "server.infrastructure",
+]
+ignore_imports = []
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture: Infrastructure Layer Dependencies"
+type = "forbidden"
+source_modules = ["server.infrastructure"]
+forbidden_modules = [
+    "server.api",
+]
+ignore_imports = []
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture: API Layer (Outermost)"
+type = "layers"
+layers = [
+    "server.api",
+    "server.application",
+    "server.domain",
+]
+containers = ["server"]
 
 [build-system]
 requires = ["poetry-core"]
