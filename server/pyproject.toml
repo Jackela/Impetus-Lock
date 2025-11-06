@@ -55,30 +55,30 @@ include_external_packages = true
 [[tool.importlinter.contracts]]
 name = "Clean Architecture: Domain Layer Independence"
 type = "forbidden"
-source_modules = ["server.domain"]
+source_modules = ["server.server.domain"]
 forbidden_modules = [
-    "server.application",
-    "server.infrastructure",
-    "server.api",
+    "server.server.application",
+    "server.server.infrastructure",
+    "server.server.api",
 ]
 ignore_imports = []
 
 [[tool.importlinter.contracts]]
 name = "Clean Architecture: Application Layer Dependencies"
 type = "forbidden"
-source_modules = ["server.application"]
+source_modules = ["server.server.application"]
 forbidden_modules = [
-    "server.api",
-    "server.infrastructure",
+    "server.server.api",
+    "server.server.infrastructure",
 ]
 ignore_imports = []
 
 [[tool.importlinter.contracts]]
 name = "Clean Architecture: Infrastructure Layer Dependencies"
 type = "forbidden"
-source_modules = ["server.infrastructure"]
+source_modules = ["server.server.infrastructure"]
 forbidden_modules = [
-    "server.api",
+    "server.server.api",
 ]
 ignore_imports = []
 
@@ -86,11 +86,11 @@ ignore_imports = []
 name = "Clean Architecture: API Layer (Outermost)"
 type = "layers"
 layers = [
-    "server.api",
-    "server.application",
-    "server.domain",
+    "server.server.api",
+    "server.server.application",
+    "server.server.domain",
 ]
-containers = ["server"]
+containers = ["server.server"]
 
 [build-system]
 requires = ["poetry-core"]
