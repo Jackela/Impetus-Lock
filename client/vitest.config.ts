@@ -6,12 +6,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    setupFiles: "./vitest.setup.ts",
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
-    exclude: ["node_modules", "e2e"],
-    coverage: {
-      reporter: ["text", "html", "clover"],
-      exclude: ["node_modules/", "vitest.setup.ts", "e2e/"],
-    },
+    include: ["tests/**/*.{test,spec}.{ts,tsx}", "src/**/*.{test,spec}.{ts,tsx}"],
+    exclude: ["tests/e2e/**", "node_modules"],
   },
 });

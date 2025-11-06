@@ -1,0 +1,384 @@
+openapi: 3.0.3
+info:
+  title: Impetus Lock - Agent Intervention API
+  version: 1.0.1
+  description: |
+    API contract for AI Agent intervention system (Muse + Loki modes).
+    
+    **Core Behavior**:
+    - **Muse Mode**: STUCK detection (60s idle) → Provoke action (inject creative pressure)
+    - **Loki Mode**: Random chaos (30-120s) → Provoke OR Delete action (unpredictable)
+    
+    **Idempotency**: All requests require `Idempotency-Key` header (UUID v4).
+    Duplicate requests within 15s window return cached response.
+    
+    **Contract Version**: Client MUST send `X-Contract-Version: 1.0.1` header.
+    Breaking changes will increment major version.
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.impetus-lock.example.com
+    description: Production server (placeholder)
+
+paths:
+  /api/v1/impetus/generate-intervention:
+    post:
+      summary: Generate AI intervention action
+      description: |
+        Calls LLM to decide intervention action based on writing context and mode.
+        
+        **Request Flow**:
+        1. Client sends context (last 3 sentences for Muse, full doc for Loki)
+        2. Backend calls LLM with structured prompt
+        3. LLM returns typed response (Instructor + Pydantic validation)
+        4. Backend returns InterventionResponse
+        
+        **Idempotency**:
+        - Requests with same `Idempotency-Key` within 15s return cached response
+        - Prevents duplicate injections on network retry
+        
+        **Safety Guards**:
+        - If doc length <50 chars → Backend rejects "delete", returns "provoke" instead
+        - If anchor out of bounds → 400 Bad Request
+        
+      operationId: generateIntervention
+      
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: UUID v4 to prevent duplicate interventions on retry
+          schema:
+            type: string
+            format: uuid
+            example: "550e8400-e29b-41d4-a716-446655440000"
+        
+        - name: X-Contract-Version
+          in: header
+          required: true
+          description: API contract version (MUST be "1.0.1")
+          schema:
+            type: string
+            enum: ["1.0.1"]
+            example: "1.0.1"
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterventionRequest'
+            examples:
+              muse-stuck:
+                summary: Muse mode - user stuck for 60s
+                value:
+                  context: "他打开门,犹豫着要不要进去。"
+                  mode: "muse"
+                  client_meta:
+                    doc_version: 42
+                    selection_from: 1234
+                    selection_to: 1234
+              
+              loki-random:
+                summary: Loki mode - random trigger
+                value:
+                  context: "他打开门,犹豫着要不要进去。突然,门后传来脚步声。"
+                  mode: "loki"
+                  client_meta:
+                    doc_version: 43
+                    selection_from: 1310
+                    selection_to: 1310
+      
+      responses:
+        '200':
+          description: Success - intervention action generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterventionResponse'
+              examples:
+                provoke-muse:
+                  summary: Muse provoke action
+                  value:
+                    action: "provoke"
+                    content: "> [AI施压 - Muse]: 门后是一堵砖墙。"
+                    lock_id: "lock_550e8400-e29b-41d4-a716-446655440000"
+                    action_id: "act_01j4z3m8a6q3qz2x8j4z3m8a"
+                
+                provoke-loki:
+                  summary: Loki provoke action
+                  value:
+                    action: "provoke"
+                    content: "> [AI施压 - Loki]: 脚步声突然停止了。你听到钥匙转动的声音。"
+                    lock_id: "lock_01j4z3m8b7r4ra3y9k5a4n9c"
+                    anchor:
+                      type: "pos"
+                      from: 1310
+                    action_id: "act_01j4z3m8b7r4ra3y9k5a4n9b"
+                
+                delete-loki:
+                  summary: Loki delete action
+                  value:
+                    action: "delete"
+                    anchor:
+                      type: "range"
+                      from: 1289
+                      to: 1310
+                    action_id: "act_01j4z3m8c8s5sb4z0l6b5o0d"
+        
+        '400':
+          description: Bad Request - invalid anchor position
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "BadRequest"
+                message: "Anchor position out of bounds: from=9999 exceeds document length 1500"
+                details:
+                  anchor: { type: "pos", from: 9999 }
+                  doc_length: 1500
+        
+        '422':
+          description: Unprocessable Entity - request validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "ValidationError"
+                message: "Request body validation failed"
+                details:
+                  - field: "mode"
+                    message: "must be one of: muse, loki"
+                    received: "chaos"
+        
+        '429':
+          description: Too Many Requests - rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "RateLimitExceeded"
+                message: "Maximum 10 requests per minute exceeded"
+                details:
+                  limit: 10
+                  window: "60s"
+                  retry_after: 42
+        
+        '500':
+          description: Internal Server Error - LLM or backend failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "InternalServerError"
+                message: "LLM service unavailable"
+                details:
+                  llm_provider: "openai"
+                  error_code: "503"
+
+components:
+  schemas:
+    InterventionRequest:
+      type: object
+      required:
+        - context
+        - mode
+        - client_meta
+      properties:
+        context:
+          type: string
+          description: |
+            Writing context for LLM decision-making.
+            - **Muse mode**: Last 3 sentences before cursor
+            - **Loki mode**: Full document or last 10 sentences (whichever shorter)
+          minLength: 1
+          maxLength: 2000
+          example: "他打开门,犹豫着要不要进去。"
+        
+        mode:
+          type: string
+          enum: ["muse", "loki"]
+          description: |
+            Agent working mode:
+            - **muse**: STUCK-triggered, provoke only
+            - **loki**: Random-triggered, provoke OR delete
+          example: "muse"
+        
+        client_meta:
+          type: object
+          required:
+            - doc_version
+            - selection_from
+            - selection_to
+          properties:
+            doc_version:
+              type: integer
+              description: Document version counter (increments on each edit)
+              minimum: 0
+              example: 42
+            
+            selection_from:
+              type: integer
+              description: Cursor position or selection start (ProseMirror absolute position)
+              minimum: 0
+              example: 1234
+            
+            selection_to:
+              type: integer
+              description: Selection end (same as from if no selection)
+              minimum: 0
+              example: 1234
+    
+    InterventionResponse:
+      type: object
+      required:
+        - action
+        - action_id
+      properties:
+        action:
+          type: string
+          enum: ["provoke", "delete"]
+          description: |
+            Intervention action type:
+            - **provoke**: Inject content with lock_id (un-deletable)
+            - **delete**: Remove text at anchor position (irreversible)
+          example: "provoke"
+        
+        content:
+          type: string
+          description: |
+            Markdown blockquote content (ONLY for "provoke" action).
+            Format: `> [AI施压 - {mode}]: {creative_pressure_text}`
+          nullable: true
+          minLength: 5
+          maxLength: 500
+          example: "> [AI施压 - Muse]: 门后是一堵砖墙。"
+        
+        lock_id:
+          type: string
+          description: |
+            Unique lock identifier (ONLY for "provoke" action).
+            Format: `lock_{ulid}` (sortable UUID alternative)
+          nullable: true
+          pattern: '^lock_[0-9A-HJKMNP-TV-Z]{26}$'
+          example: "lock_01j4z3m8a6q3qz2x8j4z3m8a"
+        
+        anchor:
+          $ref: '#/components/schemas/Anchor'
+          description: |
+            Target location for action.
+            - **provoke**: Optional, defaults to cursor position
+            - **delete**: Required
+          nullable: true
+        
+        action_id:
+          type: string
+          description: Unique action identifier (UUID v4)
+          format: uuid
+          example: "act_550e8400-e29b-41d4-a716-446655440000"
+      
+      # Conditional validation (not enforced by OpenAPI, handled by backend)
+      # If action === "provoke": content, lock_id MUST be present
+      # If action === "delete": anchor MUST be present
+    
+    Anchor:
+      oneOf:
+        - $ref: '#/components/schemas/AnchorPos'
+        - $ref: '#/components/schemas/AnchorRange'
+        - $ref: '#/components/schemas/AnchorLockId'
+      discriminator:
+        propertyName: type
+        mapping:
+          pos: '#/components/schemas/AnchorPos'
+          range: '#/components/schemas/AnchorRange'
+          lock_id: '#/components/schemas/AnchorLockId'
+    
+    AnchorPos:
+      type: object
+      required:
+        - type
+        - from
+      properties:
+        type:
+          type: string
+          enum: ["pos"]
+          example: "pos"
+        from:
+          type: integer
+          description: ProseMirror absolute position (0-indexed)
+          minimum: 0
+          example: 1234
+    
+    AnchorRange:
+      type: object
+      required:
+        - type
+        - from
+        - to
+      properties:
+        type:
+          type: string
+          enum: ["range"]
+          example: "range"
+        from:
+          type: integer
+          description: Start position (inclusive)
+          minimum: 0
+          example: 1289
+        to:
+          type: integer
+          description: End position (exclusive)
+          minimum: 1
+          example: 1310
+    
+    AnchorLockId:
+      type: object
+      required:
+        - type
+        - ref_lock_id
+      properties:
+        type:
+          type: string
+          enum: ["lock_id"]
+          example: "lock_id"
+        ref_lock_id:
+          type: string
+          description: Reference to existing lock_id to delete
+          pattern: '^lock_[0-9A-HJKMNP-TV-Z]{26}$'
+          example: "lock_01j4z3m8a6q3qz2x8j4z3m8a"
+    
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code (PascalCase)
+          example: "ValidationError"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Request body validation failed"
+        details:
+          type: object
+          description: Additional error context (structure varies by error type)
+          nullable: true
+
+  securitySchemes:
+    # P1 does not include authentication
+    # Future versions may add API key or OAuth2
+    {}
+
+# No security requirements for P1 (stateless, no user accounts)
+security: []
+
+tags:
+  - name: intervention
+    description: AI Agent intervention operations

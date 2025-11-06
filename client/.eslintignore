@@ -1,0 +1,26 @@
+# ESLint ignore patterns for Impetus Lock frontend
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Generated files
+*.generated.ts
+src/types/api.generated.ts
+
+# Compiled files
+*.min.js
+*.bundle.js
+
+# Configuration files
+vite.config.ts
+vitest.config.ts
+playwright.config.ts

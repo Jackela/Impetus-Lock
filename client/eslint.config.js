@@ -43,4 +43,11 @@ export default defineConfig([
       ],
     },
   },
+  // Override for EditorCore: Integration layer that coordinates services
+  {
+    files: ["**/components/Editor/EditorCore.tsx"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
 ]);
