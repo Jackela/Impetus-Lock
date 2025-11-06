@@ -1,0 +1,17 @@
+# Act CLI configuration for local CI testing
+# Simulates GitHub Actions environment locally
+
+# Use ubuntu-latest compatible image
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# Platform architecture
+--container-architecture linux/amd64
+
+# Increase verbosity for debugging (uncomment if needed)
+# -v
+
+# Bind Docker socket (if needed for Docker-in-Docker)
+# --bind
+
+# Use GitHub secrets from .secrets file (create if needed)
+# -s GITHUB_TOKEN=<your-token>

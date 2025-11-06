@@ -1,0 +1,41 @@
+# Project-wide .gitignore for Impetus Lock monorepo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.secrets
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Act CLI
+.act/
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+build/
+
+# Documentation builds
+site/
+docs/_build/
+
+# Temporary files
+tmp/
+temp/
