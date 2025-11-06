@@ -1,0 +1,24 @@
+# Prettier ignore patterns for Impetus Lock frontend
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# Test coverage
+coverage/
+
+# Generated files
+*.generated.ts
+src/types/api.generated.ts
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+*.log

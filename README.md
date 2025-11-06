@@ -226,6 +226,143 @@ curl http://localhost:8000/health
 
 ---
 
+## 💡 Usage Examples
+
+### Basic Integration: Lock Enforcement Hook
+
+```typescript
+import { useLockEnforcement } from './hooks';
+import { generateIntervention } from './services/api/interventionClient';
+
+function WritingEditor() {
+  const { locks, lockCount, applyLock, isLoading, error } = useLockEnforcement();
+  
+  const handleStuckDetected = async () => {
+    try {
+      const response = await generateIntervention({
+        context: editorContent,
+        mode: 'muse',
+        client_meta: {
+          doc_version: 1,
+          selection_from: cursorPos,
+          selection_to: cursorPos,
+        },
+      });
+      
+      if (response.action === 'provoke') {
+        // Inject locked content into editor
+        injectContent(response.content);
+        applyLock(response.lock_id!);
+      }
+    } catch (err) {
+      console.error('Intervention failed:', err);
+    }
+  };
+  
+  return (
+    <div>
+      <EditorCore />
+      <StatusBar>Active Locks: {lockCount}</StatusBar>
+    </div>
+  );
+}
+```
+
+### Lock Persistence Across Sessions
+
+```typescript
+import { lockManager } from './services/LockManager';
+
+// On page load - extract locks from Markdown
+function loadEditor(initialMarkdown: string) {
+  const locks = lockManager.extractLocksFromMarkdown(initialMarkdown);
+  locks.forEach(lockId => lockManager.applyLock(lockId));
+  
+  // Locks are now enforced in the editor
+}
+
+// When saving - locks persist in Markdown comments
+function saveDocument(content: string) {
+  // Content contains: <!-- lock:lock_xxx --> comments
+  // Locks will be restored on next load
+  localStorage.setItem('doc', content);
+}
+```
+
+### Error Handling with Retries
+
+```typescript
+import { generateIntervention, InterventionAPIError } from './services/api/interventionClient';
+
+async function requestIntervention() {
+  try {
+    const response = await generateIntervention(
+      { context: '...', mode: 'muse', client_meta: {...} },
+      { retries: 3 } // Auto-retry on network errors
+    );
+    
+    return response;
+  } catch (error) {
+    if (error instanceof InterventionAPIError) {
+      if (error.status === 422) {
+        console.error('Validation error:', error.details);
+      } else if (error.status === 429) {
+        console.error('Rate limit exceeded');
+      }
+    } else {
+      console.error('Network error:', error);
+    }
+  }
+}
+```
+
+### Idempotency for Duplicate Prevention
+
+```typescript
+// Use custom idempotency key to prevent duplicate interventions
+const idempotencyKey = crypto.randomUUID();
+
+const response1 = await generateIntervention(
+  { context: '...', mode: 'muse', client_meta: {...} },
+  { idempotencyKey }
+);
+
+// Same key returns cached response (within 15s TTL)
+const response2 = await generateIntervention(
+  { context: '...', mode: 'muse', client_meta: {...} },
+  { idempotencyKey }
+);
+
+console.assert(response1.action_id === response2.action_id); // true
+```
+
+### Writing State Machine (Muse Mode)
+
+```typescript
+import { useWritingState } from './hooks';
+
+function MuseModeDetector({ onStuck }: { onStuck: () => void }) {
+  const { state, onKeystroke, idleSeconds } = useWritingState({
+    idleTimeout: 5000,  // 5s → IDLE
+    stuckTimeout: 60000, // 60s → STUCK
+    onStuck: onStuck,
+  });
+  
+  return (
+    <div>
+      <EditorCore onInput={onKeystroke} />
+      <StatusIndicator>
+        {state === 'WRITING' && '✍️ Writing'}
+        {state === 'IDLE' && `⏸️ Idle (${idleSeconds}s)`}
+        {state === 'STUCK' && '🚨 STUCK - AI Intervention Triggered'}
+      </StatusIndicator>
+    </div>
+  );
+}
+```
+
+---
+
 ## 🧪 Testing (TDD Workflow)
 
 **Article III of our Constitution:** Test-Driven Development is **NON-NEGOTIABLE**.
