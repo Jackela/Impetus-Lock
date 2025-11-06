@@ -295,6 +295,7 @@ act -l
 
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** — Comprehensive development guide
 - **[TESTING.md](TESTING.md)** — Testing strategies and TDD workflow
+- **[DEPENDENCY_MANAGEMENT.md](DEPENDENCY_MANAGEMENT.md)** — Dependency update strategy
 - **[CLAUDE.md](CLAUDE.md)** — AI assistant operational guide
 - **[Constitution](.specify/memory/constitution.md)** — Project governance (5 articles)
 - **[API Docs](http://localhost:8000/docs)** — FastAPI auto-generated docs (run backend first)

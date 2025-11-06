@@ -11,7 +11,7 @@ jobs:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.49.0-noble
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
       options: --user 1001
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +26,20 @@ jobs:
       - name: Install dependencies
         working-directory: ./client
         run: npm ci
+
+      - name: Verify Playwright version compatibility
+        working-directory: ./client
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').devDependencies['@playwright/test']" | sed 's/[^0-9.]//g')
+          INSTALLED_VERSION=$(npx playwright --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+          echo "📦 package.json version: $PACKAGE_VERSION"
+          echo "🐳 Docker image version: $INSTALLED_VERSION"
+          if [ "$PACKAGE_VERSION" != "$INSTALLED_VERSION" ]; then
+            echo "❌ Version mismatch detected!"
+            echo "Please update .github/workflows/e2e.yml Docker image to: mcr.microsoft.com/playwright:v${PACKAGE_VERSION}-noble"
+            exit 1
+          fi
+          echo "✅ Versions match!"
 
       - name: Run Playwright E2E tests
         working-directory: ./client
