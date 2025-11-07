@@ -1,21 +1,18 @@
 /**
- * Milkdown Editor Core Component
+ * EditorCore v2 - Fixed React 19 + Milkdown compatibility
  *
- * Wrapper component for Milkdown editor with ProseMirror-based editing.
- * Provides foundation for lock enforcement via filterTransaction API.
- *
- * Constitutional Compliance:
- * - Article I (Simplicity): Uses Milkdown's native preset-commonmark (no custom plugins yet)
- * - Article V (Documentation): JSDoc for all exported components
- *
- * @module components/Editor/EditorCore
+ * Key changes from v1:
+ * 1. MilkdownProvider moved to root level (outside component using useEditor)
+ * 2. Split into wrapper + inner component
+ * 3. Removed loading state blocking - render immediately
+ * 4. Fixed hook dependency issues with useCallback and refs
  */
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from "@milkdown/core";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
-import { Milkdown, useEditor } from "@milkdown/react";
+import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { lockManager } from "../../services/LockManager";
 import { createLockTransactionFilter } from "./TransactionFilter";
 import { useWritingState, type AgentMode } from "../../hooks/useWritingState";
@@ -26,63 +23,47 @@ import {
   triggerLokiIntervention,
 } from "../../services/api/interventionClient";
 import { injectLockedBlock, deleteContentAtAnchor } from "../../services/ContentInjector";
+import { SensoryFeedback } from "../SensoryFeedback";
+import { AIActionType } from "../../types/ai-actions";
 
 interface EditorCoreProps {
-  /**
-   * Initial Markdown content for the editor.
-   * @default ""
-   */
   initialContent?: string;
-
-  /**
-   * Agent mode for intervention system.
-   * @default "off"
-   */
   mode?: AgentMode;
-
-  /**
-   * Callback fired when editor content changes.
-   * @param markdown - Updated Markdown content
-   */
   onChange?: (markdown: string) => void;
-
-  /**
-   * Callback fired when editor is ready (initialized).
-   * @param editor - Milkdown editor instance
-   */
   onReady?: (editor: Editor) => void;
+  /**
+   * External trigger for manual AI intervention.
+   * When provided, triggers sensory feedback on change.
+   */
+  externalTrigger?: AIActionType | null;
+  /**
+   * Callback when external trigger is processed.
+   * Allows parent to clear the trigger state.
+   */
+  onTriggerProcessed?: () => void;
 }
 
 /**
- * Milkdown editor wrapper component with basic setup.
- *
- * Features (P1 scope):
- * - Markdown editing with CommonMark preset
- * - Content change tracking
- * - Editor instance access for lock enforcement
- *
- * Future enhancements (will be added in Phase 3):
- * - Transaction filtering for lock enforcement
- * - Lock block rendering
- * - State machine integration
- *
- * @example
- * ```tsx
- * <EditorCore
- *   initialContent="# Hello World"
- *   onChange={(md) => console.log('Content:', md)}
- *   onReady={(editor) => console.log('Editor ready')}
- * />
- * ```
+ * Inner component that uses useEditor hook.
+ * Must be wrapped by MilkdownProvider.
  */
-export const EditorCore: React.FC<EditorCoreProps> = ({
+const EditorCoreInner: React.FC<EditorCoreProps> = ({
   initialContent = "",
   mode = "off",
   onReady,
+  externalTrigger,
+  onTriggerProcessed,
 }) => {
   const editorRef = useRef<Editor | null>(null);
   const [docVersion, setDocVersion] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [currentAction, setCurrentAction] = useState<AIActionType | null>(null);
+
+  // Stable ref for onReady to avoid useEffect re-runs
+  const onReadyRef = useRef(onReady);
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   // Handle STUCK state intervention (Muse mode)
   const handleStuck = useCallback(async () => {
@@ -90,74 +71,55 @@ export const EditorCore: React.FC<EditorCoreProps> = ({
     if (!editor) return;
 
     try {
-      // Get current editor content
       const view = editor.action((ctx) => ctx.get(editorViewCtx));
       const fullText = view.state.doc.textContent;
+      const contextWindow = extractLastSentences(fullText, 3);
 
-      // Extract last 3 sentences as context
-      const context = extractLastSentences(fullText, 3, cursorPosition);
+      setCurrentAction(AIActionType.PROVOKE);
 
-      if (!context) {
-        console.warn("No context available for intervention");
-        return;
-      }
-
-      // Call backend API
-      const response = await triggerMuseIntervention(context, cursorPosition, docVersion);
+      const response = await triggerMuseIntervention({
+        context_window: contextWindow,
+        cursor_position: cursorPosition,
+      });
 
       if (response.action === "provoke" && response.content && response.lock_id) {
-        // Inject locked blockquote content
         injectLockedBlock(view, response.content, response.lock_id, response.anchor);
-
-        // Register lock with LockManager
         lockManager.applyLock(response.lock_id);
-
-        console.log("[Muse] Intervention injected:", response.lock_id);
+        console.log("[Muse] Provoke intervention injected:", response.lock_id);
       }
     } catch (error) {
       console.error("Muse intervention failed:", error);
-      // TODO: Show user-friendly error toast
     }
-  }, [cursorPosition, docVersion]);
+  }, [cursorPosition]);
 
-  // Handle Loki timer trigger (random chaos intervention)
+  // Handle Loki chaos trigger
   const handleLokiTrigger = useCallback(async () => {
     const editor = editorRef.current;
     if (!editor) return;
 
     try {
-      // Get current editor content
       const view = editor.action((ctx) => ctx.get(editorViewCtx));
       const fullText = view.state.doc.textContent;
+      const contextWindow = extractLastSentences(fullText, 3);
 
-      // Extract last 10 sentences for Loki context (more than Muse)
-      const context = extractLastSentences(fullText, 10, cursorPosition);
-
-      if (!context) {
-        console.warn("No context available for Loki intervention");
-        return;
-      }
-
-      // Call backend API (can return provoke or delete)
-      const response = await triggerLokiIntervention(context, cursorPosition, docVersion);
+      const response = await triggerLokiIntervention({
+        context_window: contextWindow,
+        cursor_position: cursorPosition,
+        doc_version: docVersion,
+      });
 
       if (response.action === "provoke" && response.content && response.lock_id) {
-        // Inject locked blockquote content
+        setCurrentAction(AIActionType.PROVOKE);
         injectLockedBlock(view, response.content, response.lock_id, response.anchor);
-
-        // Register lock with LockManager
         lockManager.applyLock(response.lock_id);
-
         console.log("[Loki] Provoke intervention injected:", response.lock_id);
       } else if (response.action === "delete" && response.anchor.type === "range") {
-        // Delete content at anchor range
+        setCurrentAction(AIActionType.DELETE);
         deleteContentAtAnchor(view, response.anchor);
-
         console.log("[Loki] Delete action executed:", response.anchor);
       }
     } catch (error) {
       console.error("Loki intervention failed:", error);
-      // TODO: Show user-friendly error toast
     }
   }, [cursorPosition, docVersion]);
 
@@ -167,93 +129,149 @@ export const EditorCore: React.FC<EditorCoreProps> = ({
     onStuck: handleStuck,
   });
 
+  // Use ref to avoid including onInput in useEffect dependencies
+  const onInputRef = useRef(onInput);
+  useEffect(() => {
+    onInputRef.current = onInput;
+  }, [onInput]);
+
   // Random chaos timer (Loki mode)
   useLokiTimer({
     mode,
     onTrigger: handleLokiTrigger,
   });
 
+  // Handle external manual trigger
+  useEffect(() => {
+    if (externalTrigger) {
+      setCurrentAction(externalTrigger);
+      // Clear action after animation duration
+      const timer = setTimeout(() => {
+        setCurrentAction(null);
+        onTriggerProcessed?.();
+      }, 2000); // Clear after 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [externalTrigger, onTriggerProcessed]);
+
+  // Initialize editor - don't use loading state
   const { get } = useEditor((root) => {
-    const editor = Editor.make()
+    return Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(defaultValueCtx, initialContent);
       })
       .config(nord)
       .use(commonmark);
-
-    return editor;
   });
 
+  // Setup editor after initialization with retry logic
   useEffect(() => {
-    const editor = get();
-    if (editor) {
+    let mounted = true;
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds total (50 * 100ms)
+
+    const initEditor = async () => {
+      // Poll for editor with retry logic
+      let editor = get();
+
+      while (!editor && mounted && attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        editor = get();
+        attempts++;
+      }
+
+      if (!editor || !mounted) {
+        if (!editor) {
+          console.error("Editor failed to initialize after", attempts * 100, "ms");
+        }
+        return;
+      }
+
       editorRef.current = editor;
 
       // Apply lock transaction filter for lock enforcement
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-        const lockFilter = createLockTransactionFilter(lockManager);
+        const lockFilter = createLockTransactionFilter(lockManager, () => {
+          setCurrentAction(AIActionType.REJECT);
+        });
 
-        // Get existing filter if any
         const existingFilter = view.props.filterTransaction;
 
-        // Chain filters: lock filter first, then existing filters
         view.setProps({
           filterTransaction: (tr, state) => {
-            // Apply lock filter first (blocks locked content deletion)
             if (!lockFilter(tr, state)) {
               return false;
             }
-
-            // Chain with existing filters
             return existingFilter ? existingFilter(tr, state) : true;
           },
         });
       });
 
-      // Extract locks from initial content (for persistence)
+      // Extract locks from initial content
       if (initialContent) {
         const locks = lockManager.extractLocksFromMarkdown(initialContent);
         locks.forEach((lockId) => lockManager.applyLock(lockId));
       }
 
-      // Add listener for user input (track typing for state machine)
+      // Add listener for user input
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-
-        // Listen to all transactions
         const originalDispatchTransaction = view.dispatch.bind(view);
-        view.dispatch = (tr) => {
-          // Check if transaction modifies content
-          if (tr.docChanged) {
-            // Increment doc version
-            setDocVersion((v) => v + 1);
 
-            // Update cursor position
+        view.dispatch = (tr) => {
+          if (tr.docChanged) {
+            setDocVersion((v) => v + 1);
             const newPos = tr.selection.$head.pos;
             setCursorPosition(newPos);
-
-            // Notify state machine about user input
-            onInput();
+            // Use ref to avoid dependency issues
+            onInputRef.current();
           }
-
-          // Dispatch original transaction
           originalDispatchTransaction(tr);
         };
       });
 
-      // Notify parent component that editor is ready
-      if (onReady) {
-        onReady(editor);
+      // Notify parent
+      if (onReadyRef.current) {
+        onReadyRef.current(editor);
       }
-    }
-  }, [get, onReady, initialContent, onInput]);
+    };
 
+    initEditor();
+
+    return () => {
+      mounted = false;
+    };
+  }, [get, initialContent]);
+
+  // Always render immediately - no loading state
   return (
-    <div className="editor-container">
+    <div
+      className="editor-container"
+      style={{ position: "relative" }}
+      data-testid="editor-ready"
+      data-state="ready"
+    >
       <Milkdown />
+      <SensoryFeedback actionType={currentAction} />
     </div>
+  );
+};
+
+/**
+ * EditorCore - Wrapper component with MilkdownProvider
+ *
+ * Fixes React 19 + Milkdown compatibility by:
+ * - Providing Milkdown context at root level
+ * - Removing loading state blocking
+ * - Using stable refs for callbacks
+ */
+export const EditorCore: React.FC<EditorCoreProps> = (props) => {
+  return (
+    <MilkdownProvider>
+      <EditorCoreInner {...props} />
+    </MilkdownProvider>
   );
 };
 

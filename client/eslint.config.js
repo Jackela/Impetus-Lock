@@ -50,4 +50,22 @@ export default defineConfig([
       "no-restricted-imports": "off",
     },
   },
+  // Override for hooks: Custom hooks ARE the abstraction layer for services
+  {
+    files: ["**/hooks/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/features/**"],
+              message:
+                "Hooks should not import from features layer. Keep hooks focused on single responsibilities.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);

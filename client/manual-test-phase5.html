@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phase 5 Manual Testing Checklist</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #0a0a0a;
+        color: #e0e0e0;
+      }
+      h1 {
+        color: #8b5cf6;
+      }
+      h2 {
+        color: #a78bfa;
+        margin-top: 30px;
+      }
+      .checklist {
+        margin: 20px 0;
+      }
+      .test-case {
+        background: #1a1a1a;
+        border-left: 4px solid #8b5cf6;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .test-case h3 {
+        margin-top: 0;
+        color: #c4b5fd;
+      }
+      .steps {
+        margin: 10px 0;
+      }
+      .steps li {
+        margin: 8px 0;
+        line-height: 1.6;
+      }
+      .expected {
+        background: #1e293b;
+        padding: 10px;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .status {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .pass {
+        background: #065f46;
+        color: #6ee7b7;
+      }
+      .fail {
+        background: #7f1d1d;
+        color: #fca5a5;
+      }
+      .pending {
+        background: #713f12;
+        color: #fcd34d;
+      }
+      code {
+        background: #262626;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: "Courier New", monospace;
+      }
+      a {
+        color: #a78bfa;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Phase 5 Manual Testing Checklist</h1>
+    <p>
+      <strong>App URL:</strong>
+      <a href="http://localhost:5173" target="_blank">http://localhost:5173</a>
+    </p>
+    <p><strong>Date:</strong> 2025-11-07</p>
+    <p><strong>Status:</strong> <span class="status pending">TESTING</span></p>
+
+    <h2>📋 Test Environment Setup</h2>
+    <div class="checklist">
+      <div class="test-case">
+        <h3>Pre-flight Checks</h3>
+        <ol class="steps">
+          <li>✅ Dev server running: <code>npm run dev</code></li>
+          <li>✅ Browser: Chrome/Edge (latest)</li>
+          <li>✅ Open DevTools Console (F12)</li>
+          <li>✅ Check for errors on page load</li>
+        </ol>
+      </div>
+    </div>
+
+    <h2>🎯 Test Case 1: Manual Trigger Button</h2>
+    <div class="checklist">
+      <div class="test-case">
+        <h3>TC1.1: Button State in Off Mode</h3>
+        <ol class="steps">
+          <li>Open app at http://localhost:5173</li>
+          <li>Verify mode selector shows "Off"</li>
+          <li>Look for manual trigger button (should say "I'm stuck!" or similar)</li>
+          <li>Check button state</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong> Button should be <strong>disabled</strong> (grayed out, not
+          clickable)
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+
+      <div class="test-case">
+        <h3>TC1.2: Button State in Muse Mode</h3>
+        <ol class="steps">
+          <li>Change mode selector to "Muse"</li>
+          <li>Check manual trigger button state</li>
+          <li>Try clicking the button</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong> Button should be <strong>enabled</strong> (full opacity,
+          clickable)<br />
+          Click should trigger some action (loading state, API call, feedback)
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+
+      <div class="test-case">
+        <h3>TC1.3: Button State in Loki Mode</h3>
+        <ol class="steps">
+          <li>Change mode selector to "Loki"</li>
+          <li>Check manual trigger button state</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong> Button should be <strong>disabled</strong> (grayed out, not
+          clickable)
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+
+      <div class="test-case">
+        <h3>TC1.4: Debounce Behavior (2s cooldown)</h3>
+        <ol class="steps">
+          <li>Set mode to "Muse"</li>
+          <li>Click manual trigger button once</li>
+          <li>Immediately try clicking again multiple times</li>
+          <li>Wait 2 seconds, then click again</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong><br />
+          - First click triggers action<br />
+          - Rapid clicks within 2s are blocked (button disabled/loading)<br />
+          - After 2s, button becomes clickable again
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+    </div>
+
+    <h2>🎨 Test Case 2: Sensory Feedback - Animations</h2>
+    <div class="checklist">
+      <div class="test-case">
+        <h3>TC2.1: Provoke Animation (Glitch)</h3>
+        <ol class="steps">
+          <li>Set mode to "Muse"</li>
+          <li>Click manual trigger button</li>
+          <li>Watch for visual feedback</li>
+          <li>Check DevTools Console for errors</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong><br />
+          - Glitch animation appears (purple overlay with opacity changes)<br />
+          - Animation lasts ~1.5 seconds<br />
+          - Full-screen overlay with <code>pointer-events: none</code><br />
+          - Element has <code>data-animation="glitch"</code>
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+
+      <div class="test-case">
+        <h3>TC2.2: Rapid Animation Cancel-and-Replace</h3>
+        <ol class="steps">
+          <li>Trigger an animation</li>
+          <li>While animation is playing, trigger another one quickly</li>
+          <li>Observe behavior</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong> Previous animation should stop, new animation starts
+          immediately (FR-019)
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+    </div>
+
+    <h2>🔊 Test Case 3: Audio Feedback</h2>
+    <div class="checklist">
+      <div class="test-case">
+        <h3>TC3.1: Clank Sound (Provoke)</h3>
+        <ol class="steps">
+          <li>Set mode to "Muse"</li>
+          <li>Click manual trigger button</li>
+          <li>Listen for audio</li>
+          <li>Check DevTools Console for audio errors</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong> Metallic "clank" sound plays (~1.5s)<br />
+          <strong>Fallback:</strong> If no sound, check console for "Web Audio API not supported"
+          warning
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+
+      <div class="test-case">
+        <h3>TC3.2: Audio-Visual Sync</h3>
+        <ol class="steps">
+          <li>Trigger Provoke action (Muse mode + manual button)</li>
+          <li>Observe timing between animation and audio start</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong> Audio and animation start within <100ms of each other (SC-008)
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+    </div>
+
+    <h2>📝 Test Case 4: Editor Functionality</h2>
+    <div class="checklist">
+      <div class="test-case">
+        <h3>TC4.1: Editor Renders and Is Editable</h3>
+        <ol class="steps">
+          <li>Check that Milkdown editor appears</li>
+          <li>Click in editor and type some text</li>
+          <li>Try Markdown formatting (e.g., <code>## Heading</code>)</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong><br />
+          - Editor renders with dark theme<br />
+          - Initial content: "# Welcome to Impetus Lock..."<br />
+          - Text input works<br />
+          - Markdown is rendered
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+
+      <div class="test-case">
+        <h3>TC4.2: Lock Enforcement (P1 Feature)</h3>
+        <ol class="steps">
+          <li>In editor, type a task with <code>#lock-123</code></li>
+          <li>Try to delete the lock ID</li>
+          <li>Try to delete the entire task</li>
+        </ol>
+        <div class="expected">
+          <strong>Expected:</strong> Lock ID cannot be deleted (transaction blocked)
+        </div>
+        <p><strong>Result:</strong> <span class="status pending">Not tested</span></p>
+      </div>
+    </div>
+
+    <h2>🐛 Known Issues</h2>
+    <ul>
+      <li>
+        <strong>Audio Playback:</strong> Requires user interaction to start AudioContext (browser
+        autoplay policy)
+      </li>
+      <li><strong>Animation Performance:</strong> May vary on slower machines</li>
+      <li><strong>DevTools Warnings:</strong> React 19 warnings in console are expected</li>
+    </ul>
+
+    <h2>✅ Test Summary</h2>
+    <div class="test-case">
+      <h3>Overall Results</h3>
+      <p><strong>Total Test Cases:</strong> 10</p>
+      <p><strong>Passed:</strong> <span class="status pending">0</span></p>
+      <p><strong>Failed:</strong> <span class="status pending">0</span></p>
+      <p><strong>Not Tested:</strong> <span class="status pending">10</span></p>
+      <br />
+      <p><strong>Tester Notes:</strong></p>
+      <textarea
+        style="
+          width: 100%;
+          min-height: 100px;
+          background: #1a1a1a;
+          color: #e0e0e0;
+          border: 1px solid #333;
+          padding: 10px;
+          border-radius: 4px;
+        "
+        placeholder="Add any observations, bugs, or issues found during testing..."
+      ></textarea>
+    </div>
+
+    <h2>📊 Next Steps</h2>
+    <ol>
+      <li>Complete manual testing with this checklist</li>
+      <li>Fix any issues found</li>
+      <li>Enable skipped E2E tests in <code>manual-trigger.spec.ts</code> (3 tests)</li>
+      <li>Enable skipped E2E tests in <code>sensory-feedback.spec.ts</code> (4 tests)</li>
+      <li>Run full E2E suite: <code>npm run test:e2e</code></li>
+      <li>Update documentation with Phase 5 completion status</li>
+    </ol>
+
+    <hr style="margin: 40px 0; border-color: #333" />
+    <p style="text-align: center; color: #666">
+      <small>Generated for Impetus Lock Phase 5 Testing | 2025-11-07</small>
+    </p>
+  </body>
+</html>
