@@ -64,7 +64,7 @@ export function ManualTriggerButton({
     } catch (error) {
       // P3 US3: Trigger ERROR feedback on API failure
       onTrigger?.(AIActionType.ERROR);
-      console.error("Manual trigger button: API call failed", error);
+      console.error("Manual trigger failed:", error);
     }
   };
 
