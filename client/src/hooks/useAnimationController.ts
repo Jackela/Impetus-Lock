@@ -5,15 +5,17 @@ import { AIActionType } from "../types/ai-actions";
  * Animation variants for Framer Motion.
  */
 interface AnimationVariants {
-  initial: { opacity: number };
+  initial: { opacity: number; backgroundColor?: string; x?: number };
   animate: {
     opacity: number | number[];
+    backgroundColor?: string | string[];
+    x?: number | number[];
     transition: {
       duration: number;
       ease: string;
     };
   };
-  exit: { opacity: number };
+  exit: { opacity: number; backgroundColor?: string; x?: number };
 }
 
 /**
@@ -125,18 +127,36 @@ export function useAnimationController(actionType: AIActionType): UseAnimationCo
         };
 
       case AIActionType.REJECT:
-        // FR-014: Shake animation (placeholder - should use P1 implementation)
-        // For now, simple opacity flash
+        // P3 US2: Shake animation - horizontal oscillation for lock rejection
+        // FR-003: Visual feedback when user attempts to delete locked content
+        // Oscillates left/right to signal "you can't do that" rejection
         return {
-          initial: { opacity: 1 },
+          initial: { opacity: 1, x: 0 },
           animate: {
-            opacity: [1, 0.5, 1],
+            opacity: 1, // Stable opacity - no fade during shake
+            x: [0, -10, 10, -10, 10, -5, 5, 0], // Shake keyframes (decreasing amplitude)
+            transition: {
+              duration: 0.3, // Quick shake feedback (FR-003)
+              ease: "easeInOut",
+            },
+          },
+          exit: { opacity: 0, x: 0 },
+        };
+
+      case AIActionType.ERROR:
+        // P3 US3: Red flash animation - urgent error indicator
+        // FR-005: Visual feedback for API failures
+        return {
+          initial: { opacity: 1, backgroundColor: "transparent" },
+          animate: {
+            opacity: [1, 0.8, 1],
+            backgroundColor: ["transparent", "rgba(239, 68, 68, 0.2)", "transparent"],
             transition: {
               duration: 0.5,
               ease: "easeInOut",
             },
           },
-          exit: { opacity: 0 },
+          exit: { opacity: 0, backgroundColor: "transparent" },
         };
 
       default:

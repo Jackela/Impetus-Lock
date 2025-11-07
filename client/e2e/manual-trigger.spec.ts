@@ -143,7 +143,7 @@ test.describe("Manual Trigger Button", () => {
    * **Reason**: ManualTriggerButton not yet integrated into EditorCore (T073)
    * **Blocker**: Error feedback UI pending (Phase 4 SensoryFeedback component)
    */
-  test.skip("manual trigger API failure shows error feedback", async ({ page }) => {
+  test("manual trigger API failure shows error feedback", async ({ page }) => {
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
 

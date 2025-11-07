@@ -5,6 +5,7 @@
  * - PROVOKE: Injects provocative content in Muse mode to overcome writer's block
  * - DELETE: Deletes user-selected text in Loki mode as punishment
  * - REJECT: Prevents deletion of locked content (lock enforcement)
+ * - ERROR: API failure error feedback (P3 US3)
  *
  * @see {@link ../config/sensory-feedback.ts} for action-specific feedback configuration
  */
@@ -17,4 +18,7 @@ export enum AIActionType {
 
   /** Lock enforcement: Prevent deletion of locked content */
   REJECT = "reject",
+
+  /** API failure: Display error feedback when AI actions fail (P3 US3) */
+  ERROR = "error",
 }

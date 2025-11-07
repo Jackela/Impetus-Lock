@@ -153,7 +153,7 @@ test.describe("Sensory Feedback", () => {
    * **Status**: SKIPPED - Requires Phase 5 integration (T066)
    * **Blocker**: Need P1 lock enforcement to be active
    */
-  test.skip("rejection feedback matches P1 implementation", async ({ page }) => {
+  test("rejection feedback matches P1 implementation", async ({ page }) => {
     // Wait for app to be fully ready
     await waitForAppReady(page);
 

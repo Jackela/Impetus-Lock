@@ -169,4 +169,49 @@ describe("useAudioFeedback", () => {
     // Restore AudioContext
     global.AudioContext = originalAudioContext;
   });
+
+  /**
+   * Test: T003 - Plays buzz audio for ERROR action (P3 US3)
+   *
+   * Verifies that calling playAudio with ERROR:
+   * - Uses the buzz.mp3 buffer
+   * - Creates AudioBufferSourceNode
+   * - Connects to audio destination
+   * - Starts playback
+   *
+   * **Coverage**: FR-006 (API error audio feedback)
+   * **User Story**: US3 (API Failure Error Feedback - P1)
+   */
+  it.skip("plays buzz audio for ERROR action", async () => {
+    const { result } = renderHook(() => useAudioFeedback());
+
+    // Wait for preloading (includes buzz.mp3)
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+    });
+
+    // Verify buzz.mp3 was fetched
+    expect(fetch).toHaveBeenCalledWith("/assets/audio/buzz.mp3");
+
+    // Create spy on AudioContext methods
+    const mockSource = {
+      buffer: null,
+      connect: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      disconnect: vi.fn(),
+    };
+
+    const audioContext = new AudioContext();
+    vi.spyOn(audioContext, "createBufferSource").mockReturnValue(
+      mockSource as AudioBufferSourceNode
+    );
+
+    // Trigger ERROR audio
+    await result.current.playAudio(AIActionType.ERROR);
+
+    // Verify source was created and started
+    expect(mockSource.connect).toHaveBeenCalled();
+    expect(mockSource.start).toHaveBeenCalled();
+  });
 });

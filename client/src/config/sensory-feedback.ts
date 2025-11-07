@@ -7,8 +7,8 @@ import { AIActionType } from "../types/ai-actions";
  * This configuration drives the `SensoryFeedback` component and related hooks.
  */
 export interface SensoryFeedbackConfig {
-  /** Type of animation to play (glitch, fadeout, shake) */
-  animationType: "glitch" | "fadeout" | "shake";
+  /** Type of animation to play (glitch, fadeout, shake, error-flash) */
+  animationType: "glitch" | "fadeout" | "shake" | "error-flash";
 
   /** Path to audio file (relative to /assets/audio/) */
   audioFile: string;
@@ -24,6 +24,7 @@ export interface SensoryFeedbackConfig {
  * - PROVOKE (Muse mode): Glitch effect + metallic clank sound
  * - DELETE (Loki mode): Fade-out effect + wind whoosh sound
  * - REJECT (Lock enforcement): Shake effect + impact bonk sound
+ * - ERROR (API failure): Red flash effect + urgent buzz sound (P3 US3)
  *
  * **Requirements**:
  * - FR-006 to FR-009: Provoke action must display Glitch animation and play Clank sound
@@ -59,5 +60,11 @@ export const FEEDBACK_CONFIG: Record<AIActionType, SensoryFeedbackConfig> = {
     animationType: "shake",
     audioFile: "/src/assets/audio/bonk.mp3",
     duration: 500, // 0.5 seconds (P1 implementation timing)
+  },
+
+  [AIActionType.ERROR]: {
+    animationType: "error-flash",
+    audioFile: "/src/assets/audio/buzz.mp3",
+    duration: 500, // 0.5 seconds (P3 US3: FR-005, FR-006)
   },
 };

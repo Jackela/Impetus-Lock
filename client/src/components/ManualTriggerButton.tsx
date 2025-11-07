@@ -1,5 +1,6 @@
 import { useManualTrigger } from "../hooks/useManualTrigger";
 import type { AgentMode } from "../types/mode";
+import { AIActionType } from "../types/ai-actions";
 
 /**
  * Manual trigger button for instant AI intervention in Muse mode.
@@ -22,7 +23,7 @@ import type { AgentMode } from "../types/mode";
  *
  * @param props - Component props
  * @param props.mode - Current agent mode (muse/loki/off)
- * @param props.onTrigger - Callback when manual trigger succeeds (for sensory feedback)
+ * @param props.onTrigger - Callback for sensory feedback (receives AIActionType: PROVOKE on success, ERROR on failure)
  *
  * @example
  * ```typescript
@@ -37,38 +38,75 @@ export function ManualTriggerButton({
   onTrigger,
 }: {
   mode: AgentMode;
-  onTrigger?: () => void;
+  onTrigger?: (actionType: AIActionType) => void;
 }) {
   const { trigger, isLoading } = useManualTrigger();
 
   // FR-002: Button only enabled in Muse mode
   const isEnabled = mode === "muse" && !isLoading;
 
+  /**
+   * Handle button click with error feedback (P3 US3: T010).
+   *
+   * On success: Triggers PROVOKE sensory feedback
+   * On failure: Triggers ERROR sensory feedback (red flash + buzz sound)
+   *
+   * @see FR-005 (ERROR visual feedback)
+   * @see FR-006 (ERROR audio feedback)
+   */
   const handleClick = async () => {
-    // Trigger sensory feedback immediately (don't wait for API)
+    // Trigger PROVOKE feedback immediately (don't wait for API)
     // This provides instant user feedback even if backend is unavailable
-    onTrigger?.();
+    onTrigger?.(AIActionType.PROVOKE);
 
     try {
       await trigger();
     } catch (error) {
-      // Error already logged in useManualTrigger
-      // Sensory feedback already shown, so user knows button was clicked
+      // P3 US3: Trigger ERROR feedback on API failure
+      onTrigger?.(AIActionType.ERROR);
       console.error("Manual trigger button: API call failed", error);
     }
   };
 
+  /**
+   * Handle DELETE action trigger (development only - P3 US1: T032).
+   *
+   * Triggers DELETE sensory feedback (fade-out animation + whoosh sound).
+   * This button is only available in development mode for testing Loki delete feedback.
+   *
+   * @see FR-011 (DELETE visual feedback)
+   * @see FR-012 (DELETE audio feedback)
+   */
+  const handleDeleteTrigger = () => {
+    onTrigger?.(AIActionType.DELETE);
+  };
+
   return (
-    <button
-      onClick={handleClick}
-      disabled={!isEnabled}
-      aria-label="I'm stuck! Trigger AI assistance"
-      data-testid="manual-trigger-button"
-      className="manual-trigger-button"
-      data-loading={isLoading}
-    >
-      {isLoading && <span className="button-spinner"></span>}
-      <span>{isLoading ? "Thinking..." : "I'm stuck!"}</span>
-    </button>
+    <>
+      <button
+        onClick={handleClick}
+        disabled={!isEnabled}
+        aria-label="I'm stuck! Trigger AI assistance"
+        data-testid="manual-trigger-button"
+        className="manual-trigger-button"
+        data-loading={isLoading}
+      >
+        {isLoading && <span className="button-spinner"></span>}
+        <span>{isLoading ? "Thinking..." : "I'm stuck!"}</span>
+      </button>
+
+      {/* P3 US1: Development-only DELETE trigger for testing Loki delete feedback */}
+      {import.meta.env.DEV && (
+        <button
+          onClick={handleDeleteTrigger}
+          aria-label="Test Delete feedback (dev only)"
+          data-testid="manual-delete-trigger"
+          className="manual-trigger-button dev-only"
+          style={{ marginLeft: "8px", backgroundColor: "#ef4444" }}
+        >
+          Test Delete
+        </button>
+      )}
+    </>
   );
 }

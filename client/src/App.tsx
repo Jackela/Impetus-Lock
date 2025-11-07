@@ -32,7 +32,7 @@ function App() {
           </select>
           <ManualTriggerButton
             mode={mode}
-            onTrigger={() => setManualTrigger(AIActionType.PROVOKE)}
+            onTrigger={(actionType) => setManualTrigger(actionType)}
           />
         </div>
       </header>

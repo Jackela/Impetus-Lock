@@ -186,4 +186,63 @@ describe("useAnimationController", () => {
     expect(deleteVariants.animate.opacity).toBe(0);
     expect(deleteVariants.animate.transition.duration).toBe(0.75);
   });
+
+  /**
+   * Test: T002 - Returns red flash variants for ERROR (P3 US3)
+   *
+   * Verifies that ERROR action returns red flash animation variants:
+   * - backgroundColor keyframes: ["transparent", "rgba(239,68,68,0.2)", "transparent"]
+   * - Duration: 0.5 seconds (FR-005)
+   * - Easing: easeInOut (smooth flash)
+   * - Opacity remains stable (no fade)
+   *
+   * **Coverage**: FR-005 (API error visual feedback)
+   * **User Story**: US3 (API Failure Error Feedback - P1)
+   */
+  it("returns red flash variants for ERROR", () => {
+    const { result } = renderHook(() => useAnimationController(AIActionType.ERROR));
+
+    const variants = result.current.variants;
+
+    // Verify ERROR animation properties
+    expect(variants.animate).toBeDefined();
+    expect(variants.animate.backgroundColor).toEqual([
+      "transparent",
+      "rgba(239, 68, 68, 0.2)",
+      "transparent",
+    ]);
+    expect(variants.animate.transition.duration).toBe(0.5);
+    expect(variants.animate.transition.ease).toBe("easeInOut");
+
+    // Opacity should remain stable (no fade)
+    expect(variants.animate.opacity).toEqual([1, 0.8, 1]);
+  });
+
+  /**
+   * Test: T020 - Returns shake variants for REJECT (P3 US2)
+   *
+   * Verifies that REJECT action returns shake animation variants:
+   * - x keyframes: [0, -10, 10, -10, 10, -5, 5, 0] (horizontal oscillation)
+   * - Duration: 0.3 seconds (FR-003)
+   * - Easing: easeInOut (smooth shake)
+   * - Opacity remains stable (no fade)
+   *
+   * **Coverage**: FR-003 (Lock rejection visual feedback)
+   * **User Story**: US2 (Lock Rejection Sensory Feedback - P2)
+   */
+  it("returns shake variants for REJECT", () => {
+    const { result } = renderHook(() => useAnimationController(AIActionType.REJECT));
+
+    const variants = result.current.variants;
+
+    // Verify REJECT animation properties
+    expect(variants.animate).toBeDefined();
+    expect(variants.animate.x).toBeDefined();
+    expect(Array.isArray(variants.animate.x)).toBe(true);
+    expect(variants.animate.transition.duration).toBe(0.3);
+    expect(variants.animate.transition.ease).toBe("easeInOut");
+
+    // Opacity should remain stable (visible during shake)
+    expect(variants.animate.opacity).toBe(1);
+  });
 });
