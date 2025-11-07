@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { LockManager } from "../../src/services/LockManager";
+import { LockManager } from "../../src/services/LockManager.ts";
 
 describe("LockManager", () => {
   let lockManager: LockManager;

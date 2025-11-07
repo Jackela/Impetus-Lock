@@ -39,3 +39,21 @@ docs/_build/
 # Temporary files
 tmp/
 temp/
+
+# Node.js (frontend)
+node_modules/
+*.tsbuildinfo
+coverage/
+
+# Python (backend)
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Test results
+test-results/
+playwright-report/
+.playwright/

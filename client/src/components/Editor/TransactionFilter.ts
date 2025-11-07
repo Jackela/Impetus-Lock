@@ -28,13 +28,16 @@ import type { LockManager } from "../../services/LockManager";
  * 4. Trigger visual/audio feedback on blocked attempt
  *
  * @param lockManager - LockManager instance with active locks
+ * @param onReject - Callback fired when locked content deletion is blocked (triggers REJECT feedback)
  * @returns Filter function (tr, state) => boolean
  *
  * @example
  * ```typescript
  * import { lockManager } from '../../services/LockManager';
  *
- * const filter = createLockTransactionFilter(lockManager);
+ * const filter = createLockTransactionFilter(lockManager, () => {
+ *   console.log('Lock rejection triggered!');
+ * });
  *
  * // Apply to Milkdown editor
  * editor.action((ctx) => {
@@ -52,7 +55,7 @@ import type { LockManager } from "../../services/LockManager";
  * });
  * ```
  */
-export function createLockTransactionFilter(lockManager: LockManager) {
+export function createLockTransactionFilter(lockManager: LockManager, onReject?: () => void) {
   /**
    * Filter function for ProseMirror transactions.
    *
@@ -119,7 +122,10 @@ export function createLockTransactionFilter(lockManager: LockManager) {
 
     // Block transaction if it affects locked content
     if (affectsLock) {
-      // TODO Phase 7 (P2): Trigger shake animation and bonk sound
+      // Trigger REJECT action sensory feedback (shake animation + bonk sound)
+      if (onReject) {
+        onReject();
+      }
       console.warn("Transaction blocked: Affects locked content");
       return false;
     }

@@ -1,0 +1,1036 @@
+
+> impetus-lock-client@0.1.0 test:e2e
+> playwright test --reporter=json
+
+{
+  "config": {
+    "configFile": "D:\\Code\\Impetus-Lock\\client\\playwright.config.ts",
+    "rootDir": "D:/Code/Impetus-Lock/client/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 8
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "D:/Code/Impetus-Lock/client/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 8
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Code/Impetus-Lock/client/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 8,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true
+    }
+  },
+  "suites": [
+    {
+      "title": "editor-initialization.spec.ts",
+      "file": "editor-initialization.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Editor Initialization",
+          "file": "editor-initialization.spec.ts",
+          "line": 20,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should render editor on page load",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1421,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.076Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-139afaee9cafca88c514",
+              "file": "editor-initialization.spec.ts",
+              "line": 35,
+              "column": 3
+            },
+            {
+              "title": "should display initial content",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 1405,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.078Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-55290ef3c6f6b3991c3f",
+              "file": "editor-initialization.spec.ts",
+              "line": 49,
+              "column": 3
+            },
+            {
+              "title": "should be editable after initialization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 1338,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.076Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-3c80cc4db2da752e8bd4",
+              "file": "editor-initialization.spec.ts",
+              "line": 65,
+              "column": 3
+            },
+            {
+              "title": "should handle rapid typing without crashing",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 1956,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.109Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-7fbd76a4dbd1165d3d4a",
+              "file": "editor-initialization.spec.ts",
+              "line": 86,
+              "column": 3
+            },
+            {
+              "title": "should handle Markdown formatting",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 4,
+                      "status": "passed",
+                      "duration": 1745,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.083Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-d558598c6f64d504ebb3",
+              "file": "editor-initialization.spec.ts",
+              "line": 107,
+              "column": 3
+            },
+            {
+              "title": "should not have console errors during initialization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 1205,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.123Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-f874b0fd4fef32108f9f",
+              "file": "editor-initialization.spec.ts",
+              "line": 134,
+              "column": 3
+            },
+            {
+              "title": "should initialize within 3 seconds",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 1306,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.139Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-b113b1962c453d363471",
+              "file": "editor-initialization.spec.ts",
+              "line": 161,
+              "column": 3
+            },
+            {
+              "title": "should have functional mode selector",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 7,
+                      "status": "passed",
+                      "duration": 1385,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:09.168Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-12a0578b5d02214387b8",
+              "file": "editor-initialization.spec.ts",
+              "line": 178,
+              "column": 3
+            },
+            {
+              "title": "should have manual trigger button",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 572,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.597Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b68ca9d93a188f370bdf-7ece1cb661b82a2cf57a",
+              "file": "editor-initialization.spec.ts",
+              "line": 200,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "manual-trigger.spec.ts",
+      "file": "manual-trigger.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Manual Trigger Button",
+          "file": "manual-trigger.spec.ts",
+          "line": 26,
+          "column": 6,
+          "specs": [
+            {
+              "title": "manual trigger button enabled only in Muse mode",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 800,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.722Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ba7adf1b44b54d95f97b-13812318e90129e42142",
+              "file": "manual-trigger.spec.ts",
+              "line": 47,
+              "column": 3
+            },
+            {
+              "title": "manual trigger calls Provoke API and shows feedback",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 6,
+                      "status": "passed",
+                      "duration": 11868,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.769Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ba7adf1b44b54d95f97b-d96f9df94be32fa3ac24",
+              "file": "manual-trigger.spec.ts",
+              "line": 87,
+              "column": 3
+            },
+            {
+              "title": "manual trigger API failure shows error feedback",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "D:\\Code\\Impetus-Lock\\client\\e2e\\manual-trigger.spec.ts",
+                        "line": 146,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.732Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ba7adf1b44b54d95f97b-70582a95691a98527c2e",
+              "file": "manual-trigger.spec.ts",
+              "line": 146,
+              "column": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "quick-check.spec.ts",
+      "file": "quick-check.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Phase 5 Quick Check",
+          "file": "quick-check.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "verify current app state",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1276,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ App loaded\n"
+                        },
+                        {
+                          "text": "✅ Editor visible\n"
+                        },
+                        {
+                          "text": "✅ Mode selector visible\n"
+                        },
+                        {
+                          "text": "Manual trigger button count: 1\n"
+                        },
+                        {
+                          "text": "✅ Manual button found - disabled: true\n"
+                        },
+                        {
+                          "text": "  In Muse mode - disabled: false\n"
+                        },
+                        {
+                          "text": "Sensory feedback visible: false\n"
+                        },
+                        {
+                          "text": "📸 Screenshot saved to e2e-results/phase5-quick-check.png\n"
+                        },
+                        {
+                          "text": "All buttons found: [ \u001b[32m\"I'm stuck!\"\u001b[39m ]\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.770Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "452f3bb9dfe557be8973-14203e5a3dee0528d33d",
+              "file": "quick-check.spec.ts",
+              "line": 8,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "sensory-feedback.spec.ts",
+      "file": "sensory-feedback.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Sensory Feedback",
+          "file": "sensory-feedback.spec.ts",
+          "line": 26,
+          "column": 6,
+          "specs": [
+            {
+              "title": "plays Clank sound and shows Glitch animation on Provoke",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2974,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.769Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "735edcc616be5b886bdb-4b98c224290af6f7b35e",
+              "file": "sensory-feedback.spec.ts",
+              "line": 45,
+              "column": 3
+            },
+            {
+              "title": "plays Whoosh sound and shows Fade-out animation on Delete",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "D:\\Code\\Impetus-Lock\\client\\e2e\\sensory-feedback.spec.ts",
+                        "line": 79,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.914Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "735edcc616be5b886bdb-aad8c84c7328cbf369a4",
+              "file": "sensory-feedback.spec.ts",
+              "line": 79,
+              "column": 8
+            },
+            {
+              "title": "cancels previous animation when new action triggers (rapid actions)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "D:\\Code\\Impetus-Lock\\client\\e2e\\sensory-feedback.spec.ts",
+                        "line": 118,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.914Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "735edcc616be5b886bdb-067574fde46739b04163",
+              "file": "sensory-feedback.spec.ts",
+              "line": 118,
+              "column": 8
+            },
+            {
+              "title": "rejection feedback matches P1 implementation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "D:\\Code\\Impetus-Lock\\client\\e2e\\sensory-feedback.spec.ts",
+                        "line": 156,
+                        "column": 8
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
+                      "status": "skipped",
+                      "duration": 0,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:10.914Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "735edcc616be5b886bdb-4749ab67c6f3952ba8ce",
+              "file": "sensory-feedback.spec.ts",
+              "line": 156,
+              "column": 8
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "smoke.spec.ts",
+      "file": "smoke.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "homepage renders successfully",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 7,
+                  "parallelIndex": 7,
+                  "status": "passed",
+                  "duration": 710,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-07T08:45:10.926Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4219922fea2e2bd3c691-51b7ec06997c3ff3ca3c",
+          "file": "smoke.spec.ts",
+          "line": 4,
+          "column": 1
+        },
+        {
+          "title": "app has mode selector and manual trigger",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 4,
+                  "parallelIndex": 4,
+                  "status": "passed",
+                  "duration": 634,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-07T08:45:11.078Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4219922fea2e2bd3c691-b571152dea53d8557ca8",
+          "file": "smoke.spec.ts",
+          "line": 26,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "test-manual-trigger-click.spec.ts",
+      "file": "test-manual-trigger-click.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Manual Trigger Click Test",
+          "file": "test-manual-trigger-click.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "clicking manual trigger shows sensory feedback",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 5,
+                      "status": "passed",
+                      "duration": 3238,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "✅ App loaded\n"
+                        },
+                        {
+                          "text": "✅ Switched to Muse mode\n"
+                        },
+                        {
+                          "text": "✅ Manual button is enabled\n"
+                        },
+                        {
+                          "text": "Sensory feedback before click: false\n"
+                        },
+                        {
+                          "text": "🖱️ Clicking manual trigger button...\n"
+                        },
+                        {
+                          "text": "Sensory feedback after click: true\n"
+                        },
+                        {
+                          "text": "✅ Sensory feedback shown! Animation type: glitch\n"
+                        },
+                        {
+                          "text": "📸 Screenshot saved\n"
+                        },
+                        {
+                          "text": "Browser error: Failed to load resource: net::ERR_CONNECTION_REFUSED\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:11.232Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "0736403d6257291668c2-35a1f97e5e9e7eb761ae",
+              "file": "test-manual-trigger-click.spec.ts",
+              "line": 7,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "test-trigger-debug.spec.ts",
+      "file": "test-trigger-debug.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Manual Trigger Debug",
+          "file": "test-trigger-debug.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "debug manual trigger and sensory feedback",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 3150,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[BROWSER LOG]: [vite] connecting...\n"
+                        },
+                        {
+                          "text": "[REQUEST]: GET http://localhost:5173/src/services/api/interventionClient.ts\n"
+                        },
+                        {
+                          "text": "[BROWSER LOG]: [vite] connected.\n"
+                        },
+                        {
+                          "text": "[RESPONSE]: 200 http://localhost:5173/src/services/api/interventionClient.ts\n"
+                        },
+                        {
+                          "text": "[BROWSER LOG]: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold\n"
+                        },
+                        {
+                          "text": "✅ App loaded\n"
+                        },
+                        {
+                          "text": "✅ Switched to Muse mode\n"
+                        },
+                        {
+                          "text": "🖱️ Clicking button...\n"
+                        },
+                        {
+                          "text": "[REQUEST]: POST http://localhost:8000/api/v1/impetus/generate-intervention\n"
+                        },
+                        {
+                          "text": "\\n=== RESULTS ===\n"
+                        },
+                        {
+                          "text": "Sensory feedback visible: false\n"
+                        },
+                        {
+                          "text": "Network requests made: 2\n"
+                        },
+                        {
+                          "text": "Console errors: 0\n"
+                        },
+                        {
+                          "text": "\\n=== NETWORK REQUESTS ===\n"
+                        },
+                        {
+                          "text": "  - http://localhost:5173/src/services/api/interventionClient.ts\n"
+                        },
+                        {
+                          "text": "  - http://localhost:8000/api/v1/impetus/generate-intervention\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-07T08:45:11.341Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a741b24fd8d418ba84e1-f4d98e291c1cea6e82a3",
+              "file": "test-trigger-debug.spec.ts",
+              "line": 7,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-07T08:45:07.410Z",
+    "duration": 15436.89,
+    "expected": 17,
+    "skipped": 4,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

@@ -1,42 +1,459 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
+/**
+ * Impetus Lock Application Styles
+ * 
+ * Main application layout and theming for the un-deletable task pressure system.
+ */
+
+/* Milkdown Editor Styles - Responsive and Better UX */
+.milkdown {
+  background-color: #1a1a1a;
+  border-radius: 8px;
   padding: 2rem;
-  text-align: center;
+  min-height: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.milkdown .ProseMirror {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  outline: none;
+  color: #e5e5e5;
+  font-size: 16px;
+  line-height: 1.8;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
+    "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  caret-color: #8b5cf6;
+  min-height: 450px;
 }
 
-@keyframes logo-spin {
-  from {
+/* Smooth typing experience */
+.milkdown .ProseMirror {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings */
+.milkdown .ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  color: #8b5cf6;
+  line-height: 1.3;
+}
+
+.milkdown .ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: #a78bfa;
+  line-height: 1.4;
+}
+
+.milkdown .ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #c4b5fd;
+  line-height: 1.5;
+}
+
+/* Paragraphs */
+.milkdown .ProseMirror p {
+  margin-bottom: 1rem;
+  color: #d1d5db;
+}
+
+/* Lists */
+.milkdown .ProseMirror ul,
+.milkdown .ProseMirror ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  color: #d1d5db;
+}
+
+.milkdown .ProseMirror li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+
+/* Code blocks */
+.milkdown .ProseMirror code {
+  background-color: #2a2a2a;
+  color: #a5d6ff;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: "Courier New", monospace;
+  font-size: 0.9em;
+}
+
+.milkdown .ProseMirror pre {
+  background-color: #2a2a2a;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.milkdown .ProseMirror pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Blockquotes (including AI-locked content) */
+.milkdown .ProseMirror blockquote {
+  border-left: 4px solid #8b5cf6;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-bottom: 1rem;
+  color: #c4b5fd;
+  font-style: italic;
+}
+
+/* Links */
+.milkdown .ProseMirror a {
+  color: #8b5cf6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.milkdown .ProseMirror a:hover {
+  color: #a78bfa;
+}
+
+/* Selection */
+.milkdown .ProseMirror ::selection {
+  background-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Placeholder */
+.milkdown .ProseMirror p.is-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #6b7280;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Loading State */
+.editor-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #8b5cf6;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #2a2a2a;
+  border-top: 4px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% {
     transform: rotate(0deg);
   }
-  to {
+  100% {
     transform: rotate(360deg);
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+.editor-loading p {
+  font-size: 1rem;
+  color: #888;
+}
+
+/* Manual Trigger Button Styles */
+.manual-trigger-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+}
+
+.manual-trigger-button:not(:disabled):hover {
+  background-color: #7c3aed;
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.manual-trigger-button:not(:disabled):active {
+  background-color: #6d28d9;
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
+}
+
+.manual-trigger-button:disabled {
+  background-color: #4b5563;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.manual-trigger-button:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.button-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Focus Indicators for Accessibility */
+.controls select:focus-visible,
+button:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+.controls select,
+.manual-trigger-button {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Accessibility: Reduced Motion Support (FR-018, SC-004) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Sensory feedback animations: simplified for accessibility */
+  [data-animation="glitch"],
+  [data-animation="fadeout"],
+  [data-animation="shake"] {
+    /* Only opacity changes, no complex transforms */
+    animation: reduced-motion-fade 0.3s ease-in-out !important;
   }
 }
 
-.card {
-  padding: 2em;
+@keyframes reduced-motion-fade {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-.read-the-docs {
-  color: #888;
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header */
+.app-header {
+  background-color: #1a1a1a;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #8b5cf6;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.controls label {
+  color: #ddd;
+  font-weight: 500;
+}
+
+.controls select {
+  padding: 0.5rem 1rem;
+  background-color: #2a2a2a;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.controls select:hover {
+  border-color: #8b5cf6;
+}
+
+.controls select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Main Content */
+.app-main {
+  flex: 1;
+  overflow: auto;
+  background-color: #0a0a0a;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.editor-container {
+  width: 100%;
+  max-width: 900px;
+  height: 100%;
+  padding: 2rem;
+  margin: 0 auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .controls {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .editor-container {
+    padding: 1rem;
+    max-width: 100%;
+  }
+
+  .milkdown {
+    padding: 1.5rem;
+    min-height: 400px;
+  }
+
+  .milkdown .ProseMirror {
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 350px;
+  }
+
+  .milkdown .ProseMirror h1 {
+    font-size: 1.75rem;
+  }
+
+  .milkdown .ProseMirror h2 {
+    font-size: 1.35rem;
+  }
+
+  .milkdown .ProseMirror h3 {
+    font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 0.75rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .controls {
+    width: 100%;
+  }
+
+  .controls select {
+    flex: 1;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .editor-container {
+    padding: 0.75rem;
+  }
+
+  .milkdown {
+    padding: 1rem;
+    min-height: 350px;
+  }
+
+  .milkdown .ProseMirror {
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 300px;
+  }
+}
+
+/**
+ * Accessibility: Reduced Motion Media Query (FR-018)
+ * 
+ * Users with motion sensitivities (prefers-reduced-motion: reduce) will see
+ * simplified animations. This CSS disables all transitions and animations
+ * globally, while JavaScript implementations (useAnimationController) handle
+ * reduced-motion-specific animation variants.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    /* Disable all transitions */
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+
+    /* Disable all animations */
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

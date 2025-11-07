@@ -12,7 +12,6 @@
  */
 
 import { useState, useCallback } from "react";
-// eslint-disable-next-line no-restricted-imports -- Hooks are allowed to import services
 import { lockManager } from "../services/LockManager";
 
 /**
