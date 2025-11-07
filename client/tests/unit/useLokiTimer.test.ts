@@ -44,15 +44,18 @@ describe("useLokiTimer", () => {
 
   it("should trigger callback at random interval", () => {
     const onTrigger = vi.fn();
-    renderHook(() => useLokiTimer({ mode: "loki" as AgentMode, onTrigger }));
+    const { unmount } = renderHook(() => useLokiTimer({ mode: "loki" as AgentMode, onTrigger }));
 
     // Fast-forward to maximum interval to guarantee trigger
     act(() => {
       vi.advanceTimersByTime(120000);
     });
 
-    // Should have triggered by now (at max interval)
+    // Should have triggered at least once (at max interval)
     expect(onTrigger).toHaveBeenCalledTimes(1);
+
+    // Cleanup to prevent rescheduled timer from triggering again
+    unmount();
   });
 
   it("should schedule new random timer after trigger", () => {
