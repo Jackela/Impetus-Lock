@@ -70,6 +70,10 @@ jobs:
         run: |
           echo "Working directory: $(pwd)"
           echo "Python path: $(poetry run python -c 'import sys; print(sys.path)')"
+          echo "Site-packages content:"
+          poetry run python -c "import site; import os; sp=site.getsitepackages()[0]; print(f'Site-packages: {sp}'); print('Contents:', os.listdir(sp) if os.path.exists(sp) else 'NOT FOUND')"
+          echo "Checking for server package:"
+          poetry run python -c "import sys; [print(p) for p in sys.path if 'site-packages' in p]; import os; sp=[p for p in sys.path if 'site-packages' in p][0]; print('server in site-packages:', 'server' in os.listdir(sp)); print('server.pth exists:', os.path.exists(os.path.join(sp, 'impetus-lock-server.pth')))"
           poetry run uvicorn server.main:app --host 0.0.0.0 --port 8000 2>&1 | tee /tmp/backend.log &
           BACKEND_PID=$!
           echo "Backend PID: $BACKEND_PID"
