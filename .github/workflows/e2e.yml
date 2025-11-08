@@ -62,19 +62,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
 
-      - name: Build and install backend wheel
+      - name: Install backend dependencies
         working-directory: ./server
-        run: |
-          poetry build
-          poetry run pip install dist/*.whl
+        run: poetry install
 
       - name: Start backend server
-        working-directory: ./server
         env:
           TESTING: "true"
           DATABASE_URL: postgresql://postgres:postgres@postgres:5432/impetus_lock_test
         run: |
-          cd .. && poetry run -C server python -m uvicorn server.main:app --host 0.0.0.0 --port 8000 &
+          cd server && poetry run python -m uvicorn server.main:app --host 0.0.0.0 --port 8000 &
           BACKEND_PID=$!
           echo "Backend PID: $BACKEND_PID"
           echo "Waiting for backend to be ready..."
