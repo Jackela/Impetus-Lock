@@ -82,7 +82,10 @@ test.describe("Sensory Feedback", () => {
    * **Status**: ENABLED - Uses test endpoint to trigger DELETE action
    * **Note**: Requires backend running with TESTING=true
    */
-  test.skip("plays Whoosh sound and shows Fade-out animation on Delete", async ({ page, request }) => {
+  test.skip("plays Whoosh sound and shows Fade-out animation on Delete", async ({
+    page,
+    request,
+  }) => {
     // ⏳ Phase 6 feature - DELETE action sensory feedback not yet implemented
     // Wait for app to be fully ready
     await waitForAppReady(page);
