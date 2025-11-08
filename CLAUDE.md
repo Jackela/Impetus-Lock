@@ -412,21 +412,33 @@ Feature development follows `.specify/templates/`:
 
 ## Current Project Status (2025-11-08)
 
-### 🔧 IN PROGRESS - Phase 6: E2E Workflow Fix (Feature 004)
+### ✅ READY FOR PR - Phase 6: E2E Workflow Fix (Feature 004) **COMPLETE**
 
 **Current Branch**: `004-fix-e2e-workflow`  
-**Blocking Issue**: E2E tests failing in GitHub Actions (backend server won't start)  
-**Root Cause**: CI workflows use `poetry install --no-root` which prevents `server` module from being importable
+**Issue Resolution**: ✅ **FIXED** - Backend import error resolved by removing `--no-root` flag  
+**Commit**: `7e730df`
+
+**Implementation Status**:
+- ✅ Root cause identified: `poetry install --no-root` prevents package installation
+- ✅ Solution implemented: Removed `--no-root` from 3 locations in ci.yml
+- ✅ Local validation complete: Docker Compose + Act CLI verification passed
+- ✅ Documentation complete: research.md, quickstart.md, COMPLETION.md
+- ⏳ Awaiting GitHub Actions workflow execution on feature branch
 
 **Test Status**:
-- CI (lint, type-check): ✅ Passing
-- E2E: ❌ **FAILING** - Backend import error blocks all E2E tests
+- CI (lint, type-check, backend-tests): ✅ Expected to pass (Poetry fix applied)
+- E2E: ⏳ Awaiting workflow run (backend import error fixed)
 - Unit: 118/118 passing (not affected by this issue)
 
-**Known Issues**:
-1. ❌ `.github/workflows/ci.yml` lines 43, 105, 153: Using `poetry install --no-root` (MUST remove `--no-root`)
-2. ✅ `.github/workflows/e2e.yml` line 62: Already correct (`poetry install` without `--no-root`)
-3. ⏳ Pending: Act CLI + Docker Compose local validation workflow
+**Changes Made**:
+1. ✅ `.github/workflows/ci.yml` lines 43, 105, 153: Changed to `poetry install` (without `--no-root`)
+2. ✅ `CLAUDE.md`: Added CI troubleshooting section
+3. ✅ Created `specs/004-fix-e2e-workflow/`: Complete spec + plan + research + tasks + quickstart + completion docs
+
+**Next Steps**:
+1. Monitor GitHub Actions workflow status
+2. Create PR from `004-fix-e2e-workflow` → `main` if workflows pass
+3. Merge to unblock E2E testing
 
 **Previous Status - Phase 5 Complete**:
 - E2E: **17/17 passing** (locally, before CI workflow broke) ✅

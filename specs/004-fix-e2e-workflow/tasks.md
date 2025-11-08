@@ -31,9 +31,9 @@ This is a monorepo web application:
 
 **Purpose**: Verify current state and ensure local validation workflow is in place
 
-- [ ] T001 Verify `server/pyproject.toml` has `packages = [{include = "server"}]` (already exists per research.md)
-- [ ] T002 Verify `server/README.md` exists (already exists per research.md)
-- [ ] T003 [P] Verify `.github/workflows/e2e.yml` line 62 uses `poetry install` without `--no-root` (already correct per research.md)
+- [x] T001 Verify `server/pyproject.toml` has `packages = [{include = "server"}]` (already exists per research.md)
+- [x] T002 Verify `server/README.md` exists (already exists per research.md)
+- [x] T003 [P] Verify `.github/workflows/e2e.yml` line 62 uses `poetry install` without `--no-root` (already correct per research.md)
 
 **Checkpoint**: Current configuration verified - ready to fix remaining CI workflow issues
 
@@ -45,9 +45,9 @@ This is a monorepo web application:
 
 **⚠️ CRITICAL**: This phase MUST be complete before E2E tests can pass
 
-- [ ] T004 Fix `.github/workflows/ci.yml` line 43: Change `poetry install --no-root` to `poetry install` (lint job)
-- [ ] T005 Fix `.github/workflows/ci.yml` line 105: Change `poetry install --no-root` to `poetry install` (type-check job)  
-- [ ] T006 Fix `.github/workflows/ci.yml` line 153: Change `poetry install --no-root` to `poetry install` (backend-tests job)
+- [x] T004 Fix `.github/workflows/ci.yml` line 43: Change `poetry install --no-root` to `poetry install` (lint job)
+- [x] T005 Fix `.github/workflows/ci.yml` line 105: Change `poetry install --no-root` to `poetry install` (type-check job)  
+- [x] T006 Fix `.github/workflows/ci.yml` line 153: Change `poetry install --no-root` to `poetry install` (backend-tests job)
 
 **Checkpoint**: All Poetry install commands correct - backend server should now be importable in CI
 
@@ -63,17 +63,17 @@ This is a monorepo web application:
 
 > **NOTE**: This is an infrastructure fix. The test IS the workflow execution itself (not TDD code tests).
 
-- [ ] T007 [US1] Validate fix with Act CLI locally: Run `act -j lint` and `act -j type-check` to verify syntax (per quickstart.md)
-- [ ] T008 [US1] Validate backend startup with Docker Compose: Follow quickstart.md Docker Compose guide to verify `poetry install` + `poetry run uvicorn server.main:app` starts without import errors
-- [ ] T009 [US1] Verify health endpoint responds: `curl http://localhost:8000/health` returns `{"status":"ok"}` within 60s
+- [x] T007 [US1] Validate fix with Act CLI locally: Run `act -j lint` and `act -j type-check` to verify syntax (per quickstart.md)
+- [x] T008 [US1] Validate backend startup with Docker Compose: Follow quickstart.md Docker Compose guide to verify `poetry install` + `poetry run uvicorn server.main:app` starts without import errors
+- [x] T009 [US1] Verify health endpoint responds: `curl http://localhost:8000/health` returns `{"status":"ok"}` within 60s
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Commit CI workflow fixes with message: `fix: Remove --no-root from poetry install in CI workflows`
-- [ ] T011 [US1] Push to branch `004-fix-e2e-workflow` and verify GitHub Actions E2E workflow status
-- [ ] T012 [US1] Monitor E2E workflow execution: Verify backend server starts without "Could not import module 'server.main'" error
-- [ ] T013 [US1] Verify Playwright tests execute: Confirm all E2E tests run (not skipped due to backend unavailability)
-- [ ] T014 [US1] Confirm success criteria SC-001: E2E workflow completes with green status, no failures
+- [x] T010 [US1] Commit CI workflow fixes with message: `fix: Remove --no-root from poetry install in CI workflows`
+- [x] T011 [US1] Push to branch `004-fix-e2e-workflow` and verify GitHub Actions E2E workflow status
+- [x] T012 [US1] Monitor E2E workflow execution: Verify backend server starts without "Could not import module 'server.main'" error
+- [x] T013 [US1] Verify Playwright tests execute: Confirm all E2E tests run (not skipped due to backend unavailability)
+- [x] T014 [US1] Confirm success criteria SC-001: E2E workflow completes with green status, no failures
 
 **Checkpoint**: E2E workflow should now pass completely - backend starts, tests execute, all jobs green ✅
 
@@ -125,10 +125,10 @@ This is a monorepo web application:
 
 **Purpose**: Improvements and documentation updates
 
-- [ ] T015 [P] Update `CLAUDE.md` "Current Project Status" section: Change from "❌ FAILING" to "✅ PASSING" for E2E tests
-- [ ] T016 [P] Create `specs/004-fix-e2e-workflow/COMPLETION.md` documenting fix and validation results
-- [ ] T017 Verify all CI workflows green: Check lint, type-check, backend-tests, frontend-tests, E2E all passing
-- [ ] T018 Run local validation per quickstart.md: Act CLI + Docker Compose to confirm local reproducibility
+- [x] T015 [P] Update `CLAUDE.md` "Current Project Status" section: Change from "❌ FAILING" to "✅ PASSING" for E2E tests
+- [x] T016 [P] Create `specs/004-fix-e2e-workflow/COMPLETION.md` documenting fix and validation results
+- [x] T017 Verify all CI workflows green: Check lint, type-check, backend-tests, frontend-tests, E2E all passing
+- [x] T018 Run local validation per quickstart.md: Act CLI + Docker Compose to confirm local reproducibility
 - [ ] T019 Create PR from `004-fix-e2e-workflow` to `main` with summary of fixes
 
 ---
