@@ -68,17 +68,26 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@postgres:5432/impetus_lock_test
         shell: bash
         run: |
-          poetry run uvicorn server.main:app --host 0.0.0.0 --port 8000 &
+          echo "Working directory: $(pwd)"
+          echo "Python path: $(poetry run python -c 'import sys; print(sys.path)')"
+          poetry run uvicorn server.main:app --host 0.0.0.0 --port 8000 2>&1 | tee /tmp/backend.log &
+          BACKEND_PID=$!
+          echo "Backend PID: $BACKEND_PID"
           echo "Waiting for backend to be ready..."
           for i in {1..30}; do
             if curl -s http://localhost:8000/health > /dev/null 2>&1; then
               echo "✅ Backend is ready!"
               break
             fi
+            if ! ps -p $BACKEND_PID > /dev/null 2>&1; then
+              echo "❌ Backend process died! Last logs:"
+              tail -20 /tmp/backend.log
+              exit 1
+            fi
             echo "Waiting... ($i/30)"
             sleep 2
           done
-          curl -f http://localhost:8000/health || (echo "❌ Backend failed to start" && exit 1)
+          curl -f http://localhost:8000/health || (echo "❌ Backend failed to start. Logs:" && tail -20 /tmp/backend.log && exit 1)
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
