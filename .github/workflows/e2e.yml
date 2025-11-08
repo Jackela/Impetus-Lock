@@ -59,13 +59,14 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./server
-        run: poetry install
+        run: poetry install --no-root
 
       - name: Start backend server
         working-directory: ./server
         env:
           TESTING: "true"
           DATABASE_URL: postgresql://postgres:postgres@postgres:5432/impetus_lock_test
+          PYTHONPATH: /__w/Impetus-Lock/Impetus-Lock/server
         run: |
           poetry run uvicorn server.main:app --host 0.0.0.0 --port 8000 &
           echo "Waiting for backend to be ready..."
