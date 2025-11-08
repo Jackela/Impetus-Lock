@@ -59,7 +59,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./server
-        run: poetry install --no-root
+        run: poetry install
 
       - name: Start backend server
         working-directory: ./server
