@@ -40,7 +40,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./server
-        run: poetry install --no-root
+        run: poetry install
 
       - name: Run Ruff check
         working-directory: ./server
@@ -102,7 +102,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./server
-        run: poetry install --no-root
+        run: poetry install
 
       - name: Run mypy
         working-directory: ./server
@@ -150,7 +150,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./server
-        run: poetry install --no-root
+        run: poetry install
 
       - name: Run pytest
         working-directory: ./server
