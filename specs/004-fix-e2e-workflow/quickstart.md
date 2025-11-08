@@ -35,25 +35,41 @@ act --version     # Should show v0.2.40+
 **Best for**: Syntax validation, linting jobs, type-check jobs  
 **Limitations**: Service containers (PostgreSQL) may not work exactly like GitHub Actions
 
+### ⚠️ Act CLI Limitations (Why It Missed Our Bugs)
+
+**What Act CLI DOES NOT catch**:
+1. **Shell syntax semantics** - `act -n` validates YAML syntax, NOT bash vs sh differences
+   - Example: `{1..30}` works in bash but fails in sh (our bug #1)
+   - Fix: **Always specify `shell: bash`** when using bash-specific syntax
+2. **Editable install import paths** - Service container isolation prevents full testing
+   - Example: Poetry `.pth` file + `working-directory` interaction (our bug #2)
+   - Fix: **Test with Docker Compose** for full backend startup validation
+
+**What Act CLI DOES catch**:
+- YAML syntax errors
+- Missing environment variables (if referenced in workflow)
+- Tool availability (linters, type checkers)
+- Individual job execution (without service containers)
+
 ### Quick Commands
 
 ```bash
 # From repository root (D:\Code\Impetus-Lock)
 
 # 1. Dry run (syntax validation, no execution)
-act -n
+act -n  # ⚠️ Only catches YAML syntax, NOT shell script bugs!
 
 # 2. List available jobs
 act -l
 
 # 3. Test specific job (recommended)
-act -j lint         # Fast, reliable
-act -j type-check   # Fast, reliable
-act -j backend-tests  # Works (no PostgreSQL required)
-act -j frontend-tests # Works (no backend required)
+act -j lint         # ✅ Reliable
+act -j type-check   # ✅ Reliable
+act -j backend-tests  # ✅ Works (no PostgreSQL required)
+act -j frontend-tests # ✅ Works (no backend required)
 
-# 4. Test E2E workflow (⚠️ PostgreSQL networking issues expected)
-act -j e2e
+# 4. Test E2E workflow (⚠️ Limited value, use Docker Compose instead)
+act -j e2e  # ❌ Service container networking differs from GitHub Actions
 ```
 
 ### Expected Results
@@ -63,9 +79,10 @@ act -j e2e
 - Individual jobs (lint, type-check, backend-tests, frontend-tests)
 - Workflow structure verification
 
-⚠️ **May fail**:
+⚠️ **May fail** (expected, NOT a bug):
 - `act -j e2e` due to service container networking (known Act CLI limitation)
 - PostgreSQL connection from Playwright container
+- Shell script differences (sh vs bash)
 
 ### Troubleshooting
 
@@ -77,6 +94,10 @@ act -j e2e
 
 **Issue**: Service container networking fails  
 **Expected**: Act CLI has known limitations with service containers, use Docker Compose for full E2E validation
+
+**Issue**: Shell syntax works in Act but fails in GitHub Actions (or vice versa)  
+**Root cause**: Act CLI uses different shell defaults than GitHub Actions  
+**Fix**: Always specify `shell: bash` when using bash-specific syntax (`{1..30}`, arrays, etc.)
 
 ---
 
@@ -208,6 +229,102 @@ git push origin 004-fix-e2e-workflow
 **After Pushing**:
 - Monitor GitHub Actions E2E workflow status
 - If fails, check logs and iterate locally using Docker Compose
+
+---
+
+## Best Practices to Avoid Act CLI Blind Spots
+
+### 1. Shell Script Safety
+
+**Problem**: Act CLI doesn't validate shell script semantics  
+**Solution**: Always specify shell explicitly
+
+```yaml
+# ❌ BAD - Uses default shell (sh on Linux, may differ from GitHub Actions)
+- name: Loop example
+  run: |
+    for i in {1..30}; do echo $i; done  # Fails in sh!
+
+# ✅ GOOD - Explicitly specify bash
+- name: Loop example
+  shell: bash
+  run: |
+    for i in {1..30}; do echo $i; done  # Works!
+```
+
+**Bash-specific syntax that needs `shell: bash`**:
+- Brace expansion: `{1..30}`, `{a,b,c}`
+- Arrays: `arr=(1 2 3)`
+- Process substitution: `<(command)`
+- `[[` conditional: `[[ -f file ]]`
+
+### 2. Working Directory + Editable Installs
+
+**Problem**: Poetry editable installs use `.pth` files that add project root to `sys.path`  
+**Gotcha**: If `working-directory` is the same as the package root, imports fail
+
+```yaml
+# ❌ BAD - Working directory conflicts with editable install
+- name: Install dependencies
+  working-directory: ./server
+  run: poetry install  # Creates .pth pointing to ./server
+
+- name: Start server
+  working-directory: ./server  # Now in server/, looking for server/server/main.py!
+  run: poetry run uvicorn server.main:app
+
+# ✅ GOOD - Use python -m or run from parent directory
+- name: Start server
+  working-directory: ./server
+  run: poetry run python -m uvicorn server.main:app  # Module resolution works correctly
+```
+
+### 3. Service Container Networking
+
+**Problem**: Act CLI service containers have different networking than GitHub Actions  
+**Solution**: Always test service container workflows with Docker Compose
+
+```yaml
+# GitHub Actions uses service label as hostname
+services:
+  postgres:
+    image: postgres:16
+    
+container:
+  image: playwright:latest
+  
+steps:
+  - name: Connect to DB
+    run: psql postgresql://user:pass@postgres:5432/db  # 'postgres' is hostname
+```
+
+**Act CLI limitation**: Service container hostname resolution may fail  
+**Workaround**: Test with Docker Compose using identical service names
+
+### 4. Environment Variable Differences
+
+**Problem**: Act CLI may not set all GitHub Actions default environment variables  
+**Solution**: Explicitly set critical env vars in workflow
+
+```yaml
+# ✅ GOOD - Explicitly set all required env vars
+env:
+  CI: true
+  TESTING: true
+  DATABASE_URL: postgresql://user:pass@host:5432/db
+```
+
+### 5. Validation Checklist
+
+Before pushing workflow changes, verify:
+
+- [ ] **Shell syntax**: Used `shell: bash` for bash-specific syntax?
+- [ ] **Working directory**: Tested with actual directory structure (not just Act CLI)?
+- [ ] **Service containers**: Validated with Docker Compose if using services?
+- [ ] **Import paths**: Tested Poetry editable installs with actual startup?
+- [ ] **Environment vars**: All required vars explicitly defined?
+
+**Golden Rule**: **Act CLI validates syntax, Docker Compose validates behavior**
 
 ---
 
