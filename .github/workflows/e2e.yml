@@ -62,11 +62,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
 
-      - name: Build backend wheel
+      - name: Build and install backend wheel
         working-directory: ./server
         run: |
           poetry build
-          pip install dist/*.whl
+          poetry run pip install dist/*.whl
 
       - name: Start backend server
         env:
