@@ -17,6 +17,11 @@ jobs:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
     
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./
+    
     services:
       postgres:
         image: postgres:16
@@ -61,23 +66,38 @@ jobs:
         working-directory: ./server
         run: poetry install
 
-      - name: Start backend server
+      - name: Run database migrations
         working-directory: ./server
         env:
-          TESTING: "true"
-          DATABASE_URL: postgresql://postgres:postgres@postgres:5432/impetus_lock_test
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
         run: |
-          poetry run uvicorn server.main:app --host 0.0.0.0 --port 8000 &
+          echo "Running Alembic migrations..."
+          poetry run alembic upgrade head
+          echo "✅ Migrations complete"
+
+      - name: Start backend server
+        env:
+          TESTING: "true"
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
+        run: |
+          poetry -C server run python -m uvicorn server.api.main:app --host 0.0.0.0 --port 8000 &
+          BACKEND_PID=$!
+          echo "Backend PID: $BACKEND_PID"
           echo "Waiting for backend to be ready..."
           for i in {1..30}; do
             if curl -s http://localhost:8000/health > /dev/null 2>&1; then
               echo "✅ Backend is ready!"
               break
             fi
+            if ! ps -p $BACKEND_PID > /dev/null 2>&1; then
+              echo "❌ Backend process died! Last logs:"
+              tail -20 /tmp/backend.log
+              exit 1
+            fi
             echo "Waiting... ($i/30)"
             sleep 2
           done
-          curl -f http://localhost:8000/health || (echo "❌ Backend failed to start" && exit 1)
+          curl -f http://localhost:8000/health || (echo "❌ Backend failed to start. Logs:" && tail -20 /tmp/backend.log && exit 1)
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

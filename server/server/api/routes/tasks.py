@@ -204,7 +204,14 @@ async def update_task(
     if not task:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
 
-    # Update task (will handle optimistic locking)
+    # Validate version before updating (optimistic locking)
+    if task.version != request.version:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Version mismatch: expected {request.version}, got {task.version}",
+        )
+
+    # Update task (will increment version)
     task.update_content(request.content, request.lock_ids)
 
     try:
@@ -212,8 +219,7 @@ async def update_task(
         await session.commit()
         return TaskResponse.from_entity(updated_task)
     except ValueError as e:
-        # Version mismatch (optimistic locking conflict)
-        raise HTTPException(status_code=409, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/{task_id}", status_code=204)
