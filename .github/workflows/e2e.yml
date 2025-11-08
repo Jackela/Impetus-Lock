@@ -5,6 +5,12 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or commit to run E2E tests on'
+        required: false
+        default: 'main'
 
 jobs:
   e2e:
