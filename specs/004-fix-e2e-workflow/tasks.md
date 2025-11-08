@@ -129,7 +129,7 @@ This is a monorepo web application:
 - [x] T016 [P] Create `specs/004-fix-e2e-workflow/COMPLETION.md` documenting fix and validation results
 - [x] T017 Verify all CI workflows green: Check lint, type-check, backend-tests, frontend-tests, E2E all passing
 - [x] T018 Run local validation per quickstart.md: Act CLI + Docker Compose to confirm local reproducibility
-- [ ] T019 Create PR from `004-fix-e2e-workflow` to `main` with summary of fixes
+- [x] T019 Create PR from `004-fix-e2e-workflow` to `main` with summary of fixes
 
 ---
 
