@@ -69,6 +69,7 @@ jobs:
           poetry run pip install dist/*.whl
 
       - name: Start backend server
+        working-directory: ./server
         env:
           TESTING: "true"
           DATABASE_URL: postgresql://postgres:postgres@postgres:5432/impetus_lock_test
