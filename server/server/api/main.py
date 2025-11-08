@@ -5,13 +5,19 @@ This module defines the core FastAPI application with health check endpoint.
 Follows Article IV (SOLID): Endpoints delegate to service layer when business logic emerges.
 """
 
+import os
 from typing import Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from server.api.routes import intervention
+from server.api.routes import intervention, tasks
+from server.infrastructure.persistence.database import init_database
+
+# Conditionally import testing routes
+if os.getenv("TESTING"):
+    from server.api.routes import testing
 
 app = FastAPI(
     title="Impetus Lock API",
@@ -19,17 +25,35 @@ app = FastAPI(
     description="Un-deletable task pressure system API",
 )
 
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize database connection on startup."""
+    init_database()
+
+
 # CORS middleware for local development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5176",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include intervention routes
+# Include API routes
 app.include_router(intervention.router)
+app.include_router(tasks.router)
+
+# Include testing routes (only when TESTING=true)
+if os.getenv("TESTING"):
+    app.include_router(testing.router)
 
 
 class HealthResponse(BaseModel):
