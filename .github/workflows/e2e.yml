@@ -17,6 +17,11 @@ jobs:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
     
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./
+    
     services:
       postgres:
         image: postgres:16
@@ -57,18 +62,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
 
-      - name: Install backend dependencies
+      - name: Build backend wheel
         working-directory: ./server
-        run: poetry install
+        run: |
+          poetry build
+          pip install dist/*.whl
 
       - name: Start backend server
         env:
           TESTING: "true"
           DATABASE_URL: postgresql://postgres:postgres@postgres:5432/impetus_lock_test
-        shell: bash
         run: |
-          cd server
-          poetry run bash -c "cd .. && python -m uvicorn server.main:app --host 0.0.0.0 --port 8000" 2>&1 &
+          python -m uvicorn server.main:app --host 0.0.0.0 --port 8000 &
           BACKEND_PID=$!
           echo "Backend PID: $BACKEND_PID"
           echo "Waiting for backend to be ready..."

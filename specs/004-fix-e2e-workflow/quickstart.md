@@ -37,19 +37,33 @@ act --version     # Should show v0.2.40+
 
 ### ⚠️ Act CLI Limitations (Why It Missed Our Bugs)
 
-**What Act CLI DOES NOT catch**:
-1. **Shell syntax semantics** - `act -n` validates YAML syntax, NOT bash vs sh differences
-   - Example: `{1..30}` works in bash but fails in sh (our bug #1)
-   - Fix: **Always specify `shell: bash`** when using bash-specific syntax
-2. **Editable install import paths** - Service container isolation prevents full testing
-   - Example: Poetry `.pth` file + `working-directory` interaction (our bug #2)
-   - Fix: **Test with Docker Compose** for full backend startup validation
+**Root Cause**: Act CLI **executes scripts** but uses **different environments/defaults** than GitHub Actions:
 
-**What Act CLI DOES catch**:
-- YAML syntax errors
-- Missing environment variables (if referenced in workflow)
-- Tool availability (linters, type checkers)
-- Individual job execution (without service containers)
+1. **Shell defaults differ**
+   - **GitHub Actions** (in containers): Defaults to `sh`, NOT `bash` ([docs](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/run-jobs-in-a-container))
+   - **Act CLI**: May use different shell depending on image
+   - **Example**: `{1..30}` brace expansion is **bash-only** syntax, fails in `sh` (our bug #1)
+   - **Fix**: Always specify `shell: bash` explicitly ([GitHub best practice](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/set-default-values-for-jobs))
+
+2. **Runner images incomplete**
+   - Act's default images are **deliberately minimal** vs GitHub hosted runners ([act docs](https://nektosact.com/usage/runners.html))
+   - Missing system-level capabilities (systemd, some tools)
+   - **Fix**: Use heavier images like `catthehacker/ubuntu:full-*` with `-P` flag
+
+3. **Service container networking differs**
+   - GitHub Actions: Services accessible by service name (e.g., `postgres:5432`) ([docs](https://docs.github.com/en/actions/tutorials/use-containerized-services/use-docker-service-containers))
+   - Act CLI: Network alias issues, `job.container.network` unsupported ([issue #2074](https://github.com/nektos/act/issues/2074))
+   - **Fix**: Use Docker Compose with identical service names for integration testing
+
+4. **Poetry editable install + working directory mismatch** (our bug #2)
+   - **NOT an Act issue** - This affects both Act and GitHub Actions
+   - Root cause: `poetry install` creates `.pth` file, but execution context differs from install context
+   - **Fix**: Build wheel + install, or use `python -m` invocation ([SO discussion](https://stackoverflow.com/questions/66474844/import-local-package-during-poetry-run))
+
+**What Act CLI DOES provide**:
+- Workflow logic validation in "near-similar" environment
+- Script execution in Linux containers (catches many issues)
+- Fast local iteration (faster than pushing to GitHub)
 
 ### Quick Commands
 
@@ -324,7 +338,19 @@ Before pushing workflow changes, verify:
 - [ ] **Import paths**: Tested Poetry editable installs with actual startup?
 - [ ] **Environment vars**: All required vars explicitly defined?
 
-**Golden Rule**: **Act CLI validates syntax, Docker Compose validates behavior**
+**Golden Rule**: 
+> **Act validates workflow logic and script execution in "near-similar" environments;  
+> Docker Compose validates multi-service system behavior with production-like networking.**
+
+**Prerequisites for consistency**:
+1. **Fix shell ambiguity**: Use workflow-level `defaults.run.shell: bash` ([GitHub docs](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/set-default-values-for-jobs))
+2. **Fix working directory**: Use `defaults.run.working-directory` to keep install/test contexts aligned
+3. **Fix Poetry packaging**: Build wheel + install instead of editable install for CI consistency:
+   ```bash
+   poetry build && pip install dist/*.whl
+   ```
+   Or ensure editable install works by using `python -m` invocation ([Poetry issue #9311](https://github.com/python-poetry/poetry/issues/9311))
+4. **Match service names**: Use identical service names in Docker Compose and GitHub Actions `services:`
 
 ---
 
