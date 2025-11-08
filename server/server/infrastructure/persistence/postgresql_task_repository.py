@@ -138,14 +138,7 @@ class PostgreSQLTaskRepository(TaskRepository):
         if not model:
             raise ValueError(f"Task {task.id} not found")
 
-        # Check optimistic locking version
-        if model.version != task.version:
-            raise ValueError(
-                f"Task {task.id} version mismatch (expected {task.version}, "
-                f"got {model.version})"
-            )
-
-        # Update model fields
+        # Update model fields (version already validated and incremented by entity)
         model.content = task.content
         model.lock_ids = task.lock_ids
         model.updated_at = task.updated_at
