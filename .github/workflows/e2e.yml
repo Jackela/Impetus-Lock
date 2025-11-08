@@ -66,6 +66,15 @@ jobs:
         working-directory: ./server
         run: poetry install
 
+      - name: Run database migrations
+        working-directory: ./server
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
+        run: |
+          echo "Running Alembic migrations..."
+          poetry run alembic upgrade head
+          echo "✅ Migrations complete"
+
       - name: Start backend server
         env:
           TESTING: "true"
