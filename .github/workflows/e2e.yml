@@ -71,11 +71,7 @@ jobs:
           TESTING: "true"
           DATABASE_URL: postgresql://postgres:postgres@postgres:5432/impetus_lock_test
         run: |
-          echo "=== Python path check ==="
-          poetry -C server run python -c "import sys; print('\\n'.join(sys.path))"
-          echo "=== Attempting server import ==="
-          poetry -C server run python -c "import server.main; print('✅ server.main imported successfully')"
-          poetry -C server run python -m uvicorn server.main:app --host 0.0.0.0 --port 8000 &
+          poetry -C server run python -m uvicorn server.api.main:app --host 0.0.0.0 --port 8000 &
           BACKEND_PID=$!
           echo "Backend PID: $BACKEND_PID"
           echo "Waiting for backend to be ready..."
