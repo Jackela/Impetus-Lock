@@ -144,6 +144,15 @@ test.describe("Manual Trigger Button", () => {
    * **Blocker**: Error feedback UI pending (Phase 4 SensoryFeedback component)
    */
   test("manual trigger API failure shows error feedback", async ({ page }) => {
+    // Mock API to return error response BEFORE navigation
+    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Internal server error" }),
+      });
+    });
+
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
 
@@ -154,13 +163,12 @@ test.describe("Manual Trigger Button", () => {
     await expect(modeSelector).toBeVisible({ timeout: 5000 });
     await expect(button).toBeVisible({ timeout: 5000 });
 
-    // Mock API to return error response
-    await page.route("**/api/intervention/trigger-provoke", (route) => {
-      route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({ error: "Internal server error" }),
-      });
+    // Set up console log listener BEFORE triggering
+    const consoleLogs: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
+        consoleLogs.push(msg.text());
+      }
     });
 
     // Ensure Muse mode is active
@@ -179,22 +187,12 @@ test.describe("Manual Trigger Button", () => {
     // This requires mocking AudioContext or listening for audio element creation
 
     // Verify 3: Button returns to ready state after error feedback
-    await page.waitForTimeout(2000); // Wait for error animation duration
-    await expect(button).toHaveText("I'm stuck!");
+    // Wait for loading state to clear (API error + finally block + React state update)
+    await expect(button).toHaveText("I'm stuck!", { timeout: 5000 });
     await expect(button).toBeEnabled();
 
-    // Verify 4: Error is logged to console (current implementation)
-    const consoleLogs: string[] = [];
-    page.on("console", (msg) => {
-      if (msg.type() === "error") {
-        consoleLogs.push(msg.text());
-      }
-    });
-
-    // Re-trigger to capture console logs
-    await button.click();
-    await page.waitForTimeout(500);
-
+    // Verify 4: Error is logged to console
+    await page.waitForTimeout(500); // Wait for console error to be logged
     expect(consoleLogs.some((log) => log.includes("Manual trigger failed"))).toBe(true);
   });
 });

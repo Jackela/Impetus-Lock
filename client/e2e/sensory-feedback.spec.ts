@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
+import {
+  insertLockedContent,
+  attemptDeleteLocked,
+  getEditorContent,
+  waitForEditorReady,
+} from "./helpers/milkdown-helpers";
 
 /**
  * E2E tests for Sensory Feedback (User Story 2)
@@ -73,22 +79,29 @@ test.describe("Sensory Feedback", () => {
    * - Whoosh audio plays (wind/swoosh sound)
    * - Feedback disappears after animation completes
    *
-   * **Status**: SKIPPED - Requires Phase 5 integration (T066)
-   * **Blocker**: SensoryFeedback not yet wired to AI action events
+   * **Status**: ENABLED - Uses test endpoint to trigger DELETE action
+   * **Note**: Requires backend running with TESTING=true
    */
-  test.skip("plays Whoosh sound and shows Fade-out animation on Delete", async ({ page }) => {
+  test("plays Whoosh sound and shows Fade-out animation on Delete", async ({ page, request }) => {
     // Wait for app to be fully ready
     await waitForAppReady(page);
 
     const feedbackElement = page.locator('[data-testid="sensory-feedback"]');
     const modeSelector = page.locator('[data-testid="mode-selector"]');
 
-    // Set Loki mode (Delete actions occur randomly)
+    // Set Loki mode (required for DELETE action handling)
     await modeSelector.selectOption("loki");
 
-    // Wait for Delete action to trigger (Loki random timing: 30-120s)
-    // In test environment, this should be mockable/triggerable
-    // TODO: Add test trigger mechanism for Delete actions
+    // Trigger DELETE action via test endpoint (bypasses random timer)
+    const response = await request.post("http://localhost:8000/api/v1/test/trigger-delete", {
+      data: {
+        from_pos: 10,
+        to_pos: 20,
+        context: "E2E test DELETE trigger",
+      },
+    });
+
+    expect(response.status()).toBe(200);
 
     // Verify Fade-out animation appears
     await expect(feedbackElement).toBeVisible({ timeout: 5000 });
@@ -112,32 +125,49 @@ test.describe("Sensory Feedback", () => {
    * - Clank audio should stop
    * - Whoosh audio should play
    *
-   * **Status**: SKIPPED - Requires Phase 5 integration (T066)
-   * **Blocker**: Need mechanism to trigger rapid AI actions in test
+   * **Status**: ENABLED - Uses test endpoints for rapid action triggers
+   * **Note**: Audio verification would require browser API mocking (future work)
    */
-  test.skip("cancels previous animation when new action triggers (rapid actions)", async ({
+  test("cancels previous animation when new action triggers (rapid actions)", async ({
     page,
+    request,
   }) => {
     // Wait for app to be fully ready
     await waitForAppReady(page);
 
     const feedbackElement = page.locator('[data-testid="sensory-feedback"]');
     const manualTrigger = page.locator('[data-testid="manual-trigger-button"]');
+    const modeSelector = page.locator('[data-testid="mode-selector"]');
 
-    // Trigger first action (PROVOKE)
+    // Set Muse mode for PROVOKE
+    await modeSelector.selectOption("muse");
+
+    // Trigger first action (PROVOKE via manual button)
     await manualTrigger.click();
     await expect(feedbackElement).toHaveAttribute("data-animation", "glitch", { timeout: 5000 });
 
-    // Immediately trigger second action (DELETE)
-    // TODO: Add mechanism to trigger DELETE action in test
-    // await triggerDeleteAction(page);
+    // Immediately trigger second action (DELETE via test endpoint)
+    const deleteResponse = await request.post("http://localhost:8000/api/v1/test/trigger-delete", {
+      data: {
+        from_pos: 10,
+        to_pos: 20,
+        context: "E2E test rapid action cancellation",
+      },
+    });
+
+    expect(deleteResponse.status()).toBe(200);
 
     // Verify animation changed (cancel-and-replace)
     await expect(feedbackElement).toHaveAttribute("data-animation", "fadeout", { timeout: 5000 });
 
-    // Verify only Whoosh audio is playing (Clank stopped)
-    // Audio verification requires advanced browser API mocking
-    // TODO: Implement audio playback verification
+    // Wait for Fade-out animation to complete
+    await page.waitForTimeout(1000);
+
+    // Verify feedback disappears
+    await expect(feedbackElement).not.toBeVisible();
+
+    // Note: Audio verification (Clank stopped, Whoosh playing) requires
+    // advanced browser API mocking and is deferred to future work
   });
 
   /**
@@ -150,22 +180,21 @@ test.describe("Sensory Feedback", () => {
    * - User receives clear "rejection" signal
    *
    * **Coverage**: FR-017 (P1 consistency) - addresses analysis gap
-   * **Status**: SKIPPED - Requires Phase 5 integration (T066)
-   * **Blocker**: Need P1 lock enforcement to be active
+   * **Status**: ENABLED - Uses milkdown-helpers for ProseMirror interaction
+   * **Note**: This is Phase 6 (Optional UI Polish) - not blocking production readiness
    */
   test("rejection feedback matches P1 implementation", async ({ page }) => {
     // Wait for app to be fully ready
     await waitForAppReady(page);
+    await waitForEditorReady(page);
 
     const feedbackElement = page.locator('[data-testid="sensory-feedback"]');
-    const editor = page.locator('[data-testid="milkdown-editor"]');
 
-    // Create locked content
-    await editor.fill("This is locked content <!-- LOCK: test-lock -->");
+    // Insert locked content using helper
+    await insertLockedContent(page, "This is critical locked content", "test-lock-reject");
 
     // Attempt to delete locked content (should trigger REJECT)
-    await editor.selectText("locked content");
-    await page.keyboard.press("Backspace");
+    await attemptDeleteLocked(page, "test-lock-reject");
 
     // Verify Shake animation appears
     await expect(feedbackElement).toBeVisible({ timeout: 5000 });
@@ -178,6 +207,7 @@ test.describe("Sensory Feedback", () => {
     await expect(feedbackElement).not.toBeVisible();
 
     // Verify locked content was NOT deleted (P1 enforcement)
-    await expect(editor).toContainText("locked content");
+    const content = await getEditorContent(page);
+    expect(content).toContain("critical locked content");
   });
 });

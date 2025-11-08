@@ -11,6 +11,9 @@ fastapi = "^0.115.0"
 uvicorn = {extras = ["standard"], version = "^0.32.0"}
 pydantic = "^2.9.0"
 instructor = "^1.4.0"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.44"}
+asyncpg = "^0.30.0"
+alembic = "^1.17.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
@@ -23,6 +26,16 @@ import-linter = "^2.0"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+extend-exclude = [
+    "verify_db.py",
+    "check_tables.py",
+    "create_migration.py",
+    "run_alembic_revision.py",
+    "run_alembic_upgrade.py",
+    "start_server_test.py",
+    "run_server.py",
+    "alembic/",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "A", "T20", "SIM"]
@@ -44,6 +57,16 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 pretty = true
 plugins = ["pydantic.mypy"]
+exclude = [
+    "verify_db\\.py$",
+    "check_tables\\.py$",
+    "create_migration\\.py$",
+    "run_alembic_revision\\.py$",
+    "run_alembic_upgrade\\.py$",
+    "start_server_test\\.py$",
+    "run_server\\.py$",
+    "alembic/",
+]
 
 [tool.pydantic-mypy]
 init_forbid_extra = true
