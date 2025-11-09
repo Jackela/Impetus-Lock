@@ -2,20 +2,60 @@ import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 
 /**
- * Mock matchMedia (for prefers-reduced-motion support)
+ * Mock matchMedia (for prefers-reduced-motion and responsive design support)
+ *
+ * Enhanced implementation that:
+ * - Supports prefers-reduced-motion queries
+ * - Supports responsive breakpoint queries (max-width, min-width)
+ * - Properly implements addEventListener/removeEventListener
  */
 Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false, // Default: no reduced motion
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
+  value: vi.fn().mockImplementation((query: string) => {
+    // Simple query parsing for common patterns
+    let matches = false;
+
+    // Check for prefers-reduced-motion
+    if (query.includes("prefers-reduced-motion: reduce")) {
+      matches = false; // Default: no reduced motion
+    }
+    // Check for max-width queries (mobile-first responsive design)
+    else if (query.includes("max-width")) {
+      const maxWidth = parseInt(query.match(/max-width:\s*(\d+)px/)?.[1] || "0", 10);
+      // Default to desktop viewport (1024px) in tests
+      matches = 1024 <= maxWidth;
+    }
+    // Check for min-width queries
+    else if (query.includes("min-width")) {
+      const minWidth = parseInt(query.match(/min-width:\s*(\d+)px/)?.[1] || "0", 10);
+      // Default to desktop viewport (1024px) in tests
+      matches = 1024 >= minWidth;
+    }
+
+    const listeners: Array<(event: any) => void> = [];
+
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // Deprecated
+      removeListener: vi.fn(), // Deprecated
+      addEventListener: vi.fn((event: string, listener: (event: any) => void) => {
+        if (event === "change") {
+          listeners.push(listener);
+        }
+      }),
+      removeEventListener: vi.fn((event: string, listener: (event: any) => void) => {
+        if (event === "change") {
+          const index = listeners.indexOf(listener);
+          if (index > -1) {
+            listeners.splice(index, 1);
+          }
+        }
+      }),
+      dispatchEvent: vi.fn(),
+    };
+  }),
 });
 
 /**

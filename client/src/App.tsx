@@ -1,5 +1,7 @@
 import { useState } from "react";
 import "./App.css";
+import "./styles/variables.css";
+import "./styles/responsive.css";
 import { EditorCore } from "./components/Editor/EditorCore";
 import { ManualTriggerButton } from "./components/ManualTriggerButton";
 import { AIActionType } from "./types/ai-actions";
@@ -37,7 +39,7 @@ function App() {
         </div>
       </header>
 
-      <main className="app-main">
+      <main className="app-main" role="main">
         <EditorCore
           mode={mode}
           initialContent="# Welcome to Impetus Lock\n\nStart writing..."

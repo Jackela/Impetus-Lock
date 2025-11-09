@@ -1,0 +1,36 @@
+/**
+ * CSS Custom Properties for Responsive Design
+ *
+ * Breakpoint Strategy:
+ * - Mobile: < 768px (portrait phones, small devices)
+ * - Tablet: 768px - 1023px (tablets, landscape phones)
+ * - Desktop: ≥ 1024px (desktop browsers, large tablets)
+ *
+ * Usage in media queries:
+ * @media (max-width: 767px) { ... } // Mobile
+ * @media (min-width: 768px) and (max-width: 1023px) { ... } // Tablet
+ * @media (min-width: 1024px) { ... } // Desktop
+ */
+
+:root {
+  /* Breakpoint values (for JavaScript access via getComputedStyle) */
+  --breakpoint-mobile: 767px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+
+  /* Typography scale - mobile first */
+  --font-size-mobile: 18px;
+  --font-size-tablet: 17px;
+  --font-size-desktop: 16px;
+
+  --line-height-mobile: 1.8;
+  --line-height-tablet: 1.7;
+  --line-height-desktop: 1.6;
+
+  /* Touch target minimum (WCAG 2.1 AA) */
+  --touch-target-min: 44px;
+
+  /* Z-index layers for responsive components */
+  --z-toolbar-mobile: 1000;
+  --z-toolbar-floating: 100;
+}
