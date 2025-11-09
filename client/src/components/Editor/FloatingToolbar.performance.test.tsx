@@ -15,13 +15,10 @@ type MockEditor = Pick<Editor, "action">;
 
 describe("FloatingToolbar - Performance Tests", () => {
   let mockEditor: MockEditor;
-  let actionCallback: (ctx: any) => void;
 
   beforeEach(() => {
-    actionCallback = vi.fn();
     mockEditor = {
       action: vi.fn((callback) => {
-        actionCallback = callback;
         callback({
           get: vi.fn(() => ({
             state: {
@@ -77,9 +74,6 @@ describe("FloatingToolbar - Performance Tests", () => {
   it("should handle large document rendering without degradation (>1000 lines)", () => {
     // Simulate large document with 1000+ lines
     const largeDocumentLines = 1500;
-    const mockLargeDoc = {
-      textContent: Array(largeDocumentLines).fill("This is a line of text.\n").join(""),
-    };
 
     const startTime = performance.now();
 
@@ -95,6 +89,7 @@ describe("FloatingToolbar - Performance Tests", () => {
   });
 
   it("should not cause memory leaks with repeated operations", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
     
     // Simulate 1000 rapid operations
@@ -102,6 +97,7 @@ describe("FloatingToolbar - Performance Tests", () => {
       mockEditor.action(vi.fn());
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
     const memoryIncrease = finalMemory - initialMemory;
 
