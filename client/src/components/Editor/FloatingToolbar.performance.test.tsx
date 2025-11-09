@@ -1,6 +1,6 @@
 /**
  * Performance Tests for FloatingToolbar
- * 
+ *
  * T084: Verify <100ms delay from button click to formatting applied (SC-005)
  * T085: Verify no editor degradation with large documents (>1000 lines)
  */
@@ -42,10 +42,10 @@ describe("FloatingToolbar - Performance Tests", () => {
   // T084: Verify <100ms delay from button click to formatting applied (SC-005)
   it("should execute command within 100ms of button click (SC-005)", async () => {
     const startTime = performance.now();
-    
+
     // Simulate command execution
     mockEditor.action(vi.fn());
-    
+
     const endTime = performance.now();
     const executionTime = endTime - startTime;
 
@@ -58,10 +58,10 @@ describe("FloatingToolbar - Performance Tests", () => {
     render(<FloatingToolbar editor={mockEditor} />);
 
     const startTime = performance.now();
-    
+
     // Trigger position update via mock
     mockEditor.action(vi.fn());
-    
+
     const endTime = performance.now();
     const updateTime = endTime - startTime;
 
@@ -85,13 +85,15 @@ describe("FloatingToolbar - Performance Tests", () => {
 
     // Verify render time is reasonable (<500ms for large docs)
     expect(renderTime).toBeLessThan(500);
-    console.log(`✅ Large doc render time: ${renderTime.toFixed(2)}ms (${largeDocumentLines} lines)`);
+    console.log(
+      `✅ Large doc render time: ${renderTime.toFixed(2)}ms (${largeDocumentLines} lines)`
+    );
   });
 
   it("should not cause memory leaks with repeated operations", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
-    
+
     // Simulate 1000 rapid operations
     for (let i = 0; i < 1000; i++) {
       mockEditor.action(vi.fn());
@@ -103,10 +105,12 @@ describe("FloatingToolbar - Performance Tests", () => {
 
     // Memory increase should be minimal (<10MB for 1000 operations)
     const maxMemoryIncrease = 10 * 1024 * 1024; // 10MB
-    
+
     if (initialMemory > 0) {
       expect(memoryIncrease).toBeLessThan(maxMemoryIncrease);
-      console.log(`✅ Memory increase after 1000 operations: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`);
+      console.log(
+        `✅ Memory increase after 1000 operations: ${(memoryIncrease / 1024 / 1024).toFixed(2)}MB`
+      );
     } else {
       console.log("⚠️ Memory API not available in test environment (browser-only feature)");
     }
