@@ -1,0 +1,167 @@
+/**
+ * Responsive Design Styles for Impetus Lock
+ *
+ * Mobile-first responsive styles organized by breakpoint:
+ * - Mobile: < 768px (default/base styles)
+ * - Tablet: 768px - 1023px
+ * - Desktop: ≥ 1024px (original desktop styles in App.css)
+ *
+ * Article I (Simplicity): CSS-only implementation, no JavaScript layout logic
+ * Article V (Documentation): All breakpoints and magic numbers documented
+ */
+
+/* ============================================================================
+   MOBILE STYLES (< 768px)
+   ============================================================================ */
+
+@media (max-width: 767px) {
+  /* Root container - prevent overflow */
+  #root {
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    max-width: 100vw; /* Constrain to viewport width */
+  }
+
+  /* App container - stack layout */
+  .app {
+    max-width: 100%; /* Prevent overflow */
+    overflow-x: hidden;
+  }
+
+  /* Header - responsive layout */
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 1rem; /* Reduce padding on mobile */
+    gap: 0.75rem;
+  }
+
+  .app-header h1 {
+    font-size: 1.25rem; /* Slightly smaller on mobile */
+  }
+
+  /* Controls - stack vertically or wrap */
+  .controls {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .controls select {
+    flex: 1;
+    min-width: 120px; /* Minimum usable width */
+  }
+
+  /* Main content area */
+  .app-main {
+    padding: 0.75rem 1rem; /* Reduce padding on mobile */
+    overflow-x: hidden;
+  }
+
+  /* Editor typography - mobile scale */
+  .milkdown {
+    font-size: 18px !important; /* Larger base font for readability (was 16px desktop) */
+    line-height: 1.8 !important; /* More spacious line height (was 1.6 desktop) */
+  }
+
+  /* Headings - scaled down for mobile */
+  .milkdown h1 {
+    font-size: 28px !important; /* Was 32px on desktop */
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .milkdown h2 {
+    font-size: 24px !important; /* Was 28px on desktop */
+    margin-top: 1.25rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .milkdown h3 {
+    font-size: 20px !important; /* Was 24px on desktop */
+  }
+
+  /* Paragraph spacing */
+  .milkdown p {
+    margin-bottom: 1rem !important;
+    word-break: break-word; /* Wrap long words */
+    overflow-wrap: break-word; /* Alternative wrapping */
+  }
+
+  /* Long content handling (URLs, code blocks) */
+  .milkdown a,
+  .milkdown code {
+    word-break: break-all; /* Break long URLs */
+    overflow-wrap: break-word;
+  }
+
+  /* Lists - adjust spacing */
+  .milkdown ul,
+  .milkdown ol {
+    padding-left: 1.5rem; /* Reduce indent on mobile */
+  }
+
+  /* Buttons - ensure touch target size (WCAG 2.1 AA) */
+  button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+
+  /* Mode selector - ensure touch target */
+  .controls select {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* ============================================================================
+   TABLET STYLES (768px - 1023px)
+   ============================================================================ */
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Intermediate typography scale */
+  .milkdown {
+    font-size: 17px !important; /* Between mobile 18px and desktop 16px */
+    line-height: 1.7 !important; /* Between mobile 1.8 and desktop 1.6 */
+  }
+
+  .app-header {
+    padding: 1rem 1.5rem; /* Intermediate padding */
+  }
+
+  .app-main {
+    padding: 1rem 1.5rem;
+  }
+
+  /* Headings - intermediate sizing */
+  .milkdown h1 {
+    font-size: 30px !important; /* Between mobile 28px and desktop 32px */
+  }
+
+  .milkdown h2 {
+    font-size: 26px !important; /* Between mobile 24px and desktop 28px */
+  }
+}
+
+/* ============================================================================
+   UTILITIES
+   ============================================================================ */
+
+/* Prevent text selection causing horizontal scroll */
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure all images are responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent long code blocks from overflowing */
+pre,
+code {
+  max-width: 100%;
+  overflow-x: auto;
+  word-wrap: break-word;
+}

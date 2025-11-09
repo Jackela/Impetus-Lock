@@ -26,6 +26,8 @@ import { injectLockedBlock, deleteContentAtAnchor } from "../../services/Content
 import { SensoryFeedback } from "../SensoryFeedback";
 import { AIActionType } from "../../types/ai-actions";
 import { FloatingToolbar } from "./FloatingToolbar";
+import { BottomDockedToolbar } from "./BottomDockedToolbar";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 
 interface EditorCoreProps {
   initialContent?: string;
@@ -62,6 +64,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
   // T014: Expose editor instance for FloatingToolbar
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+
+  // T017: Responsive toolbar - detect mobile viewport
+  const isMobile = useMediaQuery("(max-width: 767px)");
 
   // Stable ref for onReady to avoid useEffect re-runs
   const onReadyRef = useRef(onReady);
@@ -262,8 +267,12 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     >
       <Milkdown />
       <SensoryFeedback actionType={currentAction} />
-      {/* T014: FloatingToolbar integration */}
-      <FloatingToolbar editor={editorInstance} />
+      {/* T017-T018: Responsive toolbar - conditional rendering based on viewport */}
+      {isMobile ? (
+        <BottomDockedToolbar editor={editorInstance} />
+      ) : (
+        <FloatingToolbar editor={editorInstance} />
+      )}
     </div>
   );
 };
