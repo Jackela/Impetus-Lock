@@ -52,7 +52,9 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     expect(documentWidth).toBe(viewportWidth);
   });
 
-  test("should wrap long unbreakable content (URLs) without horizontal overflow", async ({ page }) => {
+  test("should wrap long unbreakable content (URLs) without horizontal overflow", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("/");
 
@@ -60,7 +62,8 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.waitForSelector('[contenteditable="true"]', { timeout: 10000 });
 
     // Type a very long URL
-    const longUrl = "https://example.com/this-is-a-very-long-url-path-that-should-break-properly-without-causing-horizontal-scroll-on-mobile-devices";
+    const longUrl =
+      "https://example.com/this-is-a-very-long-url-path-that-should-break-properly-without-causing-horizontal-scroll-on-mobile-devices";
 
     const editor = page.locator('[contenteditable="true"]').first();
     await editor.click();
