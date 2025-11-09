@@ -25,6 +25,7 @@ import {
 import { injectLockedBlock, deleteContentAtAnchor } from "../../services/ContentInjector";
 import { SensoryFeedback } from "../SensoryFeedback";
 import { AIActionType } from "../../types/ai-actions";
+import { FloatingToolbar } from "./FloatingToolbar";
 
 interface EditorCoreProps {
   initialContent?: string;
@@ -58,6 +59,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   const [docVersion, setDocVersion] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [currentAction, setCurrentAction] = useState<AIActionType | null>(null);
+
+  // T014: Expose editor instance for FloatingToolbar
+  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
 
   // Stable ref for onReady to avoid useEffect re-runs
   const onReadyRef = useRef(onReady);
@@ -190,6 +194,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
       editorRef.current = editor;
 
+      // T014: Expose editor instance for FloatingToolbar
+      setEditorInstance(editor);
+
       // Apply lock transaction filter for lock enforcement
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
@@ -255,6 +262,8 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     >
       <Milkdown />
       <SensoryFeedback actionType={currentAction} />
+      {/* T014: FloatingToolbar integration */}
+      <FloatingToolbar editor={editorInstance} />
     </div>
   );
 };

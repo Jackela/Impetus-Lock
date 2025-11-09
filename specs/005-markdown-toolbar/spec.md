@@ -71,9 +71,9 @@
 
 ---
 
-### User Story 4 - Toolbar Visual Design (Zen Mode Compliance) (Priority: P3)
+### User Story 4 - Toolbar Visual Design (Zen mode Compliance) (Priority: P3)
 
-The toolbar must maintain the minimalist, "Zen Mode" aesthetic established in P1-P3 features. **小王** is sensitive to visual clutter and finds traditional WYSIWYG toolbars (e.g., Microsoft Word, Google Docs) overwhelming and distracting. The toolbar must feel intentional, calm, and aligned with the app's philosophy of focused creativity with disciplined constraints.
+The toolbar must maintain the minimalist, "Zen mode" aesthetic established in P1-P3 features. **小王** is sensitive to visual clutter and finds traditional WYSIWYG toolbars (e.g., Microsoft Word, Google Docs) overwhelming and distracting. The toolbar must feel intentional, calm, and aligned with the app's philosophy of focused creativity with disciplined constraints.
 
 **Why this priority**: P3 - Visual polish is important for user experience but less critical than functional formatting capabilities. This can be iterated after core functionality is proven.
 
@@ -128,8 +128,8 @@ The toolbar must maintain the minimalist, "Zen Mode" aesthetic established in P1
 
 **Bullet List Formatting**:
 - **FR-015**: Users MUST be able to convert a paragraph to a bullet list item by clicking the Bullet List button
-- **FR-016**: Pressing Enter in a list item MUST create a new list item on the next line
-- **FR-017**: Pressing Enter on an empty list item MUST exit the list and return to paragraph mode
+- **FR-016**: Pressing Enter in a list item MUST create a new list item on the next line *(Note: Milkdown's built-in behavior from preset-commonmark; toolbar only provides initial list conversion per FR-015)*
+- **FR-017**: Pressing Enter on an empty list item MUST exit the list and return to paragraph mode *(Note: Milkdown's built-in behavior from preset-commonmark; toolbar only provides initial list conversion per FR-015)*
 - **FR-018**: Selecting multiple paragraphs and clicking the Bullet List button MUST convert all selected paragraphs to list items
 
 **Lock Enforcement Integration**:
@@ -161,8 +161,8 @@ The toolbar must maintain the minimalist, "Zen Mode" aesthetic established in P1
 ### Measurable Outcomes
 
 - **SC-001**: Users can apply bold, italic, heading, or list formatting to text in under 2 seconds from text selection to formatting applied
-- **SC-002**: 90% of users successfully format text on first attempt without errors or confusion
-- **SC-003**: Users report the toolbar as "unobtrusive" and "consistent with the app's minimalist design" in qualitative feedback (subjective, post-launch survey)
+- **SC-002**: 90% of users successfully format text on first attempt without errors or confusion *(Post-Launch Validation Only: Measured via usability testing session with n≥20 users; not MVP blocker)*
+- **SC-003**: Users report the toolbar as "unobtrusive" and "consistent with the app's minimalist design" in qualitative feedback *(Post-Launch Validation Only: Measured via Likert scale survey [1-5 rating, target ≥4.0]; not MVP blocker)*
 - **SC-004**: Toolbar buttons correctly reflect current formatting state (active when text is bold, inactive when not) 100% of the time based on cursor position
 - **SC-005**: The toolbar does not introduce performance degradation (editor remains responsive with <100ms delay from button click to formatting applied)
 - **SC-006**: Zero conflicts between toolbar formatting actions and P1-P3 lock enforcement system (locked content remains locked after formatting attempts)

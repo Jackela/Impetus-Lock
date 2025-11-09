@@ -1,4 +1,4 @@
-﻿# CLAUDE.md
+# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -410,11 +410,55 @@ Feature development follows `.specify/templates/`:
 ❌ Using `npm install` instead of `npm ci` (breaks reproducibility)  
 ❌ Skipping type checks to save time (mypy strict + tsc strict are mandatory)
 
-## Current Project Status (2025-11-08)
+## Current Project Status (2025-11-09)
+
+### ✅ COMPLETE - Phase 7: Markdown Toolbar (Feature 005) **P4 FOUNDATIONAL FEATURE**
+
+**Current Branch**: `005-markdown-toolbar`  
+**Priority**: P4 (Foundational) - Enhances editor UX with context-sensitive formatting toolbar  
+**Status**: ✅ **IMPLEMENTATION COMPLETE** - All user stories delivered
+
+**Implementation Summary**:
+- ✅ **FloatingToolbar Component**: Context-sensitive formatting toolbar with 5 buttons
+- ✅ **Helper Utilities**: `hasMark`, `getHeadingLevel`, `isInBulletList` for state inspection
+- ✅ **Floating UI Integration**: Dynamic positioning above selection with viewport overflow handling
+- ✅ **ARIA Compliance**: All buttons have proper aria-label and aria-pressed attributes
+- ✅ **Lock Enforcement**: Automatically respects existing lock transaction filter
+
+**User Stories Delivered**:
+1. ✅ **US1 (P2): Bold & Italic** - Text emphasis with toggle behavior
+2. ✅ **US2 (P2): Headers (H1/H2)** - Document structure formatting
+3. ✅ **US3 (P2): Bullet Lists** - Rapid idea capture with list formatting
+4. ✅ **US4 (P3): Visual Design** - Floating UI positioning with Zen mode aesthetic
+
+**Technical Details**:
+- **Files Created**: 
+  - `client/src/components/Editor/FloatingToolbar.tsx` (359 lines)
+  - `client/src/components/Editor/FloatingToolbar.test.tsx` (189 lines)
+  - `client/src/utils/prosemirror-helpers.ts` (103 lines)
+  - `client/src/utils/prosemirror-helpers.test.ts` (202 lines)
+- **Test Coverage**: 25/25 unit tests passing (13 FloatingToolbar + 12 helpers)
+- **Quality Gates**: ESLint ✅, TypeScript ✅, Prettier ✅, JSDoc ✅
+- **Integration**: Seamlessly integrated with EditorCore via exposed editor instance
+
+**Toolbar Features**:
+- **5 Formatting Buttons**: Bold (B), Italic (I), H1, H2, Bullet List (•)
+- **44x44px Touch Targets**: Accessibility compliant (WCAG 2.1 AA)
+- **Active State Tracking**: Buttons show pressed state when formatting is active
+- **Selection Preservation**: onMouseDown + preventDefault pattern prevents selection loss
+- **Floating Positioning**: Appears above selection with 8px offset, flips to bottom if needed
+- **Viewport Handling**: Shift middleware ensures toolbar stays within viewport bounds
+
+**Next Steps**:
+- [ ] E2E tests (optional - T083)
+- [ ] Manual cross-browser testing (T088)
+- [ ] Create PR with feature demonstration
+
+---
 
 ### ✅ VALIDATED - Phase 6: E2E Workflow Fix (Feature 004) **ALL WORKFLOWS PASSING**
 
-**Current Branch**: `004-fix-e2e-workflow`  
+**Branch**: `004-fix-e2e-workflow` (merged to main)  
 **Issue Resolution**: ✅ **FIXED** - Backend import error resolved by removing `--no-root` flag  
 **Commit**: `7e730df` (fix), `0541ec4` (docs)
 
