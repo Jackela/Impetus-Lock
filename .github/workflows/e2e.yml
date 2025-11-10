@@ -100,7 +100,7 @@ jobs:
           curl -f http://localhost:8000/health || (echo "❌ Backend failed to start. Logs:" && tail -20 /tmp/backend.log && exit 1)
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: "lts/*"
           cache: "npm"
