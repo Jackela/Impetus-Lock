@@ -41,11 +41,12 @@ describe("Integration: API → Lock Application → Enforcement", () => {
       json: async () =>
         ({
           action: "provoke",
-          content: "> [AI施压 - Muse]: 门后传来低沉的呼吸声。",
+          content: "门后传来低沉的呼吸声。",
           lock_id: "lock_test_integration_001",
           anchor: { type: "pos", from: 1234 },
           action_id: "act_test_001",
           issued_at: new Date().toISOString(),
+          source: "muse",
         }) as InterventionResponse,
     });
 
@@ -65,11 +66,40 @@ describe("Integration: API → Lock Application → Enforcement", () => {
     expect(response.lock_id).toBe("lock_test_integration_001");
 
     // Apply lock from response
-    lockManager.applyLock(response.lock_id!);
+    lockManager.applyLock(response.lock_id!, { source: response.source });
 
     // Verify lock is active
     expect(lockManager.hasLock("lock_test_integration_001")).toBe(true);
     expect(lockManager.getLockCount()).toBe(1);
+    expect(lockManager.getLockMetadata("lock_test_integration_001")?.source).toBe("muse");
+  });
+
+  it("should handle rewrite responses with inline metadata", async () => {
+    const rewriteResponse: InterventionResponse = {
+      action: "rewrite",
+      content: "他改写了最后一句话。",
+      lock_id: "lock_rewrite_001",
+      anchor: { type: "range", from: 10, to: 25 },
+      action_id: "act_rewrite_001",
+      issued_at: new Date().toISOString(),
+      source: "muse",
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => rewriteResponse,
+    });
+
+    const response = await generateIntervention({
+      context: "Test context",
+      mode: "muse",
+      client_meta: { doc_version: 1, selection_from: 15, selection_to: 15 },
+    });
+
+    expect(response.action).toBe("rewrite");
+    expect(response.anchor?.type).toBe("range");
+    lockManager.applyLock(response.lock_id!, { source: response.source });
+    expect(lockManager.getLockMetadata("lock_rewrite_001")?.source).toBe("muse");
   });
 
   /**
@@ -82,11 +112,11 @@ describe("Integration: API → Lock Application → Enforcement", () => {
    */
   it("should persist locks via Markdown comments across refresh", () => {
     const lockId = "lock_test_persistence_001";
-    const content = "> [AI施压]: Test content";
+    const content = "Test content";
 
     // Inject lock comment
-    const withLock = lockManager.injectLockComment(content, lockId);
-    expect(withLock).toContain("<!-- lock:lock_test_persistence_001 -->");
+    const withLock = lockManager.injectLockComment(content, lockId, { source: "muse" });
+    expect(withLock).toContain("<!-- lock:lock_test_persistence_001 source:muse -->");
 
     // Simulate page refresh - clear in-memory locks
     lockManager.clear();
@@ -111,27 +141,30 @@ describe("Integration: API → Lock Application → Enforcement", () => {
     const mockResponses: InterventionResponse[] = [
       {
         action: "provoke",
-        content: "> [AI施压 - Muse]: Response 1",
+        content: "Response 1",
         lock_id: "lock_multi_001",
         anchor: { type: "pos", from: 100 },
         action_id: "act_001",
         issued_at: new Date().toISOString(),
+        source: "muse",
       },
       {
         action: "provoke",
-        content: "> [AI施压 - Loki]: Response 2",
+        content: "Response 2",
         lock_id: "lock_multi_002",
         anchor: { type: "pos", from: 200 },
         action_id: "act_002",
         issued_at: new Date().toISOString(),
+        source: "loki",
       },
       {
         action: "provoke",
-        content: "> [AI施压 - Muse]: Response 3",
+        content: "Response 3",
         lock_id: "lock_multi_003",
         anchor: { type: "pos", from: 300 },
         action_id: "act_003",
         issued_at: new Date().toISOString(),
+        source: "muse",
       },
     ];
 
@@ -152,7 +185,7 @@ describe("Integration: API → Lock Application → Enforcement", () => {
         client_meta: { doc_version: 1, selection_from: 0, selection_to: 0 },
       });
 
-      lockManager.applyLock(response.lock_id!);
+      lockManager.applyLock(response.lock_id!, { source: response.source });
     }
 
     // Verify all locks active
@@ -169,11 +202,12 @@ describe("Integration: API → Lock Application → Enforcement", () => {
     const idempotencyKey = "test-key-duplicate";
     const mockResponse: InterventionResponse = {
       action: "provoke",
-      content: "> [AI施压]: Cached content",
+      content: "Cached content",
       lock_id: "lock_cached_001",
       anchor: { type: "pos", from: 1234 },
       action_id: "act_cached_001",
       issued_at: new Date().toISOString(),
+      source: "muse",
     };
 
     global.fetch = vi.fn().mockResolvedValue({
@@ -267,15 +301,15 @@ describe("Integration: Lock Comment Parsing", () => {
 
 Normal paragraph text.
 
-> [AI施压 - Muse]: First intervention <!-- lock:lock_001 -->
+> Muse intervention <!-- lock:lock_001 source:muse -->
 
 More normal text here.
 
-> [AI施压 - Loki]: Second intervention <!-- lock:lock_002 -->
+> Loki chaos <!-- lock:lock_002 source:loki -->
 
 Final paragraph.
 
-> [AI施压 - Muse]: Third intervention <!-- lock:lock_003 -->
+> Muse encore <!-- lock:lock_003 -->
     `.trim();
 
     const locks = lockManager.extractLocksFromMarkdown(markdown);
@@ -291,7 +325,7 @@ Final paragraph.
    */
   it("should ignore malformed lock comments", () => {
     const markdown = `
-> Good lock <!-- lock:lock_valid -->
+> Good lock <!-- lock:lock_valid source:muse -->
 > Bad lock <!-- lock: -->
 > Also bad <!-- locklock_invalid -->
 > Missing colon <!-- lock lock_missing -->
@@ -411,7 +445,7 @@ describe("Integration: Undo Bypass for AI Actions", () => {
     };
 
     // Execute AI insert
-    const content = "> [AI施压]: Test content <!-- lock:lock_test -->";
+    const content = "Test content <!-- lock:lock_test source:muse -->";
     const success = insertWithoutUndo(mockView, 500, content);
 
     expect(success).toBe(true);

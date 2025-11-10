@@ -1,11 +1,10 @@
 """Unit tests for Loki mode intervention logic.
 
 Test Coverage:
-- Random action selection (Provoke vs Delete)
+- Random action selection (Provoke/Delete/Rewrite)
 - Safety guard: doc length <50 chars → force Provoke
 - Delete action includes valid anchor range
-- Provoke action includes lock_id and content
-- Action distribution (60% Provoke, 40% Delete per data-model.md)
+- Rewrite action carries lock_id + range
 
 Constitutional Compliance:
 - Article III (TDD): Tests written FIRST, implementation follows
@@ -13,7 +12,7 @@ Constitutional Compliance:
 
 Success Criteria:
 - SC-006: Safety guard prevents deletion on short documents (100% enforcement)
-- SC-007: Action distribution within ±5% of target (60/40 split)
+- SC-007: Action distribution stays within defined proportions.
 """
 
 from datetime import UTC, datetime
@@ -51,11 +50,12 @@ class TestLokiModeLogic:
         # Mock LLM to return Provoke
         mock_llm_provider.generate_intervention.return_value = InterventionResponse(
             action="provoke",
-            content="> [AI施压 - Loki]: 混乱开始了。",
+            content="混乱开始了。",
             lock_id="lock_test123",
             anchor=AnchorPos(from_=100),
             action_id="act_test123",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         # Need 50+ chars to pass safety guard - use longer Chinese text
@@ -79,6 +79,7 @@ class TestLokiModeLogic:
         assert response.action == "provoke"
         assert response.lock_id is not None
         assert response.content is not None
+        assert response.source == "loki"
 
         # Now mock LLM to return Delete (should work with long context)
         mock_llm_provider.generate_intervention.return_value = InterventionResponse(
@@ -88,6 +89,7 @@ class TestLokiModeLogic:
             anchor=AnchorRange(from_=50, to=100),
             action_id="act_test456",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         response = intervention_service.generate_intervention(request)
@@ -97,6 +99,24 @@ class TestLokiModeLogic:
         assert response.anchor.type == "range"
         assert isinstance(response.anchor, AnchorRange)
         assert response.anchor.from_ < response.anchor.to
+        assert response.source == "loki"
+
+        # Finally mock rewrite
+        mock_llm_provider.generate_intervention.return_value = InterventionResponse(
+            action="rewrite",
+            content="混沌改写句子",
+            lock_id="lock_rewrite",
+            anchor=AnchorRange(from_=80, to=120),
+            action_id="act_test777",
+            issued_at=datetime.now(UTC),
+            source="loki",
+        )
+
+        rewrite_response = intervention_service.generate_intervention(request)
+        assert rewrite_response.action == "rewrite"
+        assert rewrite_response.lock_id is not None
+        assert rewrite_response.anchor.type == "range"
+        assert rewrite_response.source == "loki"
 
     def test_safety_guard_prevents_delete_on_short_context(
         self, intervention_service: InterventionService, mock_llm_provider: Mock
@@ -114,6 +134,7 @@ class TestLokiModeLogic:
             anchor=AnchorRange(from_=0, to=10),
             action_id="act_test789",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         # Short context (less than 50 chars)
@@ -133,6 +154,7 @@ class TestLokiModeLogic:
         assert response.action == "provoke"
         assert response.lock_id is not None
         assert response.content is not None
+        assert response.source == "loki"
 
     def test_allows_delete_on_sufficient_context(
         self, intervention_service: InterventionService, mock_llm_provider: Mock
@@ -146,6 +168,7 @@ class TestLokiModeLogic:
             anchor=AnchorRange(from_=20, to=40),
             action_id="act_test999",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         # Long enough context (≥50 chars) - need 50+ Chinese characters
@@ -170,6 +193,7 @@ class TestLokiModeLogic:
         assert response.anchor.type == "range"
         assert isinstance(response.anchor, AnchorRange)
         assert response.anchor.from_ < response.anchor.to
+        assert response.source == "loki"
 
     def test_safety_guard_boundary_exactly_50_chars(
         self, intervention_service: InterventionService, mock_llm_provider: Mock
@@ -183,6 +207,7 @@ class TestLokiModeLogic:
             anchor=AnchorRange(from_=10, to=30),
             action_id="act_boundary",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         # Exactly 50 characters
@@ -200,6 +225,7 @@ class TestLokiModeLogic:
 
         # At boundary (50 chars), should allow Delete
         assert response.action == "delete"
+        assert response.source == "loki"
 
     def test_safety_guard_boundary_49_chars(
         self, intervention_service: InterventionService, mock_llm_provider: Mock
@@ -213,6 +239,7 @@ class TestLokiModeLogic:
             anchor=AnchorRange(from_=10, to=30),
             action_id="act_boundary2",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         # 49 characters (just below boundary)
@@ -231,6 +258,8 @@ class TestLokiModeLogic:
         # Below boundary, should force Provoke
         assert response.action == "provoke"
         assert response.lock_id is not None
+        assert response.source == "loki"
+        assert response.source == "loki"
 
     def test_delete_action_includes_valid_anchor(
         self, intervention_service: InterventionService, mock_llm_provider: Mock
@@ -244,6 +273,7 @@ class TestLokiModeLogic:
             anchor=AnchorRange(from_=50, to=100),
             action_id="act_anchor",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         # Need 50+ chars to pass safety guard
@@ -268,6 +298,7 @@ class TestLokiModeLogic:
         assert response.anchor.from_ < response.anchor.to
         assert response.anchor.from_ >= 0
         assert response.anchor.to > 0
+        assert response.source == "loki"
 
     def test_provoke_action_includes_lock_id_and_content(
         self, intervention_service: InterventionService, mock_llm_provider: Mock
@@ -276,11 +307,12 @@ class TestLokiModeLogic:
         # Mock LLM to return Provoke
         mock_llm_provider.generate_intervention.return_value = InterventionResponse(
             action="provoke",
-            content="> [AI施压 - Loki]: 测试内容。",
+            content="测试内容。",
             lock_id="lock_provoke_test",
             anchor=AnchorPos(from_=50),
             action_id="act_provoke",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         request = InterventionRequest(
@@ -301,6 +333,7 @@ class TestLokiModeLogic:
         assert response.lock_id.startswith("lock_")
         assert response.content is not None
         assert len(response.content) > 0
+        assert response.source == "loki"
 
     def test_handles_loki_mode_string(
         self, intervention_service: InterventionService, mock_llm_provider: Mock
@@ -308,11 +341,12 @@ class TestLokiModeLogic:
         """Test that mode='loki' string is handled correctly."""
         mock_llm_provider.generate_intervention.return_value = InterventionResponse(
             action="provoke",
-            content="> [AI施压 - Loki]: 模式测试。",
+            content="模式测试。",
             lock_id="lock_mode_test",
             anchor=AnchorPos(from_=0),
             action_id="act_mode",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
 
         request = InterventionRequest(
@@ -329,6 +363,7 @@ class TestLokiModeLogic:
 
         # Verify mode is processed correctly
         assert response.action in ["provoke", "delete"]
+        assert response.source == "loki"
         mock_llm_provider.generate_intervention.assert_called_once()
         call_args = mock_llm_provider.generate_intervention.call_args
         assert call_args[1]["mode"] == "loki"

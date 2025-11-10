@@ -23,7 +23,7 @@
 
 **Acceptance Scenarios**:
 
-1. **Given** 编辑器中存在一个 AI 注入的带有 `lock_id` 标记的 Markdown blockquote（例如：`> [AI施压]: 你的主角此时必须...`），  
+1. **Given** 编辑器中存在一个 AI 注入的带有 `lock_id` 标记的 Markdown blockquote（例如：`> Muse 注入：你的主角此时必须... <!-- lock:lock_x -->`），  
    **When** 小王将光标定位在该块内并按下 Backspace 或 Delete 键，  
    **Then** 该锁定块必须保持完整，并触发视觉反馈（震动动画）和音效反馈（"Bonk" 无效音）
 
@@ -59,7 +59,7 @@
 
 1. **Given** 小王在 Muse 模式下写作，当前文档内容为"他打开门，犹豫着要不要进去。"，  
    **When** 小王停止输入达到 60 秒（状态机：WRITING → IDLE → STUCK），  
-   **Then** Agent 必须调用后端 API `/api/v1/impetus/generate-intervention`（mode: "muse"），并在光标位置注入返回的 Provoke 内容（例如：`> [AI施压 - Muse]: 门后传来低沉的呼吸声。`）
+   **Then** Agent 必须调用后端 API `/api/v1/impetus/generate-intervention`（mode: "muse"），并在光标位置注入返回的 Provoke 内容（例如：`> Muse 注入：门后传来低沉的呼吸声。`）
 
 2. **Given** 小王在 STUCK 状态下收到 AI 注入的施压块，  
    **When** 注入完成，  
@@ -99,7 +99,7 @@
    **When** 随机定时器触发（例如 45 秒后），  
    **Then** Agent 必须调用后端 API `/api/v1/impetus/generate-intervention`（mode: "loki"），并执行返回的 action
 
-2. **Given** 后端 API 返回 `{ "action": "provoke", "content": "> [AI施压 - Loki]: 脚步声突然停止。", "lock_id": "lock_xxx" }`，  
+2. **Given** 后端 API 返回 `{ "action": "provoke", "content": "脚步声突然停止。", "lock_id": "lock_xxx" }`，  
    **When** 前端接收响应，  
    **Then** 必须在光标位置注入该内容，应用 lock_id 标记，并触发"Glitch"动画 + "Clank"音效
 
@@ -273,7 +273,7 @@
 
 ### Key Entities
 
-- **LockBlock（锁定块）**: 一个带有唯一 `lock_id` 标识符的文本块，通常为 Markdown blockquote 格式（例如 `> [AI施压]: 内容`）。属性包括：
+- **LockBlock（锁定块）**: 一个带有唯一 `lock_id` 标识符的文本块，通常为 Markdown blockquote 格式（例如 `> Muse 注入：内容 <!-- lock:lock_x -->`）。属性包括：
   - `lock_id` (string, UUID): 唯一标识符
   - `content` (string): 文本内容
   - `source` (enum: "muse" | "loki"): 来源模式
@@ -337,7 +337,7 @@
 
 2. **编辑器选型**：假设前端使用 Milkdown（基于 ProseMirror）作为编辑器，因为它提供了 `filterTransaction` API，这是实现"不可删除"约束的核心技术依赖。
 
-3. **Markdown 格式**：假设 AI 注入的内容始终为 Markdown blockquote 格式（`> [AI施压]: 内容`），这是最小化实现路径（Article I: Simplicity）。
+3. **Markdown 格式**：假设 AI 注入的内容始终为 Markdown blockquote 格式（`> Muse 注入：内容 <!-- lock:... -->`），这是最小化实现路径（Article I: Simplicity）。
 
 4. **Context 大小**：假设"光标前最后 N 句话"的 N 默认为 3，这是基于经验的合理默认值（足够 LLM 理解上下文，但不会导致 token 数过大）。
 

@@ -99,6 +99,7 @@ export function useAnimationController(actionType: AIActionType): UseAnimationCo
     // Full animations based on action type
     switch (actionType) {
       case AIActionType.PROVOKE:
+      case AIActionType.REWRITE:
         // FR-007: Glitch animation - digital disruption effect
         return {
           initial: { opacity: 1 },

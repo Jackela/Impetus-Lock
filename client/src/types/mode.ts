@@ -46,6 +46,11 @@ export type AgentMode =
   | "off";
 
 /**
+ * Agent source for interventions (Muse/Loki only).
+ */
+export type AgentSource = Exclude<AgentMode, "off">;
+
+/**
  * Type guard to validate AgentMode.
  *
  * @param mode - Potential AgentMode value

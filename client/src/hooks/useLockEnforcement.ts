@@ -13,6 +13,7 @@
 
 import { useState, useCallback } from "react";
 import { lockManager } from "../services/LockManager";
+import type { LockMetadata } from "../services/LockManager";
 
 /**
  * Hook return type.
@@ -41,7 +42,7 @@ interface UseLockEnforcementReturn {
   /**
    * Apply a lock ID to the manager.
    */
-  applyLock: (lockId: string) => void;
+  applyLock: (lockId: string, metadata?: LockMetadata) => void;
 
   /**
    * Remove a lock ID from the manager.
@@ -61,7 +62,7 @@ interface UseLockEnforcementReturn {
   /**
    * Inject lock comment into content.
    */
-  injectLockComment: (content: string, lockId: string) => string;
+  injectLockComment: (content: string, lockId: string, metadata?: LockMetadata) => string;
 
   /**
    * Clear error state.
@@ -108,11 +109,11 @@ export function useLockEnforcement(): UseLockEnforcementReturn {
   }, []);
 
   const applyLock = useCallback(
-    (lockId: string) => {
+    (lockId: string, metadata?: LockMetadata) => {
       try {
         setIsLoading(true);
         setError(null);
-        lockManager.applyLock(lockId);
+        lockManager.applyLock(lockId, metadata);
         updateLockCount();
       } catch (err) {
         setError(err instanceof Error ? err : new Error(String(err)));
@@ -153,10 +154,10 @@ export function useLockEnforcement(): UseLockEnforcementReturn {
     }
   }, []);
 
-  const injectLockComment = useCallback((content: string, lockId: string) => {
+  const injectLockComment = useCallback((content: string, lockId: string, metadata?: LockMetadata) => {
     try {
       setError(null);
-      return lockManager.injectLockComment(content, lockId);
+      return lockManager.injectLockComment(content, lockId, metadata);
     } catch (err) {
       setError(err instanceof Error ? err : new Error(String(err)));
       return content;

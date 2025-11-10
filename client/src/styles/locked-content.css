@@ -1,0 +1,74 @@
+/**
+ * Locked Content Styling
+ *
+ * Visual treatment for AI-injected content. Relies on LockDecorations to add
+ * `.locked-content`, `data-lock-id`, `data-source`, and `data-lock-shape`
+ * attributes so Muse/Loki vibes can be rendered without textual prefixes.
+ */
+
+.locked-content {
+  border-left: 3px solid var(--color-lock-border, #8b5cf6);
+  background: var(--color-lock-background, rgba(139, 92, 246, 0.05));
+  padding: 0.85rem 1rem 0.85rem 1.75rem;
+  margin: 0.6rem 0;
+  border-radius: 6px;
+  position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.locked-content::before {
+  content: "🔒";
+  position: absolute;
+  left: 0.6rem;
+  top: 0.8rem;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.locked-content[data-source="muse"] {
+  border-left-color: var(--color-muse-border, #c4b5fd);
+  background: var(--color-muse-background, rgba(196, 181, 253, 0.14));
+}
+
+.locked-content[data-source="muse"]::before {
+  content: "💡";
+  color: var(--color-muse-icon, #ede9fe);
+}
+
+.locked-content[data-source="loki"] {
+  border-left-color: var(--color-loki-border, #f87171);
+  background: var(--color-loki-background, rgba(248, 113, 113, 0.12));
+}
+
+.locked-content[data-source="loki"]::before {
+  content: "💥";
+  color: var(--color-loki-icon, #fee2e2);
+}
+
+.locked-content[data-lock-shape="inline"] {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.45rem;
+  margin: 0 0.15rem;
+  border-radius: 4px;
+}
+
+.locked-content[data-lock-shape="inline"]::before {
+  position: static;
+  margin-right: 0.35rem;
+}
+
+.locked-content:hover,
+.locked-content:focus-within {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.locked-content:hover::after {
+  content: "LOCKED";
+  position: absolute;
+  right: 0.8rem;
+  top: 0.7rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  opacity: 0.65;
+}

@@ -140,7 +140,7 @@ class TaskRepository(ABC):
                 action_type="provoke",
                 action_id="act_001",
                 lock_id="lock_001",
-                content="> AI content",
+                content="门后忽然传来潮湿的呼吸声。",
                 anchor={"type": "pos", "from": 123},
                 mode="muse",
                 context="User context",

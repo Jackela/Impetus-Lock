@@ -25,7 +25,7 @@ class InterventionAction:
     Attributes:
         id: Unique action entity identifier (UUID v4).
         task_id: Reference to parent task (UUID).
-        action_type: Type of intervention ("provoke" or "delete").
+        action_type: Type of intervention ("provoke", "delete", or "rewrite").
         action_id: Client-facing action identifier (e.g., "act_xxxxx").
         lock_id: Lock identifier for provoke actions (None for delete).
         content: Intervention content for provoke actions (None for delete).
@@ -37,17 +37,17 @@ class InterventionAction:
 
     Example (Provoke):
         ```python
-        action = InterventionAction.create(
-            task_id=UUID("550e8400-e29b-41d4-a716-446655440000"),
-            action_type="provoke",
-            action_id="act_test_001",
-            lock_id="lock_test_001",
-            content="> [AI施压 - Muse]: 他打开门，看到...",
-            anchor={"type": "pos", "from": 1234},
-            mode="muse",
-            context="他打开门，犹豫着要不要进去。",
-            issued_at=datetime.now(UTC),
-        )
+            action = InterventionAction.create(
+                task_id=UUID("550e8400-e29b-41d4-a716-446655440000"),
+                action_type="provoke",
+                action_id="act_test_001",
+                lock_id="lock_test_001",
+                content="门后忽然传来潮湿的呼吸声。",
+                anchor={"type": "pos", "from": 1234},
+                mode="muse",
+                context="他打开门，犹豫着要不要进去。",
+                issued_at=datetime.now(UTC),
+            )
         ```
 
     Example (Delete):
@@ -62,11 +62,26 @@ class InterventionAction:
             issued_at=datetime.now(UTC),
         )
         ```
+
+    Example (Rewrite):
+        ```python
+        action = InterventionAction.create(
+            task_id=UUID("550e8400-e29b-41d4-a716-446655440000"),
+            action_type="rewrite",
+            action_id="act_test_003",
+            lock_id="lock_test_inline",
+            content="他突然意识到买家永远不会来了。",
+            anchor={"type": "range", "from": 1289, "to": 1310},
+            mode="muse",
+            context="他打开门，犹豫着要不要进去。",
+            issued_at=datetime.now(UTC),
+        )
+        ```
     """
 
     id: UUID
     task_id: UUID
-    action_type: Literal["provoke", "delete"]
+    action_type: Literal["provoke", "delete", "rewrite"]
     action_id: str
     lock_id: str | None
     content: str | None
@@ -80,7 +95,7 @@ class InterventionAction:
     def create(
         cls,
         task_id: UUID,
-        action_type: Literal["provoke", "delete"],
+        action_type: Literal["provoke", "delete", "rewrite"],
         action_id: str,
         anchor: dict[str, Any],
         mode: Literal["muse", "loki"],
@@ -93,7 +108,7 @@ class InterventionAction:
 
         Args:
             task_id: Parent task UUID.
-            action_type: "provoke" or "delete".
+            action_type: "provoke", "delete", or "rewrite".
             action_id: Client-facing action ID (e.g., "act_xxxxx").
             anchor: Position information (dict).
             mode: Agent mode ("muse" or "loki").
@@ -125,8 +140,8 @@ class InterventionAction:
             ```
         """
         # Validate provoke action requirements
-        if action_type == "provoke" and (not lock_id or not content):
-            raise ValueError("Provoke actions require lock_id and content")
+        if action_type in {"provoke", "rewrite"} and (not lock_id or not content):
+            raise ValueError("Provoke/rewrite actions require lock_id and content")
 
         return cls(
             id=uuid4(),

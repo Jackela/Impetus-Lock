@@ -18,7 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from server.api.main import app
-from server.domain.models.anchor import AnchorPos
+from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
 
 client = TestClient(app)
@@ -51,11 +51,12 @@ def mock_llm_provider() -> Generator[None, None, None]:
     """
     mock_response = InterventionResponse(
         action="provoke",
-        content="> [AI施压 - Muse]: 他打开门，看到...",
+        content="他打开门，看到...",
         lock_id="lock_test_001",
         anchor=AnchorPos(from_=1234),
         action_id="act_test_001",
         issued_at=datetime.now(UTC),
+        source="muse",
     )
 
     mock_path = (
@@ -88,19 +89,22 @@ class TestInterventionAPIContract:
         # Validate response structure
         assert data["action"] == "provoke"
         assert "content" in data
-        assert data["content"].startswith("> [AI施压")
+        assert isinstance(data["content"], str)
+        assert len(data["content"]) > 0
         assert "lock_id" in data
         assert data["lock_id"].startswith("lock_")
         assert "anchor" in data
         assert "action_id" in data
         assert data["action_id"].startswith("act_")
         assert "issued_at" in data
+        assert data["source"] == "muse"
 
     def test_loki_mode_returns_provoke_or_delete(self) -> None:
-        """Test that Loki mode request returns either provoke or delete action.
+        """Test that Loki mode request returns provoke/delete/rewrite action.
 
         Loki mode can return:
         - provoke: with content + lock_id
+        - rewrite: with content + lock_id
         - delete: with anchor (no content/lock_id)
 
         Expected (RED): 404 Not Found (endpoint not implemented)
@@ -115,9 +119,9 @@ class TestInterventionAPIContract:
         data = response.json()
 
         # Validate action is one of the allowed values
-        assert data["action"] in ["provoke", "delete"]
+        assert data["action"] in ["provoke", "delete", "rewrite"]
 
-        if data["action"] == "provoke":
+        if data["action"] in ["provoke", "rewrite"]:
             assert "content" in data
             assert "lock_id" in data
         elif data["action"] == "delete":
@@ -128,6 +132,7 @@ class TestInterventionAPIContract:
 
         assert "action_id" in data
         assert "issued_at" in data
+        assert data["source"] in ["muse", "loki"]
 
     def test_idempotency_same_key_returns_cached_response(self) -> None:
         """Test that requests with same Idempotency-Key return cached response.
@@ -158,6 +163,7 @@ class TestInterventionAPIContract:
         # Responses should be identical (cached)
         assert data1["action_id"] == data2["action_id"]
         assert data1["action"] == data2["action"]
+        assert data1["source"] == data2["source"]
         if data1["action"] == "provoke":
             assert data1["lock_id"] == data2["lock_id"]
 
@@ -198,6 +204,40 @@ class TestInterventionAPIContract:
         )
 
         assert response.status_code == 422
+
+    def test_rewrite_action_contract(self) -> None:
+        """Ensure rewrite responses include content + lock id."""
+        rewrite_response = InterventionResponse(
+            action="rewrite",
+            content="改写后的句子",
+            lock_id="lock_rewrite",
+            anchor=AnchorRange(from_=180, to=210),
+            action_id="act_rewrite_case",
+            issued_at=datetime.now(UTC),
+            source="muse",
+        )
+        mock_path = (
+            "server.infrastructure.llm.instructor_provider.InstructorLLMProvider.generate_intervention"
+        )
+
+        headers = {
+            "Idempotency-Key": "rewrite-key-12345",
+            "X-Contract-Version": "1.0.1",
+        }
+
+        with patch(mock_path, return_value=rewrite_response):
+            response = client.post(
+                "/api/v1/impetus/generate-intervention",
+                json=VALID_MUSE_REQUEST,
+                headers=headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["action"] == "rewrite"
+        assert isinstance(data["content"], str)
+        assert data["lock_id"].startswith("lock")
+        assert data["source"] == "muse"
 
     def test_missing_contract_version_returns_422(self) -> None:
         """Test that missing X-Contract-Version header returns 422.

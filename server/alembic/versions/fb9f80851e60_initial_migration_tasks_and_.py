@@ -44,8 +44,11 @@ def upgrade() -> None:
     sa.Column('context', sa.Text(), nullable=False),
     sa.Column('issued_at', sa.TIMESTAMP(timezone=True), nullable=False),
     sa.Column('created_at', sa.TIMESTAMP(timezone=True), nullable=False),
-    sa.CheckConstraint("(action_type = 'provoke' AND content IS NOT NULL AND lock_id IS NOT NULL) OR (action_type = 'delete')", name='actions_provoke_has_content'),
-    sa.CheckConstraint("action_type IN ('provoke', 'delete')", name='actions_type_check'),
+    sa.CheckConstraint("("
+                       "action_type IN ('provoke', 'rewrite') AND content IS NOT NULL AND lock_id IS NOT NULL"
+                       ") OR (action_type = 'delete' AND content IS NULL AND lock_id IS NULL)",
+                       name='actions_mutation_payload_check'),
+    sa.CheckConstraint("action_type IN ('provoke', 'delete', 'rewrite')", name='actions_type_check'),
     sa.CheckConstraint("mode IN ('muse', 'loki')", name='actions_mode_check'),
     sa.ForeignKeyConstraint(['task_id'], ['tasks.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),

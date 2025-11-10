@@ -372,7 +372,7 @@ Store `lock_id` using **HTML comments in Markdown** + `localStorage` backup.
 ### Rationale
 - **Core Requirement**: Lock survives page refresh (FR-005)
 - **Approach**:
-  - Embed lock_id in Markdown: `> [AI施压]: 内容 <!-- lock:550e8400-e29b-41d4-a716-446655440000 -->`
+  - Embed lock_id in Markdown: `> Muse 注入：内容 <!-- lock:550e8400-e29b-41d4-a716-446655440000 -->`
   - Parse comments on document load → re-apply locks
   - Backup in `localStorage` for non-Markdown editors
   

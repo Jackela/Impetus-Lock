@@ -191,7 +191,7 @@ class PostgreSQLTaskRepository(TaskRepository):
                 action_type="provoke",
                 action_id="act_001",
                 lock_id="lock_001",
-                content="> [AI施压 - Muse]: Content",
+                content="门后忽然传来潮湿的呼吸声。",
                 anchor={"type": "pos", "from": 123},
                 mode="muse",
                 context="User context",

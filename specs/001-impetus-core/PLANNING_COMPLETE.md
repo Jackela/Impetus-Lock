@@ -93,7 +93,7 @@
 ```json
 {
   "action": "provoke" | "delete",
-  "content": "> [AI施压]: 门后是一堵砖墙。",
+  "content": "门后是一堵砖墙。",
   "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8a",
   "anchor": { "type": "pos", "from": 1234 },
   "action_id": "act_550e8400-e29b-41d4-a716-446655440000"

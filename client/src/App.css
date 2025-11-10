@@ -9,7 +9,7 @@
   background-color: #1a1a1a;
   border-radius: 8px;
   padding: 2rem;
-  min-height: 500px;
+  min-height: 400px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -24,7 +24,9 @@
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell",
     "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
   caret-color: #8b5cf6;
-  min-height: 450px;
+  min-height: 350px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
 }
 
 /* Smooth typing experience */
@@ -347,9 +349,9 @@ button:focus-visible {
 
 .editor-container {
   width: 100%;
-  max-width: 900px;
+  max-width: 1600px;
   height: 100%;
-  padding: 2rem;
+  padding: 2rem 4rem;
   margin: 0 auto;
 }
 
@@ -437,7 +439,7 @@ button:focus-visible {
 
 /**
  * Accessibility: Reduced Motion Media Query (FR-018)
- * 
+ *
  * Users with motion sensitivities (prefers-reduced-motion: reduce) will see
  * simplified animations. This CSS disables all transitions and animations
  * globally, while JavaScript implementations (useAnimationController) handle
@@ -456,4 +458,31 @@ button:focus-visible {
     animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/**
+ * T014: Keyboard Hint Footer
+ *
+ * Subtle footer hint for "?" keyboard shortcut to reopen welcome modal.
+ * Non-intrusive with semi-transparent styling and pointer-events: none.
+ */
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 8px;
+  font-size: 0.875rem;
+  color: #9ca3af;
+  opacity: 0.5;
+  background: transparent;
+  pointer-events: none;
+}
+
+.app-footer kbd {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
 }

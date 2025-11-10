@@ -22,7 +22,7 @@ import type { AgentMode } from "./mode";
  * ```typescript
  * const block: LockBlock = {
  *   lock_id: "lock_01j4z3m8a6q3qz2x8j4z3m8a",
- *   content: "> [AI施压 - Muse]: 门后传来低沉的呼吸声。",
+ *   content: "门后传来低沉的呼吸声。",
  *   source: "muse",
  *   created_at: Date.now(),
  *   is_deletable: false
@@ -37,8 +37,7 @@ export interface LockBlock {
   lock_id: string;
 
   /**
-   * Markdown blockquote content.
-   * Format: "> [AI施压 - {Mode}]: {content}"
+   * Markdown-compatible text content (prefixing handled by UI).
    */
   content: string;
 

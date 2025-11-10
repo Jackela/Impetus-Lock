@@ -1,0 +1,37 @@
+/**
+ * Timer Indicator Styles
+ *
+ * Subtle 2px progress bar for Muse mode STUCK timer visibility.
+ * Non-intrusive design maintains Zen writing aesthetic.
+ */
+
+.timer-indicator {
+  /* Positioning: Fixed at top of viewport, below header */
+  position: fixed;
+  top: var(--header-height, 60px); /* Below app header */
+  left: 0;
+  z-index: 10; /* Above editor, below modals */
+
+  /* Dimensions */
+  height: 2px; /* Minimal vertical space */
+  /* Width set dynamically via inline style (0-100%) */
+
+  /* Visual Style */
+  background: rgba(124, 58, 237, 0.6); /* Purple #7c3aed with 60% opacity */
+
+  /* Animation */
+  transition: width 1s linear; /* Smooth progress animation */
+
+  /* Interaction */
+  pointer-events: none; /* Don't block editor clicks */
+}
+
+/**
+ * Responsive adjustments
+ */
+@media (max-width: 768px) {
+  .timer-indicator {
+    /* Mobile: Ensure timer doesn't overlap mobile header */
+    top: var(--header-height-mobile, 50px);
+  }
+}

@@ -1,0 +1,264 @@
+/**
+ * Welcome Modal Styles
+ *
+ * Onboarding modal with purple theme matching Impetus Lock design.
+ */
+
+.welcome-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+  padding: 1rem;
+}
+
+.welcome-modal {
+  background-color: #1e1e1e;
+  border: 2px solid #8b5cf6;
+  border-radius: 12px;
+  padding: 2.5rem;
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+  position: relative;
+}
+
+.welcome-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #e5e5e5;
+  font-size: 2rem;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.welcome-modal-close:hover {
+  background-color: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.welcome-modal-close:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.welcome-modal h2 {
+  color: #8b5cf6;
+  font-size: 2rem;
+  margin: 0 0 1rem 0;
+  font-weight: 700;
+}
+
+.welcome-intro {
+  color: #e5e5e5;
+  font-size: 1.125rem;
+  margin: 0 0 2rem 0;
+  opacity: 0.9;
+}
+
+.welcome-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.welcome-mode {
+  background-color: rgba(139, 92, 246, 0.1);
+  border-left: 4px solid #8b5cf6;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.welcome-mode h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.mode-muse {
+  color: #a78bfa;
+}
+
+.mode-loki {
+  color: #f472b6;
+}
+
+.mode-lock {
+  color: #fbbf24;
+}
+
+.welcome-mode p {
+  color: #e5e5e5;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.welcome-mode p:last-child {
+  margin-bottom: 0;
+}
+
+.mode-trigger {
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+.mode-trigger strong {
+  color: #8b5cf6;
+}
+
+.welcome-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.3);
+  margin-bottom: 1rem;
+}
+
+.welcome-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e5e5e5;
+  font-size: 0.95rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.welcome-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #8b5cf6;
+}
+
+.welcome-checkbox:hover {
+  color: #8b5cf6;
+}
+
+.welcome-button {
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.welcome-button:hover {
+  background-color: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.welcome-button:active {
+  transform: translateY(0);
+}
+
+.welcome-button:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+.welcome-hint {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  text-align: center;
+  margin: 0;
+  font-style: italic;
+}
+
+/**
+ * T012: RECOMMENDED Badge
+ *
+ * Emphasizes Muse mode as the recommended choice for new users.
+ * Purple badge with white text, matching the Impetus Lock brand.
+ */
+.recommended-badge {
+  display: inline-block;
+  background: #7c3aed;
+  color: #ffffff;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-weight: 600;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/**
+ * T013: Font Size Hierarchy
+ *
+ * Ensures visual hierarchy without changing the base h3 size.
+ * All mode headings maintain equal size (1.25rem) for consistency.
+ */
+.welcome-mode.muse-mode h3 {
+  font-size: 1.25rem; /* Same as base .welcome-mode h3 */
+}
+
+.welcome-mode.loki-mode h3 {
+  font-size: 1.25rem; /* Equal to Muse for consistency */
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .welcome-modal {
+    padding: 1.5rem;
+    max-height: 95vh;
+  }
+
+  .welcome-modal h2 {
+    font-size: 1.5rem;
+  }
+
+  .welcome-intro {
+    font-size: 1rem;
+  }
+
+  .welcome-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .welcome-button {
+    width: 100%;
+  }
+
+  .welcome-checkbox {
+    justify-content: center;
+  }
+}
+
+/* Accessibility: Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .welcome-button:hover {
+    transform: none;
+  }
+}

@@ -22,7 +22,7 @@ A text block marked as un-deletable by the AI Agent.
 ```typescript
 interface LockBlock {
   lock_id: string;        // UUID v4, unique identifier
-  content: string;        // Markdown blockquote content (e.g., "> [AI施压]: 门后是一堵砖墙。")
+  content: string;        // Markdown blockquote content (e.g., "> Muse 注入：门后是一堵砖墙。")
   source: AgentMode;      // Origin mode: "muse" | "loki"
   created_at: number;     // Unix timestamp (milliseconds)
   is_deletable: false;    // Constant - always false

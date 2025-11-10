@@ -79,28 +79,31 @@ export interface components {
         InterventionResponse: {
             /**
              * @description Intervention action type:
-             *     - **provoke**: Inject content with lock_id (un-deletable)
-             *     - **delete**: Remove text at anchor position (irreversible)
+                 *     - **provoke**: Inject new locked content
+                 *     - **delete**: Remove a sentence range
+                 *     - **rewrite**: Replace existing sentence with locked variant
              * @example provoke
              * @enum {string}
              */
-            action: "provoke" | "delete";
+            action: "provoke" | "delete" | "rewrite";
             /**
-             * @description Markdown blockquote content (ONLY for "provoke" action).
-             *     Format: `> [AI施压 - {mode}]: {creative_pressure_text}`
-             * @example > [AI施压 - Muse]: 门后是一堵砖墙。
+             * @description Content payload:
+             *     - provoke: Plain text snippet to render as blockquote
+             *     - rewrite: Plain text replacement for the targeted range
+             *     - delete: null
+             * @example 门后是一堵砖墙。
              */
             content?: string | null;
             /**
-             * @description Unique lock identifier (ONLY for "provoke" action).
+             * @description Unique lock identifier (required for provoke/rewrite).
              *     Format: `lock_{ulid}` (sortable UUID alternative)
              * @example lock_01j4z3m8a6q3qz2x8j4z3m8a
              */
             lock_id?: string | null;
             /**
              * @description Target location for action.
-             *     - **provoke**: Optional, defaults to cursor position
-             *     - **delete**: Required
+                 *     - **provoke**: Optional, defaults to cursor position
+             *     - **delete / rewrite**: Required
              */
             anchor?: components["schemas"]["Anchor"];
             /**
@@ -109,6 +112,18 @@ export interface components {
              * @example act_550e8400-e29b-41d4-a716-446655440000
              */
             action_id: string;
+            /**
+             * @description Agent mode that produced this action.
+             * @example muse
+             * @enum {string}
+             */
+            source: "muse" | "loki";
+            /**
+             * Format: date-time
+             * @description Server-issued timestamp for the action (ISO 8601 string)
+             * @example 2025-01-15T10:30:45.123Z
+             */
+            issued_at: string;
         };
         Anchor: components["schemas"]["AnchorPos"] | components["schemas"]["AnchorRange"] | components["schemas"]["AnchorLockId"];
         AnchorPos: {

@@ -5,20 +5,31 @@
  * Provides lock persistence via Markdown comments and lock state tracking.
  *
  * Constitutional Compliance:
- * - Article I (Simplicity): In-memory Set for P1 (no Redux/Zustand)
+ * - Article I (Simplicity): In-memory Map for metadata (no Redux/Zustand)
  * - Article IV (SOLID): SRP - Handles only lock state, not editor operations
  * - Article V (Documentation): Complete JSDoc for all public methods
  *
  * @module services/LockManager
  */
 
+import type { AgentSource } from "../types/mode";
+
+/**
+ * Metadata associated with a lock ID.
+ */
+export interface LockMetadata {
+  /** Agent source responsible for the lock (Muse/Loki) */
+  source?: AgentSource;
+  shape?: "inline" | "block";
+}
+
 /**
  * Lock state manager for un-deletable content blocks.
  *
- * Maintains a Set of active lock IDs and provides utilities for:
+ * Maintains metadata for each lock ID and provides utilities for:
  * - Adding/removing locks
  * - Checking lock existence
- * - Extracting locks from Markdown comments
+ * - Extracting locks (and sources) from Markdown comments
  * - Persisting locks across page refreshes
  *
  * @example
@@ -26,7 +37,7 @@
  * const manager = new LockManager();
  *
  * // Apply lock from AI intervention
- * manager.applyLock('lock_01j4z3m8a6q3qz2x8j4z3m8a');
+ * manager.applyLock('lock_01j4z3m8a6q3qz2x8j4z3m8a', { source: 'muse' });
  *
  * // Check if position has lock
  * if (manager.hasLock('lock_01j4z3m8a6q3qz2x8j4z3m8a')) {
@@ -34,34 +45,36 @@
  * }
  *
  * // Extract locks from Markdown on page load
- * const markdown = '> Content <!-- lock:lock_001 -->';
- * const locks = manager.extractLocksFromMarkdown(markdown);
- * locks.forEach(id => manager.applyLock(id));
+ * const markdown = '> Content <!-- lock:lock_001 source:muse -->';
+ * const locks = manager.extractLockEntriesFromMarkdown(markdown);
+ * locks.forEach(({ lockId, source }) => manager.applyLock(lockId, { source }));
  * ```
  */
 export class LockManager {
   /**
-   * Set of active lock IDs (UUID strings).
-   * Uses Set for O(1) lookup performance.
+   * Map of active lock IDs with metadata.
+   * Provides O(1) lookup and easy metadata enrichment.
    */
-  private locks: Set<string> = new Set();
+  private locks: Map<string, LockMetadata> = new Map();
 
   /**
    * Apply a lock ID to the active set.
    *
-   * Idempotent operation - applying same lock twice is safe.
+   * Idempotent operation - applying same lock twice merges metadata.
    *
    * @param lockId - Lock identifier (UUID v4 format, e.g., "lock_01j4z3...")
+   * @param metadata - Optional metadata (agent source, etc.)
    *
    * @example
    * ```typescript
-   * manager.applyLock('lock_001');
-   * manager.applyLock('lock_001'); // Safe - no duplicate
+   * manager.applyLock('lock_001', { source: 'muse' });
+   * manager.applyLock('lock_001', { source: 'muse' }); // Safe - merges metadata
    * console.log(manager.getLockCount()); // 1
    * ```
    */
-  applyLock(lockId: string): void {
-    this.locks.add(lockId);
+  applyLock(lockId: string, metadata: LockMetadata = {}): void {
+    const existing = this.locks.get(lockId) || {};
+    this.locks.set(lockId, { ...existing, ...metadata });
   }
 
   /**
@@ -130,13 +143,30 @@ export class LockManager {
    * ```
    */
   getAllLocks(): string[] {
-    return Array.from(this.locks);
+    return Array.from(this.locks.keys());
   }
 
   /**
-   * Extract lock IDs from Markdown comments.
+   * Retrieve metadata for a given lock.
    *
-   * Parses HTML comments in format: `<!-- lock:lock_id -->`
+   * @param lockId - Lock identifier
+   * @returns Stored metadata or undefined
+   */
+  getLockMetadata(lockId: string): LockMetadata | undefined {
+    return this.locks.get(lockId);
+  }
+
+  /**
+   * Convenience helper to read only the source metadata.
+   */
+  getLockSource(lockId: string): AgentSource | undefined {
+    return this.locks.get(lockId)?.source;
+  }
+
+  /**
+   * Extract lock IDs (and optional metadata) from Markdown comments.
+   *
+   * Parses HTML comments in format: `<!-- lock:lock_id [source:muse] -->`
    * Used for persistence - locks survive page refresh by being embedded in Markdown.
    *
    * @param markdown - Markdown content to parse
@@ -145,36 +175,45 @@ export class LockManager {
    * @example
    * ```typescript
    * const markdown = `
-   * > [AI施压]: Content 1 <!-- lock:lock_001 -->
+   * > Content 1 <!-- lock:lock_001 source:muse -->
    *
-   * Normal text.
-   *
-   * > [AI施压]: Content 2 <!-- lock:lock_002 -->
+   * > Content 2 <!-- lock:lock_002 source:loki -->
    * `;
    *
    * const locks = manager.extractLocksFromMarkdown(markdown);
    * console.log(locks); // ['lock_001', 'lock_002']
-   *
-   * // Apply extracted locks
-   * locks.forEach(id => manager.applyLock(id));
    * ```
    */
   extractLocksFromMarkdown(markdown: string): string[] {
-    // Regex pattern: <!-- lock:lock_id -->
-    // Matches: lock:, followed by non-whitespace characters, before -->
-    const lockPattern = /<!--\s*lock:(\S+)\s*-->/g;
-    const locks: string[] = [];
+    return this.extractLockEntriesFromMarkdown(markdown).map((entry) => entry.lockId);
+  }
+
+  /**
+   * Extract lock entries (ID + metadata) from Markdown content.
+   *
+   * @param markdown - Markdown content to parse
+   * @returns Array of entries with lockId and optional metadata
+   */
+  extractLockEntriesFromMarkdown(
+    markdown: string
+  ): Array<{ lockId: string; source?: AgentSource }> {
+    // Regex pattern: <!-- lock:lock_id [source:muse] -->
+    const lockPattern = /<!--\s*lock:([^\s>]+)(?:\s+source:([^\s>]+))?\s*-->/gi;
+    const entries: Array<{ lockId: string; source?: AgentSource }> = [];
 
     let match: RegExpExecArray | null;
     while ((match = lockPattern.exec(markdown)) !== null) {
       const lockId = match[1];
-      // Validate lock_id format (non-empty string)
+      const sourceRaw = match[2]?.toLowerCase();
+      const source =
+        sourceRaw === "muse" || sourceRaw === "loki" ? (sourceRaw as AgentSource) : undefined;
+
       if (lockId && lockId.length > 0) {
-        locks.push(lockId);
+        entries.push({ lockId, source });
       }
     }
 
-    return locks;
+    return entries;
   }
 
   /**
@@ -204,14 +243,18 @@ export class LockManager {
    *
    * @example
    * ```typescript
-   * const content = '> [AI施压 - Muse]: 门后传来低沉的呼吸声。';
-   * const withLock = manager.injectLockComment(content, 'lock_001');
+   * const content = '> Muse intervention';
+   * const withLock = manager.injectLockComment(content, 'lock_001', { source: 'muse' });
    * console.log(withLock);
-   * // '> [AI施压 - Muse]: 门后传来低沉的呼吸声。 <!-- lock:lock_001 -->'
+   * // '> Muse intervention <!-- lock:lock_001 source:muse -->'
    * ```
    */
-  injectLockComment(content: string, lockId: string): string {
-    return `${content} <!-- lock:${lockId} -->`;
+  injectLockComment(content: string, lockId: string, metadata: LockMetadata = {}): string {
+    const parts = [`lock:${lockId}`];
+    if (metadata.source) {
+      parts.push(`source:${metadata.source}`);
+    }
+    return `${content} <!-- ${parts.join(" ")} -->`;
   }
 }
 

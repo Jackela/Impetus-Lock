@@ -15,7 +15,7 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from server.domain.models.anchor import AnchorRange
+from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
 
 router = APIRouter(prefix="/api/v1/test", tags=["testing"])
@@ -74,6 +74,7 @@ def trigger_delete_action(request: TestTriggerDeleteRequest) -> InterventionResp
         anchor=AnchorRange(from_=request.from_pos, to=request.to_pos),
         action_id=f"act_test_{uuid4()}",
         issued_at=datetime.now(UTC),
+        source="loki",
     )
 
 
@@ -99,11 +100,12 @@ def trigger_provoke_action() -> InterventionResponse:
 
     return InterventionResponse(
         action="provoke",
-        content="> [AI施压 - Test]: Test intervention content",
+        content="Test intervention content",
         lock_id=f"lock_test_{uuid4()}",
-        anchor=AnchorRange(from_=0, to=0),  # Insert at start
+        anchor=AnchorPos(from_=0),  # Insert at start
         action_id=f"act_test_{uuid4()}",
         issued_at=datetime.now(UTC),
+        source="muse",
     )
 
 

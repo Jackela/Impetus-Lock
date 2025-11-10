@@ -102,20 +102,26 @@ paths:
                   summary: Muse provoke action
                   value:
                     action: "provoke"
-                    content: "> [AI施压 - Muse]: 门后是一堵砖墙。"
+                    content: "门后是一堵砖墙。"
                     lock_id: "lock_550e8400-e29b-41d4-a716-446655440000"
                     action_id: "act_01j4z3m8a6q3qz2x8j4z3m8a"
+                    source: "muse"
+                    anchor:
+                      type: "pos"
+                      from: 1310
+                    issued_at: "2025-01-15T10:30:45.123Z"
                 
                 provoke-loki:
                   summary: Loki provoke action
                   value:
                     action: "provoke"
-                    content: "> [AI施压 - Loki]: 脚步声突然停止了。你听到钥匙转动的声音。"
+                    content: "脚步声突然停止了。你听到钥匙转动的声音。"
                     lock_id: "lock_01j4z3m8b7r4ra3y9k5a4n9c"
                     anchor:
                       type: "pos"
                       from: 1310
                     action_id: "act_01j4z3m8b7r4ra3y9k5a4n9b"
+                    source: "loki"
                 
                 delete-loki:
                   summary: Loki delete action
@@ -126,6 +132,8 @@ paths:
                       from: 1289
                       to: 1310
                     action_id: "act_01j4z3m8c8s5sb4z0l6b5o0d"
+                    source: "loki"
+                    issued_at: "2025-01-15T10:31:45.123Z"
         
         '400':
           description: Bad Request - invalid anchor position
@@ -242,22 +250,23 @@ components:
       properties:
         action:
           type: string
-          enum: ["provoke", "delete"]
+          enum: ["provoke", "delete", "rewrite"]
           description: |
             Intervention action type:
             - **provoke**: Inject content with lock_id (un-deletable)
             - **delete**: Remove text at anchor position (irreversible)
+            - **rewrite**: Replace an anchor range with locked content
           example: "provoke"
         
         content:
           type: string
           description: |
-            Markdown blockquote content (ONLY for "provoke" action).
-            Format: `> [AI施压 - {mode}]: {creative_pressure_text}`
+            Plain text snippet rendered as Markdown (blockquote for provoke, inline for rewrite).
+            No `[AI施压]` prefixes; UI handles vibe styling.
           nullable: true
           minLength: 5
           maxLength: 500
-          example: "> [AI施压 - Muse]: 门后是一堵砖墙。"
+          example: "门后是一堵砖墙。"
         
         lock_id:
           type: string

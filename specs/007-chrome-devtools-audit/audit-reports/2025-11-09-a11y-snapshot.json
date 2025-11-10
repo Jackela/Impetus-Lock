@@ -1,0 +1,39 @@
+uid=1_0 RootWebArea "client" url="http://localhost:5173/"
+  uid=1_1 ignored
+    uid=1_2 ignored
+      uid=1_3 StaticText "<<<<<<< Updated upstream "
+        uid=1_4 InlineTextBox "<<<<<<< Updated upstream "
+      uid=1_5 StaticText "======= "
+        uid=1_6 InlineTextBox "======= "
+      uid=1_7 StaticText ">>>>>>> Stashed changes"
+        uid=1_8 InlineTextBox ">>>>>>> Stashed changes"
+      uid=1_9 generic
+        uid=1_10 ignored
+          uid=1_11 banner
+            uid=1_12 heading "Impetus Lock" level="1"
+              uid=1_13 StaticText "Impetus Lock"
+                uid=1_14 InlineTextBox "Impetus Lock"
+            uid=1_15 ignored
+              uid=1_16 LabelText
+                uid=1_17 StaticText "AI Mode:"
+                  uid=1_18 InlineTextBox "AI Mode:"
+              uid=1_19 combobox "AI Mode:" haspopup="menu" value="Off"
+                uid=1_20 MenuListPopup
+                  uid=1_21 option "Off" selectable selected value="Off"
+                  uid=1_22 option "Muse" value="Muse"
+                  uid=1_23 option "Loki" value="Loki"
+              uid=1_24 button "I'm stuck! Trigger AI assistance" disableable disabled
+                uid=1_25 ignored
+                  uid=1_26 StaticText "I'm stuck!"
+                    uid=1_27 InlineTextBox "I'm stuck!"
+              uid=1_28 button "Test Delete feedback (dev only)"
+                uid=1_29 StaticText "Test Delete"
+                  uid=1_30 InlineTextBox "Test Delete"
+          uid=1_31 main
+            uid=1_32 generic
+              uid=1_33 ignored
+                uid=1_34 ignored
+                  uid=1_35 textbox multiline value="Welcome to Impetus Lock\n\nStart writing..."
+                    uid=1_36 heading "Welcome to Impetus Lock\n\nStart writing..." level="1"
+                      uid=1_37 StaticText "Welcome to Impetus Lock\n\nStart writing..."
+                        uid=1_38 InlineTextBox "Welcome to Impetus Lock\n\nStart writing..."

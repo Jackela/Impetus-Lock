@@ -57,6 +57,13 @@ export interface UseWritingStateOptions {
    * Only called once per STUCK transition.
    */
   onStuck?: () => void;
+
+  /**
+   * Callback for timer updates (called every second in Muse mode).
+   * Receives remaining time in seconds until STUCK (0-60).
+   * Used for visual timer indicator (T004).
+   */
+  onTimerUpdate?: (remainingSeconds: number) => void;
 }
 
 /**
@@ -106,7 +113,7 @@ const STUCK_THRESHOLD = 60000; // 60 seconds
  * ```
  */
 export function useWritingState(options: UseWritingStateOptions): UseWritingStateReturn {
-  const { mode, onStuck } = options;
+  const { mode, onStuck, onTimerUpdate } = options;
 
   // Current writing state
   const [state, setState] = useState<WritingState>("WRITING");
@@ -168,6 +175,15 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
     timerRef.current = setInterval(() => {
       const idleTime = Date.now() - lastInputTime.current;
 
+      // Calculate remaining time until STUCK (T004)
+      const remainingMs = Math.max(0, STUCK_THRESHOLD - idleTime);
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
+
+      // Call timer update callback for visual indicator
+      if (onTimerUpdate) {
+        onTimerUpdate(remainingSeconds);
+      }
+
       if (idleTime >= STUCK_THRESHOLD) {
         // Transition to STUCK after 60s idle
         if (state !== "STUCK") {
@@ -194,7 +210,7 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
         timerRef.current = null;
       }
     };
-  }, [mode, state, onStuck]);
+  }, [mode, state, onStuck, onTimerUpdate]);
 
   return {
     state,

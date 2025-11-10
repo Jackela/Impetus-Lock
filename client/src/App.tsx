@@ -1,11 +1,16 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 import "./styles/variables.css";
 import "./styles/responsive.css";
+import "./styles/timer-indicator.css";
+import "./styles/locked-content.css";
 import { EditorCore } from "./components/Editor/EditorCore";
 import { ManualTriggerButton } from "./components/ManualTriggerButton";
+import { WelcomeModal } from "./components/WelcomeModal";
+import { TimerIndicator } from "./components/TimerIndicator";
 import { AIActionType } from "./types/ai-actions";
 import type { AgentMode } from "./hooks/useWritingState";
+import { ConfigErrorModal } from "./components/ConfigErrorModal";
 
 /**
  * Impetus Lock Main Application
@@ -15,9 +20,50 @@ import type { AgentMode } from "./hooks/useWritingState";
 function App() {
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showConfigError, setShowConfigError] = useState(false);
+
+  // T005: Timer state for Muse mode indicator
+  const [timerRemaining, setTimerRemaining] = useState<number>(60);
+
+  // Keyboard shortcut: "?" to re-open welcome modal
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // Only trigger if not typing in editor
+        const target = e.target as HTMLElement;
+        if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && !target.isContentEditable) {
+          e.preventDefault();
+          setShowWelcome(true);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, []);
+
+  // Calculate progress percentage for timer indicator (0-100%)
+  const timerProgress = ((60 - timerRemaining) / 60) * 100;
+
+  const handleInterventionError = useCallback((error: Error) => {
+    if (error.name === "InterventionAPIError") {
+      setShowConfigError(true);
+    }
+  }, []);
 
   return (
     <div className="app">
+      <WelcomeModal forceShow={showWelcome} onDismiss={() => setShowWelcome(false)} />
+      <ConfigErrorModal visible={showConfigError} onDismiss={() => setShowConfigError(false)} />
+
+      {/* T005: Timer indicator for Muse mode */}
+      <TimerIndicator
+        progress={timerProgress}
+        visible={mode === "muse"}
+        remainingTime={timerRemaining}
+      />
+
       <header className="app-header">
         <h1>Impetus Lock</h1>
         <div className="controls">
@@ -42,11 +88,17 @@ function App() {
       <main className="app-main" role="main">
         <EditorCore
           mode={mode}
-          initialContent="# Welcome to Impetus Lock\n\nStart writing..."
+          initialContent=""
           externalTrigger={manualTrigger}
           onTriggerProcessed={() => setManualTrigger(null)}
+          onTimerUpdate={setTimerRemaining}
+          onInterventionError={handleInterventionError}
         />
       </main>
+
+      <footer className="app-footer">
+        Press <kbd>?</kbd> for help
+      </footer>
     </div>
   );
 }

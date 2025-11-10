@@ -15,7 +15,7 @@ import pytest
 
 from server.application.services.intervention_service import InterventionService
 from server.domain.llm_provider import LLMProvider
-from server.domain.models.anchor import AnchorPos
+from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import ClientMeta, InterventionRequest, InterventionResponse
 
 
@@ -56,11 +56,12 @@ class TestInterventionService:
         # Arrange
         expected_response = InterventionResponse(
             action="provoke",
-            content="> [AI施压 - Muse]: Test content",
+            content="Test content",
             lock_id="lock_test_001",
             anchor=AnchorPos(from_=1234),
             action_id="act_test_001",
             issued_at=datetime.now(UTC),
+            source="muse",
         )
         mock_llm_provider.generate_intervention.return_value = expected_response
 
@@ -76,6 +77,7 @@ class TestInterventionService:
             selection_to=1234,
         )
         assert response == expected_response
+        assert response.source == "muse"
 
     def test_safety_guard_prevents_delete_on_short_context(
         self, service: InterventionService, mock_llm_provider: Mock
@@ -93,9 +95,10 @@ class TestInterventionService:
             action="delete",
             content=None,
             lock_id=None,
-            anchor=AnchorPos(from_=0),
+            anchor=AnchorRange(from_=0, to=10),
             action_id="act_delete_001",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
         mock_llm_provider.generate_intervention.return_value = llm_delete_response
 
@@ -105,9 +108,10 @@ class TestInterventionService:
         # Assert - Service overrides to provoke
         assert response.action == "provoke"
         assert response.content is not None
-        assert "> [AI施压 - 保护]" in response.content or "文档内容太少" in response.content
+        assert "文档" in response.content
         assert response.lock_id is not None
         assert response.lock_id.startswith("lock_")
+        assert response.source == "loki"
 
     def test_allows_delete_on_sufficient_context(
         self, service: InterventionService, mock_llm_provider: Mock
@@ -127,9 +131,10 @@ class TestInterventionService:
             action="delete",
             content=None,
             lock_id=None,
-            anchor=AnchorPos(from_=50),
+            anchor=AnchorRange(from_=40, to=80),
             action_id="act_delete_002",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
         mock_llm_provider.generate_intervention.return_value = llm_delete_response
 
@@ -140,6 +145,7 @@ class TestInterventionService:
         assert response.action == "delete"
         assert response.content is None
         assert response.lock_id is None
+        assert response.source == "loki"
 
     def test_preserves_provoke_action_unchanged(
         self,
@@ -151,11 +157,12 @@ class TestInterventionService:
         # Arrange
         llm_provoke_response = InterventionResponse(
             action="provoke",
-            content="> [AI施压 - Muse]: Original content",
+            content="Original content",
             lock_id="lock_original_001",
             anchor=AnchorPos(from_=1234),
             action_id="act_provoke_001",
             issued_at=datetime.now(UTC),
+            source="muse",
         )
         mock_llm_provider.generate_intervention.return_value = llm_provoke_response
 
@@ -165,7 +172,7 @@ class TestInterventionService:
         # Assert - No modifications
         assert response == llm_provoke_response
         assert response.action == "provoke"
-        assert response.content == "> [AI施压 - Muse]: Original content"
+        assert response.content == "Original content"
         assert response.lock_id == "lock_original_001"
 
     def test_handles_loki_mode(self, service: InterventionService, mock_llm_provider: Mock) -> None:
@@ -179,11 +186,12 @@ class TestInterventionService:
 
         loki_response = InterventionResponse(
             action="provoke",
-            content="> [AI施压 - Loki]: Chaos content",
+            content="Chaos content",
             lock_id="lock_loki_001",
             anchor=AnchorPos(from_=500),
             action_id="act_loki_001",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
         mock_llm_provider.generate_intervention.return_value = loki_response
 
@@ -217,11 +225,12 @@ class TestInterventionService:
 
         mock_response = InterventionResponse(
             action="provoke",
-            content="> [AI施压]: Content",
+            content="Content",
             lock_id="lock_001",
             anchor=AnchorPos(from_=0),
             action_id="act_001",
             issued_at=datetime.now(UTC),
+            source="muse",
         )
         mock_llm_provider.generate_intervention.return_value = mock_response
 
@@ -253,9 +262,10 @@ class TestInterventionService:
             action="delete",
             content=None,
             lock_id=None,
-            anchor=AnchorPos(from_=25),
+            anchor=AnchorRange(from_=10, to=40),
             action_id="act_boundary_001",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
         mock_llm_provider.generate_intervention.return_value = llm_delete_response
 
@@ -280,9 +290,10 @@ class TestInterventionService:
             action="delete",
             content=None,
             lock_id=None,
-            anchor=AnchorPos(from_=25),
+            anchor=AnchorRange(from_=10, to=40),
             action_id="act_boundary_002",
             issued_at=datetime.now(UTC),
+            source="loki",
         )
         mock_llm_provider.generate_intervention.return_value = llm_delete_response
 
@@ -291,4 +302,46 @@ class TestInterventionService:
 
         # Assert - 49 chars < 50, so forced to provoke
         assert response.action == "provoke"
+        assert response.source == "loki"
+
+    def test_muse_mode_never_returns_delete(
+        self, service: InterventionService, mock_llm_provider: Mock, valid_muse_request: InterventionRequest
+    ) -> None:
+        """If LLM attempts delete in Muse mode, service should convert to provoke."""
+        mock_llm_provider.generate_intervention.return_value = InterventionResponse(
+            action="delete",
+            content=None,
+            lock_id=None,
+            anchor=AnchorRange(from_=0, to=10),
+            action_id="act_delete_muse",
+            issued_at=datetime.now(UTC),
+            source="muse",
+        )
+
+        response = service.generate_intervention(valid_muse_request)
+
+        assert response.action == "provoke"
         assert response.lock_id is not None
+        assert response.source == "muse"
+
+    def test_rewrite_action_provides_lock_and_range(
+        self, service: InterventionService, mock_llm_provider: Mock, valid_muse_request: InterventionRequest
+    ) -> None:
+        """Rewrite actions should carry lock IDs and range anchors."""
+        llm_response = InterventionResponse(
+            action="rewrite",
+            content="新的叙事转折",
+            lock_id="lock_existing",
+            anchor=AnchorRange(from_=100, to=120),
+            action_id="act_rewrite_001",
+            issued_at=datetime.now(UTC),
+            source="muse",
+        )
+        mock_llm_provider.generate_intervention.return_value = llm_response
+
+        response = service.generate_intervention(valid_muse_request)
+
+        assert response.action == "rewrite"
+        assert response.lock_id is not None
+        assert response.source == "muse"
+        assert response.anchor.type == "range"

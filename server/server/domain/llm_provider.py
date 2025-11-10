@@ -62,6 +62,6 @@ class LLMProvider(Protocol):
             >>> response.action
             'provoke'
             >>> response.content
-            '> [AI施压 - Muse]: 门后传来低沉的呼吸声。'
+            '门后传来低沉的呼吸声。'
         """
         ...

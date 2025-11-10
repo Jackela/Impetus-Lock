@@ -13,6 +13,8 @@
 
 import type { EditorView } from "@milkdown/prose/view";
 import type { components } from "../types/api.generated";
+import type { AgentSource } from "../types/mode";
+import { getLastSentenceRange } from "../utils/textRange";
 
 type Anchor = components["schemas"]["Anchor"];
 
@@ -23,9 +25,10 @@ type Anchor = components["schemas"]["Anchor"];
  * as a blockquote node with lock_id attribute for enforcement.
  *
  * @param view - Milkdown editor view (ProseMirror)
- * @param content - Intervention content (already formatted with "> " prefix)
+ * @param content - Intervention content (plain text, caller decides Markdown formatting)
  * @param lockId - Lock ID for un-deletable enforcement
  * @param anchor - Position where to inject (pos, range, or lock_id)
+ * @param source - Agent source (Muse/Loki) for downstream styling
  *
  * @example
  * ```typescript
@@ -34,18 +37,27 @@ type Anchor = components["schemas"]["Anchor"];
  * if (response.action === 'provoke') {
  *   injectLockedBlock(
  *     editorView,
- *     response.content,      // "> [AI施压]: 门后传来呼吸声。"
+ *     response.content,      // "门后传来呼吸声。"
  *     response.lock_id,       // "lock_01j4z3m8a6q3qz2x8j4z3m8a"
  *     response.anchor         // { type: "pos", from: 1234 }
  *   );
  * }
  * ```
  */
+function appendLockMarker(content: string, lockId: string, source?: AgentSource): string {
+  const parts = [`lock:${lockId}`];
+  if (source) {
+    parts.push(`source:${source}`);
+  }
+  return `${content} <!-- ${parts.join(" ")} -->`;
+}
+
 export function injectLockedBlock(
   view: EditorView,
   content: string,
   lockId: string,
-  anchor: Anchor
+  anchor: Anchor,
+  source?: AgentSource
 ): void {
   const { state, dispatch } = view;
 
@@ -71,15 +83,14 @@ export function injectLockedBlock(
     insertPos = state.selection.$head.pos;
   }
 
-  // Strip "> " prefix from content (will be added by blockquote node)
-  const cleanContent = content.replace(/^>\s*/, "");
+  const contentWithLock = appendLockMarker(content, lockId, source);
 
-  // Create blockquote node with lock_id attribute
+  // Create blockquote node with lock comment embedded in text
   const schema = state.schema;
-  const textNode = schema.text(cleanContent);
+  const textNode = schema.text(contentWithLock);
   const paragraphNode = schema.nodes.paragraph.create(null, textNode);
   const blockquoteNode = schema.nodes.blockquote.create(
-    { "data-lock-id": lockId }, // Custom attribute for lock enforcement
+    {}, // No custom attributes - lock is embedded in text content
     paragraphNode
   );
 
@@ -88,6 +99,8 @@ export function injectLockedBlock(
 
   // Mark transaction as addToHistory: false (Undo Bypass per Article VI)
   tr.setMeta("addToHistory", false);
+  tr.setMeta("aiAction", true);
+  tr.setMeta("actionType", "provoke");
 
   // Dispatch transaction
   dispatch(tr);
@@ -116,16 +129,46 @@ export function injectLockedBlock(
  * }
  * ```
  */
+// Global throttle for delete operations to prevent rapid-fire deletions
+// Store on window to survive HMR (Hot Module Reload)
+declare global {
+  interface Window {
+    __lastDeleteTimestamp?: number;
+  }
+}
+
+const DELETE_THROTTLE_MS = 1500; // 1.5 seconds minimum between deletes
+
 export function deleteContentAtAnchor(
   view: EditorView,
   anchor: Extract<Anchor, { type: "range" }>
 ): void {
   const { state, dispatch } = view;
+  const { from, to } = anchor;
+
+  // DEBUG: Log detailed delete information
+  console.log('[ContentInjector] deleteContentAtAnchor called:', {
+    from,
+    to,
+    docSize: state.doc.content.size,
+    deleteLength: to - from,
+    throttleRemaining: Math.max(0, DELETE_THROTTLE_MS - (Date.now() - (window.__lastDeleteTimestamp || 0))),
+  });
+
+  // CRITICAL: Throttle to prevent rapid-fire deletions
+  const now = Date.now();
+  const lastDelete = window.__lastDeleteTimestamp || 0;
+
+  if (now - lastDelete < DELETE_THROTTLE_MS) {
+    console.log(`[ContentInjector] THROTTLED - ${DELETE_THROTTLE_MS - (now - lastDelete)}ms remaining`);
+    return;
+  }
+
+  window.__lastDeleteTimestamp = now;
 
   // Validate range
-  const { from, to } = anchor;
   if (from < 0 || to > state.doc.content.size || from >= to) {
-    console.error("Invalid delete range:", { from, to });
+    console.error("[ContentInjector] Invalid delete range:", { from, to, docSize: state.doc.content.size });
     return;
   }
 
@@ -134,9 +177,91 @@ export function deleteContentAtAnchor(
 
   // Mark as non-undoable (Undo Bypass)
   tr.setMeta("addToHistory", false);
+  tr.setMeta("aiAction", true);
+  tr.setMeta("actionType", "delete");
 
   // Dispatch transaction
   dispatch(tr);
 
-  console.log(`[ContentInjector] Deleted content from ${from} to ${to}`);
+  console.log(`[ContentInjector] ✅ Deleted content successfully`, { from, to, deletedLength: to - from });
+}
+
+/**
+ * Delete the sentence immediately before the cursor.
+ */
+export function deleteLastSentence(view: EditorView): void {
+  const range = getLastSentenceRange(view.state);
+  if (range.to <= range.from) {
+    return;
+  }
+
+  deleteContentAtAnchor(view, { type: "range", from: range.from, to: range.to });
+}
+
+/**
+ * Rewrite a server-provided range with locked text.
+ */
+export function rewriteRangeWithLock({
+  view,
+  content,
+  lockId,
+  anchor,
+  source,
+}: {
+  view: EditorView;
+  content: string;
+  lockId: string;
+  anchor?: Extract<Anchor, { type: "range" }>;
+  source?: AgentSource;
+}): void {
+  const { state, dispatch } = view;
+
+  if (!anchor || anchor.type !== "range") {
+    console.warn("[ContentInjector] Rewrite skipped: anchor missing, falling back to sentence heuristic");
+    rewriteLastSentenceWithLock(view, content, lockId, source);
+    return;
+  }
+
+  const { from, to } = anchor;
+  if (from < 0 || to > state.doc.content.size || from >= to) {
+    console.warn("[ContentInjector] Rewrite skipped: invalid anchor range", anchor);
+    return;
+  }
+
+  const textWithLock = appendLockMarker(content, lockId, source);
+  let tr = state.tr.delete(from, to);
+  tr = tr.insertText(textWithLock, from);
+  tr.setMeta("addToHistory", false);
+  tr.setMeta("aiAction", true);
+  tr.setMeta("actionType", "rewrite");
+  dispatch(tr);
+
+  console.log(`[ContentInjector] ✏️ Rewrote locked span`, { ...anchor, lockId });
+}
+
+/**
+ * Rewrite the last sentence before the cursor with locked text (fallback).
+ */
+export function rewriteLastSentenceWithLock(
+  view: EditorView,
+  content: string,
+  lockId: string,
+  source?: AgentSource
+): void {
+  const { state, dispatch } = view;
+  const range = getLastSentenceRange(state);
+  if (range.to <= range.from) {
+    console.warn("[ContentInjector] Rewrite skipped: invalid heuristic range", range);
+    return;
+  }
+
+  const textWithLock = appendLockMarker(content, lockId, source);
+  let tr = state.tr.delete(range.from, range.to);
+  tr = tr.insertText(textWithLock, range.from);
+  tr.setMeta("addToHistory", false);
+  tr.setMeta("aiAction", true);
+  tr.setMeta("actionType", "rewrite");
+  dispatch(tr);
+
+  console.log(`[ContentInjector] ✏️ Rewrote locked span`, { ...range, lockId, fallback: true });
 }

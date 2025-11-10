@@ -11,7 +11,9 @@
  * @module prosemirror-helpers
  */
 
-import type { EditorState, MarkType } from "@milkdown/prose/model";
+import type { EditorState, MarkType, Node } from "@milkdown/prose/model";
+import type { AgentSource } from "../types/mode";
+import { lockManager } from "../services/LockManager";
 
 /**
  * Check if a mark type is active in current selection.
@@ -100,4 +102,77 @@ export function isInBulletList(state: EditorState): boolean {
   }
 
   return false;
+}
+
+/**
+ * Lock attributes extracted from ProseMirror nodes.
+ */
+export interface LockAttributes {
+  lockId: string;
+  source?: AgentSource;
+  contentLength?: number;
+}
+
+/**
+ * Extract lock metadata (ID + source) from a ProseMirror node.
+ * Looks for node attributes first, then HTML comment pattern: `<!-- lock:lock_id source:muse -->`
+ *
+ * @param node - ProseMirror node to inspect
+ * @returns Lock metadata if found, `null` otherwise
+ */
+export function extractLockAttributes(node: Node): LockAttributes | null {
+  const anyNode = node as unknown as { attrs?: Record<string, unknown>; marks?: unknown };
+  const attrs = anyNode.attrs;
+
+  let lockId: string | undefined;
+  let source: AgentSource | undefined;
+  let contentLength: number | undefined;
+
+  if (attrs) {
+    const dataLockId = attrs["data-lock-id"];
+    if (typeof dataLockId === "string" && dataLockId) {
+      lockId = dataLockId;
+    } else if (typeof attrs.lockId === "string" && attrs.lockId) {
+      lockId = attrs.lockId as string;
+    }
+
+    const attrSource = attrs["data-source"];
+    if (attrSource === "muse" || attrSource === "loki") {
+      source = attrSource;
+    }
+  }
+
+  if (!lockId) {
+    const text = node.textContent;
+    if (text) {
+      const lockPattern = /<!--\s*lock:([^\s>]+)(?:\s+source:([^\s>]+))?\s*-->/i;
+      const match = lockPattern.exec(text);
+
+      if (match) {
+        lockId = match[1];
+        const sourceRaw = match[2]?.toLowerCase();
+        if (sourceRaw === "muse" || sourceRaw === "loki") {
+          source = sourceRaw as AgentSource;
+        }
+        contentLength = match.index;
+      }
+    }
+  }
+
+  if (lockId && !source) {
+    source = lockManager.getLockSource(lockId);
+  }
+
+  if (lockId && !contentLength && node.isText) {
+    contentLength = node.nodeSize;
+  }
+
+  return lockId ? { lockId, source, contentLength } : null;
+}
+
+/**
+ * Extract only the lock ID from a node (legacy helper).
+ */
+export function extractLockId(node: Node): string | null {
+  return extractLockAttributes(node)?.lockId ?? null;
 }

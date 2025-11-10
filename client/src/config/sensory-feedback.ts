@@ -49,6 +49,11 @@ export const FEEDBACK_CONFIG: Record<AIActionType, SensoryFeedbackConfig> = {
     audioFile: "/src/assets/audio/clank.mp3",
     duration: 1500, // 1.5 seconds (FR-007: complete within 1-2s)
   },
+  [AIActionType.REWRITE]: {
+    animationType: "glitch",
+    audioFile: "/src/assets/audio/clank.mp3",
+    duration: 1500,
+  },
 
   [AIActionType.DELETE]: {
     animationType: "fadeout",

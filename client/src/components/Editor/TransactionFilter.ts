@@ -11,9 +11,10 @@
  * @module components/Editor/TransactionFilter
  */
 
+import type { Node as ProseMirrorNode } from "@milkdown/prose/model";
 import type { Transaction } from "@milkdown/prose/state";
-// eslint-disable-next-line no-restricted-imports -- TransactionFilter needs LockManager type
 import type { LockManager } from "../../services/LockManager";
+import { extractLockAttributes } from "../../utils/prosemirror-helpers";
 
 /**
  * Create a transaction filter function for lock enforcement.
@@ -75,6 +76,8 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
       return true;
     }
 
+    // Check if transaction affects locked content
+    // Locks are registered in EditorCore dispatch when content is first inserted
     let affectsLock = false;
 
     tr.steps.forEach((step) => {
@@ -83,12 +86,9 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
       stepMap.forEach((oldStart, oldEnd) => {
         state.doc.nodesBetween(oldStart, oldEnd, (node: unknown) => {
           const anyNode = node as Record<string, unknown>;
-          const attrs = anyNode.attrs as Record<string, unknown> | undefined;
-          if (
-            attrs?.lockId &&
-            typeof attrs.lockId === "string" &&
-            lockManager.hasLock(attrs.lockId)
-          ) {
+
+          const metadata = extractLockAttributes(node as ProseMirrorNode);
+          if (metadata?.lockId && lockManager.hasLock(metadata.lockId)) {
             affectsLock = true;
             return false;
           }
@@ -109,7 +109,7 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
           }
 
           if (anyNode.isText && typeof anyNode.text === "string") {
-            const lockPattern = /<!--\s*lock:(\S+)\s*-->/;
+            const lockPattern = /<!--\s*lock:([^\s>]+)\s*-->/i;
             const match = anyNode.text.match(lockPattern);
             if (match && lockManager.hasLock(match[1])) {
               affectsLock = true;
@@ -126,7 +126,6 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
       if (onReject) {
         onReject();
       }
-      console.warn("Transaction blocked: Affects locked content");
       return false;
     }
 
@@ -160,21 +159,18 @@ export function isPositionLocked(
   pos: number,
   lockManager: LockManager
 ): boolean {
-  let locked = false;
-
   const $pos = state.doc.resolve(pos);
 
   for (let depth = $pos.depth; depth >= 0; depth--) {
     const nodeAtDepth = $pos.node(depth) as Record<string, unknown>;
-    const attrs = nodeAtDepth.attrs as Record<string, unknown> | undefined;
+    const metadata = extractLockAttributes(nodeAtDepth as unknown as ProseMirrorNode);
 
-    if (attrs?.lockId && typeof attrs.lockId === "string" && lockManager.hasLock(attrs.lockId)) {
-      locked = true;
-      break;
+    if (metadata?.lockId && lockManager.hasLock(metadata.lockId)) {
+      return true;
     }
   }
 
-  return locked;
+  return false;
 }
 
 export function markNodeAsLocked(

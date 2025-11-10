@@ -76,8 +76,10 @@ export function SensoryFeedback({ actionType }: SensoryFeedbackProps) {
   // Map action type to animation name for data attribute
   const animationName = {
     [AIActionType.PROVOKE]: "glitch",
+    [AIActionType.REWRITE]: "glitch",
     [AIActionType.DELETE]: "fadeout",
     [AIActionType.REJECT]: "shake",
+    [AIActionType.ERROR]: "error-flash",
   }[actionType];
 
   return (

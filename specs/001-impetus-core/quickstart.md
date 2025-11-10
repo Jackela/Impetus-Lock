@@ -121,7 +121,7 @@ test('should block deletion of locked block', async ({ page }) => {
   // Inject locked block via API simulation
   await page.evaluate(() => {
     window.editor.injectLockedBlock({
-      content: '> [AI施压]: 门后是一堵砖墙。',
+      content: '> Muse 注入：门后是一堵砖墙。',
       lock_id: 'lock_test123'
     });
   });
@@ -293,7 +293,7 @@ def test_generate_intervention_muse_mode():
     # Verify response structure
     assert data["action"] == "provoke"
     assert "content" in data
-    assert data["content"].startswith("> [AI施压")
+    assert len(data["content"]) > 0
     assert "lock_id" in data
     assert data["lock_id"].startswith("lock_")
     assert "action_id" in data
@@ -344,7 +344,7 @@ async def generate_intervention(
     
     return InterventionResponse(
         action="provoke",
-        content=f"> [AI施压 - {request.mode.title()}]: 门后传来低沉的呼吸声。",
+        content="门后传来低沉的呼吸声。",
         lock_id="lock_01j4z3m8a6q3qz2x8j4z3m8a",
         action_id="act_550e8400-e29b-41d4-a716-446655440000"
     )

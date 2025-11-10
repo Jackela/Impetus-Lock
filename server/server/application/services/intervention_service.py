@@ -13,7 +13,7 @@ Constitutional Compliance:
 from uuid import UUID, uuid4
 
 from server.domain.llm_provider import LLMProvider
-from server.domain.models.anchor import AnchorPos
+from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import (
     InterventionRequest,
     InterventionResponse,
@@ -125,12 +125,22 @@ class InterventionService:
             selection_from=request.client_meta.selection_from,
             selection_to=request.client_meta.selection_to,
         )
+        response.source = request.mode
+
+        # Muse mode should never delete – convert to provoke
+        if request.mode == "muse" and response.action == "delete":
+            response.action = "provoke"
+            response.content = "重新审视你刚写下的句子，再给出更锋利的版本。"
+            response.lock_id = f"lock_{uuid4()}"
+            response.anchor = AnchorPos.model_validate(
+                {"type": "pos", "from": request.client_meta.selection_from}
+            )
 
         # Apply safety guard: Force provoke if context too short
         if response.action == "delete" and context_length < 50:
             # Override with provoke to prevent document erasure
             response.action = "provoke"
-            response.content = "> [AI施压 - 保护]: 文档内容太少，继续写作吧。"
+            response.content = "文档内容太少，先扩写细节再让 Loki 介入。"
             response.lock_id = f"lock_{uuid4()}"
             # Update anchor to current cursor position
             # Note: Using model_validate to properly handle field alias
@@ -138,12 +148,23 @@ class InterventionService:
                 {"type": "pos", "from": request.client_meta.selection_from}
             )
 
+        # Ensure rewrite actions have meaningful anchor range (defaults to trailing window)
+        if response.action == "rewrite" and response.anchor.type != "range":
+            cursor = request.client_meta.selection_from
+            response.anchor = AnchorRange.model_validate(
+                {
+                    "type": "range",
+                    "from": max(0, cursor - 120),
+                    "to": cursor,
+                }
+            )
+
         # Ensure action_id exists
         if not response.action_id:
             response.action_id = f"act_{uuid4()}"
 
-        # Ensure lock_id exists for provoke actions
-        if response.action == "provoke" and not response.lock_id:
+        # Ensure lock_id exists for mutate actions
+        if response.action in {"provoke", "rewrite"} and not response.lock_id:
             response.lock_id = f"lock_{uuid4()}"
 
         return response

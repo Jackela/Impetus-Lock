@@ -17,7 +17,7 @@ import { Page, Locator } from "@playwright/test";
  *
  * @example
  * await insertText(page, "Hello world");
- * await insertText(page, "Locked content <!-- LOCK: test-lock -->");
+ * await insertText(page, "Locked content <!-- lock:test-lock source:muse -->");
  */
 export async function insertText(page: Page, text: string): Promise<void> {
   const editor = page.locator('[data-testid="milkdown-editor"] .milkdown');
@@ -46,9 +46,10 @@ export async function insertText(page: Page, text: string): Promise<void> {
 export async function insertLockedContent(
   page: Page,
   content: string,
-  lockId: string
+  lockId: string,
+  source: "muse" | "loki" = "muse"
 ): Promise<void> {
-  const lockedText = `${content} <!-- LOCK: ${lockId} -->`;
+  const lockedText = `${content} <!-- lock:${lockId} source:${source} -->`;
   await insertText(page, lockedText);
 }
 
@@ -115,17 +116,18 @@ export async function attemptDeleteLocked(page: Page, lockId: string): Promise<v
   }
 
   // Find lock marker position
-  const lockMarker = `<!-- LOCK: ${lockId} -->`;
-  const lockPos = content.indexOf(lockMarker);
+  const lockPattern = new RegExp(`<!--\\s*lock:${lockId}(?:\\s+source:[^>\\s]+)?\\s*-->`, "i");
+  const match = lockPattern.exec(content);
+  const lockPos = match?.index ?? -1;
 
   if (lockPos === -1) {
-    throw new Error(`Lock marker not found: ${lockMarker}`);
+    throw new Error(`Lock marker not found for ${lockId}`);
   }
 
   // Find the content before the lock marker (assume it's on same line)
   // For simplicity, select 10 characters before the lock marker
   const fromPos = Math.max(0, lockPos - 10);
-  const toPos = lockPos + lockMarker.length;
+  const toPos = lockPos + (match?.[0].length ?? 0);
 
   await attemptDelete(page, fromPos, toPos);
 }

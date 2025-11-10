@@ -4,8 +4,62 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **一款对抗式 AI Agent，充当你的"创意陪练"。** 通过强制植入"不可删除的创作束缚"来破除心理定式——将孤独写作变成人机对抗的 Roguelike 游戏。
->
-> **An adversarial AI agent that acts as your "creative sparring partner."** It breaks through mental blocks by forcefully imposing un-deletable creative constraints—transforming lonely writing into a human-AI rogue-like game.
+
+---
+
+## 🎥 演示视频 & 截图
+
+- [Download or view demo](./demo-artifacts/impetus-lock-demo.mp4) – Playwright 自动录制的 Muse/Loki 全流程。
+- ![主界面](client/audit-screenshots/03-main-ui.png)
+- ![欢迎引导](client/audit-screenshots/02-welcome-modal.png)
+- ![锁定反馈](client/e2e-results/manual-trigger-clicked.png)
+
+---
+
+## 🧠 设计概要（中文）
+
+### 1. 禅模式与基础交互（P4/P5）
+- **极简体验**：默认就是无干扰「禅模式」，没有浮躁的 UI，仅在选中内容时才显示轻量级悬浮工具栏。
+- **核心写作能力**：加粗、斜体、标题、列表都在这个悬浮工具栏里完成，不破坏沉浸感。
+- **跨设备一致**：桌面端/平板/手机布局保持一致，移动端工具栏吸附底部，方便拇指操作。
+
+### 2. 双 Agent 模式（P1/P2/P6）
+#### Muse（创意施压）
+- **触发**：60 秒无输入或主动点击 “我卡住了！” 按钮。
+- **行为**：不在文末加段落，而是**替换**核心句子并锁定，迫使用户把故事拉到更高立意。
+
+#### Loki（混沌恶作剧）
+- **触发**：30–120 秒随机介入，与输入状态无关。
+- **行为**：50% 注入恶作剧句子、50% 删除/重构最后一句。长度不足 50 字时自动退回到安全的 provoke。
+
+### 3. 感官反馈与不可逆约束（P1/P3）
+- **Glitch + Clank**：Muse 注入时伴随闪屏 + 金属落锁声。
+- **Fade-out + Whoosh**：Loki 删除时优雅淡出 + 风声。
+- **Shake + Bonk**：尝试删除锁定文本时震动提示 + “bonk” 音效。
+- **Lock 永不可逆**：被锁的文本不能 Backspace、不能 Undo，只能继续顺着 AI 的轨道写。
+
+---
+
+## ⚡ 快速启动 | Quickstart
+
+- **WSL / Linux**  
+  ```bash
+  ./scripts/dev-start.sh
+  ```
+- **Windows (PowerShell)**  
+  ```powershell
+  .\scripts\dev-start.ps1
+  ```
+
+脚本会自动在 WSL 中启动 FastAPI（端口 8081）和 Vite（端口 5173），并将日志写入 `server/server_dev.log` 与 `client/devserver.log`。
+
+### 🎥 录制 Playwright 演示
+
+```bash
+./scripts/record-demo.sh
+```
+
+该脚本会运行 `client/e2e/demo-showcase.spec.ts`，拦截 API 使流程可复现，并在 `demo-artifacts/impetus-lock-demo.webm`（若已安装 `ffmpeg` 则额外生成 `.mp4`）输出视频。Windows 可用 `wsl ./scripts/record-demo.sh`。
 
 ---
 
@@ -66,6 +120,7 @@ graph LR
 
 **行动方式 | Action:**
 - Agent **行动（Act）**：在光标位置强制注入 Markdown 格式的约束块
+- 当 Agent 认为需要“硬重写”时，会直接替换用户刚写完的句子，并对新文本加锁，确保只能沿着 AI 指定的方向继续写
 - 约束块包含 `lock_id`，通过 ProseMirror `filterTransaction` 实现**不可删除**
 - API 调用：`POST /api/v1/impetus/generate-intervention` (mode: "muse")
 
@@ -76,7 +131,7 @@ graph LR
 
 **示例 | Example:**
 ```markdown
-> [AI施压 - Muse]：你的主角此时必须做出一个违背道德的选择。
+> Muse 注入：你的主角此时必须做出一个违背道德的选择。 <!-- lock:lock_demo source:muse -->
 ```
 
 ---
@@ -94,11 +149,15 @@ graph LR
 - 通过 Instructor + Pydantic 生成结构化决策：`action: "provoke" | "delete"`
 
 **行动方式 | Action:**
-Agent **行动（Act）** 包含两种操作：
+Agent **行动（Act）** 包含三种操作：
 
 **[PROVOKE] 注入新约束**
 - 与 Muse 类似，注入不可删除的创意压力
 - 但**无需 STUCK 状态**，完全随机
+
+**[REWRITE] 混沌改写**
+- 直接改写/扭曲用户最近的一句文本，并锁定这些新词
+- 迫使用户沿着非预期方向续写
 
 **[DELETE] 删除用户内容**
 - 通过 `anchor` 定位并删除用户最后一句话

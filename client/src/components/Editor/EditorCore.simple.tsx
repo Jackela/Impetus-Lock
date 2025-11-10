@@ -60,7 +60,10 @@ export const SimpleEditor: React.FC<SimpleEditorProps> = ({
 }) => {
   return (
     <MilkdownProvider>
-      <div style={{ padding: "20px", border: "1px solid #ccc", minHeight: "300px" }}>
+      <div
+        data-testid="simple-editor-wrapper"
+        style={{ padding: "20px", border: "1px solid #ccc", minHeight: "300px" }}
+      >
         <EditorComponent initialContent={initialContent} />
       </div>
     </MilkdownProvider>

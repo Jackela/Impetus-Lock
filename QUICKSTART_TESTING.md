@@ -162,10 +162,12 @@ Request:
 Response:
   {
     "action": "provoke",
-    "content": "> [AI施压 - Muse]: 门后传来低沉的呼吸声。",
+    "content": "门后传来低沉的呼吸声。",
     "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8a",
     "anchor": {"type": "pos", "from": 14},
-    "action_id": "act_..."
+    "action_id": "act_...",
+    "source": "muse",
+    "issued_at": "2025-01-01T12:00:00.000Z"
   }
 ```
 

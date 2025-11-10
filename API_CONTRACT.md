@@ -119,13 +119,15 @@ Development: http://127.0.0.1:8000/api/v1
 ```json
 {
   "action": "provoke",
-  "content": "> [AI施压]：门后是一堵砖墙。",
+  "content": "门后是一堵砖墙。",
   "source": "muse",
   "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8a",
   "issued_at": "2025-01-15T10:30:45.123Z",
   "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8b",
-  "anchor": null,
-  "revert_token": "rvt_01j4z3m8a6q3qz2x8j4z3m8c"
+  "anchor": {
+    "type": "pos",
+    "from": 1234
+  }
 }
 ```
 
@@ -133,14 +135,13 @@ Development: http://127.0.0.1:8000/api/v1
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `action` | enum | ✅ | `"provoke"` 或 `"delete"` |
-| `content` | string | ⚠️ | Markdown 格式内容（仅当 `action="provoke"` 时必需） |
+| `action` | enum | ✅ | `"provoke"` / `"delete"` / `"rewrite"` |
+| `content` | string | ⚠️ | 纯文本内容（`provoke`/`rewrite` 必填；`delete` 为空） |
 | `source` | enum | ✅ | `"muse"` 或 `"loki"` |
 | `action_id` | string | ✅ | 服务端生成的行动唯一 ID (UUID)，用于幂等和审计 |
 | `issued_at` | string (ISO 8601) | ✅ | 行动发出时间 |
-| `lock_id` | string | ⚠️ | 锁 ID (UUID)，用于前端事务拦截（仅 `action="provoke"` 时存在） |
-| `anchor` | object | ⚠️ | 目标锚点（仅 `action="delete"` 时存在） |
-| `revert_token` | string | ❌ | 恢复令牌，仅用于后台审计或紧急恢复，不在前端 UI 暴露 |
+| `lock_id` | string | ⚠️ | 锁 ID (UUID)，用于前端事务拦截（仅 `provoke`/`rewrite` 时存在） |
+| `anchor` | object | ⚠️ | 目标锚点（`delete`/`rewrite` 必填，`provoke` 可选） |
 
 **Response Headers:**
 
@@ -154,12 +155,12 @@ Development: http://127.0.0.1:8000/api/v1
 
 ##### 1. **PROVOKE** (注入约束)
 
-当 `action="provoke"` 时，响应包含：
+当 `action="provoke"` 时，响应包含**纯文本**提示，客户端自行渲染为引用块：
 
 ```json
 {
   "action": "provoke",
-  "content": "> [AI施压 - Muse]：你的主角此时必须做出一个违背道德的选择。",
+  "content": "你的主角此时必须对黑市宣誓效忠。",
   "source": "muse",
   "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8a",
   "issued_at": "2025-01-15T10:30:45.123Z",
@@ -168,7 +169,7 @@ Development: http://127.0.0.1:8000/api/v1
 ```
 
 **客户端处理流程:**
-1. 在光标位置插入 `content` (Markdown)
+1. 在光标位置插入 `content`（可包裹为 `> content` 以保持 Markdown 引用）
 2. 为插入的内容打上 `lock_id` 标记
 3. 在 ProseMirror `filterTransaction` 中拦截删除此 `lock_id` 的操作
 4. 用户无法通过 Backspace/Delete/Undo 删除此内容
@@ -189,8 +190,7 @@ Development: http://127.0.0.1:8000/api/v1
     "type": "range",
     "from": 1245,
     "to": 1289
-  },
-  "revert_token": "rvt_01j4z3m8a6q3qz2x8j4z3m8c"
+  }
 }
 ```
 
@@ -206,7 +206,31 @@ Development: http://127.0.0.1:8000/api/v1
 1. 根据 `anchor.type` 定位文档位置
 2. 删除指定范围的内容
 3. 操作**绕过** Undo 栈（用户无法撤销）
-4. 存储 `revert_token`（仅用于紧急恢复，不暴露给用户）
+
+---
+
+##### 3. **REWRITE** (替换约束)
+
+`rewrite` 是一种“局部 provoke”：将目标句子替换为新的、立即锁定的文本。
+
+```json
+{
+  "action": "rewrite",
+  "content": "他所有的技能其实来自名为“洛基”的黑客。",
+  "source": "loki",
+  "lock_id": "lock_rewrite_01xx",
+  "anchor": {
+    "type": "range",
+    "from": 1380,
+    "to": 1412
+  }
+}
+```
+
+**客户端处理流程:**
+1. 使用 `anchor` 删除旧文本
+2. 插入 `content`，并附加 `lock_id`
+3. 触发与 Provoke 相同的锁定与视觉反馈逻辑
 
 ---
 
@@ -380,11 +404,12 @@ curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
 ```json
 {
   "action": "provoke",
-  "content": "> [AI施压 - Muse]：门后传来低沉的呼吸声。",
+  "content": "门后传来低沉的呼吸声。",
   "source": "muse",
   "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8a",
   "issued_at": "2025-01-15T10:30:45.123Z",
-  "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8b"
+  "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8b",
+  "anchor": {"type": "pos", "from": 1234}
 }
 ```
 
@@ -414,8 +439,7 @@ curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
     "type": "range",
     "from": 1289,
     "to": 1310
-  },
-  "revert_token": "rvt_01j4z3m8a6q3qz2x8j4z3m8d"
+  }
 }
 ```
 
@@ -521,7 +545,7 @@ curl -H "X-Contract-Version: 1.0.1" ...
 
 ### Revert Token 使用
 
-`revert_token` 仅用于**后台管理员操作**，不暴露给前端用户。
+（撤销功能暂未开放，仅保留后台审计日志。）
 
 **使用场景:**
 - Agent 误删重要内容
@@ -563,7 +587,7 @@ yq -P '.specify/openapi.json' > .specify/openapi.yaml
 - [ ] Pydantic 模型与 OpenAPI schema 一致
 - [ ] Idempotency-Key 在 15 秒窗口内生效
 - [ ] 所有错误响应使用正确的 HTTP 状态码
-- [ ] `action_id`, `lock_id`, `revert_token` 使用 UUID 格式
+- [ ] `action_id`, `lock_id` 使用 UUID 格式
 - [ ] `issued_at` 使用 ISO 8601 格式（带时区）
 - [ ] DELETE 行动必须包含 `anchor` 字段
 - [ ] PROVOKE 行动必须包含 `content` 和 `lock_id` 字段

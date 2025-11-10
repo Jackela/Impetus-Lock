@@ -70,10 +70,11 @@ test.describe("Loki Mode - Provoke Action", () => {
       // Wait for locked block to appear in editor
       const lockedBlock = page.locator(`blockquote[data-lock-id="${responseBody.lock_id}"]`);
       await expect(lockedBlock).toBeVisible({ timeout: 5000 });
+      await expect(lockedBlock).toHaveAttribute("data-source", "loki");
 
-      // Verify content matches
-      const blockText = await lockedBlock.textContent();
-      expect(blockText).toContain("AI施压 - Loki");
+      // Verify content exists (prefix-free)
+      const blockText = (await lockedBlock.textContent())?.trim();
+      expect(blockText).toBeTruthy();
     }
   });
 

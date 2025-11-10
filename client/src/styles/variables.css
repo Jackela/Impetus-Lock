@@ -33,4 +33,14 @@
   /* Z-index layers for responsive components */
   --z-toolbar-mobile: 1000;
   --z-toolbar-floating: 100;
+
+  /* Agent Vibe palette */
+  --color-muse-border: #c4b5fd;
+  --color-muse-background: rgba(196, 181, 253, 0.14);
+  --color-muse-icon: #ede9fe;
+  --color-loki-border: #f87171;
+  --color-loki-background: rgba(248, 113, 113, 0.12);
+  --color-loki-icon: #fee2e2;
+  --color-lock-border: #8b5cf6;
+  --color-lock-background: rgba(139, 92, 246, 0.05);
 }

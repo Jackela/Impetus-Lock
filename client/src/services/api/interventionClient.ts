@@ -36,7 +36,25 @@ const CONTRACT_VERSION = "1.0.1";
  * ```
  */
 function generateIdempotencyKey(): string {
-  return crypto.randomUUID();
+  const globalCrypto = typeof globalThis !== "undefined" ? (globalThis.crypto as Crypto | undefined) : undefined;
+
+  if (globalCrypto?.randomUUID) {
+    return globalCrypto.randomUUID();
+  }
+
+  if (globalCrypto?.getRandomValues) {
+    const buffer = new Uint8Array(16);
+    globalCrypto.getRandomValues(buffer);
+    buffer[6] = (buffer[6] & 0x0f) | 0x40; // version 4
+    buffer[8] = (buffer[8] & 0x3f) | 0x80; // variant 10
+
+    const hex = Array.from(buffer, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  const timestamp = Date.now().toString(16);
+  const randomPart = Math.random().toString(16).slice(2, 14);
+  return `fallback-${timestamp}-${randomPart}`;
 }
 
 /**
@@ -87,8 +105,9 @@ export class InterventionAPIError extends Error {
  *   console.log(response.action); // "provoke" or "delete"
  *
  *   if (response.action === "provoke") {
- *     console.log(response.content); // "> [AI施压 - Muse]: ..."
+ *     console.log(response.content); // "立即让主角曝露一个秘密。"
  *     console.log(response.lock_id); // "lock_01j4z3m8a6q3qz2x8j4z3m8a"
+ *     console.log(response.source); // "muse"
  *   }
  * } catch (error) {
  *   if (error instanceof InterventionAPIError) {
@@ -197,7 +216,7 @@ export async function generateIntervention(
  * );
  *
  * if (response.action === 'provoke') {
- *   injectLockedBlock(response.content, response.lock_id, response.anchor);
+ *   injectLockedBlock(response.content, response.lock_id, response.anchor, response.source);
  * }
  * ```
  */
@@ -242,12 +261,14 @@ export async function triggerMuseIntervention(
  * );
  *
  * if (response.action === 'provoke') {
- *   injectLockedBlock(response.content, response.lock_id, response.anchor);
+ *   injectLockedBlock(response.content, response.lock_id, response.anchor, response.source);
+ * } else if (response.action === 'rewrite') {
+ *   rewriteRangeWithLock({ view, content: response.content, lockId: response.lock_id, anchor: response.anchor });
  * } else if (response.action === 'delete') {
  *   executeDelete(response.anchor);
  * }
  * ```
- */
+*/
 export async function triggerLokiIntervention(
   context: string,
   cursorPosition: number,

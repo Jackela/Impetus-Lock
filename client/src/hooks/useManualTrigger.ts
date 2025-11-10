@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef } from "react";
-import { triggerMuseIntervention } from "../services/api/interventionClient";
 
 /**
  * Hook for manual AI intervention trigger with debouncing and loading state.
  *
- * Provides a debounced trigger function that calls the P1 Provoke API endpoint
- * and manages loading state for UI feedback. Implements a 2-second cooldown
- * to prevent rapid-fire API requests.
+ * Provides a debounced trigger function that manages loading state for the
+ * manual button. Actual intervention requests are executed inside EditorCore
+ * once the external trigger propagates. This hook simply enforces a 2-second
+ * cooldown window so users can't spam the button.
  *
  * **Requirements**:
  * - FR-003: Immediately trigger AI Provoke action when manual trigger button is clicked
@@ -39,10 +39,8 @@ export function useManualTrigger() {
   /**
    * Trigger function with 2-second cooldown debouncing.
    *
-   * Calls the existing P1 triggerProvoke() API endpoint if the cooldown period
-   * has elapsed since the last trigger. Manages loading state for UI feedback.
-   *
-   * @throws {Error} If API call fails (network timeout, server error)
+   * Starts a cooldown timer and exposes loading state so the UI can mirror the
+   * “thinking” feedback while EditorCore performs the actual API call.
    */
   const trigger = useCallback(async () => {
     const now = Date.now();
@@ -57,19 +55,7 @@ export function useManualTrigger() {
     setIsLoading(true);
 
     try {
-      // Call P1 Provoke API endpoint (FR-003)
-      // Note: For manual trigger, we send minimal context
-      // The backend will handle STUCK detection logic
-      await triggerMuseIntervention(
-        "", // Empty context - manual trigger doesn't need content analysis
-        0, // Cursor position not relevant for manual trigger
-        0 // Doc version not relevant for manual trigger
-      );
-    } catch (error) {
-      // Error handling - FR-016: Display error feedback
-      console.error("Manual trigger failed:", error);
-      // TODO: Trigger error feedback (red flash + buzz sound)
-      throw error;
+      await new Promise((resolve) => setTimeout(resolve, COOLDOWN_MS));
     } finally {
       setIsLoading(false);
     }

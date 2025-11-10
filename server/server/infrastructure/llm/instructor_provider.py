@@ -11,11 +11,20 @@ Constitutional Compliance:
 import uuid
 from typing import Literal
 
-import instructor
+import instructor  # type: ignore[import-untyped]
 from openai import OpenAI
+from pydantic import BaseModel
 
+from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
 from server.infrastructure.llm.prompts.muse_prompt import get_muse_prompts
+
+
+class LLMInterventionDraft(BaseModel):
+    """Minimal schema returned directly by the LLM before backend post-processing."""
+
+    action: Literal["provoke", "delete", "rewrite"]
+    content: str | None = None
 
 
 class InstructorLLMProvider:
@@ -106,30 +115,44 @@ class InstructorLLMProvider:
             raise ValueError(f"Unsupported mode: {mode}")
 
         try:
-            # Call LLM with Instructor for structured output
-            response = self.client.chat.completions.create(
+            draft = self.client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
-                response_model=InterventionResponse,
+                response_model=LLMInterventionDraft,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message},
                 ],
             )
-
-            # Generate unique action_id if LLM didn't provide one
-            if not response.action_id:
-                response.action_id = f"act_{uuid.uuid4()}"
-
-            # Generate lock_id for provoke actions if not provided
-            if response.action == "provoke" and not response.lock_id:
-                response.lock_id = f"lock_{uuid.uuid4()}"
-
-            # Instructor guarantees InterventionResponse structure
-            return response
-
         except Exception as e:
             raise RuntimeError(f"LLM API call failed: {e}") from e
+
+        cursor_pos = selection_from or selection_to or 0
+        cursor_pos = max(0, cursor_pos)
+
+        # Default anchors: provoke uses cursor point, rewrite/delete use trailing slice
+        anchor: AnchorPos | AnchorRange
+        if draft.action == "provoke":
+            anchor = AnchorPos(from_=cursor_pos)
+        else:
+            anchor = AnchorRange(from_=max(0, cursor_pos - 120), to=cursor_pos)
+
+        lock_id = None
+        content = draft.content
+
+        if draft.action in {"provoke", "rewrite"}:
+            if not content:
+                raise RuntimeError("LLM returned rewrite/provoke without content")
+            lock_id = f"lock_{uuid.uuid4()}"
+
+        return InterventionResponse(
+            action=draft.action,
+            content=content if draft.action in {"provoke", "rewrite"} else None,
+            lock_id=lock_id,
+            anchor=anchor,
+            action_id=f"act_{uuid.uuid4()}",
+            source=mode,
+        )
 
     def _build_system_prompt(self, mode: Literal["muse", "loki"]) -> str:
         """Build mode-specific system prompt for LLM.
@@ -143,40 +166,34 @@ class InstructorLLMProvider:
         if mode == "muse":
             return """你是一个严格的创作导师，专门打破作者的"心智定势"（Mental Set）。
 
-当作者陷入卡壳（STUCK）状态时，你的任务是注入"创意施压"内容，强制打破他们对"完美"的执着。
+当作者陷入卡壳（STUCK）状态时，你的任务是输出结构化 JSON 指令，迫使他们改变写作方向。
 
 **规则**:
-1. 注入内容必须是 Markdown blockquote 格式，以 "> [AI施压 - Muse]: " 开头
-2. 内容必须基于上下文，但应该引入意外的转折或冲突
-3. 不要提供解决方案，而是制造新的创作压力
-4. 保持中文输出
-5. 内容长度：1-2 句话（20-50 字）
+1. 只返回 JSON（action + content），绝不包含 Markdown 或 "[AI施压]" 前缀。
+2. Muse 以 provoke/rewrite 为主，不执行 delete。
+3. 内容必须与上下文相关，但要引入新的冲突或视角，长度 1-2 句话。
+4. 输出语言需与输入语言匹配。
 
 **示例**:
 上下文："他打开门，犹豫着要不要进去。"
-输出："> [AI施压 - Muse]: 门后传来低沉的呼吸声。"
+输出：{"action": "provoke", "content": "门后忽然传来潮湿的呼吸声。"}
 """
         else:  # loki mode
             return """你是一个混沌恶作剧者，为写作注入随机的"游戏化纪律"。
 
-你有两种行动：
-1. **Provoke（注入）**: 注入意外内容，破坏作者的计划
-2. **Delete（删除）**: 删除作者最后一句话，强制重写
+你可以选择三种行动：
+1. **provoke**: 注入荒诞但相关的新情节（{"action":"provoke","content":"..."}）
+2. **rewrite**: 用更怪异的版本替换最近的一部分（{"action":"rewrite","content":"..."}）
+3. **delete**: 删除 1-2 句话制造空白（{"action":"delete"}）
 
 **规则**:
-- 在 Loki 模式下，你应该随机选择 Provoke 或 Delete（大约 60% Provoke, 40% Delete）
-- Provoke 内容格式："> [AI施压 - Loki]: <意外内容>"
-- Delete 行动应返回 {"action": "delete", "anchor": {"type": "range", ...}}
-- 保持中文输出
-- Provoke 内容：1-2 句话（20-50 字）
+- 只返回 JSON；不要包含 Markdown、锁 ID 或解释。
+- 语言要与上下文一致，并保持危险/恶作剧的口吻。
+- 当上下文不足 50 字符时，delete/rewrite 应改为 provoke。
 
-**示例（Provoke）**:
+**示例**:
 上下文："他打开门，犹豫着要不要进去。突然，门后传来脚步声。"
-输出："> [AI施压 - Loki]: 脚步声突然停止，一张白纸从门缝塞进来。"
-
-**示例（Delete）**:
-上下文："他打开门，犹豫着要不要进去。突然，门后传来脚步声。"
-输出：{"action": "delete", "anchor": {"type": "range", "from": <start>, "to": <end>}}
+输出：{"action": "rewrite", "content": "脚步声其实来自他的影子。"} 或 {"action":"delete"}
 """
 
     def _build_user_message(
@@ -197,10 +214,10 @@ class InstructorLLMProvider:
 
 {context}
 
-作者已经卡壳 60 秒。请注入一个创意施压内容，打破他的心智定势。"""
+作者已经卡壳 60 秒。请选择 PROVOKE 或 REWRITE，并仅返回 JSON（action + content）。"""
         else:  # loki mode
             return f"""作者当前文档：
 
 {context}
 
-随机触发时间到！请决定行动：Provoke（注入混沌）或 Delete（删除最后一句）。"""
+随机触发时间到！请选择 PROVOKE / REWRITE / DELETE。返回 JSON，必要时包含 content。"""

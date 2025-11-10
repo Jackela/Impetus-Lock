@@ -24,7 +24,7 @@ import { test, expect } from "@playwright/test";
  * @returns The injected content string
  */
 async function injectLockedBlock(page: any, lockId = "lock_test_001") {
-  const content = `> [AI施压 - Muse]: 门后传来低沉的呼吸声。<!-- lock:${lockId} -->`;
+  const content = `> Muse 注入：门后传来低沉的呼吸声。<!-- lock:${lockId} -->`;
 
   // Inject via editor API (will be implemented in Phase 3)
   await page.evaluate((text: string) => {
@@ -123,7 +123,7 @@ test.describe("Lock Enforcement - Backspace/Delete Prevention", () => {
 
     // Inject locked block
     const lockId = "lock_test_002";
-    const lockedContent = `> [AI施压]: 测试内容 <!-- lock:${lockId} -->`;
+    const lockedContent = `> 测试内容 <!-- lock:${lockId} -->`;
     await page.evaluate((text: string) => {
       // @ts-ignore
       const current = window.__editor__.getMarkdown();
@@ -191,7 +191,7 @@ test.describe("Lock Enforcement - Multiple Locks", () => {
     const locks = ["lock_test_multi_001", "lock_test_multi_002", "lock_test_multi_003"];
 
     for (const lockId of locks) {
-      const content = `> [AI施压]: Block ${lockId} <!-- lock:${lockId} -->\n\n`;
+      const content = `> Loki 锁定：Block ${lockId} <!-- lock:${lockId} -->\n\n`;
       await page.evaluate((text: string) => {
         // @ts-ignore
         const current = window.__editor__.getMarkdown();

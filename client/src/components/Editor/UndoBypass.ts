@@ -103,7 +103,7 @@ export function isAIAction(tr: Transaction): boolean {
  *
  * @example
  * ```typescript
- * const content = '> [AI施压 - Muse]: 门后传来低沉的呼吸声。 <!-- lock:lock_001 -->';
+ * const content = '门后传来低沉的呼吸声。 <!-- lock:lock_001 -->';
  * insertWithoutUndo(editorView, 1234, content);
  *
  * // User presses Ctrl+Z

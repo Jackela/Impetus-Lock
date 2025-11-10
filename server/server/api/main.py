@@ -8,12 +8,16 @@ Follows Article IV (SOLID): Endpoints delegate to service layer when business lo
 import os
 from typing import Literal
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from server.api.routes import intervention, tasks
 from server.infrastructure.persistence.database import init_database
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Conditionally import testing routes
 if os.getenv("TESTING"):
@@ -37,10 +41,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://127.0.0.1:5173",
         "http://localhost:5174",
+        "http://127.0.0.1:5174",
         "http://localhost:5175",
+        "http://127.0.0.1:5175",
         "http://localhost:5176",
+        "http://127.0.0.1:5176",
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],

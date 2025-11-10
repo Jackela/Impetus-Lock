@@ -11,7 +11,7 @@ Constitutional Compliance:
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from server.domain.models.anchor import Anchor
 
@@ -81,9 +81,9 @@ class InterventionResponse(BaseModel):
     Matches OpenAPI contract (intervention.yaml v1.0.1).
 
     Attributes:
-        action: Intervention action type ("provoke" or "delete").
-        content: Markdown blockquote content (only if action="provoke").
-        lock_id: UUID for un-deletable lock (only if action="provoke").
+        action: Intervention action type ("provoke", "delete", "rewrite").
+        content: Markdown blockquote content (provoke) or inline replacement text (rewrite).
+        lock_id: UUID for un-deletable lock (required for provoke/rewrite).
         anchor: Target position for injection/deletion.
         action_id: Unique action identifier (UUID v4).
         issued_at: Server timestamp when action was generated.
@@ -92,10 +92,11 @@ class InterventionResponse(BaseModel):
         ```json
         {
             "action": "provoke",
-            "content": "> [AI施压 - Muse]: 门后传来低沉的呼吸声。",
+            "content": "门后传来低沉的呼吸声。",
             "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8a",
             "anchor": {"type": "pos", "from": 1234},
             "action_id": "act_550e8400-e29b-41d4-a716-446655440000",
+            "source": "muse",
             "issued_at": "2024-01-15T10:30:00Z"
         }
         ```
@@ -106,22 +107,68 @@ class InterventionResponse(BaseModel):
             "action": "delete",
             "anchor": {"type": "range", "from": 1289, "to": 1310},
             "action_id": "act_660e8400-e29b-41d4-a716-446655440001",
+            "source": "loki",
             "issued_at": "2024-01-15T10:31:00Z"
+        }
+        ```
+
+    Example (Rewrite):
+        ```json
+        {
+            "action": "rewrite",
+            "content": "他改为砸向那扇门",
+            "lock_id": "lock_01j...",
+            "anchor": {"type": "range", "from": 120, "to": 140},
+            "action_id": "act_77...",
+            "source": "muse",
+            "issued_at": "2024-01-15T10:32:00Z"
         }
         ```
     """
 
-    action: Literal["provoke", "delete"] = Field(
-        ..., description="Intervention action: provoke (inject) or delete (remove)"
+    action: Literal["provoke", "delete", "rewrite"] = Field(
+        ...,
+        description=(
+            "Intervention action: provoke (inject), delete (remove) or rewrite "
+            "(surgical replace)"
+        ),
     )
     content: str | None = Field(
-        None, min_length=1, description="Markdown blockquote content (only for provoke action)"
+        None,
+        min_length=1,
+        description="Intervention content (blockquote for provoke, inline text for rewrite)",
     )
     lock_id: str | None = Field(
-        None, min_length=1, description="UUID for un-deletable lock (only for provoke action)"
+        None,
+        min_length=1,
+        description="UUID for un-deletable lock (required for provoke/rewrite actions)",
     )
     anchor: Anchor = Field(..., description="Target position (pos/range/lock_id)")
     action_id: str = Field(..., min_length=1, description="Unique action identifier (UUID v4)")
+    source: Literal["muse", "loki"] = Field(
+        ...,
+        description="Agent mode responsible for the action",
+    )
     issued_at: datetime = Field(
         default_factory=datetime.utcnow, description="Server timestamp when action was generated"
     )
+
+    @model_validator(mode="after")
+    def _validate_payload(self) -> "InterventionResponse":
+        """Ensure required fields exist for each action type."""
+
+        if self.action in {"provoke", "rewrite"}:
+            if not self.content or not self.content.strip():
+                raise ValueError("content is required for provoke/rewrite actions")
+            if not self.lock_id:
+                raise ValueError("lock_id is required for provoke/rewrite actions")
+        if self.action == "delete":
+            self.content = None
+            self.lock_id = None
+
+        if self.action == "rewrite" and self.anchor.type != "range":
+            raise ValueError("rewrite action requires range anchor")
+        if self.action == "delete" and self.anchor.type != "range":
+            raise ValueError("delete action requires range anchor")
+
+        return self

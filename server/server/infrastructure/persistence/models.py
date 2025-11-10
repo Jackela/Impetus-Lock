@@ -82,7 +82,7 @@ class InterventionActionModel(Base):
     Attributes:
         id: Primary key (UUID).
         task_id: Foreign key to tasks table.
-        action_type: "provoke" or "delete".
+        action_type: "provoke", "delete", or "rewrite".
         action_id: Client-facing action identifier (e.g., "act_xxxxx").
         lock_id: Lock identifier for provoke actions (NULL for delete).
         content: Intervention content for provoke actions (NULL for delete).
@@ -116,12 +116,15 @@ class InterventionActionModel(Base):
     task: Mapped["TaskModel"] = relationship("TaskModel", back_populates="actions")
 
     __table_args__ = (
-        CheckConstraint("action_type IN ('provoke', 'delete')", name="actions_type_check"),
+        CheckConstraint(
+            "action_type IN ('provoke', 'delete', 'rewrite')", name="actions_type_check"
+        ),
         CheckConstraint("mode IN ('muse', 'loki')", name="actions_mode_check"),
         CheckConstraint(
-            "(action_type = 'provoke' AND content IS NOT NULL AND lock_id IS NOT NULL) OR "
-            "(action_type = 'delete')",
-            name="actions_provoke_has_content",
+            "("
+            "action_type IN ('provoke', 'rewrite') AND content IS NOT NULL AND lock_id IS NOT NULL"
+            ") OR (action_type = 'delete' AND content IS NULL AND lock_id IS NULL)",
+            name="actions_mutation_payload_check",
         ),
         Index("idx_actions_task_id", "task_id"),
         Index("idx_actions_action_id", "action_id"),

@@ -6,7 +6,21 @@ import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores([
+    "dist",
+    "build",
+    ".vite",
+    "coverage",
+    ".nyc_output",
+    "node_modules",
+    "*.generated.ts",
+    "src/types/api.generated.ts",
+    "*.min.js",
+    "*.bundle.js",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+  ]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [
@@ -66,6 +80,17 @@ export default defineConfig([
           ],
         },
       ],
+    },
+  },
+  // Editor infra utilities need direct service access
+  {
+    files: [
+      "**/components/Editor/LockDecorations.ts",
+      "**/components/Editor/TransactionFilter.ts",
+      "**/utils/prosemirror-helpers.ts",
+    ],
+    rules: {
+      "no-restricted-imports": "off",
     },
   },
 ]);

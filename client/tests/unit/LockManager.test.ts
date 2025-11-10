@@ -126,7 +126,7 @@ describe("LockManager", () => {
       const markdown = `
 # Title
 
-> [AI施压 - Muse]: 测试内容 <!-- lock:lock_001 -->
+> 测试内容 <!-- lock:lock_001 source:muse -->
 
 Normal text.
       `.trim();
@@ -141,11 +141,11 @@ Normal text.
      */
     it("should parse multiple lock comments", () => {
       const markdown = `
-> Block 1 <!-- lock:lock_001 -->
+> Block 1 <!-- lock:lock_001 source:muse -->
 
 Normal text.
 
-> Block 2 <!-- lock:lock_002 -->
+> Block 2 <!-- lock:lock_002 source:loki -->
 
 More text.
 
@@ -177,7 +177,7 @@ Just regular text without any locks.
      */
     it("should ignore malformed lock comments", () => {
       const markdown = `
-> Good lock <!-- lock:lock_001 -->
+> Good lock <!-- lock:lock_001 source:muse -->
 > Bad lock <!-- lock: --> 
 > Also bad <!-- locklock_002 -->
       `.trim();
@@ -185,6 +185,21 @@ Just regular text without any locks.
       const locks = lockManager.extractLocksFromMarkdown(markdown);
 
       expect(locks).toEqual(["lock_001"]);
+    });
+  });
+
+  describe("extractLockEntriesFromMarkdown()", () => {
+    it("should parse lock metadata with sources", () => {
+      const markdown = `
+> First <!-- lock:lock_meta_001 source:muse -->
+> Second <!-- lock:lock_meta_002 source:loki -->
+      `.trim();
+
+      const entries = lockManager.extractLockEntriesFromMarkdown(markdown);
+      expect(entries).toEqual([
+        { lockId: "lock_meta_001", source: "muse" },
+        { lockId: "lock_meta_002", source: "loki" },
+      ]);
     });
   });
 
@@ -207,6 +222,22 @@ Just regular text without any locks.
      */
     it("should return empty array when no locks exist", () => {
       expect(lockManager.getAllLocks()).toEqual([]);
+    });
+  });
+
+  describe("getLockMetadata()", () => {
+    it("should return metadata for stored locks", () => {
+      const lockId = "lock_meta_source";
+      lockManager.applyLock(lockId, { source: "loki" });
+
+      expect(lockManager.getLockMetadata(lockId)).toEqual({ source: "loki" });
+    });
+  });
+
+  describe("injectLockComment()", () => {
+    it("should include source metadata when provided", () => {
+      const result = lockManager.injectLockComment("> text", "lock_inline", { source: "muse" });
+      expect(result).toContain("<!-- lock:lock_inline source:muse -->");
     });
   });
 

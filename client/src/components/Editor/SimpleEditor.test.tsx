@@ -74,12 +74,12 @@ describe("SimpleEditor", () => {
    * Coverage: UI structure validation
    */
   it("should render wrapper div with correct styles", () => {
-    const { container } = render(<SimpleEditor />);
-    const wrapper = container.querySelector("div[style*='padding']");
-    expect(wrapper).toBeInTheDocument();
+    render(<SimpleEditor />);
+    const wrapper = screen.getByTestId("simple-editor-wrapper");
     expect(wrapper).toHaveStyle({ padding: "20px" });
-    expect(wrapper).toHaveStyle({ border: "1px solid #ccc" });
     expect(wrapper).toHaveStyle({ minHeight: "300px" });
+    expect(wrapper).toHaveStyle({ borderWidth: "1px" });
+    expect(wrapper).toHaveStyle({ borderStyle: "solid" });
   });
 
   /**
@@ -156,11 +156,8 @@ describe("SimpleEditor", () => {
    * Coverage: Accessibility compliance (Article V)
    */
   it("should be accessible", async () => {
-    const { container } = render(<SimpleEditor />);
-
-    // Basic accessibility check - wrapper should exist and be visible
-    const wrapper = container.querySelector("div[style*='padding']");
-    expect(wrapper).toBeInTheDocument();
+    render(<SimpleEditor />);
+    const wrapper = screen.getByTestId("simple-editor-wrapper");
     expect(wrapper).toBeVisible();
   });
 });

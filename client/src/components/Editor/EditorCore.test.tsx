@@ -55,7 +55,7 @@ vi.mock("../../services/LockManager", () => ({
   lockManager: {
     applyLock: vi.fn(),
     hasLock: vi.fn(() => false),
-    extractLocksFromMarkdown: vi.fn(() => []),
+    extractLockEntriesFromMarkdown: vi.fn(() => []),
   },
 }));
 
@@ -235,7 +235,7 @@ describe("EditorCore", () => {
    * Coverage: Lock persistence feature
    */
   it("should handle Markdown with lock comments", () => {
-    const contentWithLocks = "> [AI施压]: Content <!-- lock:lock_001 -->";
+    const contentWithLocks = "> Muse Prompt <!-- lock:lock_001 source:muse -->";
     render(<EditorCore initialContent={contentWithLocks} />);
     expect(screen.getByTestId("milkdown-editor")).toBeInTheDocument();
   });
