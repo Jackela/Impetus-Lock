@@ -7,6 +7,22 @@
 
 import { Page, expect } from "@playwright/test";
 
+const WELCOME_STORAGE_KEY = "impetus-lock-welcome-dismissed";
+let welcomeDismissScriptInjected = false;
+
+async function ensureWelcomeModalSuppressed(page: Page) {
+  if (!welcomeDismissScriptInjected) {
+    await page.addInitScript((key) => {
+      window.localStorage.setItem(key, "true");
+    }, WELCOME_STORAGE_KEY);
+    welcomeDismissScriptInjected = true;
+  }
+
+  await page.evaluate((key) => {
+    window.localStorage.setItem(key, "true");
+  }, WELCOME_STORAGE_KEY);
+}
+
 export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<boolean> {
   const overlay = page.locator(".welcome-modal-overlay");
   const getStartedButton = page.getByRole("button", { name: "Get Started" });
@@ -41,6 +57,7 @@ export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<b
  * @param timeout - Maximum wait time in ms (default: 10000)
  */
 export async function waitForReactHydration(page: Page, timeout = 10000) {
+  await ensureWelcomeModalSuppressed(page);
   // Wait directly for app container (rendered by React)
   await page.waitForSelector(".app", { timeout });
   await dismissWelcomeModal(page).catch(() => undefined);
