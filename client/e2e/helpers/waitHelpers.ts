@@ -9,6 +9,7 @@ import { Page, expect } from "@playwright/test";
 
 const WELCOME_STORAGE_KEY = "impetus-lock-welcome-dismissed";
 let welcomeDismissScriptInjected = false;
+const reloadedPages = new WeakSet<Page>();
 
 async function ensureWelcomeModalSuppressed(page: Page) {
   if (!welcomeDismissScriptInjected) {
@@ -18,9 +19,16 @@ async function ensureWelcomeModalSuppressed(page: Page) {
     welcomeDismissScriptInjected = true;
   }
 
-  await page.evaluate((key) => {
+  const needsReload = await page.evaluate((key) => {
+    const alreadyDismissed = window.localStorage.getItem(key) === "true";
     window.localStorage.setItem(key, "true");
+    return !alreadyDismissed;
   }, WELCOME_STORAGE_KEY);
+
+  if (needsReload && !reloadedPages.has(page)) {
+    reloadedPages.add(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+  }
 }
 
 export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<boolean> {
