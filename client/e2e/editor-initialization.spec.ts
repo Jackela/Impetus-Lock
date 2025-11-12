@@ -203,11 +203,12 @@ test.describe("Editor Initialization", () => {
     const modeSelector = page.locator("#mode-selector");
     await expect(modeSelector).toBeVisible({ timeout: 5000 });
 
-    const button = page.locator('button:has-text("I\'m stuck!")');
-    await expect(button).toBeDisabled();
+    const button = page.getByTestId("manual-trigger-button");
+    await expect(button).toHaveCount(0);
 
     await modeSelector.selectOption("muse");
     await expect(button).toBeVisible({ timeout: 5000 });
+    await expect(button).toBeEnabled();
     await expect(button).toBeEnabled();
   });
 });

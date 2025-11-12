@@ -1,5 +1,17 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
+import { mockInterventionSuccess, mockInterventionFailure } from "./helpers/interventionMocks";
+
+async function enableMuseMode(page: Page) {
+  const modeSelector = page.getByTestId("mode-selector");
+  await expect(modeSelector).toBeVisible({ timeout: 5000 });
+  await modeSelector.selectOption("muse");
+
+  const button = page.getByTestId("manual-trigger-button");
+  await expect(button).toBeVisible({ timeout: 5000 });
+
+  return { modeSelector, button };
+}
 
 /**
  * E2E tests for Manual Trigger Button (User Story 1)
@@ -48,27 +60,20 @@ test.describe("Manual Trigger Button", () => {
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
 
-    const button = page.getByTestId("manual-trigger-button");
-    const modeSelector = page.getByTestId("mode-selector");
+    const { modeSelector } = await enableMuseMode(page);
+    const buttonLocator = () => page.getByTestId("manual-trigger-button");
 
-    // Wait for controls to be visible
-    await expect(modeSelector).toBeVisible({ timeout: 5000 });
-    await expect(button).toBeVisible({ timeout: 5000 });
+    // Test 1: Muse mode - button should be enabled and visible
+    await expect(buttonLocator()).toBeEnabled();
+    await expect(buttonLocator()).toHaveCSS("opacity", "1");
 
-    // Test 1: Muse mode - button should be enabled
-    await modeSelector.selectOption("muse");
-    await expect(button).toBeEnabled();
-    await expect(button).toHaveCSS("opacity", "1");
-
-    // Test 2: Loki mode - button should be disabled
+    // Test 2: Loki mode - button should not be rendered
     await modeSelector.selectOption("loki");
-    await expect(button).toBeDisabled();
-    await expect(button).toHaveCSS("opacity", "0.6");
+    await expect(buttonLocator()).toHaveCount(0);
 
-    // Test 3: Off mode - button should be disabled
+    // Test 3: Off mode - button should not be rendered
     await modeSelector.selectOption("off");
-    await expect(button).toBeDisabled();
-    await expect(button).toHaveCSS("opacity", "0.6");
+    await expect(buttonLocator()).toHaveCount(0);
   });
 
   /**
@@ -85,15 +90,12 @@ test.describe("Manual Trigger Button", () => {
    * **Blocker**: Mode selector and API integration pending
    */
   test("manual trigger calls Provoke API and shows feedback", async ({ page }) => {
+    await mockInterventionSuccess(page);
+
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
 
-    const button = page.getByTestId("manual-trigger-button");
-    const modeSelector = page.getByTestId("mode-selector");
-
-    // Wait for controls to be visible
-    await expect(modeSelector).toBeVisible({ timeout: 5000 });
-    await expect(button).toBeVisible({ timeout: 5000 });
+    const { button } = await enableMuseMode(page);
 
     // Set up API request listener
     // API endpoint: /api/v1/impetus/generate-intervention (POST)
@@ -103,9 +105,6 @@ test.describe("Manual Trigger Button", () => {
         request.method() === "POST",
       { timeout: 5000 }
     );
-
-    // Ensure Muse mode is active
-    await modeSelector.selectOption("muse");
 
     // Click manual trigger button
     await button.click();
@@ -145,23 +144,12 @@ test.describe("Manual Trigger Button", () => {
    */
   test("manual trigger API failure shows error feedback", async ({ page }) => {
     // Mock API to return error response BEFORE navigation
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
-      route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: JSON.stringify({ error: "Internal server error" }),
-      });
-    });
+    await mockInterventionFailure(page);
 
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
 
-    const button = page.getByTestId("manual-trigger-button");
-    const modeSelector = page.getByTestId("mode-selector");
-
-    // Wait for controls to be visible
-    await expect(modeSelector).toBeVisible({ timeout: 5000 });
-    await expect(button).toBeVisible({ timeout: 5000 });
+    const { button } = await enableMuseMode(page);
 
     // Set up console log listener BEFORE triggering
     const consoleLogs: string[] = [];
@@ -171,28 +159,22 @@ test.describe("Manual Trigger Button", () => {
       }
     });
 
-    // Ensure Muse mode is active
-    await modeSelector.selectOption("muse");
-
     // Click manual trigger button
     await button.click();
 
-    // Verify 1: Button shows error state (red flash animation - Phase 4)
-    // TODO: Add assertion for red flash animation once error feedback is implemented
-    // const errorAnimation = page.locator('[data-animation-type="error-flash"]');
-    // await expect(errorAnimation).toBeVisible();
+    // Verify 1: Config error modal appears (current error feedback experience)
+    const errorModal = page.getByTestId("config-error-modal");
+    await expect(errorModal).toBeVisible({ timeout: 5000 });
 
-    // Verify 2: Error audio plays (buzz sound - Phase 4)
-    // TODO: Add assertion for audio playback once useAudioFeedback is integrated
-    // This requires mocking AudioContext or listening for audio element creation
+    // Dismiss modal so subsequent assertions can continue
+    await page.getByTestId("config-error-dismiss").click();
 
-    // Verify 3: Button returns to ready state after error feedback
-    // Wait for loading state to clear (API error + finally block + React state update)
+    // Verify 2: Button returns to ready state after error feedback
     await expect(button).toHaveText("I'm stuck!", { timeout: 5000 });
     await expect(button).toBeEnabled();
 
-    // Verify 4: Error is logged to console
+    // Verify 3: Error is logged to console by EditorCore
     await page.waitForTimeout(500); // Wait for console error to be logged
-    expect(consoleLogs.some((log) => log.includes("Manual trigger failed"))).toBe(true);
+    expect(consoleLogs.some((log) => log.includes("Muse intervention failed"))).toBe(true);
   });
 });
