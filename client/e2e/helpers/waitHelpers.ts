@@ -7,17 +7,27 @@
 
 import { Page, expect } from "@playwright/test";
 
-export async function dismissWelcomeModal(page: Page): Promise<boolean> {
+export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<boolean> {
   const overlay = page.locator(".welcome-modal-overlay");
   const getStartedButton = page.getByRole("button", { name: "Get Started" });
 
-  const isVisible = await overlay.isVisible().catch(() => false);
+  let isVisible = await overlay.isVisible().catch(() => false);
+
+  if (!isVisible) {
+    try {
+      await overlay.waitFor({ state: "visible", timeout });
+      isVisible = true;
+    } catch {
+      return false;
+    }
+  }
+
   if (!isVisible) {
     return false;
   }
 
   await getStartedButton.click();
-  await overlay.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
+  await overlay.waitFor({ state: "hidden", timeout }).catch(() => undefined);
   return true;
 }
 
@@ -33,7 +43,6 @@ export async function dismissWelcomeModal(page: Page): Promise<boolean> {
 export async function waitForReactHydration(page: Page, timeout = 10000) {
   // Wait directly for app container (rendered by React)
   await page.waitForSelector(".app", { timeout });
-  await page.waitForSelector(".welcome-modal-overlay", { timeout: 1000 }).catch(() => undefined);
   await dismissWelcomeModal(page).catch(() => undefined);
 }
 
