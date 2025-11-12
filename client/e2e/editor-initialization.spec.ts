@@ -15,6 +15,7 @@ import {
   waitForReactHydration,
   waitForEditorReady,
   waitForEditorInteractive,
+  waitForAppHeader,
 } from "./helpers/waitHelpers";
 
 test.describe("Editor Initialization", () => {
@@ -197,18 +198,21 @@ test.describe("Editor Initialization", () => {
    * Coverage: P2 vibe feature integration
    */
   test("should have manual trigger button", async ({ page }) => {
-    // Wait for app header to be ready
-    await page.waitForSelector(".app-header", { timeout: 5000 });
+    // Ensure the header has rendered (dismiss welcome modal if needed)
+    await waitForAppHeader(page);
 
     const modeSelector = page.locator("#mode-selector");
     await expect(modeSelector).toBeVisible({ timeout: 5000 });
 
     const button = page.getByTestId("manual-trigger-button");
-    await expect(button).toHaveCount(0);
+
+    // In Off mode the button should not exist
+    await expect(button).toHaveCount(0, { timeout: 2000 });
 
     await modeSelector.selectOption("muse");
+
+    // After switching to Muse, the button should appear and be enabled
     await expect(button).toBeVisible({ timeout: 5000 });
-    await expect(button).toBeEnabled();
     await expect(button).toBeEnabled();
   });
 });
