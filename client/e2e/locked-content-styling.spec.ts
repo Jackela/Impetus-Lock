@@ -124,7 +124,9 @@ test.describe("Locked Content Styling", () => {
       return window.getComputedStyle(el).backgroundColor;
     });
     // Hover background should be slightly darker (0.08 alpha vs 0.05)
-    expect(hoverBackground).toMatch(/rgba?\((19[0-9]|20[0-9]),\s*(18[0-9]|19[0-9]|20[0-9]),\s*25[0-9]/);
+    expect(hoverBackground).toMatch(
+      /rgba?\((19[0-9]|20[0-9]),\s*(18[0-9]|19[0-9]|20[0-9]),\s*25[0-9]/
+    );
 
     // Note: Cannot directly test ::after pseudo-element content in Playwright
     // CSS rule validates lock icon (🔒) appears on hover via ::after pseudo-element

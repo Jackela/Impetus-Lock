@@ -56,7 +56,9 @@ describe("generateIntervention", () => {
 
     vi.spyOn(global, "fetch").mockResolvedValue(mockResponse);
 
-    await expect(generateIntervention(baseRequest, { idempotencyKey: "err" })).rejects.toMatchObject({
+    await expect(
+      generateIntervention(baseRequest, { idempotencyKey: "err" })
+    ).rejects.toMatchObject({
       errorCode: "llm_not_configured",
       message: "LLM unavailable",
     });

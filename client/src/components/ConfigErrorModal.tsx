@@ -36,9 +36,7 @@ export function ConfigErrorModal({
           <li>
             如果你在本地运行后端，可在 <code>server/.env</code> 中配置云厂商 API Key。
           </li>
-          <li>
-            或者，点击「LLM 设置」把你自己的 key 存在浏览器里，并选择想用的厂商。
-          </li>
+          <li>或者，点击「LLM 设置」把你自己的 key 存在浏览器里，并选择想用的厂商。</li>
           <li>刷新或重试介入按钮即可重新发起请求。</li>
         </ol>
         {errorCode && (

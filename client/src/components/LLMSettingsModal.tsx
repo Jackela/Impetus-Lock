@@ -15,7 +15,13 @@ interface LLMSettingsModalProps {
   onClear: () => void;
 }
 
-export function LLMSettingsModal({ open, onClose, config, onSave, onClear }: LLMSettingsModalProps) {
+export function LLMSettingsModal({
+  open,
+  onClose,
+  config,
+  onSave,
+  onClear,
+}: LLMSettingsModalProps) {
   const [provider, setProvider] = useState<LLMProviderName>(config?.provider ?? "openai");
   const [model, setModel] = useState<string>(config?.model ?? getLLMRecommendedModel("openai"));
   const [apiKey, setApiKey] = useState<string>(config?.apiKey ?? "");
@@ -80,7 +86,12 @@ export function LLMSettingsModal({ open, onClose, config, onSave, onClear }: LLM
             <h2>LLM Settings</h2>
             <p>Keys are stored only in this browser and sent with each Muse/Loki request.</p>
           </div>
-          <button type="button" className="llm-settings__close" onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            className="llm-settings__close"
+            onClick={onClose}
+            aria-label="Close"
+          >
             ×
           </button>
         </header>
@@ -122,14 +133,21 @@ export function LLMSettingsModal({ open, onClose, config, onSave, onClear }: LLM
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={provider === "openai" ? "sk-proj-..." : provider === "anthropic" ? "sk-ant-..." : "AI..."}
+              placeholder={
+                provider === "openai"
+                  ? "sk-proj-..."
+                  : provider === "anthropic"
+                    ? "sk-ant-..."
+                    : "AI..."
+              }
               autoComplete="off"
               data-testid="llm-key-input"
             />
           </label>
 
           <div className="llm-settings__hint">
-            Need an API key? Visit {getLLMProviderLabel(provider)} docs for latest pricing and quotas.
+            Need an API key? Visit {getLLMProviderLabel(provider)} docs for latest pricing and
+            quotas.
           </div>
         </div>
 

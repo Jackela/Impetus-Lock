@@ -55,18 +55,18 @@ test.describe("Impetus Lock demo showcase", () => {
         museCalls += 1;
       } else {
         responseBody = {
-            action: "delete",
-            content: null,
-            lock_id: null,
-            anchor: {
-              type: "range",
-              from: Math.max(0, selectionFrom - 60),
-              to: selectionFrom,
-            },
-            action_id: "act_demo_delete",
-            issued_at: new Date().toISOString(),
-            source: "loki",
-          };
+          action: "delete",
+          content: null,
+          lock_id: null,
+          anchor: {
+            type: "range",
+            from: Math.max(0, selectionFrom - 60),
+            to: selectionFrom,
+          },
+          action_id: "act_demo_delete",
+          issued_at: new Date().toISOString(),
+          source: "loki",
+        };
       }
 
       route.fulfill({
@@ -92,27 +92,21 @@ test.describe("Impetus Lock demo showcase", () => {
 
     await modeSelector.selectOption("muse");
     await editor.click();
-    await editor.type(
-      "他打开门，犹豫着要不要进去。空气里有铁锈味，像是有人刚拔出一把刀。"
-    );
+    await editor.type("他打开门，犹豫着要不要进去。空气里有铁锈味，像是有人刚拔出一把刀。");
 
     const provokeRequest = page.waitForRequest("**/api/v1/impetus/generate-intervention");
     const provokeResponse = page.waitForResponse("**/api/v1/impetus/generate-intervention");
     await manualTrigger.click();
     await Promise.all([provokeRequest, provokeResponse]);
 
-    const lockedBlock = page
-      .locator("blockquote", { hasText: "立即让主角曝露一个秘密。" })
-      .first();
+    const lockedBlock = page.locator('.locked-content[data-lock-id="lock_demo_provoke"]').first();
     await expect(lockedBlock).toBeVisible({ timeout: 5000 });
     await lockedBlock.click();
     await page.keyboard.press("Backspace");
     await expect(lockedBlock).toBeVisible();
 
     await page.evaluate(() => (window as any).triggerMuseRewriteForTest?.());
-    const inlineRewrite = page
-      .locator('.locked-content[data-lock-id="lock_demo_rewrite"]')
-      .first();
+    const inlineRewrite = page.locator('.locked-content[data-lock-id="lock_demo_rewrite"]').first();
     await expect(inlineRewrite).toBeVisible({ timeout: 5000 });
     await expect(inlineRewrite).toHaveAttribute("data-lock-shape", "inline");
     await expect(inlineRewrite).toHaveAttribute("data-source", "muse");

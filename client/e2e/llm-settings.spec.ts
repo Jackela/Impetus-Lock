@@ -31,12 +31,11 @@ test.describe("LLM Settings", () => {
     if (modalVisible) {
       await page.getByTestId("config-error-open-settings").click();
     } else {
-      await page
-        .waitForFunction(
-          () => !!document.querySelector('[data-testid="llm-settings-trigger"]'),
-          undefined,
-          { timeout: 60000 }
-        );
+      await page.waitForFunction(
+        () => !!document.querySelector('[data-testid="llm-settings-trigger"]'),
+        undefined,
+        { timeout: 60000 }
+      );
       await page.getByTestId("llm-settings-trigger").click();
     }
 

@@ -161,18 +161,23 @@ export async function generateIntervention(
       if (!response.ok) {
         const detail =
           (parsedData.detail as Record<string, unknown> | undefined) ??
-          (typeof parsedData.details === "object" ? (parsedData.details as Record<string, unknown>) : undefined);
+          (typeof parsedData.details === "object"
+            ? (parsedData.details as Record<string, unknown>)
+            : undefined);
         const code =
           (parsedData.error as string) ||
           (parsedData.code as string) ||
           (detail?.code as string) ||
           "UnknownError";
         const message =
-          (parsedData.message as string) ||
-          (detail?.message as string) ||
-          "Unknown error occurred";
+          (parsedData.message as string) || (detail?.message as string) || "Unknown error occurred";
 
-        throw new InterventionAPIError(response.status, code, message, detail ?? parsedData.details);
+        throw new InterventionAPIError(
+          response.status,
+          code,
+          message,
+          detail ?? parsedData.details
+        );
       }
 
       return parsedData as InterventionResponse;
