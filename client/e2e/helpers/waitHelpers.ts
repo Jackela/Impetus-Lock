@@ -33,9 +33,7 @@ export async function dismissWelcomeModal(page: Page): Promise<boolean> {
 export async function waitForReactHydration(page: Page, timeout = 10000) {
   // Wait directly for app container (rendered by React)
   await page.waitForSelector(".app", { timeout });
-  await page
-    .waitForSelector(".welcome-modal-overlay", { timeout: 1000 })
-    .catch(() => undefined);
+  await page.waitForSelector(".welcome-modal-overlay", { timeout: 1000 }).catch(() => undefined);
   await dismissWelcomeModal(page).catch(() => undefined);
 }
 
