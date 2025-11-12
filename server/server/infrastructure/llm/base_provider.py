@@ -79,4 +79,3 @@ class BasePromptLLMProvider(LLMProvider, ABC):
     @abstractmethod
     def _complete(self, system_prompt: str, user_message: str) -> LLMInterventionDraft:
         """Subclasses call their provider SDK and return a validated draft."""
-

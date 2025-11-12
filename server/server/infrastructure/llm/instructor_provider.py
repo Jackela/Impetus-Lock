@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 import instructor
 from openai import APIError, AuthenticationError, OpenAI, RateLimitError
 
@@ -22,7 +20,7 @@ class InstructorLLMProvider(BasePromptLLMProvider):
 
     def _complete(self, system_prompt: str, user_message: str) -> LLMInterventionDraft:
         try:
-            completion = self.client.chat.completions.create(
+            completion: LLMInterventionDraft = self.client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
                 response_model=LLMInterventionDraft,
@@ -31,7 +29,7 @@ class InstructorLLMProvider(BasePromptLLMProvider):
                     {"role": "user", "content": user_message},
                 ],
             )
-            return cast(LLMInterventionDraft, completion)
+            return completion
         except RateLimitError as exc:  # pragma: no cover - SDK provides typed error
             raise LLMProviderError(
                 code="quota_exceeded",

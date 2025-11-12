@@ -283,9 +283,7 @@ class TestInterventionAPIContract:
 
         assert response.status_code == 422
 
-    def test_missing_llm_key_returns_503(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_missing_llm_key_returns_503(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """API should raise 503 when no server key and no BYOK override."""
 
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
@@ -310,9 +308,7 @@ class TestInterventionAPIContract:
         intervention_module._provider_registry.reload()
         intervention_module._intervention_service = None
 
-    def test_byok_override_invokes_endpoint(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_byok_override_invokes_endpoint(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """User supplied headers should enable Anthropic without server env."""
 
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
