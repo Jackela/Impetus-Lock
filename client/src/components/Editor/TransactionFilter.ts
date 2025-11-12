@@ -76,6 +76,12 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
       return true;
     }
 
+    // Allow AI-authored interventions (rewrite/provoke/delete) to bypass lock filter
+    const isAiAction = tr.getMeta && tr.getMeta("aiAction");
+    if (isAiAction) {
+      return true;
+    }
+
     // Check if transaction affects locked content
     // Locks are registered in EditorCore dispatch when content is first inserted
     let affectsLock = false;

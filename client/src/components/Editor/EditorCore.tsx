@@ -157,7 +157,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         clearTimeout(actionResetTimerRef.current);
       }
     };
-  }, []);
+  }, [showSensoryAction]);
 
   // Handle STUCK state intervention (Muse mode)
   const handleStuck = useCallback(async () => {
@@ -222,7 +222,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, onInterventionError]);
+  }, [cursorPosition, docVersion, onInterventionError, showSensoryAction]);
 
   // Handle Loki chaos trigger
   const handleLokiTrigger = useCallback(async () => {
@@ -273,7 +273,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, onInterventionError]);
+  }, [cursorPosition, docVersion, onInterventionError, showSensoryAction]);
 
   // Handle manual delete trigger (Test Delete button)
   const handleManualDelete = useCallback(() => {
@@ -315,7 +315,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         isDeletingRef.current = false;
       }, 1500); // 1.5 seconds to ensure all state updates complete
     }
-  }, []);
+  }, [showSensoryAction]);
 
   // Stable refs for callback functions to avoid useEffect re-runs
   const handleStuckRef = useRef(handleStuck);
@@ -410,7 +410,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       lastProcessedTriggerRef.current = null;
       isProcessingTriggerRef.current = false;
     }
-  }, [externalTrigger, onTriggerProcessed, mode]);
+  }, [externalTrigger, onTriggerProcessed, mode, showSensoryAction]);
 
   // Initialize editor - don't use loading state
   const { get } = useEditor((root) => {
@@ -587,7 +587,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     return () => {
       mounted = false;
     };
-  }, [initialContent]);
+  }, [initialContent, showSensoryAction]);
 
   // Always render immediately - no loading state
   return (
