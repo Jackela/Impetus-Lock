@@ -11,7 +11,7 @@ Constitutional Compliance:
 
 from __future__ import annotations
 
-from typing import Final, Tuple
+from typing import Final
 
 SENTENCE_BOUNDARIES: Final[tuple[str, ...]] = ("。", "！", "？", "!", "?", ".")
 
@@ -92,7 +92,7 @@ def compute_last_sentence_anchor(
     *,
     min_length: int = 12,
     max_length: int = 400,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     """Compute (from, to) anchor bounds for last sentence rewrite.
 
     Args:

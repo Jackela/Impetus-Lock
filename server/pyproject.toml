@@ -43,7 +43,7 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "A", "T20", "SIM"]
-ignore = ["ANN101", "ANN102", "B008"]  # B008: FastAPI Depends() is safe to use as default
+ignore = ["B008"]  # B008: FastAPI Depends() is safe to use as default
 
 [tool.ruff.format]
 quote-style = "double"

@@ -9,7 +9,7 @@ Constitutional Compliance:
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
@@ -69,7 +69,7 @@ def generate_intervention(
     model_header: Annotated[str | None, Header(alias="X-LLM-Model")] = None,
     api_key_header: Annotated[str | None, Header(alias="X-LLM-Api-Key")] = None,
     service: InterventionService = Depends(get_intervention_service),
-) -> InterventionResponse:
+) -> InterventionResponse | JSONResponse:
     """Generate AI intervention action based on context and mode.
     
     Implements idempotency via Idempotency-Key header (15s cache).
@@ -115,9 +115,6 @@ def generate_intervention(
     cached_response = _idempotency_cache.get(idempotency_key)
     if cached_response is not None:
         # Return cached response (within 15s window)
-        # Type assertion: we know this is InterventionResponse from our cache
-        from typing import cast
-
         return cast(InterventionResponse, cached_response)
 
     overrides_provided = any(filter(None, [provider_header, model_header, api_key_header]))

@@ -15,7 +15,12 @@ class GeminiLLMProvider(BasePromptLLMProvider):
 
     provider_name = "gemini"
 
-    def __init__(self, api_key: str, model: str = "gemini-2.0-flash-lite", temperature: float = 0.7) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gemini-2.0-flash-lite",
+        temperature: float = 0.7,
+    ) -> None:
         super().__init__(model=model, temperature=temperature)
         self.api_key = api_key
 
@@ -63,14 +68,14 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 message=message,
                 status_code=http_status,
                 provider=self.provider_name,
-            )
-        except httpx.HTTPError:
+            ) from exc
+        except httpx.HTTPError as exc:
             raise LLMProviderError(
                 code="llm_api_error",
                 message="Gemini request failed.",
                 status_code=502,
                 provider=self.provider_name,
-            )
+            ) from exc
 
         data = response.json()
         candidates = data.get("candidates", [])

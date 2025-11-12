@@ -18,7 +18,10 @@ from server.infrastructure.llm.provider_registry import (
 class TestProviderRegistry:
     """Covers env defaults and BYOK overrides."""
 
-    def test_allow_blank_returns_none_when_env_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_allow_blank_returns_none_when_env_missing(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
@@ -38,7 +41,10 @@ class TestProviderRegistry:
 
         assert excinfo.value.code == "llm_not_configured"
 
-    def test_override_with_custom_key_builds_anthropic(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_override_with_custom_key_builds_anthropic(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         registry = ProviderRegistry()
         registry.reload()

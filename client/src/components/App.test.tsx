@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
-import App from "./App";
+import App from "../App";
 
 describe("App - Responsive Container", () => {
   it("should render without crashing", () => {
