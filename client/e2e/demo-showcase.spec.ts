@@ -104,7 +104,10 @@ test.describe("Impetus Lock demo showcase", () => {
     await page.keyboard.press("Backspace");
     await expect(lockedBlock).toBeVisible();
 
+    const rewriteRequest = page.waitForRequest("**/api/v1/impetus/generate-intervention");
+    const rewriteResponse = page.waitForResponse("**/api/v1/impetus/generate-intervention");
     await page.evaluate(() => (window as any).triggerMuseRewriteForTest?.());
+    await Promise.all([rewriteRequest, rewriteResponse]);
     const inlineRewrite = page.locator('.locked-content[data-lock-id="lock_demo_rewrite"]').first();
     await expect(inlineRewrite).toBeVisible({ timeout: 5000 });
     await expect(inlineRewrite).toHaveAttribute("data-lock-shape", "inline");
