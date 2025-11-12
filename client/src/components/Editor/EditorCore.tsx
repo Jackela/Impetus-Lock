@@ -51,6 +51,7 @@ declare global {
     editorInstance?: Editor;
     insertLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
     rewriteLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
+    triggerManualDeleteForTest?: () => void;
   }
 }
 
@@ -500,6 +501,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         };
 
         testWindow.triggerMuseRewriteForTest = () => handleStuckRef.current?.();
+        testWindow.triggerManualDeleteForTest = () => handleManualDeleteRef.current?.();
       }
 
       // T008: Apply lock content decorations for visual styling FIRST
