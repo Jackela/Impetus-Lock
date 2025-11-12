@@ -22,3 +22,21 @@ pnpm-lock.yaml
 
 # Logs
 *.log
+
+# Temporarily ignore files under active WIP (formatting handled separately)
+e2e/keyboard-hint-footer.spec.ts
+e2e/lock-rejection-feedback.spec.ts
+e2e/manual-testing-newbie.spec.ts
+e2e/new-user-audit.spec.ts
+e2e/production-build.spec.ts
+e2e/timer-visibility.spec.ts
+e2e/welcome-modal.spec.ts
+LOCK_REJECTION_DEBUG.md
+src/components/Editor/EditorCore.tsx
+src/components/Editor/LockDecorations.ts
+src/components/TimerIndicator.tsx
+src/components/WelcomeModal.tsx
+src/hooks/useLockEnforcement.ts
+src/services/ContentInjector.ts
+src/styles/locked-content.css
+src/utils/logger.ts
