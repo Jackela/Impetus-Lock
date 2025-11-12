@@ -50,10 +50,9 @@ test.describe("Editor Initialization", () => {
     // Wait for editor to be ready
     await waitForEditorReady(page);
 
-    // Check that some content is visible
     const editorContent = await page.textContent(".milkdown");
     expect(editorContent).toBeTruthy();
-    expect(editorContent?.length).toBeGreaterThan(0);
+    expect(editorContent).toContain("信使");
   });
 
   /**
@@ -201,7 +200,13 @@ test.describe("Editor Initialization", () => {
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
 
+    const modeSelector = page.locator("#mode-selector");
+    await expect(modeSelector).toBeVisible({ timeout: 5000 });
+
     const button = page.locator('button:has-text("I\'m stuck!")');
+    await expect(button).toHaveCount(0);
+
+    await modeSelector.selectOption("muse");
     await expect(button).toBeVisible({ timeout: 5000 });
   });
 });

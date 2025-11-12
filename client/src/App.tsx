@@ -14,6 +14,7 @@ import { ConfigErrorModal } from "./components/ConfigErrorModal";
 import { useLLMConfig, getLLMProviderLabel } from "./hooks/useLLMConfig";
 import { LLMSettingsModal } from "./components/LLMSettingsModal";
 import { isInterventionAPIError, type InterventionAPIError } from "./hooks/useInterventionApiError";
+import { INITIAL_STORY } from "./constants/initialStory";
 
 /**
  * Impetus Lock Main Application
@@ -142,7 +143,7 @@ function App() {
       <main className="app-main" role="main">
         <EditorCore
           mode={mode}
-          initialContent=""
+          initialContent={INITIAL_STORY}
           externalTrigger={manualTrigger}
           onTriggerProcessed={() => setManualTrigger(null)}
           onTimerUpdate={setTimerRemaining}
