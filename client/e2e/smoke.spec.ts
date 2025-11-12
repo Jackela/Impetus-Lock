@@ -5,7 +5,7 @@ test("homepage renders successfully", async ({ page }) => {
   await page.goto("/");
 
   // Verify the page loads (actual title from index.html)
-  await expect(page).toHaveTitle("client");
+  await expect(page).toHaveTitle("Impetus Lock - AI-Powered Writing Pressure System");
 
   // Wait for React to hydrate
   await waitForReactHydration(page);
@@ -37,10 +37,12 @@ test("app has mode selector and manual trigger", async ({ page }) => {
   // Verify default mode is "off"
   await expect(modeSelector).toHaveValue("off");
 
-  // Verify manual trigger button exists
+  // Manual trigger button is visible but disabled until Muse mode
   const manualTrigger = page.getByTestId("manual-trigger-button");
   await expect(manualTrigger).toBeVisible({ timeout: 5000 });
-
-  // Manual trigger should be disabled in Off mode
   await expect(manualTrigger).toBeDisabled();
+
+  await modeSelector.selectOption("muse");
+  await expect(manualTrigger).toBeVisible({ timeout: 5000 });
+  await expect(manualTrigger).toBeEnabled();
 });

@@ -67,13 +67,15 @@ test.describe("Manual Trigger Button", () => {
     await expect(buttonLocator()).toBeEnabled();
     await expect(buttonLocator()).toHaveCSS("opacity", "1");
 
-    // Test 2: Loki mode - button should not be rendered
+    // Test 2: Loki mode - button should remain visible but disabled
     await modeSelector.selectOption("loki");
-    await expect(buttonLocator()).toHaveCount(0);
+    await expect(buttonLocator()).toBeVisible();
+    await expect(buttonLocator()).toBeDisabled();
 
-    // Test 3: Off mode - button should not be rendered
+    // Test 3: Off mode - button should remain visible but disabled
     await modeSelector.selectOption("off");
-    await expect(buttonLocator()).toHaveCount(0);
+    await expect(buttonLocator()).toBeVisible();
+    await expect(buttonLocator()).toBeDisabled();
   });
 
   /**

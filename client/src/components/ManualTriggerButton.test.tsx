@@ -25,7 +25,7 @@ describe("ManualTriggerButton", () => {
     expect(button.textContent).toBe("I'm stuck!");
   });
 
-  it("renders disabled in Loki mode", () => {
+  it("renders Loki chaos trigger while keeping manual button disabled in Loki mode", () => {
     vi.mocked(useManualTrigger).mockReturnValue({
       trigger: vi.fn(),
       isLoading: false,
@@ -33,11 +33,16 @@ describe("ManualTriggerButton", () => {
 
     render(<ManualTriggerButton mode="loki" />);
 
-    const button = screen.getByTestId("manual-trigger-button");
-    expect(button.disabled).toBe(true);
+    const manualButton = screen.getByTestId("manual-trigger-button");
+    expect(manualButton).toBeDefined();
+    expect(manualButton).toBeDisabled();
+
+    const lokiButton = screen.getByTestId("manual-loki-trigger");
+    expect(lokiButton).toBeDefined();
+    expect(lokiButton).not.toBeDisabled();
   });
 
-  it("renders disabled in Off mode", () => {
+  it("keeps manual trigger visible but disabled in Off mode", () => {
     vi.mocked(useManualTrigger).mockReturnValue({
       trigger: vi.fn(),
       isLoading: false,
@@ -45,8 +50,10 @@ describe("ManualTriggerButton", () => {
 
     render(<ManualTriggerButton mode="off" />);
 
-    const button = screen.getByTestId("manual-trigger-button");
-    expect(button.disabled).toBe(true);
+    const manualButton = screen.getByTestId("manual-trigger-button");
+    expect(manualButton).toBeDefined();
+    expect(manualButton).toBeDisabled();
+    expect(screen.queryByTestId("manual-loki-trigger")).toBeNull();
   });
 
   it("calls trigger function on click", async () => {

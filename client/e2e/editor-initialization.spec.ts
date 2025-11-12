@@ -205,9 +205,8 @@ test.describe("Editor Initialization", () => {
     await expect(modeSelector).toBeVisible({ timeout: 5000 });
 
     const button = page.getByTestId("manual-trigger-button");
-
-    // In Off mode the button should not exist
-    await expect(button).toHaveCount(0, { timeout: 2000 });
+    await expect(button).toBeVisible({ timeout: 5000 });
+    await expect(button).toBeDisabled();
 
     await modeSelector.selectOption("muse");
 

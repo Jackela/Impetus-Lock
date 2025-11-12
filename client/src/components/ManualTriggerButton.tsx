@@ -42,8 +42,11 @@ export function ManualTriggerButton({
 }) {
   const { trigger, isLoading } = useManualTrigger();
 
+  const isMuseMode = mode === "muse";
+  const isLokiMode = mode === "loki";
+
   // FR-002: Button only enabled in Muse mode
-  const isEnabled = mode === "muse" && !isLoading;
+  const isMuseEnabled = isMuseMode && !isLoading;
 
   /**
    * Handle button click with error feedback (P3 US3: T010).
@@ -55,6 +58,10 @@ export function ManualTriggerButton({
    * @see FR-006 (ERROR audio feedback)
    */
   const handleClick = async () => {
+    if (!isMuseMode || !isMuseEnabled) {
+      return;
+    }
+
     // Trigger PROVOKE feedback immediately (don't wait for API)
     // This provides instant user feedback even if backend is unavailable
     onTrigger?.(AIActionType.PROVOKE);
@@ -81,19 +88,39 @@ export function ManualTriggerButton({
     onTrigger?.(AIActionType.DELETE);
   };
 
+  /**
+   * Handle manual Loki chaos trigger for deterministic testing.
+   */
+  const handleLokiChaosTrigger = () => {
+    onTrigger?.(AIActionType.CHAOS);
+  };
+
   return (
     <>
       <button
         onClick={handleClick}
-        disabled={!isEnabled}
+        disabled={!isMuseEnabled}
         aria-label="I'm stuck! Trigger AI assistance"
         data-testid="manual-trigger-button"
         className="manual-trigger-button"
         data-loading={isLoading}
+        data-mode={mode}
       >
         {isLoading && <span className="button-spinner"></span>}
         <span>{isLoading ? "Thinking..." : "I'm stuck!"}</span>
       </button>
+
+      {isLokiMode && (
+        <button
+          onClick={handleLokiChaosTrigger}
+          aria-label="Trigger Loki chaos"
+          data-testid="manual-loki-trigger"
+          className="manual-trigger-button"
+          style={{ backgroundColor: "#ef4444" }}
+        >
+          Summon Loki
+        </button>
+      )}
 
       {/* P3 US1: Development-only DELETE trigger for testing Loki delete feedback */}
       {import.meta.env.DEV && (
