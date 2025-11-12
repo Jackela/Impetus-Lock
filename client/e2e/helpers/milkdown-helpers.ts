@@ -6,7 +6,10 @@
  * so these helpers use the ProseMirror DOM structure and commands.
  */
 
-import { Page, Locator } from "@playwright/test";
+import { Page } from "@playwright/test";
+
+const MILKDOWN_ROOT = '[data-testid="editor-ready"] .milkdown';
+const PROSEMIRROR_EDITABLE = '[data-testid="editor-ready"] .milkdown .ProseMirror';
 
 /**
  * Insert text into Milkdown editor at cursor position.
@@ -20,7 +23,7 @@ import { Page, Locator } from "@playwright/test";
  * await insertText(page, "Locked content <!-- lock:test-lock source:muse -->");
  */
 export async function insertText(page: Page, text: string): Promise<void> {
-  const editor = page.locator('[data-testid="milkdown-editor"] .milkdown');
+  const editor = page.locator(PROSEMIRROR_EDITABLE);
 
   // Click to focus editor
   await editor.click();
@@ -71,7 +74,7 @@ export async function insertLockedContent(
  * @note For locked content, delete should be rejected with Shake animation + Bonk audio
  */
 export async function attemptDelete(page: Page, fromPos: number, toPos: number): Promise<void> {
-  const editor = page.locator('[data-testid="milkdown-editor"] .milkdown');
+  const editor = page.locator(PROSEMIRROR_EDITABLE);
 
   // Focus editor
   await editor.click();
@@ -108,7 +111,7 @@ export async function attemptDelete(page: Page, fromPos: number, toPos: number):
  */
 export async function attemptDeleteLocked(page: Page, lockId: string): Promise<void> {
   // Find the lock marker comment in editor content
-  const editor = page.locator('[data-testid="milkdown-editor"] .milkdown');
+  const editor = page.locator(MILKDOWN_ROOT);
   const content = await editor.textContent();
 
   if (!content) {
@@ -143,7 +146,7 @@ export async function attemptDeleteLocked(page: Page, lockId: string): Promise<v
  * expect(content).toContain("locked content");
  */
 export async function getEditorContent(page: Page): Promise<string> {
-  const editor = page.locator('[data-testid="milkdown-editor"] .milkdown');
+  const editor = page.locator(MILKDOWN_ROOT);
   return (await editor.textContent()) || "";
 }
 
@@ -157,7 +160,7 @@ export async function getEditorContent(page: Page): Promise<string> {
  * await clearEditor(page);
  */
 export async function clearEditor(page: Page): Promise<void> {
-  const editor = page.locator('[data-testid="milkdown-editor"] .milkdown');
+  const editor = page.locator(PROSEMIRROR_EDITABLE);
   await editor.click();
 
   // Select all and delete
@@ -176,15 +179,15 @@ export async function clearEditor(page: Page): Promise<void> {
  * await waitForEditorReady(page);
  */
 export async function waitForEditorReady(page: Page, timeout = 5000): Promise<void> {
-  const editor = page.locator('[data-testid="milkdown-editor"] .milkdown');
+  const editor = page.locator(PROSEMIRROR_EDITABLE);
   await editor.waitFor({ state: "visible", timeout });
 
-  // Wait for editor to be editable (contenteditable=true)
   await page.waitForFunction(
-    () => {
-      const el = document.querySelector('[data-testid="milkdown-editor"] .milkdown');
+    (selector: string) => {
+      const el = document.querySelector(selector);
       return el?.getAttribute("contenteditable") === "true";
     },
+    PROSEMIRROR_EDITABLE,
     { timeout }
   );
 }
