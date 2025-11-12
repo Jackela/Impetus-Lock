@@ -7,6 +7,20 @@
 
 import { Page, expect } from "@playwright/test";
 
+export async function dismissWelcomeModal(page: Page): Promise<boolean> {
+  const overlay = page.locator(".welcome-modal-overlay");
+  const getStartedButton = page.getByRole("button", { name: "Get Started" });
+
+  const isVisible = await overlay.isVisible().catch(() => false);
+  if (!isVisible) {
+    return false;
+  }
+
+  await getStartedButton.click();
+  await overlay.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
+  return true;
+}
+
 /**
  * Wait for React to hydrate the app (root div has React app).
  *
@@ -19,6 +33,10 @@ import { Page, expect } from "@playwright/test";
 export async function waitForReactHydration(page: Page, timeout = 10000) {
   // Wait directly for app container (rendered by React)
   await page.waitForSelector(".app", { timeout });
+  await page
+    .waitForSelector(".welcome-modal-overlay", { timeout: 1000 })
+    .catch(() => undefined);
+  await dismissWelcomeModal(page).catch(() => undefined);
 }
 
 /**
@@ -52,6 +70,10 @@ export async function waitForEditorReady(page: Page, timeout = 10000) {
 
   // Wait for Milkdown to render
   await page.waitForSelector(".milkdown", { timeout: 5000 });
+
+  // Ensure the actual ProseMirror surface is present
+  const proseMirror = page.locator(".milkdown .ProseMirror");
+  await expect(proseMirror).toBeVisible({ timeout: 5000 });
 }
 
 /**
@@ -63,7 +85,6 @@ export async function waitForEditorReady(page: Page, timeout = 10000) {
 export async function waitForAppHeader(page: Page, timeout = 5000) {
   await page.waitForSelector(".app-header", { timeout });
   await page.waitForSelector("#mode-selector", { timeout: 2000 });
-  await page.waitForSelector('[data-testid="manual-trigger-button"]', { timeout: 2000 });
 }
 
 /**

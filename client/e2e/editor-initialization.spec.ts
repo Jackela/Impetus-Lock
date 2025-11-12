@@ -37,7 +37,7 @@ test.describe("Editor Initialization", () => {
     await waitForEditorReady(page);
 
     // Verify editor is visible
-    const editor = page.locator(".milkdown");
+    const editor = page.locator(".milkdown .ProseMirror");
     await expect(editor).toBeVisible({ timeout: 5000 });
   });
 
@@ -50,7 +50,7 @@ test.describe("Editor Initialization", () => {
     // Wait for editor to be ready
     await waitForEditorReady(page);
 
-    const editorContent = await page.textContent(".milkdown");
+    const editorContent = await page.textContent(".milkdown .ProseMirror");
     expect(editorContent).toBeTruthy();
     expect(editorContent).toContain("信使");
   });
@@ -66,14 +66,14 @@ test.describe("Editor Initialization", () => {
     await waitForEditorInteractive(page);
 
     // Try to click and type in editor
-    const editor = page.locator(".milkdown");
+    const editor = page.locator(".milkdown .ProseMirror");
     await editor.click();
 
     // Type some text
     await page.keyboard.type("Test typing");
 
     // Verify text appears
-    const content = await page.textContent(".milkdown");
+    const content = await page.textContent(".milkdown .ProseMirror");
     expect(content).toContain("Test typing");
   });
 
@@ -86,7 +86,7 @@ test.describe("Editor Initialization", () => {
     // Wait for editor to be interactive
     await waitForEditorInteractive(page);
 
-    const editor = page.locator(".milkdown");
+    const editor = page.locator(".milkdown .ProseMirror");
     await editor.click();
 
     // Rapid typing
@@ -107,7 +107,7 @@ test.describe("Editor Initialization", () => {
     // Wait for editor to be interactive
     await waitForEditorInteractive(page);
 
-    const editor = page.locator(".milkdown");
+    const editor = page.locator(".milkdown .ProseMirror");
     await editor.click();
 
     // Clear existing content
@@ -120,7 +120,7 @@ test.describe("Editor Initialization", () => {
     await page.keyboard.type("**Bold text**");
 
     // Check content exists (actual Markdown rendering tested in unit tests)
-    const content = await page.textContent(".milkdown");
+    const content = await page.textContent(".milkdown .ProseMirror");
     expect(content).toBeTruthy();
   });
 
