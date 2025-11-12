@@ -44,6 +44,14 @@ export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<b
 
   await getStartedButton.click();
   await overlay.waitFor({ state: "hidden", timeout }).catch(() => undefined);
+
+  const stillVisible = await overlay.isVisible().catch(() => false);
+  if (stillVisible) {
+    await page.evaluate(() => {
+      const el = document.querySelector(".welcome-modal-overlay");
+      el?.parentElement?.removeChild(el);
+    });
+  }
   return true;
 }
 
