@@ -13,8 +13,11 @@ import { test, expect } from "@playwright/test";
  */
 
 const API_BASE = "http://localhost:8000";
+const SKIP_DB_TESTS = process.env.ACT === "true";
 
 test.describe("Database Persistence", () => {
+  test.skip(SKIP_DB_TESTS, "Database-backed endpoints require Postgres; skipped under act.");
+
   test("creates task via API", async ({ request }) => {
     // Create task
     const response = await request.post(`${API_BASE}/api/v1/tasks`, {
@@ -147,6 +150,8 @@ test.describe("Database Persistence", () => {
 });
 
 test.describe("Intervention History", () => {
+  test.skip(SKIP_DB_TESTS, "Database-backed endpoints require Postgres; skipped under act.");
+
   test("queries empty intervention history", async ({ request }) => {
     // Create task
     const createResponse = await request.post(`${API_BASE}/api/v1/tasks`, {

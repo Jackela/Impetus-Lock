@@ -1,0 +1,113 @@
+.llm-settings__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.llm-settings__card {
+  width: min(520px, 90vw);
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  color: #f8fafc;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+}
+
+.llm-settings__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+
+.llm-settings__header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.llm-settings__header p {
+  margin: 4px 0 0;
+  color: rgba(248, 250, 252, 0.8);
+  font-size: 0.9rem;
+}
+
+.llm-settings__close {
+  border: none;
+  background: transparent;
+  color: rgba(248, 250, 252, 0.8);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.llm-settings__body {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.llm-settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.95rem;
+}
+
+.llm-settings__field input,
+.llm-settings__field select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: rgba(15, 23, 42, 0.6);
+  color: #f8fafc;
+}
+
+.llm-settings__field small {
+  color: rgba(248, 250, 252, 0.65);
+}
+
+.llm-settings__hint {
+  font-size: 0.85rem;
+  color: rgba(248, 250, 252, 0.7);
+}
+
+.llm-settings__footer {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.llm-settings__footer button {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+
+.llm-settings__footer .secondary {
+  background: rgba(148, 163, 184, 0.15);
+  color: #f8fafc;
+}
+
+.llm-settings__footer .primary {
+  background: #7c3aed;
+  color: #fff;
+}
+
+.llm-settings__footer button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.llm-settings__actions {
+  display: flex;
+  gap: 12px;
+}

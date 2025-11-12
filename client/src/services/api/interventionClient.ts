@@ -12,6 +12,7 @@
  */
 
 import type { components } from "../../types/api.generated";
+import { getStoredLLMConfig } from "../llmConfigStore";
 
 type InterventionRequest = components["schemas"]["InterventionRequest"];
 type InterventionResponse = components["schemas"]["InterventionResponse"];
@@ -36,7 +37,8 @@ const CONTRACT_VERSION = "1.0.1";
  * ```
  */
 function generateIdempotencyKey(): string {
-  const globalCrypto = typeof globalThis !== "undefined" ? (globalThis.crypto as Crypto | undefined) : undefined;
+  const globalCrypto =
+    typeof globalThis !== "undefined" ? (globalThis.crypto as Crypto | undefined) : undefined;
 
   if (globalCrypto?.randomUUID) {
     return globalCrypto.randomUUID();
@@ -136,6 +138,7 @@ export async function generateIntervention(
           "Content-Type": "application/json",
           "Idempotency-Key": idempotencyKey,
           "X-Contract-Version": CONTRACT_VERSION,
+          ...buildLLMHeaders(),
         },
         body: JSON.stringify(request),
         signal: options?.signal,
@@ -153,15 +156,23 @@ export async function generateIntervention(
         );
       }
 
-      const parsedData = data as Record<string, unknown>;
+      const parsedData = (data as Record<string, unknown>) || {};
 
       if (!response.ok) {
-        throw new InterventionAPIError(
-          response.status,
-          (parsedData.error as string) || "UnknownError",
-          (parsedData.message as string) || "Unknown error occurred",
-          parsedData.details
-        );
+        const detail =
+          (parsedData.detail as Record<string, unknown> | undefined) ??
+          (typeof parsedData.details === "object" ? (parsedData.details as Record<string, unknown>) : undefined);
+        const code =
+          (parsedData.error as string) ||
+          (parsedData.code as string) ||
+          (detail?.code as string) ||
+          "UnknownError";
+        const message =
+          (parsedData.message as string) ||
+          (detail?.message as string) ||
+          "Unknown error occurred";
+
+        throw new InterventionAPIError(response.status, code, message, detail ?? parsedData.details);
       }
 
       return parsedData as InterventionResponse;
@@ -189,6 +200,16 @@ export async function generateIntervention(
   }
 
   throw lastError || new Error("Request failed after retries");
+}
+
+function buildLLMHeaders(): Record<string, string> {
+  const config = getStoredLLMConfig();
+  if (!config?.apiKey) return {};
+  return {
+    "X-LLM-Provider": config.provider,
+    "X-LLM-Model": config.model,
+    "X-LLM-Api-Key": config.apiKey,
+  };
 }
 
 /**
@@ -268,7 +289,7 @@ export async function triggerMuseIntervention(
  *   executeDelete(response.anchor);
  * }
  * ```
-*/
+ */
 export async function triggerLokiIntervention(
   context: string,
   cursorPosition: number,

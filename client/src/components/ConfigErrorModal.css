@@ -51,3 +51,19 @@
   outline: 3px solid rgba(250, 204, 21, 0.5);
   outline-offset: 2px;
 }
+
+.config-error-modal__button.secondary {
+  background: rgba(148, 163, 184, 0.2);
+  color: #f9fafb;
+}
+
+.config-error-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.config-error-modal__meta {
+  font-size: 0.85rem;
+  color: rgba(248, 250, 252, 0.8);
+}

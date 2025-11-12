@@ -11,6 +11,7 @@ Expected Initial State: All tests FAIL (endpoint not implemented yet)
 """
 
 from collections.abc import Generator
+from contextlib import ExitStack
 from datetime import UTC, datetime
 from unittest.mock import patch
 
@@ -18,6 +19,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from server.api.main import app
+from server.api.routes import intervention as intervention_module
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
 
@@ -59,10 +61,15 @@ def mock_llm_provider() -> Generator[None, None, None]:
         source="muse",
     )
 
-    mock_path = (
-        "server.infrastructure.llm.instructor_provider.InstructorLLMProvider.generate_intervention"
-    )
-    with patch(mock_path, return_value=mock_response):
+    mock_paths = [
+        "server.infrastructure.llm.instructor_provider.InstructorLLMProvider.generate_intervention",
+        "server.infrastructure.llm.anthropic_provider.AnthropicLLMProvider.generate_intervention",
+        "server.infrastructure.llm.gemini_provider.GeminiLLMProvider.generate_intervention",
+    ]
+
+    with ExitStack() as stack:
+        for mock_path in mock_paths:
+            stack.enter_context(patch(mock_path, return_value=mock_response))
         yield
 
 
@@ -217,7 +224,8 @@ class TestInterventionAPIContract:
             source="muse",
         )
         mock_path = (
-            "server.infrastructure.llm.instructor_provider.InstructorLLMProvider.generate_intervention"
+            "server.infrastructure.llm.instructor_provider."
+            "InstructorLLMProvider.generate_intervention"
         )
 
         headers = {
@@ -274,3 +282,60 @@ class TestInterventionAPIContract:
         )
 
         assert response.status_code == 422
+
+    def test_missing_llm_key_returns_503(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """API should raise 503 when no server key and no BYOK override."""
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        intervention_module._provider_registry.reload()
+        intervention_module._intervention_service = None
+
+        headers = {
+            **REQUIRED_HEADERS,
+            "Idempotency-Key": "missing-llm-key",
+        }
+
+        response = client.post(
+            "/api/v1/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
+
+        assert response.status_code == 503
+        assert response.json()["code"] == "llm_not_configured"
+
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+        intervention_module._provider_registry.reload()
+        intervention_module._intervention_service = None
+
+    def test_byok_override_invokes_endpoint(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """User supplied headers should enable Anthropic without server env."""
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        intervention_module._provider_registry.reload()
+        intervention_module._intervention_service = None
+
+        headers = {
+            **REQUIRED_HEADERS,
+            "Idempotency-Key": "anthropic-byok",
+            "X-LLM-Provider": "anthropic",
+            "X-LLM-Api-Key": "sk-ant-test",
+            "X-LLM-Model": "claude-3-5-haiku-latest",
+        }
+
+        response = client.post(
+            "/api/v1/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["source"] == "muse"
+
+        monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
+        intervention_module._provider_registry.reload()
+        intervention_module._intervention_service = None

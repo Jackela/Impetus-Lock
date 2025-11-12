@@ -11,6 +11,10 @@ import { TimerIndicator } from "./components/TimerIndicator";
 import { AIActionType } from "./types/ai-actions";
 import type { AgentMode } from "./hooks/useWritingState";
 import { ConfigErrorModal } from "./components/ConfigErrorModal";
+import { useLLMConfig } from "./hooks/useLLMConfig";
+import { LLMSettingsModal } from "./components/LLMSettingsModal";
+import { InterventionAPIError } from "./services/api/interventionClient";
+import { getProviderLabel } from "./services/llmConfigStore";
 
 /**
  * Impetus Lock Main Application
@@ -22,6 +26,9 @@ function App() {
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showConfigError, setShowConfigError] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [lastLLMError, setLastLLMError] = useState<InterventionAPIError | null>(null);
+  const { config: llmConfig, isConfigured, saveConfig, clearConfig } = useLLMConfig();
 
   // T005: Timer state for Muse mode indicator
   const [timerRemaining, setTimerRemaining] = useState<number>(60);
@@ -32,7 +39,11 @@ function App() {
       if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         // Only trigger if not typing in editor
         const target = e.target as HTMLElement;
-        if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA" && !target.isContentEditable) {
+        if (
+          target.tagName !== "INPUT" &&
+          target.tagName !== "TEXTAREA" &&
+          !target.isContentEditable
+        ) {
           e.preventDefault();
           setShowWelcome(true);
         }
@@ -47,15 +58,49 @@ function App() {
   const timerProgress = ((60 - timerRemaining) / 60) * 100;
 
   const handleInterventionError = useCallback((error: Error) => {
-    if (error.name === "InterventionAPIError") {
+    if (error instanceof InterventionAPIError) {
+      setLastLLMError(error);
       setShowConfigError(true);
     }
   }, []);
 
   return (
-    <div className="app">
+    <div
+      className="app"
+      data-testid="app-root"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        maxWidth: "100%",
+      }}
+    >
       <WelcomeModal forceShow={showWelcome} onDismiss={() => setShowWelcome(false)} />
-      <ConfigErrorModal visible={showConfigError} onDismiss={() => setShowConfigError(false)} />
+      <LLMSettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        config={llmConfig}
+        onSave={saveConfig}
+        onClear={clearConfig}
+      />
+      <ConfigErrorModal
+        visible={showConfigError}
+        onDismiss={() => setShowConfigError(false)}
+        onOpenSettings={() => {
+          setShowConfigError(false);
+          setShowSettings(true);
+        }}
+        errorCode={lastLLMError?.errorCode}
+        errorMessage={lastLLMError?.message}
+        provider={
+          (typeof lastLLMError?.details === "object" &&
+            lastLLMError?.details !== null &&
+            "provider" in (lastLLMError?.details as Record<string, unknown>) &&
+            String((lastLLMError?.details as Record<string, unknown>).provider)) ||
+          llmConfig?.provider ||
+          null
+        }
+      />
 
       {/* T005: Timer indicator for Muse mode */}
       <TimerIndicator
@@ -82,6 +127,16 @@ function App() {
             mode={mode}
             onTrigger={(actionType) => setManualTrigger(actionType)}
           />
+          <button
+            type="button"
+            className={`llm-settings-trigger ${isConfigured ? "configured" : ""}`}
+            onClick={() => setShowSettings(true)}
+            data-testid="llm-settings-trigger"
+          >
+            {isConfigured && llmConfig
+              ? `LLM: ${getProviderLabel(llmConfig.provider)}`
+              : "LLM 设置"}
+          </button>
         </div>
       </header>
 

@@ -12,12 +12,14 @@ Constitutional Compliance:
 
 from uuid import UUID, uuid4
 
+from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import (
     InterventionRequest,
     InterventionResponse,
 )
+from server.domain.text_window import compute_last_sentence_anchor
 
 # Optional import (for type hints when repository is used)
 try:
@@ -78,7 +80,7 @@ class InterventionService:
 
     def __init__(
         self,
-        llm_provider: LLMProvider,
+        llm_provider: LLMProvider | None = None,
         task_repository: "TaskRepository | None" = None,
     ):
         """Initialize service with LLM provider and optional repository.
@@ -90,7 +92,11 @@ class InterventionService:
         self.llm_provider = llm_provider
         self.task_repository = task_repository
 
-    def generate_intervention(self, request: InterventionRequest) -> InterventionResponse:
+    def generate_intervention(
+        self,
+        request: InterventionRequest,
+        llm_override: LLMProvider | None = None,
+    ) -> InterventionResponse:
         """Generate intervention action based on context and mode.
 
         Delegates to LLM provider while applying business rules:
@@ -114,11 +120,19 @@ class InterventionService:
             >>> response.action
             'provoke'
         """
+        provider = llm_override or self.llm_provider
+        if provider is None:
+            raise LLMProviderError(
+                code="llm_not_configured",
+                message="LLM provider not configured",
+                status_code=503,
+            )
+
         # Safety guard: Reject delete if context too short
         context_length = len(request.context)
 
         # Call LLM provider
-        response = self.llm_provider.generate_intervention(
+        response = provider.generate_intervention(
             context=request.context,
             mode=request.mode,
             doc_version=request.client_meta.doc_version,
@@ -148,16 +162,29 @@ class InterventionService:
                 {"type": "pos", "from": request.client_meta.selection_from}
             )
 
-        # Ensure rewrite actions have meaningful anchor range (defaults to trailing window)
-        if response.action == "rewrite" and response.anchor.type != "range":
-            cursor = request.client_meta.selection_from
-            response.anchor = AnchorRange.model_validate(
-                {
-                    "type": "range",
-                    "from": max(0, cursor - 120),
-                    "to": cursor,
-                }
-            )
+        # Ensure rewrite actions have sentence-accurate anchor ranges.
+        if response.action == "rewrite":
+            cursor = request.client_meta.selection_to or request.client_meta.selection_from
+            if cursor is not None and cursor > 0:
+                start, end = compute_last_sentence_anchor(cursor, request.context)
+                if start < end:
+                    response.anchor = AnchorRange.model_validate(
+                        {
+                            "type": "range",
+                            "from": start,
+                            "to": end,
+                        }
+                    )
+            elif response.anchor.type != "range":
+                # Fallback to cursor window when document is empty
+                cursor = request.client_meta.selection_from
+                response.anchor = AnchorRange.model_validate(
+                    {
+                        "type": "range",
+                        "from": max(0, cursor - 1),
+                        "to": cursor,
+                    }
+                )
 
         # Ensure action_id exists
         if not response.action_id:

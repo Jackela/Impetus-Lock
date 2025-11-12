@@ -8,22 +8,28 @@ Constitutional Compliance:
 - Article V (Documentation): Complete Google-style docstrings
 """
 
-import os
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi.responses import JSONResponse
 
 from server.application.services.intervention_service import InterventionService
+from server.domain.errors import LLMProviderError
 from server.domain.models.intervention import InterventionRequest, InterventionResponse
 from server.infrastructure.cache.idempotency_cache import IdempotencyCache
-from server.infrastructure.llm.instructor_provider import InstructorLLMProvider
+from server.infrastructure.llm.provider_registry import (
+    ProviderOverride,
+    ProviderRegistry,
+)
 
 router = APIRouter(prefix="/api/v1/impetus", tags=["intervention"])
+logger = logging.getLogger(__name__)
 
 # Global instances (singleton pattern for P1)
 # In production, use proper dependency injection framework
 _idempotency_cache = IdempotencyCache(ttl=15)
-_llm_provider = None
+_provider_registry = ProviderRegistry()
 _intervention_service = None
 
 
@@ -34,33 +40,12 @@ def get_intervention_service() -> InterventionService:
 
     Returns:
         InterventionService: Service instance with LLM provider.
-
-    Raises:
-        HTTPException: If OPENAI_API_KEY not configured.
     """
-    global _llm_provider, _intervention_service
+    global _intervention_service
 
     if _intervention_service is None:
-        # Get OpenAI API key from environment
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise HTTPException(
-                status_code=500,
-                detail={
-                    "error": "ConfigurationError",
-                    "message": "OPENAI_API_KEY not configured in environment",
-                },
-            )
-
-        # Initialize LLM provider
-        _llm_provider = InstructorLLMProvider(
-            api_key=api_key,
-            model=os.getenv("OPENAI_MODEL", "gpt-4"),
-            temperature=float(os.getenv("OPENAI_TEMPERATURE", "0.9")),
-        )
-
-        # Initialize service with dependency injection (DIP)
-        _intervention_service = InterventionService(llm_provider=_llm_provider)
+        default_provider = _provider_registry.get_provider(allow_blank=True)
+        _intervention_service = InterventionService(llm_provider=default_provider)
 
     return _intervention_service
 
@@ -80,6 +65,9 @@ def generate_intervention(
     request: InterventionRequest,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key")],
     contract_version: Annotated[str, Header(alias="X-Contract-Version")],
+    provider_header: Annotated[str | None, Header(alias="X-LLM-Provider")] = None,
+    model_header: Annotated[str | None, Header(alias="X-LLM-Model")] = None,
+    api_key_header: Annotated[str | None, Header(alias="X-LLM-Api-Key")] = None,
     service: InterventionService = Depends(get_intervention_service),
 ) -> InterventionResponse:
     """Generate AI intervention action based on context and mode.
@@ -132,14 +120,50 @@ def generate_intervention(
 
         return cast(InterventionResponse, cached_response)
 
+    overrides_provided = any(filter(None, [provider_header, model_header, api_key_header]))
+    overrides = (
+        ProviderOverride(
+            provider=provider_header,
+            model=model_header,
+            api_key=api_key_header,
+        )
+        if overrides_provided
+        else None
+    )
+
     try:
+        provider = _provider_registry.get_provider(
+            overrides=overrides,
+            allow_blank=False,
+        )
+        if provider is None:
+            raise LLMProviderError(
+                code="llm_not_configured",
+                message="LLM provider unavailable",
+                status_code=503,
+            )
+        logger.debug(
+            "Resolved LLM provider",
+            extra={
+                "provider": getattr(provider, "provider_name", "unknown"),
+                "override": overrides_provided,
+            },
+        )
+
         # Delegate to service layer (SRP - endpoint handles HTTP only)
-        response = service.generate_intervention(request)
+        response = service.generate_intervention(request, llm_override=provider)
 
         # Cache response for idempotency
         _idempotency_cache.set(idempotency_key, response)
 
         return response
+
+    except LLMProviderError as exc:
+        logger.info(
+            "LLM provider error",
+            extra={"provider": exc.provider, "code": exc.code},
+        )
+        return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
 
     except ValueError as e:
         # Validation error from service layer

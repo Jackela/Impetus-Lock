@@ -20,7 +20,7 @@ The Impetus Lock project has **FULL integration** of AI intervention functionali
 **Features Implemented**:
 - ✅ Idempotency support (15-second cache with UUID v4 keys)
 - ✅ Contract version validation (v1.0.1)
-- ✅ OpenAI integration via Instructor provider
+- ✅ Multi-provider registry (OpenAI/Anthropic/Gemini) with BYOK headers
 - ✅ Service layer architecture (SOLID compliance)
 - ✅ Comprehensive error handling (400, 422, 429, 500 status codes)
 - ✅ Complete JSDoc/docstring documentation
@@ -59,11 +59,13 @@ Response:
 }
 ```
 
-**Configuration**:
-- ✅ OpenAI API Key configured in `/server/.env`
-- ✅ Model: GPT-4 (configurable via `OPENAI_MODEL`)
-- ✅ Temperature: 0.9 (configurable via `OPENAI_TEMPERATURE`)
-- ✅ CORS enabled for `http://localhost:5173`
+- **Configuration**:
+  - ✅ Default keys via `/server/.env`: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`
+  - ✅ Allowlist models configurable via `OPENAI_MODEL`, `ANTHROPIC_MODEL`, `GEMINI_MODEL`
+  - ✅ Per-request overrides accepted through `X-LLM-Provider`, `X-LLM-Model`, `X-LLM-Api-Key` headers (used by frontend BYOK flow)
+  - ✅ Temperature knobs via `OPENAI_TEMPERATURE`, `ANTHROPIC_TEMPERATURE`, `GEMINI_TEMPERATURE`
+  - ✅ `LLM_ALLOW_DEBUG_PROVIDER=1` + `LLM_DEFAULT_PROVIDER=debug` enables the deterministic in-process provider for CI and offline testing
+  - ✅ CORS enabled for `http://localhost:5173`
 
 ---
 
@@ -73,11 +75,12 @@ Response:
 
 **Location**: `/mnt/d/Code/Impetus-Lock/client/src/services/api/interventionClient.ts`
 
-**Features**:
-- ✅ TypeScript client with full type safety (uses `api.generated.ts`)
-- ✅ Automatic idempotency key generation (UUID v4)
-- ✅ Retry logic with exponential backoff (2 retries, max 5s delay)
-- ✅ Request cancellation support (AbortSignal)
+- **Features**:
+  - ✅ TypeScript client with full type safety (uses `api.generated.ts`)
+  - ✅ Automatic idempotency key generation (UUID v4)
+  - ✅ Retry logic with exponential backoff (2 retries, max 5s delay)
+  - ✅ Request cancellation support (AbortSignal)
+  - ✅ Client-side BYOK headers generated from the new LLM Settings modal (keys stored in `localStorage` only)
 - ✅ Custom error class (`InterventionAPIError`)
 - ✅ Health check endpoint (`checkHealth()`)
 

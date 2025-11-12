@@ -250,6 +250,16 @@ poetry install --no-root
 cp .env.example .env
 # Edit .env and add your LLM API key (e.g., OPENAI_API_KEY)
 
+> 💡 **Bring Your Own Key (BYOK)**  
+> 即使后端没有配置默认 Key，也可以在前端点击右上角的「LLM 设置」按钮，为 OpenAI / Anthropic / Google Gemini 粘贴你的个人 API Key。Key 仅存储在浏览器 `localStorage` 中，并随每次 Muse/Loki 请求通过 HTTPS Header 发送到后端。
+
+> 🧪 **Offline / CI Testing**  
+> 需要在没有外部 LLM 的情况下跑 Playwright / act 时，将后端环境变量设置为：
+> ```bash
+> TESTING=1 LLM_ALLOW_DEBUG_PROVIDER=1 LLM_DEFAULT_PROVIDER=debug
+> ```
+> 这会启用内置的 `debug` provider，返回可预测的 JSON 响应，避免真实 API 依赖。
+
 # Run development server
 poetry run uvicorn server.main:app --reload
 ```

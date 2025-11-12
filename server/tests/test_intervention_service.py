@@ -14,6 +14,7 @@ from unittest.mock import Mock
 import pytest
 
 from server.application.services.intervention_service import InterventionService
+from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import ClientMeta, InterventionRequest, InterventionResponse
@@ -305,7 +306,10 @@ class TestInterventionService:
         assert response.source == "loki"
 
     def test_muse_mode_never_returns_delete(
-        self, service: InterventionService, mock_llm_provider: Mock, valid_muse_request: InterventionRequest
+        self,
+        service: InterventionService,
+        mock_llm_provider: Mock,
+        valid_muse_request: InterventionRequest,
     ) -> None:
         """If LLM attempts delete in Muse mode, service should convert to provoke."""
         mock_llm_provider.generate_intervention.return_value = InterventionResponse(
@@ -325,7 +329,10 @@ class TestInterventionService:
         assert response.source == "muse"
 
     def test_rewrite_action_provides_lock_and_range(
-        self, service: InterventionService, mock_llm_provider: Mock, valid_muse_request: InterventionRequest
+        self,
+        service: InterventionService,
+        mock_llm_provider: Mock,
+        valid_muse_request: InterventionRequest,
     ) -> None:
         """Rewrite actions should carry lock IDs and range anchors."""
         llm_response = InterventionResponse(
@@ -345,3 +352,52 @@ class TestInterventionService:
         assert response.lock_id is not None
         assert response.source == "muse"
         assert response.anchor.type == "range"
+
+    def test_rewrite_anchor_aligns_with_last_sentence(
+        self,
+        service: InterventionService,
+        mock_llm_provider: Mock,
+    ) -> None:
+        """Rewrite anchors should target the last full sentence near the cursor."""
+
+        context = (
+            "“信使”穿过霓虹灯闪烁的小巷，雨水打湿了他的风衣。"
+            "他检查了手腕上的数据终端，时间不多了。"
+            "他必须在‘清道夫’之前拿到那个芯片。"
+        )
+        cursor = len(context)
+        request = InterventionRequest(
+            context=context,
+            mode="muse",
+            client_meta=ClientMeta(doc_version=1, selection_from=cursor, selection_to=cursor),
+        )
+
+        llm_response = InterventionResponse(
+            action="rewrite",
+            content="他必须在‘清道夫’之前摧毁那个芯片，因为芯片里是他自己的意识备份。",
+            lock_id="lock_anchor_test",
+            anchor=AnchorRange(from_=0, to=10),  # Placeholder, should be overridden
+            action_id="act_anchor_test",
+            issued_at=datetime.now(UTC),
+            source="muse",
+        )
+        mock_llm_provider.generate_intervention.return_value = llm_response
+
+        response = service.generate_intervention(request)
+
+        last_sentence = "他必须在‘清道夫’之前拿到那个芯片。"
+        expected_from = cursor - len(last_sentence)
+
+        assert response.anchor.type == "range"
+        assert response.anchor.from_ == expected_from
+        assert response.anchor.to == cursor
+
+    def test_missing_provider_raises_configuration_error(
+        self, valid_muse_request: InterventionRequest
+    ) -> None:
+        """Service should raise when no provider (and no override) is available."""
+
+        service = InterventionService(llm_provider=None)
+
+        with pytest.raises(LLMProviderError):
+            service.generate_intervention(valid_muse_request)

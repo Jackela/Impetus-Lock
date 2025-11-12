@@ -198,6 +198,26 @@
   transform: translateY(-1px);
 }
 
+.llm-settings-trigger {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: transparent;
+  color: #cbd5f5;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.llm-settings-trigger.configured {
+  border-color: #7c3aed;
+  color: #f8fafc;
+}
+
+.llm-settings-trigger:hover {
+  border-color: #7c3aed;
+}
+
 .manual-trigger-button:not(:disabled):active {
   background-color: #6d28d9;
   transform: translateY(0);

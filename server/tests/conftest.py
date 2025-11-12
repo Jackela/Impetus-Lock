@@ -7,6 +7,11 @@ import os
 
 import pytest
 
+# Ensure defaults exist before modules under test import ProviderRegistry
+os.environ.setdefault("OPENAI_API_KEY", "test-key-for-unit-tests")
+os.environ.setdefault("LLM_DEFAULT_PROVIDER", "openai")
+os.environ.setdefault("LLM_ALLOW_DEBUG_PROVIDER", "0")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment() -> None:
