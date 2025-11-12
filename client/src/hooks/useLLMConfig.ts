@@ -1,6 +1,13 @@
 import { useCallback, useState } from "react";
-import type { LLMConfig } from "../services/llmConfigStore";
-import { clearLLMConfig, loadLLMConfig, saveLLMConfig } from "../services/llmConfigStore";
+import {
+  clearLLMConfig,
+  loadLLMConfig,
+  saveLLMConfig,
+  getProviderLabel,
+  getRecommendedModel,
+  PROVIDER_METADATA,
+} from "../services/llmConfigStore";
+import type { LLMConfig, LLMProviderName } from "../services/llmConfigStore";
 
 export function useLLMConfig() {
   const [config, setConfig] = useState<LLMConfig | null>(() => loadLLMConfig());
@@ -21,4 +28,16 @@ export function useLLMConfig() {
     saveConfig: persist,
     clearConfig: reset,
   } as const;
+}
+
+export type { LLMConfig, LLMProviderName };
+
+export const LLM_PROVIDER_METADATA = PROVIDER_METADATA;
+
+export function getLLMProviderLabel(provider: LLMProviderName): string {
+  return getProviderLabel(provider);
+}
+
+export function getLLMRecommendedModel(provider: LLMProviderName): string {
+  return getRecommendedModel(provider);
 }

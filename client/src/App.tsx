@@ -11,10 +11,9 @@ import { TimerIndicator } from "./components/TimerIndicator";
 import { AIActionType } from "./types/ai-actions";
 import type { AgentMode } from "./hooks/useWritingState";
 import { ConfigErrorModal } from "./components/ConfigErrorModal";
-import { useLLMConfig } from "./hooks/useLLMConfig";
+import { useLLMConfig, getLLMProviderLabel } from "./hooks/useLLMConfig";
 import { LLMSettingsModal } from "./components/LLMSettingsModal";
-import { InterventionAPIError } from "./services/api/interventionClient";
-import { getProviderLabel } from "./services/llmConfigStore";
+import { isInterventionAPIError, type InterventionAPIError } from "./hooks/useInterventionApiError";
 
 /**
  * Impetus Lock Main Application
@@ -58,7 +57,7 @@ function App() {
   const timerProgress = ((60 - timerRemaining) / 60) * 100;
 
   const handleInterventionError = useCallback((error: Error) => {
-    if (error instanceof InterventionAPIError) {
+    if (isInterventionAPIError(error)) {
       setLastLLMError(error);
       setShowConfigError(true);
     }
@@ -134,7 +133,7 @@ function App() {
             data-testid="llm-settings-trigger"
           >
             {isConfigured && llmConfig
-              ? `LLM: ${getProviderLabel(llmConfig.provider)}`
+              ? `LLM: ${getLLMProviderLabel(llmConfig.provider)}`
               : "LLM 设置"}
           </button>
         </div>

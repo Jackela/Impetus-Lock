@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { LLMConfig, LLMProviderName } from "../services/llmConfigStore";
 import {
-  PROVIDER_METADATA,
-  getProviderLabel,
-  getRecommendedModel,
-} from "../services/llmConfigStore";
+  LLM_PROVIDER_METADATA,
+  getLLMProviderLabel,
+  getLLMRecommendedModel,
+} from "../hooks/useLLMConfig";
+import type { LLMConfig, LLMProviderName } from "../hooks/useLLMConfig";
 import "./LLMSettingsModal.css";
 
 interface LLMSettingsModalProps {
@@ -17,21 +17,21 @@ interface LLMSettingsModalProps {
 
 export function LLMSettingsModal({ open, onClose, config, onSave, onClear }: LLMSettingsModalProps) {
   const [provider, setProvider] = useState<LLMProviderName>(config?.provider ?? "openai");
-  const [model, setModel] = useState<string>(config?.model ?? getRecommendedModel("openai"));
+  const [model, setModel] = useState<string>(config?.model ?? getLLMRecommendedModel("openai"));
   const [apiKey, setApiKey] = useState<string>(config?.apiKey ?? "");
   const [modelTouched, setModelTouched] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setProvider(config?.provider ?? "openai");
-    setModel(config?.model ?? getRecommendedModel(config?.provider ?? "openai"));
+    setModel(config?.model ?? getLLMRecommendedModel(config?.provider ?? "openai"));
     setApiKey(config?.apiKey ?? "");
     setModelTouched(false);
   }, [open, config?.provider, config?.model, config?.apiKey]);
 
   const providerOptions = useMemo(
     () =>
-      Object.entries(PROVIDER_METADATA).map(([value, meta]) => ({
+      Object.entries(LLM_PROVIDER_METADATA).map(([value, meta]) => ({
         value: value as LLMProviderName,
         label: meta.label,
         helper: meta.defaultModel,
@@ -41,14 +41,14 @@ export function LLMSettingsModal({ open, onClose, config, onSave, onClear }: LLM
 
   if (!open) return null;
 
-  const recommendedModel = getRecommendedModel(provider);
+  const recommendedModel = getLLMRecommendedModel(provider);
   const canSave = Boolean(apiKey.trim());
 
   const handleProviderChange = (next: LLMProviderName) => {
     setProvider(next);
     setModel((prev) => {
-      if (!modelTouched || prev === getRecommendedModel(provider)) {
-        return getRecommendedModel(next);
+      if (!modelTouched || prev === getLLMRecommendedModel(provider)) {
+        return getLLMRecommendedModel(next);
       }
       return prev;
     });
@@ -68,7 +68,7 @@ export function LLMSettingsModal({ open, onClose, config, onSave, onClear }: LLM
   const handleClear = () => {
     onClear();
     setApiKey("");
-    setModel(getRecommendedModel(provider));
+    setModel(getLLMRecommendedModel(provider));
     setModelTouched(false);
   };
 
@@ -129,7 +129,7 @@ export function LLMSettingsModal({ open, onClose, config, onSave, onClear }: LLM
           </label>
 
           <div className="llm-settings__hint">
-            Need an API key? Visit {getProviderLabel(provider)} docs for latest pricing and quotas.
+            Need an API key? Visit {getLLMProviderLabel(provider)} docs for latest pricing and quotas.
           </div>
         </div>
 
