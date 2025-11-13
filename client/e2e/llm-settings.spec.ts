@@ -17,7 +17,6 @@ async function openLLMSettings(page: Page) {
   }
 
   await expect(page.getByRole("heading", { name: "LLM Settings" })).toBeVisible();
-  await page.waitForSelector('[data-testid="storage-mode-select"]', { state: "attached", timeout: 15000 });
 }
 
 test.describe("LLM Settings", () => {
