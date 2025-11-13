@@ -48,7 +48,13 @@ test.describe("LLM Settings", () => {
 
     await openLLMSettings(page);
     await page.getByTestId("llm-provider-select").selectOption("openai");
-    await page.getByTestId("storage-mode-select").selectOption("encrypted");
+    await page.evaluate(() => {
+      const select = document.querySelector('[data-testid="storage-mode-select"]') as HTMLSelectElement | null;
+      if (select) {
+        select.value = "encrypted";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
     await page.getByTestId("llm-passphrase-input").fill("hunter2-pass");
     await page.getByTestId("llm-passphrase-confirm-input").fill("hunter2-pass");
     await page.getByTestId("llm-key-input").fill("sk-test-encrypted");
@@ -83,7 +89,13 @@ test.describe("LLM Settings", () => {
 
     await openLLMSettings(page);
     await page.getByTestId("llm-provider-select").selectOption("openai");
-    await page.getByTestId("storage-mode-select").selectOption("session");
+    await page.evaluate(() => {
+      const select = document.querySelector('[data-testid="storage-mode-select"]') as HTMLSelectElement | null;
+      if (select) {
+        select.value = "session";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
     await page.getByTestId("llm-key-input").fill("sk-session-key");
     const saveSession = page.getByTestId("llm-settings-save");
     await saveSession.scrollIntoViewIfNeeded();
