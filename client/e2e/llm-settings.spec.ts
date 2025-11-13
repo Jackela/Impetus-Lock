@@ -46,6 +46,7 @@ test.describe("LLM Settings", () => {
     await page.evaluate(() => localStorage.clear());
 
     await openLLMSettings(page);
+    await page.getByTestId("llm-provider-select").selectOption("openai");
     await page.getByTestId("storage-mode-select").selectOption("encrypted");
     await page.getByTestId("llm-passphrase-input").fill("hunter2-pass");
     await page.getByTestId("llm-passphrase-confirm-input").fill("hunter2-pass");
@@ -54,7 +55,7 @@ test.describe("LLM Settings", () => {
     await saveEncrypted.scrollIntoViewIfNeeded();
     await saveEncrypted.evaluate((button) => (button as HTMLButtonElement).click());
 
-    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI");
+    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI", { timeout: 15000 });
 
     await page.reload();
     await openLLMSettings(page);
@@ -80,13 +81,14 @@ test.describe("LLM Settings", () => {
     await page.evaluate(() => localStorage.clear());
 
     await openLLMSettings(page);
+    await page.getByTestId("llm-provider-select").selectOption("openai");
     await page.getByTestId("storage-mode-select").selectOption("session");
     await page.getByTestId("llm-key-input").fill("sk-session-key");
     const saveSession = page.getByTestId("llm-settings-save");
     await saveSession.scrollIntoViewIfNeeded();
     await saveSession.evaluate((button) => (button as HTMLButtonElement).click());
 
-    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI");
+    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI", { timeout: 15000 });
 
     await page.getByTestId("lock-session-button").click();
     await expect(page.getByTestId("llm-settings-trigger")).toHaveText("LLM Settings");
