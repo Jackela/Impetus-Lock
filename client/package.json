@@ -12,6 +12,8 @@
     "test": "node ./scripts/run-vitest.mjs run",
     "test:watch": "node ./scripts/run-vitest.mjs --watch",
     "test:e2e": "playwright test",
+    "test:e2e:ci": "CI=1 PLAYWRIGHT_HEADLESS=1 VITE_API_URL=http://127.0.0.1:8000 npx playwright test",
+    "test:e2e:preview": "node ./scripts/run-preview-e2e.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -15,6 +15,27 @@ This guide covers manual testing for the remaining tasks (T071-T076) that requir
 
 ---
 
+## BYOK Onboarding Smoke Test
+
+1. Run `./scripts/dev-start.sh` (or use the Act helper) and open http://localhost:5173.
+2. Confirm the **BYOK Onboarding** checklist appears on the left. Tick each step as you complete it.
+3. Open **LLM Settings** and verify:
+   - Provider dropdown shows doc/pricing hints.
+   - Invalid keys (e.g., `foo`) trigger the inline validation message and keep the Save button disabled.
+   - Valid formats (`sk-proj-...`, `sk-ant-...`, `AI...`) enable the Save button.
+4. Test each storage mode:
+   - **Local**: Save, refresh, and confirm the header pill still shows `LLM: Provider`. Click **Forget Key** in the header and ensure it reverts to `LLM 设置`.
+   - **Encrypted**: Switch modes, set a passphrase (≥8 chars + confirmation), Save, refresh, and confirm the modal requires the passphrase. Enter a wrong passphrase (expect inline error), then the correct one. Use **Forget Key** to reset and make sure the modal goes back to the \"Set passphrase\" state.
+   - **Session**: Save a key, click **Lock Session**, and confirm you must paste the key again. Reload the tab—session data should be gone.
+5. Paste a key (or use the debug provider), Save, and trigger a Muse/Loki intervention. Telemetry remains off unless explicitly toggled.
+6. Record findings in `docs/process/qa-privacy-checklist.md` before signing off.
+
+> Need more background on expected behavior? See [docs/security/byok-storage.md](docs/security/byok-storage.md) for implementation notes, key derivation details, and automated test pointers.
+
+Optional: run `./scripts/record-demo.sh` to regenerate `demo-artifacts/impetus-lock-demo.webm` if you need updated footage for QA reviews.
+
+---
+
 ## Test Environment Setup
 
 ### Prerequisites
@@ -30,6 +51,22 @@ npm run dev
 ```
 
 Navigate to: http://localhost:5173
+
+### Reproducing CI Locally
+
+- **CI-parity Playwright run** (same reporter/timeouts as GitHub Actions):
+  ```bash
+  ./scripts/dev-start.sh   # in repo root, starts backend/Postgres
+  cd client
+  npm run test:e2e:ci
+  ```
+- **Preview/E2E against the production bundle** (mirrors GA’s production-build checks):
+  ```bash
+  ./scripts/dev-start.sh   # backend + DB
+  cd client
+  npm run test:e2e:preview
+  ```
+  This script runs `npm run build`, starts `npm run preview` on port 4173, and points Playwright at that server (with the dev webServer disabled), so hydration and prod-only code paths match the pipeline. Press `Ctrl+C` to stop the preview server after tests finish.
 
 ---
 
