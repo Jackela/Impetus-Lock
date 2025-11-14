@@ -22,6 +22,11 @@ test.describe("Welcome Modal - New User Experience", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("domcontentloaded");
+    await page.evaluate(() => {
+      localStorage.removeItem("impetus-lock-welcome-dismissed");
+    });
+    await page.reload();
+    await page.waitForLoadState("domcontentloaded");
   });
 
   test("should show welcome modal on first visit", async ({ page }) => {
