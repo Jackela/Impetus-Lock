@@ -67,6 +67,7 @@ Navigate to: http://localhost:5173
   npm run test:e2e:preview
   ```
   This script runs `npm run build`, starts `npm run preview` on port 4173, and points Playwright at that server (with the dev webServer disabled), so hydration and prod-only code paths match the pipeline. Press `Ctrl+C` to stop the preview server after tests finish.
+  > Preview uses `--strictPort`; if 4173 is busy, stop the offending process or run `PREVIEW_PORT=4180 npm run test:e2e:preview`.
 
 ---
 
