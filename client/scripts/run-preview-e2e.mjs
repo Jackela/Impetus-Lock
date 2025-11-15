@@ -64,6 +64,7 @@ async function assertPortFree(hostname, portNumber) {
 }
 
 async function main() {
+  const testArgs = process.argv.slice(2);
   console.log("[preview-e2e] Building client bundle...");
   await run("npm", ["run", "build"]);
   console.log("[preview-e2e] Build completed.");
@@ -118,7 +119,8 @@ async function main() {
       VITE_API_URL: process.env.VITE_API_URL || "http://127.0.0.1:8000",
       CI: process.env.CI || "1",
     };
-    await run("npx", ["playwright", "test"], { env });
+    const playwrightArgs = ["playwright", "test", ...testArgs];
+    await run("npx", playwrightArgs, { env });
     console.log("[preview-e2e] Playwright run completed.");
     clearTimeout(overallTimeout);
     await cleanExit(0);
