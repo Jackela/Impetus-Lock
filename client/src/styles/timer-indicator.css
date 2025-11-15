@@ -6,24 +6,31 @@
  */
 
 .timer-indicator {
-  /* Positioning: Fixed at top of viewport, below header */
   position: fixed;
-  top: var(--header-height, 60px); /* Below app header */
+  top: var(--header-height, 60px);
   left: 0;
-  z-index: 10; /* Above editor, below modals */
+  right: 0;
+  z-index: 10;
+  height: 4px;
+  background: rgba(148, 163, 184, 0.25);
+  pointer-events: none;
+  border-radius: 999px;
+  overflow: hidden;
+}
 
-  /* Dimensions */
-  height: 2px; /* Minimal vertical space */
-  /* Width set dynamically via inline style (0-100%) */
+.timer-indicator__fill {
+  height: 100%;
+  background: rgba(124, 58, 237, 0.85);
+  transition: width 1s linear;
+}
 
-  /* Visual Style */
-  background: rgba(124, 58, 237, 0.6); /* Purple #7c3aed with 60% opacity */
-
-  /* Animation */
-  transition: width 1s linear; /* Smooth progress animation */
-
-  /* Interaction */
-  pointer-events: none; /* Don't block editor clicks */
+.timer-indicator__count {
+  position: absolute;
+  top: -10px;
+  right: 12px;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  color: rgba(248, 250, 252, 0.7);
 }
 
 /**
@@ -31,7 +38,11 @@
  */
 @media (max-width: 768px) {
   .timer-indicator {
-    /* Mobile: Ensure timer doesn't overlap mobile header */
     top: var(--header-height-mobile, 50px);
+  }
+
+  .timer-indicator__count {
+    font-size: 0.55rem;
+    right: 8px;
   }
 }

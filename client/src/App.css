@@ -192,10 +192,55 @@
   box-shadow: 0 2px 4px rgba(139, 92, 246, 0.2);
 }
 
+.onboarding-checklist {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  color: #e2e8f0;
+  max-width: 420px;
+}
+
+.onboarding-checklist h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  color: #c4b5fd;
+}
+
+.onboarding-checklist ol {
+  list-style: decimal inside;
+  padding-left: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.onboarding-checklist label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .manual-trigger-button:not(:disabled):hover {
   background-color: #7c3aed;
   box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
   transform: translateY(-1px);
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.llm-feedback {
+  font-size: 0.75rem;
+  color: rgba(248, 250, 252, 0.85);
+  opacity: 0.85;
+  transition: opacity 0.3s ease;
 }
 
 .llm-settings-trigger {

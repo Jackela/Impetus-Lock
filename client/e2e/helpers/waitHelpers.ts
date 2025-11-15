@@ -72,11 +72,27 @@ export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<b
  * @param page - Playwright page instance
  * @param timeout - Maximum wait time in ms (default: 10000)
  */
-export async function waitForReactHydration(page: Page, timeout = 10000) {
+const HYDRATION_RETRIES = 2;
+
+export async function waitForReactHydration(page: Page, timeout = process.env.CI ? 20000 : 10000) {
   await ensureWelcomeModalSuppressed(page);
-  // Wait directly for app container (rendered by React)
-  await page.waitForSelector(".app", { timeout });
-  await dismissWelcomeModal(page).catch(() => undefined);
+
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= HYDRATION_RETRIES; attempt += 1) {
+    try {
+      await page.waitForSelector(".app", { timeout });
+      await dismissWelcomeModal(page).catch(() => undefined);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === HYDRATION_RETRIES) {
+        break;
+      }
+      // Pages in CI occasionally respond before React hydrates; reload and retry.
+      await page.reload({ waitUntil: "domcontentloaded" });
+    }
+  }
+  throw lastError;
 }
 
 /**

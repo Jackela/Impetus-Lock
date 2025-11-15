@@ -41,10 +41,11 @@ interface LoggerConfig {
  * Global logger configuration.
  * Can be overridden via environment variables or programmatically.
  */
+const isTestEnv = import.meta.env.MODE === "test" || Boolean(import.meta.env.VITEST);
 const config: LoggerConfig = {
-  level: import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.WARN,
+  level: isTestEnv ? LogLevel.ERROR : import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.WARN,
   namespaces: [],
-  enableAll: import.meta.env.DEV, // Enable all namespaces in dev mode
+  enableAll: !isTestEnv && import.meta.env.DEV, // Disable noisy logs in test runs
 };
 
 // Parse VITE_LOG_LEVEL environment variable
@@ -55,7 +56,7 @@ if (import.meta.env.VITE_LOG_LEVEL) {
 
 // Parse VITE_LOG_NAMESPACES environment variable
 if (import.meta.env.VITE_LOG_NAMESPACES) {
-  config.namespaces = import.meta.env.VITE_LOG_NAMESPACES.split(',').map((ns: string) => ns.trim());
+  config.namespaces = import.meta.env.VITE_LOG_NAMESPACES.split(",").map((ns: string) => ns.trim());
   config.enableAll = false; // Disable enableAll when specific namespaces are configured
 }
 
@@ -86,6 +87,9 @@ export interface Logger {
    * Always visible unless LOG_LEVEL=NONE.
    */
   error(message: string, data?: unknown): void;
+
+  /** Emit structured event logs */
+  event(event: string, payload?: Record<string, unknown>): void;
 }
 
 /**
@@ -124,31 +128,42 @@ function formatMessage(namespace: string, message: string, data?: unknown): unkn
  * ```
  */
 export function createLogger(namespace: string): Logger {
-  const enabled = isNamespaceEnabled(namespace);
+  const isEnabled = () => isNamespaceEnabled(namespace);
 
   return {
     debug(message: string, data?: unknown): void {
-      if (enabled && config.level <= LogLevel.DEBUG) {
+      if (isEnabled() && config.level <= LogLevel.DEBUG) {
         console.debug(...formatMessage(namespace, message, data));
       }
     },
 
     info(message: string, data?: unknown): void {
-      if (enabled && config.level <= LogLevel.INFO) {
+      if (isEnabled() && config.level <= LogLevel.INFO) {
         console.info(...formatMessage(namespace, message, data));
       }
     },
 
     warn(message: string, data?: unknown): void {
-      if (enabled && config.level <= LogLevel.WARN) {
+      if (isEnabled() && config.level <= LogLevel.WARN) {
         console.warn(...formatMessage(namespace, message, data));
       }
     },
 
     error(message: string, data?: unknown): void {
-      if (enabled && config.level <= LogLevel.ERROR) {
+      if (isEnabled() && config.level <= LogLevel.ERROR) {
         console.error(...formatMessage(namespace, message, data));
       }
+    },
+
+    event(eventName: string, payload?: Record<string, unknown>): void {
+      if (!isEnabled() || config.level > LogLevel.INFO) return;
+      const entry = {
+        namespace,
+        event: eventName,
+        timestamp: new Date().toISOString(),
+        ...payload,
+      };
+      console.info(`[${namespace}]`, JSON.stringify(entry));
     },
   };
 }

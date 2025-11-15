@@ -2,9 +2,11 @@ name: E2E Tests
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - "**"
   pull_request:
-    branches: ["main"]
+    branches:
+      - "**"
   workflow_dispatch:
     inputs:
       ref:
@@ -64,12 +66,12 @@ jobs:
             ${{ runner.os }}-poetry-
 
       - name: Install backend dependencies
-        working-directory: ./server
+        working-directory: ${{ github.workspace }}/server
         run: poetry install
 
       - name: Run database migrations
         if: ${{ env.ACT != 'true' }}
-        working-directory: ./server
+        working-directory: ${{ github.workspace }}/server
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
         run: |
@@ -111,11 +113,11 @@ jobs:
           cache-dependency-path: client/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./client
+        working-directory: ${{ github.workspace }}/client
         run: npm ci
 
       - name: Verify Playwright version compatibility
-        working-directory: ./client
+        working-directory: ${{ github.workspace }}/client
         run: |
           PACKAGE_VERSION=$(node -p "require('./package.json').devDependencies['@playwright/test']" | sed 's/[^0-9.]//g')
           INSTALLED_VERSION=$(npx playwright --version | grep -oP '\d+\.\d+\.\d+' | head -1)
@@ -129,7 +131,7 @@ jobs:
           echo "✅ Versions match!"
 
       - name: Run Playwright E2E tests
-        working-directory: ./client
+        working-directory: ${{ github.workspace }}/client
         run: npm run test:e2e
 
       - name: Upload Playwright report

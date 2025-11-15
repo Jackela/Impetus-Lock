@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useMediaQuery } from "./useMediaQuery";
 
@@ -120,17 +120,17 @@ describe("useMediaQuery", () => {
       removeEventListener: vi.fn(),
     }));
 
-    const { result, rerender } = renderHook(() => useMediaQuery("(max-width: 767px)"));
+    const { result } = renderHook(() => useMediaQuery("(max-width: 767px)"));
 
     expect(result.current).toBe(false);
 
     // Simulate viewport resize that triggers media query change
-    matches = true;
-    listeners.forEach((listener) =>
-      listener({ matches: true, media: "(max-width: 767px)" } as MediaQueryListEvent)
-    );
-
-    rerender();
+    act(() => {
+      matches = true;
+      listeners.forEach((listener) =>
+        listener({ matches: true, media: "(max-width: 767px)" } as MediaQueryListEvent)
+      );
+    });
 
     expect(result.current).toBe(true);
   });
