@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import "./styles/variables.css";
 import "./styles/responsive.css";
@@ -15,6 +15,8 @@ import { useLLMConfig, getLLMProviderLabel } from "./hooks/useLLMConfig";
 import { LLMSettingsModal } from "./components/LLMSettingsModal";
 import { isInterventionAPIError, type InterventionAPIError } from "./hooks/useInterventionApiError";
 import { INITIAL_STORY } from "./constants/initialStory";
+import { TelemetryToggle } from "./components/TelemetryToggle";
+import { OnboardingChecklist } from "./components/OnboardingChecklist";
 
 /**
  * Impetus Lock Main Application
@@ -28,7 +30,20 @@ function App() {
   const [showConfigError, setShowConfigError] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [lastLLMError, setLastLLMError] = useState<InterventionAPIError | null>(null);
-  const { config: llmConfig, isConfigured, saveConfig, clearConfig } = useLLMConfig();
+  const {
+    config: llmConfig,
+    isConfigured,
+    saveConfig,
+    clearConfig,
+    mode: storageMode,
+    setMode: setStorageMode,
+    locked: vaultLocked,
+    unlock,
+    lock,
+    metadata,
+  } = useLLMConfig();
+  const [llmFeedback, setLLMFeedback] = useState<string | null>(null);
+  const feedbackTimeout = useRef<number | null>(null);
 
   // T005: Timer state for Muse mode indicator
   const [timerRemaining, setTimerRemaining] = useState<number>(60);
@@ -64,6 +79,25 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (feedbackTimeout.current) {
+        window.clearTimeout(feedbackTimeout.current);
+      }
+    };
+  }, []);
+
+  const handleForgetKey = useCallback(async () => {
+    await clearConfig();
+    if (feedbackTimeout.current) {
+      window.clearTimeout(feedbackTimeout.current);
+    }
+    setLLMFeedback("LLM key cleared");
+    feedbackTimeout.current = window.setTimeout(() => {
+      setLLMFeedback(null);
+    }, 3000);
+  }, [clearConfig]);
+
   return (
     <div
       className="app"
@@ -82,6 +116,12 @@ function App() {
         config={llmConfig}
         onSave={saveConfig}
         onClear={clearConfig}
+        storageMode={storageMode}
+        onModeChange={setStorageMode}
+        locked={vaultLocked}
+        onUnlock={unlock}
+        onLock={lock}
+        metadata={metadata}
       />
       <ConfigErrorModal
         visible={showConfigError}
@@ -111,6 +151,34 @@ function App() {
 
       <header className="app-header">
         <h1>Impetus Lock</h1>
+        <div className="header-actions">
+          <TelemetryToggle />
+          <button
+            type="button"
+            className="secondary"
+            onClick={lock}
+            data-testid="lock-session-button"
+          >
+            Lock Session
+          </button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              void handleForgetKey();
+            }}
+            disabled={!isConfigured}
+            aria-disabled={!isConfigured}
+            data-testid="forget-llm-key-button"
+          >
+            Forget Key
+          </button>
+          {llmFeedback && (
+            <span className="llm-feedback" role="status">
+              {llmFeedback}
+            </span>
+          )}
+        </div>
         <div className="controls">
           <label htmlFor="mode-selector">AI Mode:</label>
           <select
@@ -135,12 +203,13 @@ function App() {
           >
             {isConfigured && llmConfig
               ? `LLM: ${getLLMProviderLabel(llmConfig.provider)}`
-              : "LLM 设置"}
+              : "LLM Settings"}
           </button>
         </div>
       </header>
 
       <main className="app-main" role="main">
+        <OnboardingChecklist />
         <EditorCore
           mode={mode}
           initialContent={INITIAL_STORY}

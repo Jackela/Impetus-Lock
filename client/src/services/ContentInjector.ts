@@ -18,6 +18,19 @@ import { getLastSentenceRange } from "../utils/textRange";
 
 type Anchor = components["schemas"]["Anchor"];
 
+function appendLockMarker(content: string, lockId: string, source?: AgentSource): string {
+  const sanitized = content.replace(/<!--[\s\S]*?-->/g, "").trimEnd();
+  const parts = [`lock:${lockId}`];
+  if (source) {
+    parts.push(`source:${source}`);
+  }
+  return `${sanitized} <!-- ${parts.join(" ")} -->`;
+}
+
+function buildLockAttributes(lockId: string, source?: AgentSource) {
+  return source ? { lockId, source } : { lockId };
+}
+
 /**
  * Inject locked blockquote content into editor at anchor position.
  *
@@ -44,13 +57,6 @@ type Anchor = components["schemas"]["Anchor"];
  * }
  * ```
  */
-function appendLockMarker(content: string, lockId: string, source?: AgentSource): string {
-  const parts = [`lock:${lockId}`];
-  if (source) {
-    parts.push(`source:${source}`);
-  }
-  return `${content} <!-- ${parts.join(" ")} -->`;
-}
 
 export function injectLockedBlock(
   view: EditorView,
@@ -83,14 +89,14 @@ export function injectLockedBlock(
     insertPos = state.selection.$head.pos;
   }
 
-  const contentWithLock = appendLockMarker(content, lockId, source);
+  const contentWithLockMarker = appendLockMarker(content, lockId, source);
 
-  // Create blockquote node with lock comment embedded in text
+  // Create blockquote node with lock attributes
   const schema = state.schema;
-  const textNode = schema.text(contentWithLock);
+  const textNode = schema.text(contentWithLockMarker);
   const paragraphNode = schema.nodes.paragraph.create(null, textNode);
   const blockquoteNode = schema.nodes.blockquote.create(
-    {}, // No custom attributes - lock is embedded in text content
+    buildLockAttributes(lockId, source), // Lock metadata stored in node attributes
     paragraphNode
   );
 
@@ -147,12 +153,15 @@ export function deleteContentAtAnchor(
   const { from, to } = anchor;
 
   // DEBUG: Log detailed delete information
-  console.log('[ContentInjector] deleteContentAtAnchor called:', {
+  console.log("[ContentInjector] deleteContentAtAnchor called:", {
     from,
     to,
     docSize: state.doc.content.size,
     deleteLength: to - from,
-    throttleRemaining: Math.max(0, DELETE_THROTTLE_MS - (Date.now() - (window.__lastDeleteTimestamp || 0))),
+    throttleRemaining: Math.max(
+      0,
+      DELETE_THROTTLE_MS - (Date.now() - (window.__lastDeleteTimestamp || 0))
+    ),
   });
 
   // CRITICAL: Throttle to prevent rapid-fire deletions
@@ -160,7 +169,9 @@ export function deleteContentAtAnchor(
   const lastDelete = window.__lastDeleteTimestamp || 0;
 
   if (now - lastDelete < DELETE_THROTTLE_MS) {
-    console.log(`[ContentInjector] THROTTLED - ${DELETE_THROTTLE_MS - (now - lastDelete)}ms remaining`);
+    console.log(
+      `[ContentInjector] THROTTLED - ${DELETE_THROTTLE_MS - (now - lastDelete)}ms remaining`
+    );
     return;
   }
 
@@ -168,7 +179,11 @@ export function deleteContentAtAnchor(
 
   // Validate range
   if (from < 0 || to > state.doc.content.size || from >= to) {
-    console.error("[ContentInjector] Invalid delete range:", { from, to, docSize: state.doc.content.size });
+    console.error("[ContentInjector] Invalid delete range:", {
+      from,
+      to,
+      docSize: state.doc.content.size,
+    });
     return;
   }
 
@@ -183,7 +198,11 @@ export function deleteContentAtAnchor(
   // Dispatch transaction
   dispatch(tr);
 
-  console.log(`[ContentInjector] ✅ Deleted content successfully`, { from, to, deletedLength: to - from });
+  console.log(`[ContentInjector] ✅ Deleted content successfully`, {
+    from,
+    to,
+    deletedLength: to - from,
+  });
 }
 
 /**
@@ -217,7 +236,9 @@ export function rewriteRangeWithLock({
   const { state, dispatch } = view;
 
   if (!anchor || anchor.type !== "range") {
-    console.warn("[ContentInjector] Rewrite skipped: anchor missing, falling back to sentence heuristic");
+    console.warn(
+      "[ContentInjector] Rewrite skipped: anchor missing, falling back to sentence heuristic"
+    );
     rewriteLastSentenceWithLock(view, content, lockId, source);
     return;
   }
@@ -228,9 +249,18 @@ export function rewriteRangeWithLock({
     return;
   }
 
-  const textWithLock = appendLockMarker(content, lockId, source);
+  const contentWithLockMarker = appendLockMarker(content, lockId, source);
+  // Create paragraph node with lock attributes
+  const schema = state.schema;
+  const textNode = schema.text(contentWithLockMarker);
+  const paragraphNode = schema.nodes.paragraph.create(
+    buildLockAttributes(lockId, source),
+    textNode
+  );
+
+  // Delete old range and insert new locked paragraph
   let tr = state.tr.delete(from, to);
-  tr = tr.insertText(textWithLock, from);
+  tr = tr.insert(from, paragraphNode);
   tr.setMeta("addToHistory", false);
   tr.setMeta("aiAction", true);
   tr.setMeta("actionType", "rewrite");
@@ -255,9 +285,18 @@ export function rewriteLastSentenceWithLock(
     return;
   }
 
-  const textWithLock = appendLockMarker(content, lockId, source);
+  const contentWithLockMarker = appendLockMarker(content, lockId, source);
+  // Create paragraph node with lock attributes
+  const schema = state.schema;
+  const textNode = schema.text(contentWithLockMarker);
+  const paragraphNode = schema.nodes.paragraph.create(
+    buildLockAttributes(lockId, source),
+    textNode
+  );
+
+  // Delete old range and insert new locked paragraph
   let tr = state.tr.delete(range.from, range.to);
-  tr = tr.insertText(textWithLock, range.from);
+  tr = tr.insert(range.from, paragraphNode);
   tr.setMeta("addToHistory", false);
   tr.setMeta("aiAction", true);
   tr.setMeta("actionType", "rewrite");

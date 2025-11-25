@@ -22,11 +22,27 @@ import { useLokiTimer } from "../../src/hooks/useLokiTimer";
 import type { AgentMode } from "../../src/types/mode";
 
 describe("useLokiTimer", () => {
+  let cryptoSpy: ReturnType<typeof vi.spyOn> | null = null;
+
   beforeEach(() => {
     vi.useFakeTimers();
+
+    const bucketSeeds = [
+      Math.floor(0.1 * 0xffffffff),
+      Math.floor(0.55 * 0xffffffff),
+      Math.floor(0.9 * 0xffffffff),
+    ];
+    let callCount = 0;
+    cryptoSpy = vi.spyOn(crypto, "getRandomValues").mockImplementation((array: Uint32Array) => {
+      array[0] = bucketSeeds[callCount % bucketSeeds.length];
+      callCount += 1;
+      return array;
+    });
   });
 
   afterEach(() => {
+    cryptoSpy?.mockRestore();
+    cryptoSpy = null;
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
@@ -139,13 +155,11 @@ describe("useLokiTimer", () => {
   });
 
   it("should use crypto.getRandomValues for random number generation", () => {
-    // Mock crypto.getRandomValues
-    const mockGetRandomValues = vi.spyOn(crypto, "getRandomValues");
-
     const onTrigger = vi.fn();
     renderHook(() => useLokiTimer({ mode: "loki" as AgentMode, onTrigger }));
 
-    expect(mockGetRandomValues).toHaveBeenCalled();
+    expect(cryptoSpy).not.toBeNull();
+    expect(cryptoSpy).toHaveBeenCalled();
   });
 
   it("should follow uniform distribution for 1000 triggers (SC-004)", () => {

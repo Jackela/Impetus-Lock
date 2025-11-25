@@ -11,7 +11,7 @@ Constitutional Compliance:
 import logging
 from typing import Annotated, cast
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from server.application.services.intervention_service import InterventionService
@@ -62,6 +62,7 @@ def get_intervention_service() -> InterventionService:
     },
 )
 def generate_intervention(
+    http_request: Request,
     request: InterventionRequest,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key")],
     contract_version: Annotated[str, Header(alias="X-Contract-Version")],
@@ -118,6 +119,8 @@ def generate_intervention(
         return cast(InterventionResponse, cached_response)
 
     overrides_provided = any(filter(None, [provider_header, model_header, api_key_header]))
+    http_request.state.llm_override = overrides_provided
+    http_request.state.llm_provider = None
     overrides = (
         ProviderOverride(
             provider=provider_header,
@@ -139,6 +142,7 @@ def generate_intervention(
                 message="LLM provider unavailable",
                 status_code=503,
             )
+        http_request.state.llm_provider = getattr(provider, "provider_name", None)
         logger.debug(
             "Resolved LLM provider",
             extra={

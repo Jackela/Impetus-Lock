@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
 /**
  * Production Build Tests - T002
@@ -10,23 +10,28 @@ import { test, expect } from '@playwright/test';
  * ManualTriggerButton.tsx:99. These tests validate existing behavior.
  */
 
-test.describe('Production Build', () => {
-  test('Page title is branded', async ({ page }) => {
-    await page.goto('/');
-    expect(await page.title()).toBe('Impetus Lock - AI-Powered Writing Pressure System');
+test.describe("Production Build", () => {
+  test("Page title is branded", async ({ page }) => {
+    await page.goto("/");
+    expect(await page.title()).toBe("Impetus Lock - AI-Powered Writing Pressure System");
   });
 
-  test('Test Delete button visible in development', async ({ page }) => {
-    // This test runs against dev server (npm run dev)
-    // Test Delete button should be visible when import.meta.env.DEV = true
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+  test("Test Delete button respects build target", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("domcontentloaded");
+
+    const buildType = await page.evaluate(() => {
+      return (window as unknown as { __IMPETUS_BUILD__?: string }).__IMPETUS_BUILD__ ?? "prod";
+    });
 
     const testDeleteButton = page.locator('[data-testid="manual-delete-trigger"]');
 
-    // In development mode, button should exist and be visible
-    await expect(testDeleteButton).toBeVisible();
-    await expect(testDeleteButton).toHaveText('Test Delete');
+    if (buildType === "dev") {
+      await expect(testDeleteButton).toBeVisible();
+      await expect(testDeleteButton).toHaveText("Test Delete");
+    } else {
+      await expect(testDeleteButton).toHaveCount(0);
+    }
   });
 
   // Note: The "Test Delete button hidden in production" test would require

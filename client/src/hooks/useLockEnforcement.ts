@@ -154,15 +154,18 @@ export function useLockEnforcement(): UseLockEnforcementReturn {
     }
   }, []);
 
-  const injectLockComment = useCallback((content: string, lockId: string, metadata?: LockMetadata) => {
-    try {
-      setError(null);
-      return lockManager.injectLockComment(content, lockId, metadata);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-      return content;
-    }
-  }, []);
+  const injectLockComment = useCallback(
+    (content: string, lockId: string, metadata?: LockMetadata) => {
+      try {
+        setError(null);
+        return lockManager.injectLockComment(content, lockId, metadata);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        return content;
+      }
+    },
+    []
+  );
 
   const clearError = useCallback(() => {
     setError(null);

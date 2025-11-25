@@ -12,7 +12,8 @@
  */
 
 import type { components } from "../../types/api.generated";
-import { getStoredLLMConfig } from "../llmConfigStore";
+import { getVaultCache } from "../llmKeyVault";
+import { emitTelemetry } from "../telemetry";
 
 type InterventionRequest = components["schemas"]["InterventionRequest"];
 type InterventionResponse = components["schemas"]["InterventionResponse"];
@@ -172,6 +173,16 @@ export async function generateIntervention(
         const message =
           (parsedData.message as string) || (detail?.message as string) || "Unknown error occurred";
 
+        emitTelemetry({
+          event: "llm_request",
+          provider: currentProvider(),
+          payload: {
+            status: "error",
+            statusCode: response.status,
+            code,
+          },
+        });
+
         throw new InterventionAPIError(
           response.status,
           code,
@@ -179,6 +190,15 @@ export async function generateIntervention(
           detail ?? parsedData.details
         );
       }
+
+      emitTelemetry({
+        event: "llm_request",
+        provider: currentProvider(),
+        payload: {
+          status: "success",
+          action: (parsedData as InterventionResponse).action,
+        },
+      });
 
       return parsedData as InterventionResponse;
     } catch (error) {
@@ -208,13 +228,17 @@ export async function generateIntervention(
 }
 
 function buildLLMHeaders(): Record<string, string> {
-  const config = getStoredLLMConfig();
+  const config = getVaultCache();
   if (!config?.apiKey) return {};
   return {
     "X-LLM-Provider": config.provider,
     "X-LLM-Model": config.model,
     "X-LLM-Api-Key": config.apiKey,
   };
+}
+
+function currentProvider(): string | undefined {
+  return getVaultCache()?.provider;
 }
 
 /**

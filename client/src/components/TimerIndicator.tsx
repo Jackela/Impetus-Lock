@@ -19,7 +19,7 @@
  * @see openspec/changes/chrome-audit-polish/design.md#2-timer-visibility
  */
 
-import React from 'react';
+import React from "react";
 
 interface TimerIndicatorProps {
   /**
@@ -60,17 +60,22 @@ export function TimerIndicator({ progress, visible, remainingTime }: TimerIndica
     return null;
   }
 
+  const normalizedProgress = Math.min(Math.max(progress, 0), 100);
+
   return (
-    <div
-      className="timer-indicator"
-      role="progressbar"
-      aria-label={`STUCK timer: ${remainingTime} seconds remaining`}
-      aria-valuenow={progress}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      style={{
-        width: `${progress}%`,
-      }}
-    />
+    <div className="timer-indicator" aria-live="polite">
+      <div
+        className="timer-indicator__fill"
+        role="progressbar"
+        aria-label={`STUCK timer: ${remainingTime} seconds remaining`}
+        aria-valuenow={Math.round(normalizedProgress)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        style={{ width: `${normalizedProgress}%` }}
+      />
+      <span className="timer-indicator__count" aria-hidden="true">
+        {remainingTime}s
+      </span>
+    </div>
   );
 }

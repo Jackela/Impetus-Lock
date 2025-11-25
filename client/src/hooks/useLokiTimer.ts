@@ -15,7 +15,7 @@
  * @module hooks/useLokiTimer
  */
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useLayoutEffect } from "react";
 import type { AgentMode } from "../types/mode";
 
 /**
@@ -148,7 +148,7 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
   }, []);
 
   // Effect: Start/stop timer based on mode
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (mode === "loki") {
       // Start timer
       scheduleNextTimer();

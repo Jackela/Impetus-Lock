@@ -9,7 +9,7 @@
 
 ## 🎥 演示视频 & 截图
 
-- [Download or view demo](./demo-artifacts/impetus-lock-demo.mp4) – Playwright 自动录制的 Muse/Loki 全流程。
+- [Download or view demo](./demo-artifacts/impetus-lock-demo.webm) – Playwright 自动录制的 Muse/Loki 全流程。
 - ![主界面](client/audit-screenshots/03-main-ui.png)
 - ![欢迎引导](client/audit-screenshots/02-welcome-modal.png)
 - ![锁定反馈](client/e2e-results/manual-trigger-clicked.png)
@@ -52,6 +52,11 @@
   ```
 
 脚本会自动在 WSL 中启动 FastAPI（端口 8081）和 Vite（端口 5173），并将日志写入 `server/server_dev.log` 与 `client/devserver.log`。
+
+### 🔒 BYOK 存储模式
+- **Local**：持久化到 `localStorage`，适合个人机器。
+- **Encrypted**：AES-GCM 加密保存，需自定义口令。
+- **Session**：仅内存，切换到该模式会立即清除之前的本地/加密密钥；刷新后必须重新输入。
 
 ### 🎥 录制 Playwright 演示
 
@@ -198,6 +203,11 @@ This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Ne
 - **动画 | Animation:** [Framer Motion](https://www.framer.com/motion/)
 - **测试 | Testing:** [Playwright](https://playwright.dev/) (E2E) + [Vitest](https://vitest.dev/) (单元测试)
 
+### 🔭 可观测性默认值
+- 结构化日志默认开启（含 request_id 与真实 status_code）。
+- `/metrics` 默认关闭；需要暴露时设置 `ENABLE_PROMETHEUS_METRICS=1`。
+- 可选 OTLP：配置 `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS`。
+
 **后端 (`server/`)** — FastAPI + Python 3.11+
 - **AI 核心 | AI Core:** [Instructor](https://github.com/jxnl/instructor) + Pydantic
   - 强类型 LLM 输出（无原始字符串）
@@ -220,6 +230,8 @@ This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Ne
 | **架构护栏 \| Architecture Guards** | Clean Architecture 规则 | [ARCHITECTURE_GUARDS.md](ARCHITECTURE_GUARDS.md) |
 | **开发指南 \| Dev Guide** | TDD 工作流 | [DEVELOPMENT.md](DEVELOPMENT.md) |
 | **测试策略 \| Testing** | 测试规范 | [TESTING.md](TESTING.md) |
+| **Prompt Registry** | Muse/Loki 模板版本管理 | [docs/prompts.md](docs/prompts.md) |
+| **Observability** | Logging / Metrics / Tracing | [docs/observability.md](docs/observability.md) |
 
 **关键设计原则 | Key Design Principles:**
 - **Contract-First API Design:** OpenAPI 规范先行，Pydantic 模型匹配
@@ -253,6 +265,13 @@ cp .env.example .env
 > 💡 **Bring Your Own Key (BYOK)**  
 > 即使后端没有配置默认 Key，也可以在前端点击右上角的「LLM 设置」按钮，为 OpenAI / Anthropic / Google Gemini 粘贴你的个人 API Key。Key 仅存储在浏览器 `localStorage` 中，并随每次 Muse/Loki 请求通过 HTTPS Header 发送到后端。
 
+> 🔐 **Storage modes & safety controls**  
+> LLM Settings lets you decide where secrets live:  
+> • `Local` keeps the config in `localStorage` (fastest).  
+> • `Encrypted` wraps the payload with AES-GCM (passphrase-derived via PBKDF2, 200k iterations).  
+> • `Session` keeps data in memory only and wipes it on idle/visibility changes.  
+> Use the header-level **Lock Session** button to immediately drop in-memory state, and **Forget Key** to nuke every persisted copy (local + encrypted blobs). See [docs/security/byok-storage.md](docs/security/byok-storage.md) for a deeper dive plus manual/QA steps.
+
 > 🧪 **Offline / CI Testing**  
 > 需要在没有外部 LLM 的情况下跑 Playwright / act 时，将后端环境变量设置为：
 > ```bash
@@ -281,6 +300,31 @@ npm run dev
 ```
 
 🟢 **Frontend now running at:** `http://localhost:5173`
+
+> 📈 **Telemetry**
+> Frontend logging is opt-in. Use the "Telemetry" toggle in the header or set `VITE_TELEMETRY_DEFAULT=on`
+> to enable anonymized BYOK/provider events for debugging. Preferences are stored locally only.
+
+### 4. BYOK Onboarding
+
+1. Launch the dev stack (`./scripts/dev-start.sh`) so Dockerized Postgres + backend are ready.
+2. Follow the in-app onboarding checklist (left column) which walks you through dev-start → opening LLM Settings → triggering Muse/Loki.
+3. Inside the LLM Settings modal, pick the desired storage mode, review the provider tips (doc links, pricing hints, inline key validation), and set/rotate passphrases when using encrypted mode. Unlock errors stay client-side and telemetry never captures raw keys.
+4. Use **Lock Session** and **Forget Key** from the header to verify you can drop credentials instantly—our QA privacy checklist (`docs/process/qa-privacy-checklist.md`) requires both paths before sign-off.
+5. Watch the latest demo capture (`demo-artifacts/impetus-lock-demo.webm`, generated via `./scripts/record-demo.sh`) for a full BYOK walkthrough.
+
+### 3. Local CI via Act
+
+1. Install [Act](https://github.com/nektos/act) and ensure Docker is available.
+2. Run the sync helper (WSL/Linux):
+
+   ```bash
+   ./scripts/act-sync.sh act -j e2e -W .github/workflows/e2e.yml --artifact-server-path /tmp/act-artifacts
+   ```
+
+   Use the Windows wrapper if needed: `pwsh ./scripts/act-sync.ps1 -Command "act -j e2e ..."`.
+3. The script rsyncs the repo into a Linux-native mirror (default `$HOME/impetus-lock-act`), exports `ACT_WORKSPACE_BASE`, `ACT_CACHE_DIR`, and stops conflicting containers (e.g., `impetus-lock-postgres`).
+4. Tail output is captured at `/tmp/act-e2e.log`; the latest run is mirrored to `test-results/act-e2e.log` (gitignored) for reference.
 
 ### 3. Verify Installation
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { generateIntervention } from "./interventionClient";
-import { saveLLMConfig, clearLLMConfig } from "../llmConfigStore";
+import { saveVaultConfig, clearVault, setVaultMode } from "../llmKeyVault";
 
 const baseRequest = {
   context: "test",
@@ -9,14 +9,15 @@ const baseRequest = {
 };
 
 describe("generateIntervention", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.restoreAllMocks();
     window.localStorage.clear();
-    clearLLMConfig();
+    await setVaultMode("local");
+    await clearVault();
   });
 
   it("attaches BYOK headers when config present", async () => {
-    saveLLMConfig({ provider: "gemini", model: "gemini-2.0-flash-lite", apiKey: "AI-KEY" });
+    await saveVaultConfig({ provider: "gemini", model: "gemini-2.0-flash-lite", apiKey: "AI-KEY" });
 
     const mockResponse = {
       ok: true,
@@ -46,7 +47,7 @@ describe("generateIntervention", () => {
   });
 
   it("maps provider errors to InterventionAPIError", async () => {
-    clearLLMConfig();
+    await clearVault();
 
     const mockResponse = {
       ok: false,

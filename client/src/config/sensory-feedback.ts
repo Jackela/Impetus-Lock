@@ -72,4 +72,9 @@ export const FEEDBACK_CONFIG: Record<AIActionType, SensoryFeedbackConfig> = {
     audioFile: "/src/assets/audio/buzz.mp3",
     duration: 500, // 0.5 seconds (P3 US3: FR-005, FR-006)
   },
+  [AIActionType.CHAOS]: {
+    animationType: "glitch",
+    audioFile: "/src/assets/audio/whoosh.mp3",
+    duration: 1000,
+  },
 };
