@@ -21,6 +21,11 @@ Thumbs.db
 *.njsproj
 *.sln
 
+# AI tooling
+.claude/commands/
+.specify/
+.tools/
+
 # Act CLI
 .act/
 
@@ -49,11 +54,24 @@ coverage/
 __pycache__/
 *.pyc
 .venv/
+.venv.windows/
 venv/
 *.egg-info/
 .pytest_cache/
+server/.hypothesis/
+server/.venv.windows/
 
 # Test results
 test-results/
 playwright-report/
 .playwright/
+test-results/act-e2e.log
+demo-artifacts/*.webm
+demo-artifacts/*.mp4
+
+# Dev server pid files
+server/.backend.pid
+client/.frontend.pid
+
+# Generated prompt artifacts
+server/server/infrastructure/llm/prompts/generated_templates.py
