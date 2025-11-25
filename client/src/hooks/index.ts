@@ -6,3 +6,4 @@
 
 export { useLockEnforcement } from "./useLockEnforcement";
 export { useWritingState } from "./useWritingState";
+export { useTelemetry } from "./useTelemetry";

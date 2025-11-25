@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
 
 /**
  * Responsive Design E2E Tests
@@ -17,7 +18,7 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.goto("/");
 
     // Wait for app to load
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     // Check document width equals viewport width (no horizontal overflow)
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -31,7 +32,7 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.setViewportSize({ width: 768, height: 1024 });
 
     await page.goto("/");
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -44,7 +45,7 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.setViewportSize({ width: 1024, height: 768 });
 
     await page.goto("/");
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
     const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
@@ -59,7 +60,7 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.goto("/");
 
     // Wait for editor to be ready
-    await page.waitForSelector('[contenteditable="true"]', { timeout: 10000 });
+    await waitForAppReady(page);
 
     // Type a very long URL
     const longUrl =
@@ -83,7 +84,7 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.setViewportSize({ width: 320, height: 568 });
 
     await page.goto("/");
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     // Verify no horizontal scroll
     const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -113,7 +114,7 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.goto("/");
 
     // Wait for app to load
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     // Check that editor is visible
     const editor = page.locator('[contenteditable="true"]').first();
@@ -143,7 +144,7 @@ test.describe("Responsive Design - Device Orientation", () => {
     // Start in portrait (iPhone SE)
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("/");
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     // Type some content
     const editor = page.locator('[contenteditable="true"]').first();
@@ -170,7 +171,7 @@ test.describe("Responsive Design - Breakpoint Transitions", () => {
     // Start at mobile breakpoint
     await page.setViewportSize({ width: 767, height: 1024 });
     await page.goto("/");
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     // Resize to tablet breakpoint
     await page.setViewportSize({ width: 768, height: 1024 });
@@ -185,7 +186,7 @@ test.describe("Responsive Design - Breakpoint Transitions", () => {
     // Start at tablet breakpoint
     await page.setViewportSize({ width: 1023, height: 768 });
     await page.goto("/");
-    await page.waitForSelector("#root");
+    await waitForReactHydration(page);
 
     // Resize to desktop breakpoint
     await page.setViewportSize({ width: 1024, height: 768 });

@@ -4,6 +4,10 @@
 .env
 .env.local
 .env.*.local
+.envrc
+.python-version
+.tool-versions
+.direnv/
 .secrets
 
 # OS
@@ -20,6 +24,11 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+
+# AI tooling
+.claude/commands/
+.specify/
+.tools/
 
 # Act CLI
 .act/
@@ -44,16 +53,35 @@ temp/
 node_modules/
 *.tsbuildinfo
 coverage/
+.vitest/
 
 # Python (backend)
 __pycache__/
 *.pyc
 .venv/
+.venv.windows/
 venv/
 *.egg-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+server/.hypothesis/
+server/.venv.windows/
+.coverage
+.coverage.*
+htmlcov/
 
 # Test results
 test-results/
 playwright-report/
 .playwright/
+test-results/act-e2e.log
+demo-artifacts/*.webm
+demo-artifacts/*.mp4
+
+# Dev server pid files
+server/.backend.pid
+client/.frontend.pid
+
+# Generated prompt artifacts
+server/server/infrastructure/llm/prompts/generated_templates.py

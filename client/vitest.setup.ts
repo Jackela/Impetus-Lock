@@ -102,3 +102,32 @@ class MockAudioContext {
 // Assign to both global and window for maximum compatibility
 global.AudioContext = MockAudioContext as any;
 (window as any).AudioContext = MockAudioContext;
+
+/**
+ * Mock fetch for static audio assets so Vitest doesn't try to resolve real files.
+ */
+const originalFetch = global.fetch;
+
+const mockFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const url =
+    typeof input === "string"
+      ? input
+      : input instanceof URL
+        ? input.href
+        : ((input as Request).url ?? "");
+
+  if (url.includes("/src/assets/audio/")) {
+    // Return a tiny ArrayBuffer to satisfy decodeAudioData
+    const buffer = new ArrayBuffer(8);
+    return new Response(buffer, { status: 200 });
+  }
+
+  if (originalFetch) {
+    return originalFetch(input as RequestInfo, init);
+  }
+
+  return new Response(null, { status: 200 });
+});
+
+global.fetch = mockFetch as typeof fetch;
+(window as any).fetch = mockFetch;

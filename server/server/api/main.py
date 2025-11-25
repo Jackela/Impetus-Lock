@@ -1,23 +1,26 @@
-"""
-FastAPI main application entry point.
+"""FastAPI main application entry point with structured logging."""
 
-This module defines the core FastAPI application with health check endpoint.
-Follows Article IV (SOLID): Endpoints delegate to service layer when business logic emerges.
-"""
-
+import logging
 import os
+import time
+import uuid
+from collections.abc import Awaitable, Callable
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from server.api.routes import intervention, tasks
+from server.api.routes import intervention, metrics, tasks
+from server.infrastructure.logging.json_formatter import setup_json_logging
 from server.infrastructure.persistence.database import init_database
 
 # Load environment variables from .env file
 load_dotenv()
+setup_json_logging(os.getenv("LOG_LEVEL", "INFO"))
+
+logger = logging.getLogger("server.api")
 
 # Conditionally import testing routes
 if os.getenv("TESTING"):
@@ -59,6 +62,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(intervention.router)
 app.include_router(tasks.router)
+app.include_router(metrics.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):
@@ -99,3 +103,34 @@ def health() -> HealthResponse:
         service="impetus-lock",
         version="0.1.0",
     )
+
+
+@app.middleware("http")
+async def request_logging_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Log every HTTP request with duration and LLM metadata."""
+
+    request_id = uuid.uuid4().hex
+    request.state.request_id = request_id
+    start = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    except HTTPException as exc:
+        status_code = exc.status_code
+        raise
+    finally:
+        duration_ms = round((time.perf_counter() - start) * 1000, 2)
+        extra = {
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "status_code": status_code,
+            "duration_ms": duration_ms,
+            "llm_provider": getattr(request.state, "llm_provider", None),
+            "llm_override": getattr(request.state, "llm_override", False),
+        }
+        logger.info("http_request", extra=extra)

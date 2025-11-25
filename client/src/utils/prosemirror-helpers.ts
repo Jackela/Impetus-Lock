@@ -120,7 +120,11 @@ export interface LockAttributes {
  * @param node - ProseMirror node to inspect
  * @returns Lock metadata if found, `null` otherwise
  */
-export function extractLockAttributes(node: Node): LockAttributes | null {
+export function extractLockAttributes(node: Node | null | undefined): LockAttributes | null {
+  if (!node) {
+    return null;
+  }
+
   const anyNode = node as unknown as { attrs?: Record<string, unknown>; marks?: unknown };
   const attrs = anyNode.attrs;
 

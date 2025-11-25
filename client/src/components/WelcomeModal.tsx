@@ -117,8 +117,9 @@ export function WelcomeModal({ forceShow = false, onDismiss }: WelcomeModalProps
           <section className="welcome-mode">
             <h3 className="mode-lock">The Lock Concept</h3>
             <p>
-              All AI-added content is <em>locked</em> — you cannot delete it. AI interventions become
-              permanent parts of your document, creating pressure to engage with the material.
+              All AI-added content is <em>locked</em> — you cannot delete it. AI interventions
+              become permanent parts of your document, creating pressure to engage with the
+              material.
             </p>
             <p className="mode-trigger">
               <strong>Result:</strong> Shake animation + sound when you try to delete locked content

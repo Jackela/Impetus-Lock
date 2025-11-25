@@ -15,31 +15,14 @@ Success Criteria:
 
 from typing import Final
 
-# System prompt defines the LLM's role and behavior
-LOKI_SYSTEM_PROMPT: Final[str] = """You are a chaos agent embedded in a writing tool.
-Your job is to make the user uncomfortable through unpredictable interventions.
+from server.infrastructure.llm.prompts.prompt_registry import (
+    PromptTemplate,
+    get_prompt_pair,
+    get_prompt_template,
+)
 
-### Core Principles
-1. Be mischievous, confrontational, and unhelpful.
-2. Alternate between provoking new ideas, rewriting existing lines, and deleting comfort.
-3. Maintain cultural awareness—subvert whatever genre conventions you detect.
-
-### Action Mix (Guideline)
-- **PROVOKE ~40%**: Inject a destabilizing idea (plain sentences only).
-- **REWRITE ~30%**: Replace the boldest part of the latest sentence with something absurd.
-- **DELETE ~30%**: Remove 1–2 recent sentences to create a void.
-
-### Output Format
-Return compact JSON only, no Markdown prefixes or explanations. Examples:
-{"action": "provoke", "content": "黑市的灯忽然全灭，你必须在黑暗中完成交易。"}
-{"action": "rewrite", "content": "他所有的本领都是从一个匿名的恶作剧者那里偷来的。"}
-{"action": "delete"}
-
-### Constraints
-- NEVER output lock IDs, anchors, or commentary.
-- NEVER apologize or explain the choice.
-- ALWAYS speak the same language as the context (usually Chinese).
-"""
+_LOKI_TEMPLATE: PromptTemplate = get_prompt_template("loki")
+LOKI_SYSTEM_PROMPT: Final[str] = _LOKI_TEMPLATE.system_prompt
 
 
 def get_loki_user_prompt(context: str) -> str:
@@ -60,14 +43,7 @@ def get_loki_user_prompt(context: str) -> str:
         >>> # LLM might return: {"action": "rewrite", "content": "门后其实是台手术桌。"}
         >>> # Or {"action": "delete"} to remove a sentence
     """
-    return f"""The Loki timer has fired (random interval). Analyze the user's writing:
-
----
-{context}
----
-
-Decide: Should you PROVOKE (inject), DELETE (remove) or REWRITE (mutate)?
-Return JSON with the chosen action (see format above)."""
+    return _LOKI_TEMPLATE.render_user_prompt(context)
 
 
 def get_loki_prompts(context: str) -> tuple[str, str]:
@@ -91,4 +67,4 @@ def get_loki_prompts(context: str) -> tuple[str, str]:
         >>> #   ]
         >>> # )
     """
-    return (LOKI_SYSTEM_PROMPT, get_loki_user_prompt(context))
+    return get_prompt_pair("loki", context)

@@ -10,6 +10,7 @@ Constitutional Compliance:
 - Article V (Documentation): Complete Google-style docstrings
 """
 
+import time
 from uuid import UUID, uuid4
 
 from server.domain.errors import LLMProviderError
@@ -20,6 +21,8 @@ from server.domain.models.intervention import (
     InterventionResponse,
 )
 from server.domain.text_window import compute_last_sentence_anchor
+from server.infrastructure.observability.metrics import log_llm_call
+from server.infrastructure.observability.tracing import start_llm_span
 
 # Optional import (for type hints when repository is used)
 try:
@@ -131,13 +134,46 @@ class InterventionService:
         # Safety guard: Reject delete if context too short
         context_length = len(request.context)
 
-        # Call LLM provider
-        response = provider.generate_intervention(
-            context=request.context,
+        provider_name = getattr(provider, "provider_name", provider.__class__.__name__)
+        provider_model = getattr(provider, "model", None)
+        started = time.perf_counter()
+
+        try:
+            with start_llm_span(
+                "llm.call",
+                attributes={
+                    "llm.provider": provider_name,
+                    "llm.model": provider_model or "",
+                    "llm.mode": request.mode,
+                },
+            ):
+                response = provider.generate_intervention(
+                    context=request.context,
+                    mode=request.mode,
+                    doc_version=request.client_meta.doc_version,
+                    selection_from=request.client_meta.selection_from,
+                    selection_to=request.client_meta.selection_to,
+                )
+        except Exception as exc:  # noqa: BLE001 - re-raised after logging
+            duration_ms = (time.perf_counter() - started) * 1000
+            error_code = exc.code if isinstance(exc, LLMProviderError) else exc.__class__.__name__
+            log_llm_call(
+                provider_name=provider_name,
+                model=provider_model,
+                mode=request.mode,
+                duration_ms=duration_ms,
+                success=False,
+                error_code=str(error_code),
+            )
+            raise
+
+        duration_ms = (time.perf_counter() - started) * 1000
+        log_llm_call(
+            provider_name=provider_name,
+            model=provider_model,
             mode=request.mode,
-            doc_version=request.client_meta.doc_version,
-            selection_from=request.client_meta.selection_from,
-            selection_to=request.client_meta.selection_to,
+            duration_ms=duration_ms,
+            success=True,
         )
         response.source = request.mode
 
