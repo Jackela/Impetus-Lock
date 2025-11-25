@@ -109,7 +109,3 @@ export function getLLMProviderDocs(provider: LLMProviderName): string {
 export function getLLMProviderPricing(provider: LLMProviderName): string {
   return getProviderPricingHint(provider);
 }
-
-export const LLM_PROVIDER_METADATA = PROVIDER_METADATA;
-
-export type { VaultMetadata, VaultMode };

@@ -52,24 +52,6 @@ npm run dev
 
 Navigate to: http://localhost:5173
 
-### Reproducing CI Locally
-
-- **CI-parity Playwright run** (same reporter/timeouts as GitHub Actions):
-  ```bash
-  ./scripts/dev-start.sh   # in repo root, starts backend/Postgres
-  cd client
-  npm run test:e2e:ci
-  ```
-- **Preview/E2E against the production bundle** (mirrors GA’s production-build checks):
-  ```bash
-  ./scripts/dev-start.sh   # backend + DB
-  cd client
-  npm run test:e2e:preview           # entire suite
-  npm run test:e2e:preview -- e2e/production-build.spec.ts   # run targeted specs
-  ```
-  This script runs `npm run build`, starts `npm run preview` on port 4173, and points Playwright at that server (with the dev webServer disabled), so hydration and prod-only code paths match the pipeline. Press `Ctrl+C` to stop the preview server after tests finish.
-  > Preview uses `--strictPort`; if 4173 is busy, stop the offending process or run `PREVIEW_PORT=4180 npm run test:e2e:preview`.
-
 ---
 
 ## T071: Audio Playback Test

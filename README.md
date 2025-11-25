@@ -9,7 +9,7 @@
 
 ## 🎥 演示视频 & 截图
 
-- [Download or view demo](./demo-artifacts/impetus-lock-demo.webm) – Playwright 自动录制的 Muse/Loki 全流程。
+- [Download or view demo](./demo-artifacts/impetus-lock-demo.mp4) – Playwright 自动录制的 Muse/Loki 全流程。
 - ![主界面](client/audit-screenshots/03-main-ui.png)
 - ![欢迎引导](client/audit-screenshots/02-welcome-modal.png)
 - ![锁定反馈](client/e2e-results/manual-trigger-clicked.png)
@@ -52,11 +52,6 @@
   ```
 
 脚本会自动在 WSL 中启动 FastAPI（端口 8081）和 Vite（端口 5173），并将日志写入 `server/server_dev.log` 与 `client/devserver.log`。
-
-### 🔒 BYOK 存储模式
-- **Local**：持久化到 `localStorage`，适合个人机器。
-- **Encrypted**：AES-GCM 加密保存，需自定义口令。
-- **Session**：仅内存，切换到该模式会立即清除之前的本地/加密密钥；刷新后必须重新输入。
 
 ### 🎥 录制 Playwright 演示
 
@@ -202,11 +197,6 @@ This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Ne
   - 拦截删除操作，保护带有 `lock_id` 的文本块
 - **动画 | Animation:** [Framer Motion](https://www.framer.com/motion/)
 - **测试 | Testing:** [Playwright](https://playwright.dev/) (E2E) + [Vitest](https://vitest.dev/) (单元测试)
-
-### 🔭 可观测性默认值
-- 结构化日志默认开启（含 request_id 与真实 status_code）。
-- `/metrics` 默认关闭；需要暴露时设置 `ENABLE_PROMETHEUS_METRICS=1`。
-- 可选 OTLP：配置 `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_HEADERS`。
 
 **后端 (`server/`)** — FastAPI + Python 3.11+
 - **AI 核心 | AI Core:** [Instructor](https://github.com/jxnl/instructor) + Pydantic

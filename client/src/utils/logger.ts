@@ -41,11 +41,10 @@ interface LoggerConfig {
  * Global logger configuration.
  * Can be overridden via environment variables or programmatically.
  */
-const isTestEnv = import.meta.env.MODE === "test" || Boolean(import.meta.env.VITEST);
 const config: LoggerConfig = {
-  level: isTestEnv ? LogLevel.ERROR : import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.WARN,
+  level: import.meta.env.DEV ? LogLevel.DEBUG : LogLevel.WARN,
   namespaces: [],
-  enableAll: !isTestEnv && import.meta.env.DEV, // Disable noisy logs in test runs
+  enableAll: import.meta.env.DEV, // Enable all namespaces in dev mode
 };
 
 // Parse VITE_LOG_LEVEL environment variable
@@ -128,35 +127,35 @@ function formatMessage(namespace: string, message: string, data?: unknown): unkn
  * ```
  */
 export function createLogger(namespace: string): Logger {
-  const isEnabled = () => isNamespaceEnabled(namespace);
+  const enabled = isNamespaceEnabled(namespace);
 
   return {
     debug(message: string, data?: unknown): void {
-      if (isEnabled() && config.level <= LogLevel.DEBUG) {
+      if (enabled && config.level <= LogLevel.DEBUG) {
         console.debug(...formatMessage(namespace, message, data));
       }
     },
 
     info(message: string, data?: unknown): void {
-      if (isEnabled() && config.level <= LogLevel.INFO) {
+      if (enabled && config.level <= LogLevel.INFO) {
         console.info(...formatMessage(namespace, message, data));
       }
     },
 
     warn(message: string, data?: unknown): void {
-      if (isEnabled() && config.level <= LogLevel.WARN) {
+      if (enabled && config.level <= LogLevel.WARN) {
         console.warn(...formatMessage(namespace, message, data));
       }
     },
 
     error(message: string, data?: unknown): void {
-      if (isEnabled() && config.level <= LogLevel.ERROR) {
+      if (enabled && config.level <= LogLevel.ERROR) {
         console.error(...formatMessage(namespace, message, data));
       }
     },
 
     event(eventName: string, payload?: Record<string, unknown>): void {
-      if (!isEnabled() || config.level > LogLevel.INFO) return;
+      if (!enabled) return;
       const entry = {
         namespace,
         event: eventName,

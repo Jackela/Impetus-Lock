@@ -17,7 +17,6 @@ async function openLLMSettings(page: Page) {
   }
 
   await expect(page.getByRole("heading", { name: "LLM Settings" })).toBeVisible();
-  await page.getByTestId("llm-settings-card").waitFor({ state: "visible", timeout: 15000 });
 }
 
 test.describe("LLM Settings", () => {
@@ -47,16 +46,7 @@ test.describe("LLM Settings", () => {
     await page.evaluate(() => localStorage.clear());
 
     await openLLMSettings(page);
-    await page.getByTestId("llm-provider-select").selectOption("openai");
-    await page.evaluate(() => {
-      const select = document.querySelector(
-        '[data-testid="storage-mode-select"]'
-      ) as HTMLSelectElement | null;
-      if (select) {
-        select.value = "encrypted";
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    });
+    await page.getByTestId("storage-mode-select").selectOption("encrypted");
     await page.getByTestId("llm-passphrase-input").fill("hunter2-pass");
     await page.getByTestId("llm-passphrase-confirm-input").fill("hunter2-pass");
     await page.getByTestId("llm-key-input").fill("sk-test-encrypted");
@@ -64,9 +54,7 @@ test.describe("LLM Settings", () => {
     await saveEncrypted.scrollIntoViewIfNeeded();
     await saveEncrypted.evaluate((button) => (button as HTMLButtonElement).click());
 
-    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI", {
-      timeout: 15000,
-    });
+    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI");
 
     await page.reload();
     await openLLMSettings(page);
@@ -92,24 +80,13 @@ test.describe("LLM Settings", () => {
     await page.evaluate(() => localStorage.clear());
 
     await openLLMSettings(page);
-    await page.getByTestId("llm-provider-select").selectOption("openai");
-    await page.evaluate(() => {
-      const select = document.querySelector(
-        '[data-testid="storage-mode-select"]'
-      ) as HTMLSelectElement | null;
-      if (select) {
-        select.value = "session";
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    });
+    await page.getByTestId("storage-mode-select").selectOption("session");
     await page.getByTestId("llm-key-input").fill("sk-session-key");
     const saveSession = page.getByTestId("llm-settings-save");
     await saveSession.scrollIntoViewIfNeeded();
     await saveSession.evaluate((button) => (button as HTMLButtonElement).click());
 
-    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI", {
-      timeout: 15000,
-    });
+    await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI");
 
     await page.getByTestId("lock-session-button").click();
     await expect(page.getByTestId("llm-settings-trigger")).toHaveText("LLM Settings");
@@ -117,9 +94,7 @@ test.describe("LLM Settings", () => {
     await openLLMSettings(page);
     await expect(page.getByTestId("llm-key-input")).toHaveValue("");
     await page.getByTestId("llm-key-input").fill("sk-session-key-2");
-    await page
-      .getByTestId("llm-settings-save")
-      .evaluate((button) => (button as HTMLButtonElement).click());
+    await page.getByTestId("llm-settings-save").evaluate((button) => (button as HTMLButtonElement).click());
 
     await page.reload();
     await openLLMSettings(page);

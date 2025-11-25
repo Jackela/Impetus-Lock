@@ -152,11 +152,14 @@ export function createLockDecorationsPlugin(): Plugin {
 }
 
 /**
- * Guard set to prevent duplicate installs per EditorView instance.
- * WeakSet ensures HMR/remounts get their own installation while keeping
- * individual views idempotent.
+ * Guard flag to prevent race condition when applying lock decorations.
+ * Set to true once plugin is successfully installed.
+ *
+ * CRITICAL: This prevents the race condition where multiple parallel
+ * applyLockDecorations() calls check existingPlugins at nearly the same time,
+ * both see "no plugin found", and both try to add the plugin.
  */
-const installedViews = new WeakSet<EditorView>();
+let lockDecorationsInstalled = false;
 
 /**
  * Apply lock decorations plugin to existing EditorView.
@@ -180,7 +183,8 @@ const installedViews = new WeakSet<EditorView>();
  * ```
  */
 export function applyLockDecorations(view: EditorView): void {
-  if (installedViews.has(view)) {
+  // CRITICAL: Guard flag prevents race condition from multiple parallel calls
+  if (lockDecorationsInstalled) {
     return;
   }
 
@@ -191,11 +195,12 @@ export function applyLockDecorations(view: EditorView): void {
 
   if (hasLockPlugin) {
     // Plugin already in editor state, mark as installed
-    installedViews.add(view);
+    lockDecorationsInstalled = true;
     return;
   }
 
-  installedViews.add(view);
+  // Set guard flag IMMEDIATELY to block concurrent calls
+  lockDecorationsInstalled = true;
 
   const lockPlugin = createLockDecorationsPlugin();
 
