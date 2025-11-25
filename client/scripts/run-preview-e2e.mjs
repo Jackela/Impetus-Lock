@@ -111,7 +111,9 @@ async function main() {
     console.log("[preview-e2e] Waiting for preview server to become available...");
     const maxAttempts = Math.ceil(PREVIEW_READY_TIMEOUT_MS / 500);
     await waitForPreview(baseUrl, maxAttempts, 500);
-    console.log("[preview-e2e] Preview server is ready. Running Playwright against production bundle...");
+    console.log(
+      "[preview-e2e] Preview server is ready. Running Playwright against production bundle..."
+    );
     const env = {
       ...process.env,
       PLAYWRIGHT_BASE_URL: baseUrl,

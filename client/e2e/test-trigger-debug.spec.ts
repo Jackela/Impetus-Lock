@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForReactHydration, dismissWelcomeModal } from "./helpers/waitHelpers";
 
 /**
  * Debug test for manual trigger behavior
@@ -39,7 +40,8 @@ test.describe("Manual Trigger Debug", () => {
 
     // Navigate
     await page.goto("http://localhost:5173");
-    await page.waitForSelector(".app", { timeout: 10000 });
+    await waitForReactHydration(page);
+    await dismissWelcomeModal(page);
     console.log("✅ App loaded");
 
     // Switch to Muse mode

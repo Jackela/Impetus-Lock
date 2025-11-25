@@ -54,7 +54,8 @@ function createLockDecorations(doc: Node): DecorationSet {
     }
 
     const lockInfo = lockManager.getLockMetadata(metadata.lockId);
-    const source = metadata.source ?? lockInfo?.source ?? lockManager.getLockSource(metadata.lockId);
+    const source =
+      metadata.source ?? lockInfo?.source ?? lockManager.getLockSource(metadata.lockId);
 
     if (lockInfo?.shape === "block" || node.type.name === "blockquote") {
       decorations.push(
@@ -151,14 +152,11 @@ export function createLockDecorationsPlugin(): Plugin {
 }
 
 /**
- * Guard flag to prevent race condition when applying lock decorations.
- * Set to true once plugin is successfully installed.
- *
- * CRITICAL: This prevents the race condition where multiple parallel
- * applyLockDecorations() calls check existingPlugins at nearly the same time,
- * both see "no plugin found", and both try to add the plugin.
+ * Guard set to prevent duplicate installs per EditorView instance.
+ * WeakSet ensures HMR/remounts get their own installation while keeping
+ * individual views idempotent.
  */
-let lockDecorationsInstalled = false;
+const installedViews = new WeakSet<EditorView>();
 
 /**
  * Apply lock decorations plugin to existing EditorView.
@@ -182,26 +180,22 @@ let lockDecorationsInstalled = false;
  * ```
  */
 export function applyLockDecorations(view: EditorView): void {
-  // CRITICAL: Guard flag prevents race condition from multiple parallel calls
-  if (lockDecorationsInstalled) {
+  if (installedViews.has(view)) {
     return;
   }
 
   const existingPlugins = view.state.plugins;
 
   // Check if lock decorations plugin already exists in editor state
-  const hasLockPlugin = existingPlugins.some(
-    (plugin) => plugin.spec.key === lockDecorationsKey
-  );
+  const hasLockPlugin = existingPlugins.some((plugin) => plugin.spec.key === lockDecorationsKey);
 
   if (hasLockPlugin) {
     // Plugin already in editor state, mark as installed
-    lockDecorationsInstalled = true;
+    installedViews.add(view);
     return;
   }
 
-  // Set guard flag IMMEDIATELY to block concurrent calls
-  lockDecorationsInstalled = true;
+  installedViews.add(view);
 
   const lockPlugin = createLockDecorationsPlugin();
 

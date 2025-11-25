@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { emitTelemetry, emitLLMSelection, isTelemetryEnabled, setTelemetryEnabled } from "../telemetry";
+import {
+  emitTelemetry,
+  emitLLMSelection,
+  isTelemetryEnabled,
+  setTelemetryEnabled,
+} from "../telemetry";
 import { saveVaultConfig, setVaultMode, clearVault } from "../llmKeyVault";
 import { configureLogger, LogLevel } from "../../utils/logger";
 

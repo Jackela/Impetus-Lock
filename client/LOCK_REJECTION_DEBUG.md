@@ -25,11 +25,12 @@
 **Problem**: When lock rejection triggered, `AIActionType.REJECT` was set but never cleared, causing sensory feedback to persist indefinitely.
 
 **Fix Applied**:
+
 ```typescript
 const lockFilter = createLockTransactionFilter(lockManager, () => {
   setCurrentAction(AIActionType.REJECT);
   // Auto-clear after animation completes (matches ANIMATION_DURATION)
-  setTimeout(() => setCurrentAction(null), 1000);  // ✅ ADDED
+  setTimeout(() => setCurrentAction(null), 1000); // ✅ ADDED
 });
 ```
 
@@ -42,6 +43,7 @@ const lockFilter = createLockTransactionFilter(lockManager, () => {
 **Location**: `TransactionFilter.ts:79-93`
 
 **Problem**: Initial implementation scanned text content and used manual regex, but failed to detect locks because:
+
 1. `tr.doc.textContent` scanned the NEW document (after deletion)
 2. `textContent` doesn't include HTML comments
 3. Wrong traversal method (`nodesBetween` vs `descendants`)
@@ -60,7 +62,7 @@ if (docNode && docNode.descendants) {
     const lockId = extractLockId(node);
     if (lockId && !lockManager.hasLock(lockId)) {
       lockManager.applyLock(lockId);
-      console.log('[TransactionFilter] Auto-registered lock:', lockId);
+      console.log("[TransactionFilter] Auto-registered lock:", lockId);
     }
   });
 }
@@ -73,12 +75,14 @@ if (docNode && docNode.descendants) {
 ### Root Cause 3: Timing Race Condition ⚠️ UNRESOLVED
 
 **Evidence**:
+
 - LockDecorations tests: 4/4 passing ✅ (decorations applied correctly)
 - Lock rejection tests: 1/4 passing ⚠️ (deletion blocking fails)
 
 **Hypothesis**: The auto-lock detection in TransactionFilter runs **during** the transaction being filtered, potentially **after** the filter check.
 
 **Execution order suspected**:
+
 ```
 1. User presses Backspace → Transaction created
 2. filterTransaction called → Checks if locks affected
@@ -87,6 +91,7 @@ if (docNode && docNode.descendants) {
 ```
 
 **Supporting evidence**:
+
 - Tests insert locked content: `document.execCommand('insertText', '> AI <!-- lock:test_001 -->')`
 - Tests wait 500ms for decorations
 - Tests attempt deletion immediately after
@@ -97,15 +102,18 @@ if (docNode && docNode.descendants) {
 ## Files Modified
 
 ### ✅ EditorCore.tsx (Line 318)
+
 - Added auto-clear timer for REJECT action
 - Added auto-lock detection in dispatch override (lines 358-368)
 
 ### ✅ TransactionFilter.ts (Lines 17, 79-93, 126-133)
+
 - Imported `extractLockId` utility
 - Implemented auto-lock detection using `doc.descendants()`
 - Simplified lock checking logic
 
 ### 📖 Reference Files (No changes)
+
 - `LockDecorations.ts` - Working pattern for lock detection
 - `locked-content-styling.spec.ts` - 4/4 passing tests
 - `lock-rejection-feedback.spec.ts` - 1/4 passing tests
@@ -115,6 +123,7 @@ if (docNode && docNode.descendants) {
 ## Diagnostic Findings
 
 ### What Works ✅
+
 1. Lock decorations (visual styling) - 4/4 tests passing
 2. `extractLockId()` utility successfully finds locks in document
 3. LockManager correctly tracks registered locks
@@ -122,12 +131,15 @@ if (docNode && docNode.descendants) {
 5. Code quality gates pass (ESLint, TypeScript)
 
 ### What Doesn't Work ❌
+
 1. Transaction filter blocking deletions of locked content
 2. Sensory feedback triggering on lock rejection
 3. Tests consistently fail despite auto-detection implementation
 
 ### Key Insight 💡
+
 **LockDecorations and TransactionFilter use identical lock detection patterns, but:**
+
 - LockDecorations runs **after** document changes (decorations are reactive)
 - TransactionFilter runs **before** document changes (preventive filtering)
 
@@ -153,7 +165,7 @@ view.dispatch = (tr) => {
     detectedLocks.forEach((lockId) => {
       if (!lockManager.hasLock(lockId)) {
         lockManager.applyLock(lockId);
-        console.log('[EditorCore] Pre-registered lock:', lockId);
+        console.log("[EditorCore] Pre-registered lock:", lockId);
       }
     });
   }
@@ -166,11 +178,13 @@ view.dispatch = (tr) => {
 ```
 
 **Pros**:
+
 - Locks registered before transaction filter runs
 - Guarantees correct execution order
 - Minimal code changes
 
 **Cons**:
+
 - Lock detection runs on every transaction (small performance impact)
 
 ---
@@ -184,16 +198,18 @@ Modify tests to manually register locks before attempting deletion:
 await page.evaluate(() => {
   const lockManager = (window as any).lockManager;
   if (lockManager) {
-    lockManager.applyLock('test_lock_reject_001');
+    lockManager.applyLock("test_lock_reject_001");
   }
 });
 ```
 
 **Pros**:
+
 - Simpler fix
 - Tests explicitly control state
 
 **Cons**:
+
 - Doesn't fix underlying timing issue
 - Real users would have the same problem
 - Not a production-ready solution
@@ -210,9 +226,11 @@ await page.waitForTimeout(2000);
 ```
 
 **Pros**:
+
 - Easiest fix
 
 **Cons**:
+
 - Flaky tests (timing-dependent)
 - Doesn't solve root cause
 - Poor practice
@@ -224,6 +242,7 @@ await page.waitForTimeout(2000);
 **Implement Option A**: Move lock detection to run **before** transaction filtering by enhancing the EditorCore dispatch override.
 
 **Rationale**:
+
 1. ✅ Guarantees correct execution order
 2. ✅ Fixes both tests and production behavior
 3. ✅ Aligns with how locks are currently detected (auto-registration pattern already exists)
@@ -231,6 +250,7 @@ await page.waitForTimeout(2000);
 5. ✅ Maintains constitutional compliance (Article I: Simplicity)
 
 **Implementation Plan**:
+
 1. Move lock detection from TransactionFilter to EditorCore dispatch (before `originalDispatchTransaction(tr)`)
 2. Keep TransactionFilter focused on filtering only (SRP compliance)
 3. Re-run E2E tests to validate
@@ -241,6 +261,7 @@ await page.waitForTimeout(2000);
 ## Quality Gates
 
 **Current Status**:
+
 - ✅ ESLint: 0 errors
 - ✅ TypeScript: 0 errors
 - ✅ Prettier: Formatted
@@ -248,6 +269,7 @@ await page.waitForTimeout(2000);
 - ⚠️ E2E tests: 1/4 passing (lock-rejection-feedback.spec.ts)
 
 **After implementing Option A, expect**:
+
 - ✅ E2E tests: 4/4 passing
 - ✅ All quality gates green
 - ✅ Ready for PR
@@ -276,12 +298,14 @@ await page.waitForTimeout(2000);
 ### Current Investigation:
 
 **Added extensive console logging** to both EditorCore and TransactionFilter to trace:
+
 - When locks are registered
 - What TransactionFilter sees when checking transactions
 - Whether `lockManager.hasLock()` returns true
 - What nodes are scanned during deletion
 
 **Files with debug logging**:
+
 - `EditorCore.tsx:363-369`: Auto-lock detection with `extractLockId()`
 - `TransactionFilter.ts:82-149`: Detailed transaction checking logs
 - `EditorCore.tsx:314-316`: Exposed `window.lockManager` for testing
@@ -289,6 +313,7 @@ await page.waitForTimeout(2000);
 ### Hypothesis:
 
 The issue may not be lock detection timing, but rather:
+
 1. **Test insertion method**: Tests use `document.execCommand('insertText')` which may not trigger ProseMirror's markdown parser correctly
 2. **Lock marker format mismatch**: HTML comments might not be stored in ProseMirror nodes as expected
 3. **TransactionFilter execution order**: Filter may run before dispatch override registers locks
@@ -296,6 +321,7 @@ The issue may not be lock detection timing, but rather:
 ### Next Debugging Steps:
 
 **Option C: Manual Browser Testing** (Recommended)
+
 1. Open dev server manually
 2. Insert locked content via `document.execCommand` in browser console
 3. Check console logs to see what EditorCore and TransactionFilter output
@@ -304,6 +330,7 @@ The issue may not be lock detection timing, but rather:
 
 **Option D: Refactor Test Insertion Method**
 Instead of `document.execCommand('insertText', false, markdown)`, use:
+
 ```javascript
 // Directly manipulate editor state via Milkdown API
 await page.evaluate(() => {
@@ -336,6 +363,7 @@ ContentInjector uses `data-lock-id` attributes (line 82), not HTML comments. Tes
 **Summary**: Implemented comprehensive fixes including Option A (early lock detection), but tests still fail even with manual lock registration.
 
 **Status**:
+
 - ✅ EditorCore auto-lock detection implemented
 - ✅ TransactionFilter checking logic intact
 - ✅ Manual lock registration added

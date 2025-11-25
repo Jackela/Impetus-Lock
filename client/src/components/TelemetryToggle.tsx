@@ -1,17 +1,10 @@
-import { useState } from "react";
-import { isTelemetryEnabled, setTelemetryEnabled } from "../services/telemetry";
+import { useTelemetry } from "../hooks/useTelemetry";
 
 export function TelemetryToggle() {
-  const [enabled, setEnabled] = useState(isTelemetryEnabled());
-
-  const handleChange = () => {
-    const next = !enabled;
-    setEnabled(next);
-    setTelemetryEnabled(next);
-  };
+  const { enabled, toggleTelemetry } = useTelemetry();
 
   return (
-    <button onClick={handleChange} aria-pressed={enabled} className="telemetry-toggle">
+    <button onClick={toggleTelemetry} aria-pressed={enabled} className="telemetry-toggle">
       {enabled ? "Telemetry On" : "Telemetry Off"}
     </button>
   );

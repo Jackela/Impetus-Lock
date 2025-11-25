@@ -2,10 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const reporters =
   process.env.CI === "true" || process.env.CI === "1"
-    ? [
-        ["list"],
-        ["html", { open: "never" }],
-      ]
+    ? [["list"], ["html", { open: "never" }]]
     : "html";
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";

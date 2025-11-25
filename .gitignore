@@ -4,6 +4,10 @@
 .env
 .env.local
 .env.*.local
+.envrc
+.python-version
+.tool-versions
+.direnv/
 .secrets
 
 # OS
@@ -49,6 +53,7 @@ temp/
 node_modules/
 *.tsbuildinfo
 coverage/
+.vitest/
 
 # Python (backend)
 __pycache__/
@@ -58,8 +63,13 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 server/.hypothesis/
 server/.venv.windows/
+.coverage
+.coverage.*
+htmlcov/
 
 # Test results
 test-results/

@@ -401,6 +401,19 @@ cd server && poetry run pytest -v
 cd client && npm run test -- --run
 ```
 
+- ### Local CI via Act
+
+  1. Install [Act](https://github.com/nektos/act) and Docker.
+  2. Sync and run:
+
+     ```bash
+     ./scripts/act-sync.sh act -j e2e -W .github/workflows/e2e.yml --artifact-server-path /tmp/act-artifacts
+     ```
+
+     Windows users can run `pwsh ./scripts/act-sync.ps1 -Command "act -j e2e ..."` (forwards to WSL).
+  3. The helper mirrors the repo to `$HOME/impetus-lock-act`, exports `ACT_WORKSPACE_BASE` / `ACT_CACHE_DIR`, and stops any local `impetus-lock-postgres` container to prevent port conflicts.
+  4. Logs land in `/tmp/act-e2e.log` by default; the latest run is also copied to `test-results/act-e2e.log` (ignored in git) so tail output can be shared when needed.
+
 ## Troubleshooting
 
 ### Common Issues

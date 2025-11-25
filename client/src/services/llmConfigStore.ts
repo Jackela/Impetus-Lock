@@ -8,10 +8,33 @@ export interface LLMConfig {
 
 const STORAGE_KEY = "impetus.llmConfig";
 
-export const PROVIDER_METADATA: Record<LLMProviderName, { label: string; defaultModel: string }> = {
-  openai: { label: "OpenAI", defaultModel: "gpt-4o-mini" },
-  anthropic: { label: "Anthropic Claude", defaultModel: "claude-3-5-haiku-latest" },
-  gemini: { label: "Google Gemini", defaultModel: "gemini-2.0-flash-lite" },
+export const PROVIDER_METADATA: Record<
+  LLMProviderName,
+  {
+    label: string;
+    defaultModel: string;
+    docUrl: string;
+    pricingHint: string;
+  }
+> = {
+  openai: {
+    label: "OpenAI",
+    defaultModel: "gpt-4o-mini",
+    docUrl: "https://platform.openai.com/docs/overview",
+    pricingHint: "Pay-as-you-go (~$5 per 1M input tokens)",
+  },
+  anthropic: {
+    label: "Anthropic Claude",
+    defaultModel: "claude-3-5-haiku-latest",
+    docUrl: "https://docs.anthropic.com/claude/docs/intro-to-the-api",
+    pricingHint: "Usage-based (~$3 per 1M input tokens)",
+  },
+  gemini: {
+    label: "Google Gemini",
+    defaultModel: "gemini-2.0-flash-lite",
+    docUrl: "https://ai.google.dev/gemini-api/docs",
+    pricingHint: "Generous free tier then per-token",
+  },
 };
 
 function safeWindow(): Window | null {
@@ -86,6 +109,14 @@ export function getRecommendedModel(provider: LLMProviderName): string {
 
 export function getProviderLabel(provider: LLMProviderName): string {
   return PROVIDER_METADATA[provider].label;
+}
+
+export function getProviderDocUrl(provider: LLMProviderName): string {
+  return PROVIDER_METADATA[provider].docUrl;
+}
+
+export function getProviderPricingHint(provider: LLMProviderName): string {
+  return PROVIDER_METADATA[provider].pricingHint;
 }
 
 export const getStoredLLMConfig = loadLLMConfig;

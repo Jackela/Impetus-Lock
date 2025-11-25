@@ -10,9 +10,7 @@ export function OnboardingChecklist() {
   const [completed, setCompleted] = useState<boolean[]>(steps.map(() => false));
 
   const toggle = (index: number) => {
-    setCompleted((prev) =>
-      prev.map((value, i) => (i === index ? !value : value))
-    );
+    setCompleted((prev) => prev.map((value, i) => (i === index ? !value : value)));
   };
 
   return (
@@ -22,11 +20,7 @@ export function OnboardingChecklist() {
         {steps.map((step, index) => (
           <li key={step}>
             <label>
-              <input
-                type="checkbox"
-                checked={completed[index]}
-                onChange={() => toggle(index)}
-              />
+              <input type="checkbox" checked={completed[index]} onChange={() => toggle(index)} />
               {step}
             </label>
           </li>

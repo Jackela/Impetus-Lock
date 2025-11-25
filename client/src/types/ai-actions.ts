@@ -25,4 +25,7 @@ export enum AIActionType {
 
   /** API failure: Display error feedback when AI actions fail (P3 US3) */
   ERROR = "error",
+
+  /** Loki manual chaos trigger (development tooling) */
+  CHAOS = "chaos",
 }

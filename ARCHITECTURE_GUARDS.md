@@ -6,6 +6,14 @@
 
 ---
 
+## 📡 Observability Guardrails
+
+- Backend logging configuration lives in `server/server/infrastructure/logging/json_formatter.py`; API/routes must call `setup_json_logging` so correlation IDs and redaction rules remain consistent.
+- Metrics/tracing helpers in `server/server/infrastructure/observability/` may only be consumed from the API/application layers; domain code stays observability-agnostic to preserve clean architecture boundaries.
+- Frontend telemetry flows must go through the `Telemetry` logger/service so BYOK secrets are never serialized, and must honor the opt-in toggle stored in localStorage.
+
+---
+
 ## 🎯 目标
 
 防止架构腐化 (Architecture Decay) 通过**自动化检测违反分层架构的导入**。

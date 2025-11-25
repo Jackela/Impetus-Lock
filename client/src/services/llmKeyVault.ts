@@ -171,6 +171,13 @@ export async function setVaultMode(mode: VaultMode): Promise<void> {
   }
 
   const nextPref: VaultPreferences = { ...pref, mode };
+  if (mode === "session") {
+    // Session mode must not retain persisted secrets
+    window.localStorage.removeItem(LOCAL_KEY);
+    window.localStorage.removeItem(ENCRYPTED_KEY);
+    delete nextPref.updatedAt;
+    nextPref.hasPassphrase = false;
+  }
   if (mode === "encrypted") {
     nextPref.hasPassphrase = Boolean(window.localStorage.getItem(ENCRYPTED_KEY));
     encryptionKey = null;
@@ -181,9 +188,7 @@ export async function setVaultMode(mode: VaultMode): Promise<void> {
     encryptionKey = null;
   }
 
-  if (mode !== "session") {
-    cache = null;
-  }
+  cache = null;
 
   writePreferences(nextPref);
   notify();

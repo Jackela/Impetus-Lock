@@ -32,14 +32,13 @@ test.describe("Phase 5 Quick Check", () => {
     if (buttonExists > 0) {
       const isDisabled = await manualButton.isDisabled();
       console.log(`✅ Manual button found - disabled: ${isDisabled}`);
-
-      // Try switching to Muse mode
+    } else {
+      console.log("ℹ️ Manual trigger hidden until Muse mode");
       await modeSelector.selectOption("muse");
       await page.waitForTimeout(500);
+      await expect(manualButton).toBeVisible({ timeout: 5000 });
       const isDisabledInMuse = await manualButton.isDisabled();
       console.log(`  In Muse mode - disabled: ${isDisabledInMuse}`);
-    } else {
-      console.log("❌ Manual trigger button NOT FOUND");
     }
 
     // Check for sensory feedback component
