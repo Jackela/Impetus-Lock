@@ -1,12 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { TelemetryToggle } from "../TelemetryToggle";
-import { setTelemetryEnabled } from "../../hooks/useTelemetry";
 
 describe("TelemetryToggle", () => {
   beforeEach(() => {
     window.localStorage.clear();
-    setTelemetryEnabled(false);
   });
 
   it("shows current telemetry state and toggles on click", () => {
