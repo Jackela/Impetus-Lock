@@ -27,16 +27,24 @@ class DebugLLMProvider(LLMProvider):
         selection_to: int | None = None,
     ) -> InterventionResponse:
         cursor = selection_to or selection_from or len(context)
-        snippet = context[max(0, cursor - 40) : cursor] or "继续写下去。"
+        snippet = context[max(0, cursor - 80) : cursor].strip() or "让故事更紧张。"
 
-        content = f"[debug:{mode}] {snippet}" if snippet else "[debug] 写点新东西。"
+        # Use readable, non-debug phrasing so UI resembles real output
+        if mode == "muse":
+            content = f"{snippet}（继续深入这个抉择。）"
+        else:
+            content = f"{snippet} 试着写出意外的转折。"
+
+        # Provide unique lock ids to avoid reusing the same debug lock
+        issued = datetime.now(UTC)
+        lock_id = f"lock_debug_{mode}_{int(issued.timestamp() * 1000)}"
 
         return InterventionResponse(
             action="provoke",
             content=content,
-            lock_id="lock_debug",
+            lock_id=lock_id,
             anchor=AnchorPos(from_=cursor),
             action_id="act_debug",
-            issued_at=datetime.now(UTC),
+            issued_at=issued,
             source=mode,
         )

@@ -216,6 +216,19 @@ describe("extractLockAttributes - HTML Comment Fallback (Legacy)", () => {
     expect(result?.lockId).toBe("lock_comment_123");
   });
 
+  it("should expose commentRange when HTML comment is present", () => {
+    const comment = "<!-- lock:lock_comment_range source:muse -->";
+    const text = `Text ${comment} tail`;
+    const node = createMockNode({}, text);
+
+    const result = extractLockAttributes(node);
+
+    expect(result?.lockId).toBe("lock_comment_range");
+    expect(result?.commentRange).toBeDefined();
+    expect(result?.commentRange?.from).toBe(text.indexOf("<!--"));
+    expect(result?.commentRange?.to).toBe(text.indexOf("<!--") + comment.length);
+  });
+
   /**
    * Test: extractLockAttributes should extract source from HTML comment.
    *

@@ -17,15 +17,13 @@ The editor MUST apply provoke, rewrite, and delete instructions atomically using
 - **THEN** the editor MUST delete the targeted text without adding lock metadata and mark the transaction as non-undoable.
 
 ### Requirement: Vibe Styling Reflects Intervention Source
-Locked content MUST visually communicate whether Muse or Loki performed the intervention through color/icon cues instead of textual prefixes.
+Locked content MUST visually communicate whether Muse or Loki performed the intervention through color/icon cues instead of textual prefixes, and MUST NOT display debug markers or raw lock comments.
 
-#### Scenario: Muse block styling
-- **WHEN** a provoke/rewrite originates from Muse
-- **THEN** the inserted/locked nodes MUST have a `.source-muse` class with the documented palette/iconography.
-
-#### Scenario: Loki block styling
-- **WHEN** a provoke/rewrite originates from Loki
-- **THEN** the locked nodes MUST have `.source-loki` styling to signal chaos interventions.
+#### Scenario: Source Styling Without Debug Text
+- **WHEN** a provoke/rewrite originates from Muse or Loki
+- **THEN** the locked nodes SHALL render with `.source-muse` / `.source-loki` styling
+- **AND** SHALL NOT include visible `[debug:*]` prefixes or `<!-- lock:... -->` comments in user-facing text
+- **AND** lock_id/source SHALL remain available via attributes for enforcement and testing.
 
 ### Requirement: UI Tests Cover Agentic Actions
 Automated tests MUST cover provoke/rewrite/delete rendering, lock enforcement, and vibe styling for both modes.
@@ -63,4 +61,13 @@ Intervention requests SHALL attach the locally stored provider/model/key via HTT
 - **WHEN** they confirm the action
 - **THEN** local storage SHALL delete the provider/model/apiKey trio
 - **AND** subsequent API calls SHALL omit override headers and rely on server defaults (if any), prompting again if unavailable.
+
+### Requirement: Loki Chaos Cooldown
+The editor SHALL throttle Loki chaos triggers (manual and timer-driven) to prevent screen-flooding while preserving randomness.
+
+#### Scenario: Loki triggers respect cooldown
+- **GIVEN** Loki mode is active
+- **WHEN** a Loki trigger fires (manual button or timer)
+- **AND** another trigger occurs within the configured cooldown window
+- **THEN** the subsequent trigger SHALL be skipped (or deferred) so that no additional locked blocks are injected during the cooldown period.
 

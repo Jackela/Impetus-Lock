@@ -111,6 +111,7 @@ export interface LockAttributes {
   lockId: string;
   source?: AgentSource;
   contentLength?: number;
+  commentRange?: { from: number; to: number };
 }
 
 /**
@@ -131,6 +132,7 @@ export function extractLockAttributes(node: Node | null | undefined): LockAttrib
   let lockId: string | undefined;
   let source: AgentSource | undefined;
   let contentLength: number | undefined;
+  let commentRange: { from: number; to: number } | undefined;
 
   if (attrs) {
     const dataLockId = attrs["data-lock-id"];
@@ -159,6 +161,10 @@ export function extractLockAttributes(node: Node | null | undefined): LockAttrib
           source = sourceRaw as AgentSource;
         }
         contentLength = match.index;
+        commentRange = {
+          from: match.index,
+          to: match.index + match[0].length,
+        };
       }
     }
   }
@@ -171,7 +177,7 @@ export function extractLockAttributes(node: Node | null | undefined): LockAttrib
     contentLength = node.nodeSize;
   }
 
-  return lockId ? { lockId, source, contentLength } : null;
+  return lockId ? { lockId, source, contentLength, commentRange } : null;
 }
 
 /**

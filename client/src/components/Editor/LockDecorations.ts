@@ -80,6 +80,17 @@ function createLockDecorations(doc: Node): DecorationSet {
       const from = pos + 1;
       const to = from + metadata.contentLength;
       decorations.push(Decoration.inline(from, to, attrs));
+      // Hide the trailing HTML comment used for persistence so users don't see it
+      if (metadata.commentRange) {
+        const commentFrom = from + metadata.commentRange.from;
+        const commentTo = from + metadata.commentRange.to;
+        decorations.push(
+          Decoration.inline(commentFrom, commentTo, {
+            class: "locked-comment-hidden",
+            "data-lock-id": metadata.lockId,
+          })
+        );
+      }
       return;
     }
 
