@@ -152,14 +152,13 @@ export function createLockDecorationsPlugin(): Plugin {
 }
 
 /**
- * Guard flag to prevent race condition when applying lock decorations.
- * Set to true once plugin is successfully installed.
+ * Track which EditorView instances have had the plugin installed.
  *
  * CRITICAL: This prevents the race condition where multiple parallel
  * applyLockDecorations() calls check existingPlugins at nearly the same time,
  * both see "no plugin found", and both try to add the plugin.
  */
-let lockDecorationsInstalled = false;
+const lockDecorationsInstalled = new WeakSet<EditorView>();
 
 /**
  * Apply lock decorations plugin to existing EditorView.
@@ -184,7 +183,7 @@ let lockDecorationsInstalled = false;
  */
 export function applyLockDecorations(view: EditorView): void {
   // CRITICAL: Guard flag prevents race condition from multiple parallel calls
-  if (lockDecorationsInstalled) {
+  if (lockDecorationsInstalled.has(view)) {
     return;
   }
 
@@ -195,12 +194,12 @@ export function applyLockDecorations(view: EditorView): void {
 
   if (hasLockPlugin) {
     // Plugin already in editor state, mark as installed
-    lockDecorationsInstalled = true;
+    lockDecorationsInstalled.add(view);
     return;
   }
 
-  // Set guard flag IMMEDIATELY to block concurrent calls
-  lockDecorationsInstalled = true;
+  // Set guard flag IMMEDIATELY to block concurrent calls for this view
+  lockDecorationsInstalled.add(view);
 
   const lockPlugin = createLockDecorationsPlugin();
 

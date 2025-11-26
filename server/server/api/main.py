@@ -4,10 +4,11 @@ import logging
 import os
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -102,8 +103,12 @@ def health() -> HealthResponse:
         service="impetus-lock",
         version="0.1.0",
     )
+
+
 @app.middleware("http")
-async def request_logging_middleware(request: Request, call_next):
+async def request_logging_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     """Log every HTTP request with duration and LLM metadata."""
 
     request_id = uuid.uuid4().hex
