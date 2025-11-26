@@ -229,6 +229,12 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     const editor = editorRef.current;
     if (!editor) return;
 
+    const now = Date.now();
+    if (now - lastLokiTriggerRef.current < LOKI_COOLDOWN_MS) {
+      return;
+    }
+    lastLokiTriggerRef.current = now;
+
     try {
       const view = editor.action((ctx) => ctx.get(editorViewCtx));
       const fullText = view.state.doc.textContent;
@@ -347,6 +353,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   useEffect(() => {
     onInputRef.current = onInput;
   }, [onInput]);
+
+  const lastLokiTriggerRef = useRef(0);
+  const LOKI_COOLDOWN_MS = 4000;
 
   // Random chaos timer (Loki mode)
   useLokiTimer({

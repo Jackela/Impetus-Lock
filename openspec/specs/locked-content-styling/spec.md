@@ -74,26 +74,17 @@ User-authored content SHALL remain unstyled (no borders, backgrounds, or lock ic
 ---
 
 ### Requirement: ProseMirror Decoration Integration
+Locked content styling SHALL be implemented using ProseMirror decorations to avoid modifying document state, and lock persistence markers (e.g., HTML comments) SHALL be hidden from user-facing text while still used for lock_id detection.
 
-Locked content styling SHALL be implemented using ProseMirror decorations to avoid modifying document state.
+#### Scenario: Decorations Hide Lock Comments
+- **GIVEN** the editor document contains Markdown comments with lock IDs: `<!-- lock:abc123 source:muse -->`
+- **WHEN** EditorCore renders the document
+- **THEN** decorations SHALL apply `.locked-content` styling to the visible text only
+- **AND** the HTML comment range SHALL be hidden (not rendered in the viewport)
+- **AND** `data-lock-id` / `data-source` attributes SHALL remain for testing and styling.
 
-**Rationale**: Decorations are presentation-layer only (do not alter editor content). Ensures lock styling can be toggled without affecting document data.
-
-#### Scenario: Decorations Applied Based on Lock IDs
-
-**Given** the editor document contains Markdown comments with lock IDs: `<!-- lock:abc123 -->`
-**When** EditorCore renders the document
-**Then** ProseMirror decorations SHALL:
-- Parse lock IDs from document content
-- Apply lock styling decorations to ranges between lock start/end markers
-- Update decorations when document changes (e.g., new locked content added)
-
-**Acceptance Criteria**:
-- [ ] Decorations use `Decoration.inline()` or `Decoration.node()` API
-- [ ] Styling added via CSS classes (`.locked-content`)
-- [ ] Lock ID extraction utility in `prosemirror-helpers.ts`
-- [ ] Unit tests validate lock ID extraction logic
-- [ ] Decorations update when document content changes
-
----
+#### Scenario: Decorations Update on New Locks
+- **GIVEN** new locked content is inserted with lock attributes but no visible comment text
+- **WHEN** the document changes
+- **THEN** decorations SHALL re-scan for lock_id via attrs or hidden comments and re-apply styling without exposing the comment text.
 

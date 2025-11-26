@@ -27,12 +27,12 @@ Loki mode MUST prevent destructive delete/rewrite operations when the available 
 - **THEN** the backend MUST override the action to `provoke` and synthesize safe content plus lock metadata.
 
 ### Requirement: Prompt Output Is Prefix-Free JSON
-Muse/Loki prompts MUST instruct the LLM to emit JSON-only payloads without `> [AI施压 ...]` prefixes so UI can own the vibe styling.
+Muse/Loki prompts MUST instruct the LLM to emit JSON-only payloads without `[debug:*]` prefixes or inline lock comments so the UI can own the vibe styling.
 
-#### Scenario: Prompt validation
-- **GIVEN** updated system+user prompts for Muse and Loki
+#### Scenario: Debug-free payload
+- **GIVEN** a Muse or Loki request (including the debug provider)
 - **WHEN** a completion is generated
-- **THEN** the payload MUST be parseable JSON matching the schema in this change (action + optional content), leaving presentation details to the client.
+- **THEN** the payload content SHALL omit debug prefixes/suffixes and HTML comments, returning only human-readable text plus structured fields (action, lock_id, anchor, source).
 
 ### Requirement: Backend Accepts Per-Request LLM Provider Overrides
 The intervention API SHALL accept optional BYOK overrides (provider, model, API key) via HTTP headers and route each request to the requested vendor when valid.
@@ -64,4 +64,12 @@ The service layer SHALL centralize provider construction, enforce allowlisted mo
 - **WHEN** the intervention route runs
 - **THEN** it SHALL respond 503 with `{ "code": "llm_not_configured" }`
 - **AND** advise the client to prompt the user for BYOK.
+
+### Requirement: Intervention Lock IDs Are Unique Per Response
+Intervention responses MUST issue unique lock IDs per action to avoid reusing the same lock identifier across multiple triggers.
+
+#### Scenario: Distinct lock ids per trigger
+- **WHEN** consecutive Muse or Loki interventions are generated (including via debug provider)
+- **THEN** each response SHALL carry a distinct `lock_id`
+- **AND** the `lock_id` SHALL be suitable for persistence and client-side enforcement without collisions.
 
