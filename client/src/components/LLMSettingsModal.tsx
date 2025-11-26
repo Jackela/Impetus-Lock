@@ -6,12 +6,7 @@ import {
   getLLMProviderPricing,
   getLLMProviderOptions,
 } from "../hooks/useLLMConfig";
-import type {
-  LLMConfig,
-  LLMProviderName,
-  VaultMetadata,
-  VaultMode,
-} from "../hooks/useLLMConfig";
+import type { LLMConfig, LLMProviderName, VaultMetadata, VaultMode } from "../hooks/useLLMConfig";
 import { useTelemetry } from "../hooks/useTelemetry";
 import "./LLMSettingsModal.css";
 
@@ -64,10 +59,7 @@ export function LLMSettingsModal({
     setUnlockError(null);
   }, [open, config?.provider, config?.model, config?.apiKey, storageMode]);
 
-  const providerOptions = useMemo(
-    () => getLLMProviderOptions(),
-    []
-  );
+  const providerOptions = useMemo(() => getLLMProviderOptions(), []);
 
   if (!open) return null;
 
@@ -166,7 +158,12 @@ export function LLMSettingsModal({
             <h2>LLM Settings</h2>
             <p>Keys are stored only in this browser and sent with each Muse/Loki request.</p>
           </div>
-          <button type="button" className="llm-settings__close" onClick={onClose} aria-label="Close">
+          <button
+            type="button"
+            className="llm-settings__close"
+            onClick={onClose}
+            aria-label="Close"
+          >
             ×
           </button>
         </header>
@@ -175,18 +172,21 @@ export function LLMSettingsModal({
           <div className="llm-settings__tips">
             <strong>How this works</strong>
             <p>
-              We send three HTTPS headers on each Muse/Loki call: provider, model, and your API key. Keys stay
-              in this browser only and are never logged.
+              We send three HTTPS headers on each Muse/Loki call: provider, model, and your API key.
+              Keys stay in this browser only and are never logged.
             </p>
             <p>
-              Need a key? Read the provider guide below and follow the onboarding checklist on the left before
-              triggering Muse/Loki.
+              Need a key? Read the provider guide below and follow the onboarding checklist on the
+              left before triggering Muse/Loki.
             </p>
             <p>
               Storage mode: <strong>{modeChoice}</strong>
-              {metadata?.updatedAt && ` • Last saved ${new Date(metadata.updatedAt).toLocaleString()}`}
+              {metadata?.updatedAt &&
+                ` • Last saved ${new Date(metadata.updatedAt).toLocaleString()}`}
             </p>
-            {modeChoice === "session" && <p>Session mode clears data when you leave or stay idle for a few minutes.</p>}
+            {modeChoice === "session" && (
+              <p>Session mode clears data when you leave or stay idle for a few minutes.</p>
+            )}
             {modeChoice === "encrypted" && (
               <p>
                 {metadata?.hasPassphrase
@@ -299,7 +299,12 @@ export function LLMSettingsModal({
                 </small>
               )}
               {requiresUnlock && (
-                <button type="button" className="secondary" onClick={handleUnlock} disabled={!passphrase}>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={handleUnlock}
+                  disabled={!passphrase}
+                >
                   Unlock
                 </button>
               )}
@@ -308,7 +313,8 @@ export function LLMSettingsModal({
           )}
 
           <div className="llm-settings__hint">
-            Need an API key? Visit {getLLMProviderLabel(provider)} docs for latest pricing and quotas.
+            Need an API key? Visit {getLLMProviderLabel(provider)} docs for latest pricing and
+            quotas.
           </div>
         </div>
 

@@ -8,12 +8,15 @@ export interface LLMConfig {
 
 const STORAGE_KEY = "impetus.llmConfig";
 
-export const PROVIDER_METADATA: Record<LLMProviderName, {
-  label: string;
-  defaultModel: string;
-  docUrl: string;
-  pricingHint: string;
-}> = {
+export const PROVIDER_METADATA: Record<
+  LLMProviderName,
+  {
+    label: string;
+    defaultModel: string;
+    docUrl: string;
+    pricingHint: string;
+  }
+> = {
   openai: {
     label: "OpenAI",
     defaultModel: "gpt-4o-mini",

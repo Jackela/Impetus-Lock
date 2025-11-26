@@ -94,7 +94,9 @@ test.describe("LLM Settings", () => {
     await openLLMSettings(page);
     await expect(page.getByTestId("llm-key-input")).toHaveValue("");
     await page.getByTestId("llm-key-input").fill("sk-session-key-2");
-    await page.getByTestId("llm-settings-save").evaluate((button) => (button as HTMLButtonElement).click());
+    await page
+      .getByTestId("llm-settings-save")
+      .evaluate((button) => (button as HTMLButtonElement).click());
 
     await page.reload();
     await openLLMSettings(page);
