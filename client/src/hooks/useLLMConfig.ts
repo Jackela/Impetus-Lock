@@ -13,11 +13,11 @@ import {
   subscribeVault,
 } from "../services/llmKeyVault";
 import {
-  PROVIDER_METADATA,
   getProviderLabel,
   getRecommendedModel,
   getProviderDocUrl,
   getProviderPricingHint,
+  PROVIDER_METADATA,
 } from "../services/llmConfigStore";
 import type { VaultMetadata, VaultMode } from "../services/llmKeyVault";
 import type { LLMConfig, LLMProviderName } from "../services/llmConfigStore";
@@ -109,3 +109,17 @@ export function getLLMProviderDocs(provider: LLMProviderName): string {
 export function getLLMProviderPricing(provider: LLMProviderName): string {
   return getProviderPricingHint(provider);
 }
+
+export function getLLMProviderOptions(): Array<{
+  value: LLMProviderName;
+  label: string;
+  helper: string;
+}> {
+  return Object.entries(PROVIDER_METADATA).map(([value, meta]) => ({
+    value: value as LLMProviderName,
+    label: meta.label,
+    helper: meta.defaultModel,
+  }));
+}
+
+export type { VaultMetadata, VaultMode };

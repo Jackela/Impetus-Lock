@@ -63,16 +63,16 @@ export function TimerIndicator({ progress, visible, remainingTime }: TimerIndica
   const normalizedProgress = Math.min(Math.max(progress, 0), 100);
 
   return (
-    <div className="timer-indicator" aria-live="polite">
-      <div
-        className="timer-indicator__fill"
-        role="progressbar"
-        aria-label={`STUCK timer: ${remainingTime} seconds remaining`}
-        aria-valuenow={Math.round(normalizedProgress)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        style={{ width: `${normalizedProgress}%` }}
-      />
+    <div
+      className="timer-indicator"
+      role="progressbar"
+      aria-live="polite"
+      aria-label={`STUCK timer: ${remainingTime} seconds remaining`}
+      aria-valuenow={Math.round(normalizedProgress)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <div className="timer-indicator__fill" style={{ width: `${normalizedProgress}%` }} />
       <span className="timer-indicator__count" aria-hidden="true">
         {remainingTime}s
       </span>

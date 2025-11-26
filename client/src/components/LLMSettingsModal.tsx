@@ -4,11 +4,15 @@ import {
   getLLMRecommendedModel,
   getLLMProviderDocs,
   getLLMProviderPricing,
+  getLLMProviderOptions,
 } from "../hooks/useLLMConfig";
-import { PROVIDER_METADATA } from "../services/llmConfigStore";
-import type { LLMConfig, LLMProviderName } from "../hooks/useLLMConfig";
-import type { VaultMode, VaultMetadata } from "../services/llmKeyVault";
-import { emitTelemetry } from "../services/telemetry";
+import type {
+  LLMConfig,
+  LLMProviderName,
+  VaultMetadata,
+  VaultMode,
+} from "../hooks/useLLMConfig";
+import { useTelemetry } from "../hooks/useTelemetry";
 import "./LLMSettingsModal.css";
 
 interface LLMSettingsModalProps {
@@ -38,6 +42,7 @@ export function LLMSettingsModal({
   onLock,
   metadata,
 }: LLMSettingsModalProps) {
+  const { emitTelemetry } = useTelemetry();
   const [provider, setProvider] = useState<LLMProviderName>(config?.provider ?? "openai");
   const [model, setModel] = useState<string>(config?.model ?? getLLMRecommendedModel("openai"));
   const [apiKey, setApiKey] = useState<string>(config?.apiKey ?? "");
@@ -60,12 +65,7 @@ export function LLMSettingsModal({
   }, [open, config?.provider, config?.model, config?.apiKey, storageMode]);
 
   const providerOptions = useMemo(
-    () =>
-      Object.entries(PROVIDER_METADATA).map(([value, meta]) => ({
-        value: value as LLMProviderName,
-        label: meta.label,
-        helper: meta.defaultModel,
-      })),
+    () => getLLMProviderOptions(),
     []
   );
 
