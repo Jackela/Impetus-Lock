@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
 import { TelemetryToggle } from "../TelemetryToggle";
-import { setTelemetryEnabled } from "../../services/telemetry";
+import { setTelemetryEnabled } from "../../hooks/useTelemetry";
 
 describe("TelemetryToggle", () => {
   beforeEach(() => {
