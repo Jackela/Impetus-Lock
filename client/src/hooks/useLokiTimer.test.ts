@@ -34,9 +34,7 @@ describe("useLokiTimer", () => {
 
   it("starts timer when mode is 'loki'", () => {
     const onTrigger = vi.fn();
-    const { result } = renderHook(() =>
-      useLokiTimer({ mode: "loki", onTrigger })
-    );
+    const { result } = renderHook(() => useLokiTimer({ mode: "loki", onTrigger }));
 
     // Timer should be scheduled with non-zero interval
     expect(result.current.currentInterval).toBeGreaterThan(0);
@@ -46,9 +44,7 @@ describe("useLokiTimer", () => {
 
   it("does not start timer when mode is not 'loki'", () => {
     const onTrigger = vi.fn();
-    const { result } = renderHook(() =>
-      useLokiTimer({ mode: "muse", onTrigger })
-    );
+    const { result } = renderHook(() => useLokiTimer({ mode: "muse", onTrigger }));
 
     // Timer should not be scheduled
     expect(result.current.currentInterval).toBe(0);
@@ -56,10 +52,9 @@ describe("useLokiTimer", () => {
 
   it("stops timer when mode changes from 'loki'", () => {
     const onTrigger = vi.fn();
-    const { result, rerender } = renderHook(
-      ({ mode }) => useLokiTimer({ mode, onTrigger }),
-      { initialProps: { mode: "loki" as const } }
-    );
+    const { result, rerender } = renderHook(({ mode }) => useLokiTimer({ mode, onTrigger }), {
+      initialProps: { mode: "loki" as const },
+    });
 
     // Timer should be active
     expect(result.current.currentInterval).toBeGreaterThan(0);
@@ -86,9 +81,7 @@ describe("useLokiTimer", () => {
         },
       });
 
-      const { result, unmount } = renderHook(() =>
-        useLokiTimer({ mode: "loki", onTrigger })
-      );
+      const { result, unmount } = renderHook(() => useLokiTimer({ mode: "loki", onTrigger }));
 
       intervals.push(result.current.currentInterval);
       unmount();
@@ -103,9 +96,7 @@ describe("useLokiTimer", () => {
 
   it("fires onTrigger callback when timer expires", () => {
     const onTrigger = vi.fn();
-    const { result } = renderHook(() =>
-      useLokiTimer({ mode: "loki", onTrigger })
-    );
+    const { result } = renderHook(() => useLokiTimer({ mode: "loki", onTrigger }));
 
     const interval = result.current.currentInterval;
     expect(onTrigger).not.toHaveBeenCalled();
@@ -125,9 +116,7 @@ describe("useLokiTimer", () => {
 
   it("reschedules timer after each trigger", () => {
     const onTrigger = vi.fn();
-    const { result } = renderHook(() =>
-      useLokiTimer({ mode: "loki", onTrigger })
-    );
+    const { result } = renderHook(() => useLokiTimer({ mode: "loki", onTrigger }));
 
     const firstInterval = result.current.currentInterval;
 
@@ -151,9 +140,7 @@ describe("useLokiTimer", () => {
 
   it("manualTrigger fires callback immediately without affecting scheduled timer", () => {
     const onTrigger = vi.fn();
-    const { result } = renderHook(() =>
-      useLokiTimer({ mode: "loki", onTrigger })
-    );
+    const { result } = renderHook(() => useLokiTimer({ mode: "loki", onTrigger }));
 
     const scheduledInterval = result.current.currentInterval;
 
@@ -172,9 +159,7 @@ describe("useLokiTimer", () => {
 
   it("cleans up timer on unmount", () => {
     const onTrigger = vi.fn();
-    const { result, unmount } = renderHook(() =>
-      useLokiTimer({ mode: "loki", onTrigger })
-    );
+    const { result, unmount } = renderHook(() => useLokiTimer({ mode: "loki", onTrigger }));
 
     const interval = result.current.currentInterval;
 
@@ -192,10 +177,9 @@ describe("useLokiTimer", () => {
 
   it("handles mode switching correctly", () => {
     const onTrigger = vi.fn();
-    const { result, rerender } = renderHook(
-      ({ mode }) => useLokiTimer({ mode, onTrigger }),
-      { initialProps: { mode: "off" as const } }
-    );
+    const { result, rerender } = renderHook(({ mode }) => useLokiTimer({ mode, onTrigger }), {
+      initialProps: { mode: "off" as const },
+    });
 
     // Initially off
     expect(result.current.currentInterval).toBe(0);

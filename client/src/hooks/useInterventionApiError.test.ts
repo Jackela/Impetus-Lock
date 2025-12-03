@@ -16,12 +16,9 @@ import { isInterventionAPIError } from "./useInterventionApiError";
 
 describe("isInterventionAPIError", () => {
   it("returns true for InterventionAPIError instances", () => {
-    const error = new InterventionAPIError(
-      500,
-      "INTERNAL_ERROR",
-      "Test error message",
-      { detail: "additional info" }
-    );
+    const error = new InterventionAPIError(500, "INTERNAL_ERROR", "Test error message", {
+      detail: "additional info",
+    });
 
     expect(isInterventionAPIError(error)).toBe(true);
   });
