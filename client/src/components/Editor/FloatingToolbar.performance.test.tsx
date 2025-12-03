@@ -13,6 +13,18 @@ import type { Editor } from "@milkdown/core";
 // Mock editor type for testing
 type MockEditor = Pick<Editor, "action">;
 
+/**
+ * V8-specific Performance interface extension.
+ * Chrome/V8 exposes memory stats not in W3C standard.
+ */
+interface V8Performance extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
 describe("FloatingToolbar - Performance Tests", () => {
   let mockEditor: MockEditor;
 
@@ -91,16 +103,15 @@ describe("FloatingToolbar - Performance Tests", () => {
   });
 
   it("should not cause memory leaks with repeated operations", () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    const perf = performance as V8Performance;
+    const initialMemory = perf.memory?.usedJSHeapSize ?? 0;
 
     // Simulate 1000 rapid operations
     for (let i = 0; i < 1000; i++) {
       mockEditor.action(vi.fn());
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    const finalMemory = perf.memory?.usedJSHeapSize ?? 0;
     const memoryIncrease = finalMemory - initialMemory;
 
     // Memory increase should be minimal (<10MB for 1000 operations)

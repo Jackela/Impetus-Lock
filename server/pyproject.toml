@@ -30,6 +30,7 @@ mypy = "^1.11.0"
 types-requests = "^2.32.0"
 import-linter = "^2.0"
 hypothesis = "^6.147.0"
+pydocstyle = "^6.3.0"
 
 [tool.ruff]
 line-length = 100
@@ -90,6 +91,14 @@ warn_required_dynamic_aliases = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+
+[tool.pydocstyle]
+# Google-style docstrings per Article V (Documentation)
+convention = "google"
+# Skip test files (test_ prefix)
+match = "(?!test_).*\\.py"
+# Skip __init__.py files
+match_dir = "(?!tests).*"
 
 # import-linter configuration temporarily disabled for MVP phase
 # Will be re-enabled when P1 features are implemented and layers are populated
