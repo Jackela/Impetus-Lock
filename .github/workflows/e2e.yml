@@ -42,7 +42,7 @@ jobs:
       options: --user 1001
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: ${{ env.ACT != 'true' }}
 
       - name: Set up Python 3.11
