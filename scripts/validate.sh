@@ -56,6 +56,9 @@ validate_frontend() {
     echo "→ Running ESLint..."
     npm run lint -- --max-warnings=0
 
+    echo "→ Running Prettier check..."
+    npm run format
+
     echo "→ Running TypeScript check..."
     npm run type-check
 
