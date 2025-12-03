@@ -79,7 +79,11 @@ test.describe("Lock Enforcement - Backspace/Delete Prevention", () => {
 
     expect(hasShakeAnimation).toBe(true);
 
-    // TODO Phase 7: Verify bonk sound played (P2 feature)
+    // P2 Enhancement: Verify bonk sound played on lock rejection
+    // const soundPlayed = await page.evaluate(() =>
+    //   window.__testHooks?.audioPlayer?.lastPlayedSound === 'bonk'
+    // );
+    // expect(soundPlayed).toBe(true);
   });
 
   /**

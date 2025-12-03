@@ -6,13 +6,14 @@
  *
  * Constitutional Compliance:
  * - Article I (Simplicity): Uses React hooks (no Redux/MobX)
+ * - Article IV (DIP): Uses context injection, not singleton
  * - Article V (Documentation): Complete JSDoc
  *
  * @module hooks/useLockEnforcement
  */
 
 import { useState, useCallback } from "react";
-import { lockManager } from "../services/LockManager";
+import { useLockManager } from "../contexts/LockManagerContext";
 import type { LockMetadata } from "../services/LockManager";
 
 /**
@@ -73,8 +74,10 @@ interface UseLockEnforcementReturn {
 /**
  * React hook for lock enforcement.
  *
- * Provides reactive lock state management using the global LockManager instance.
+ * Provides reactive lock state management using the LockManager from context.
  * Re-renders component when locks change.
+ *
+ * Must be used within a LockManagerProvider.
  *
  * @returns Lock enforcement utilities and state
  *
@@ -100,13 +103,14 @@ interface UseLockEnforcementReturn {
  * ```
  */
 export function useLockEnforcement(): UseLockEnforcementReturn {
+  const lockManager = useLockManager();
   const [lockCount, setLockCount] = useState(lockManager.getLockCount());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const updateLockCount = useCallback(() => {
     setLockCount(lockManager.getLockCount());
-  }, []);
+  }, [lockManager]);
 
   const applyLock = useCallback(
     (lockId: string, metadata?: LockMetadata) => {
@@ -121,7 +125,7 @@ export function useLockEnforcement(): UseLockEnforcementReturn {
         setIsLoading(false);
       }
     },
-    [updateLockCount]
+    [lockManager, updateLockCount]
   );
 
   const removeLock = useCallback(
@@ -137,22 +141,28 @@ export function useLockEnforcement(): UseLockEnforcementReturn {
         setIsLoading(false);
       }
     },
-    [updateLockCount]
+    [lockManager, updateLockCount]
   );
 
-  const hasLock = useCallback((lockId: string) => {
-    return lockManager.hasLock(lockId);
-  }, []);
+  const hasLock = useCallback(
+    (lockId: string) => {
+      return lockManager.hasLock(lockId);
+    },
+    [lockManager]
+  );
 
-  const extractLocks = useCallback((markdown: string) => {
-    try {
-      setError(null);
-      return lockManager.extractLocksFromMarkdown(markdown);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error(String(err)));
-      return [];
-    }
-  }, []);
+  const extractLocks = useCallback(
+    (markdown: string) => {
+      try {
+        setError(null);
+        return lockManager.extractLocksFromMarkdown(markdown);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        return [];
+      }
+    },
+    [lockManager]
+  );
 
   const injectLockComment = useCallback(
     (content: string, lockId: string, metadata?: LockMetadata) => {
@@ -164,7 +174,7 @@ export function useLockEnforcement(): UseLockEnforcementReturn {
         return content;
       }
     },
-    []
+    [lockManager]
   );
 
   const clearError = useCallback(() => {

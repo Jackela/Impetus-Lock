@@ -13,7 +13,7 @@
 
 import type { EditorState, MarkType, Node } from "@milkdown/prose/model";
 import type { AgentSource } from "../types/mode";
-import { lockManager } from "../services/LockManager";
+import type { LockManager } from "../services/LockManager";
 
 /**
  * Check if a mark type is active in current selection.
@@ -119,9 +119,13 @@ export interface LockAttributes {
  * Looks for node attributes first, then HTML comment pattern: `<!-- lock:lock_id source:muse -->`
  *
  * @param node - ProseMirror node to inspect
+ * @param lockManager - Optional LockManager instance for source lookup
  * @returns Lock metadata if found, `null` otherwise
  */
-export function extractLockAttributes(node: Node | null | undefined): LockAttributes | null {
+export function extractLockAttributes(
+  node: Node | null | undefined,
+  lockManager?: LockManager
+): LockAttributes | null {
   if (!node) {
     return null;
   }
@@ -169,7 +173,7 @@ export function extractLockAttributes(node: Node | null | undefined): LockAttrib
     }
   }
 
-  if (lockId && !source) {
+  if (lockId && !source && lockManager) {
     source = lockManager.getLockSource(lockId);
   }
 
@@ -182,7 +186,10 @@ export function extractLockAttributes(node: Node | null | undefined): LockAttrib
 
 /**
  * Extract only the lock ID from a node (legacy helper).
+ *
+ * @param node - ProseMirror node to inspect
+ * @param lockManager - Optional LockManager instance for source lookup
  */
-export function extractLockId(node: Node): string | null {
-  return extractLockAttributes(node)?.lockId ?? null;
+export function extractLockId(node: Node, lockManager?: LockManager): string | null {
+  return extractLockAttributes(node, lockManager)?.lockId ?? null;
 }

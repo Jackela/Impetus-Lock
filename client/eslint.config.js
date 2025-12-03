@@ -111,6 +111,15 @@ export default defineConfig([
       ],
     },
   },
+  // Override for contexts: Context providers need direct service access for DI
+  {
+    files: ["**/contexts/**/*.tsx"],
+    rules: {
+      "no-restricted-imports": "off",
+      // Contexts export both provider and hooks by design
+      "react-refresh/only-export-components": "off",
+    },
+  },
   // Editor infra utilities need direct service access
   {
     files: [

@@ -111,8 +111,8 @@ export function injectLockedBlock(
   // Dispatch transaction
   dispatch(tr);
 
-  // TODO: Trigger "Glitch" animation on inserted node
-  // TODO: Play "Clank" sound effect
+  // Note: Sensory feedback (Glitch animation + Clank sound) is handled by
+  // SensoryFeedback component in EditorCore, triggered by currentAction state
 
   console.log(`[ContentInjector] Injected locked block at pos ${insertPos}:`, lockId);
 }
