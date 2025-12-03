@@ -79,7 +79,10 @@ export function LockManagerProvider({
   lockManager: providedLockManager,
 }: LockManagerProviderProps): React.ReactElement {
   // Create single LockManager instance for the provider's lifetime
-  const lockManager = useMemo(() => providedLockManager ?? new LockManager(), [providedLockManager]);
+  const lockManager = useMemo(
+    () => providedLockManager ?? new LockManager(),
+    [providedLockManager]
+  );
 
   const value = useMemo(() => ({ lockManager }), [lockManager]);
 
