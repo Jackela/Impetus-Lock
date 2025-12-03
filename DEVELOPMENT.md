@@ -73,7 +73,8 @@ Impetus-Lock/
 │   ├── validate-local.ps1     # PowerShell validation (Windows)
 │   └── quick-validate.bat     # Windows fast check (skips tests)
 │
-├── .specify/            # Project templates and constitution
+├── openspec/            # OpenSpec governance and change proposals
+├── specs/               # Legacy feature specifications (001-006)
 ├── CLAUDE.md            # Claude Code operational guide
 └── README.md
 ```
@@ -504,9 +505,9 @@ Before committing, verify:
 
 ## Resources
 
-- **Constitution**: `.specify/memory/constitution.md` - Project governance
+- **Constitution**: [CLAUDE.md](CLAUDE.md#constitutional-requirements-️) - Project governance (5 articles)
 - **Claude Guide**: `CLAUDE.md` - AI assistant operational guide
-- **Templates**: `.specify/templates/` - Spec, plan, tasks templates
+- **Feature Specs**: `specs/` and `openspec/` - Specification-driven development
 - **CI Workflow**: `.github/workflows/ci.yml` - GitHub Actions config
 
 ## Next Steps

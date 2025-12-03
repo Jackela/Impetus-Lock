@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Constitutional Requirements ⚖️
 
-**CRITICAL**: This project follows strict constitutional principles defined in `.specify/memory/constitution.md` (v1.0.0). These are NON-NEGOTIABLE:
+**CRITICAL**: This project follows strict constitutional principles (v1.0.0). These are NON-NEGOTIABLE:
 
 ### Article I: Simplicity & Anti-Abstraction
 - This is a **5-day MVP sprint** — over-engineering is strictly prohibited
@@ -83,13 +83,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ├── .github/
 │   └── workflows/
 │       └── ci.yml   # Separated jobs: lint, type-check, backend-tests, frontend-tests
-└── .specify/
-    ├── memory/
-    │   └── constitution.md  # Project constitution (v1.0.0)
-    └── templates/
-        ├── plan-template.md
-        ├── spec-template.md
-        └── tasks-template.md
+├── openspec/              # OpenSpec governance system
+│   ├── AGENTS.md          # AI agent instructions
+│   ├── project.md         # Project configuration
+│   ├── changes/           # Change proposals
+│   └── specs/             # Feature specifications
+└── specs/                 # Legacy feature specs (001-006)
 ```
 
 **Key Principle**: Frontend and backend have independent lock files and scripts. Root directory contains only CI and shared documentation.
@@ -372,6 +371,34 @@ export async function fetchTasks(): Promise<Task[]> {
   return response.json();
 }
 ```
+
+## Architecture Enforcement
+
+### Frontend (ESLint)
+
+Architecture boundaries are enforced via `no-restricted-imports` in `client/eslint.config.js`:
+
+- **Components cannot import from services/** - Use hooks as abstraction layer
+- **Components cannot import from features/** - Keep presentational layer clean
+- **EditorCore.tsx is exempt** - Integration layer that coordinates services
+
+```typescript
+// ❌ WRONG: Direct service import in component
+import { interventionClient } from "../../services/api/interventionClient";
+
+// ✅ CORRECT: Use hook abstraction
+import { useManualTrigger } from "../../hooks/useManualTrigger";
+```
+
+### Backend (import-linter)
+
+Layer contracts are defined in `server/pyproject.toml` (currently disabled for MVP):
+
+```
+API Layer → Application Layer → Domain Layer → Infrastructure Layer
+```
+
+**Note**: import-linter is disabled until domain layer has implementations. Manually verify imports during code review.
 
 ## Testing Strategy
 

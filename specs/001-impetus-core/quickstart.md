@@ -491,4 +491,4 @@ npm run test:e2e
 - [spec.md](spec.md) - User requirements
 - [data-model.md](data-model.md) - Entity definitions
 - [contracts/intervention.yaml](contracts/intervention.yaml) - API contract
-- [constitution.md](../../.specify/memory/constitution.md) - Project governance
+- [Constitution](../../CLAUDE.md#constitutional-requirements-️) - Project governance

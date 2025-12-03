@@ -215,7 +215,7 @@ This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Ne
 
 | 文档 | 用途 | Location |
 |------|------|----------|
-| **宪法 \| Constitution** | 项目治理 5 条款 | `.specify/memory/constitution.md` |
+| **宪法 \| Constitution** | 项目治理 5 条款 | [CLAUDE.md](CLAUDE.md#constitutional-requirements-️) |
 | **API 契约 \| API Contract** | OpenAPI 3.0.3 规范 | [API_CONTRACT.md](API_CONTRACT.md) |
 | **架构护栏 \| Architecture Guards** | Clean Architecture 规则 | [ARCHITECTURE_GUARDS.md](ARCHITECTURE_GUARDS.md) |
 | **开发指南 \| Dev Guide** | TDD 工作流 | [DEVELOPMENT.md](DEVELOPMENT.md) |
@@ -225,7 +225,7 @@ This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Ne
 
 **关键设计原则 | Key Design Principles:**
 - **Contract-First API Design:** OpenAPI 规范先行，Pydantic 模型匹配
-- **Specification-Driven Development:** `.specify/templates/` 驱动特性开发
+- **Specification-Driven Development:** `specs/` and `openspec/` 驱动特性开发
 - **Versioned Prompt Registry:** 提示词版本化管理
 
 ---
@@ -643,7 +643,7 @@ act -l
 
 - **[API_CONTRACT.md](API_CONTRACT.md)** — OpenAPI 3.0.3 契约规范（SSOT）
 - **[ARCHITECTURE_GUARDS.md](ARCHITECTURE_GUARDS.md)** — 架构护栏与 Clean Architecture 规则
-- **[Constitution](.specify/memory/constitution.md)** — 项目宪法（5 条款）
+- **[Constitution](CLAUDE.md#constitutional-requirements-️)** — 项目宪法（5 条款）
 
 ### 开发指南 | Development Guides
 
@@ -676,7 +676,7 @@ This project operates under 5 constitutional articles:
 - ✅ Constructor injection for dependencies (DIP)
 - ✅ ≥80% test coverage for P1 features
 
-See [`.specify/memory/constitution.md`](.specify/memory/constitution.md) for complete details.
+See [CLAUDE.md](CLAUDE.md#constitutional-requirements-️) for complete details.
 
 ---
 
@@ -719,7 +719,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md#troubleshooting) for more solutions.
 
 ## 🤝 Contributing
 
-1. Read the [Constitution](.specify/memory/constitution.md)
+1. Read the [Constitution](CLAUDE.md#constitutional-requirements-️)
 2. Follow the [Development Workflow](#-development-workflow)
 3. Ensure all [Quality Gates](#quality-gates-pre-commit-checklist) pass
 4. Test with [Act CLI](#-local-ci-testing-act-cli) before pushing

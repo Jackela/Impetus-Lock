@@ -590,4 +590,4 @@ npx playwright install --with-deps
 - **Frontend Unit**: [Vitest docs](https://vitest.dev/)
 - **Frontend E2E**: [Playwright docs](https://playwright.dev/)
 - **Testing Library**: [testing-library.com](https://testing-library.com/)
-- **Constitution**: `.specify/memory/constitution.md` (Article III)
+- **Constitution**: [CLAUDE.md](CLAUDE.md#article-iii-test-first-imperative-tdd---non-negotiable) (Article III)

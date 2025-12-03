@@ -109,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **P1 Features**: Core un-deletable constraint functionality (locked content enforcement)
 - **P2 Features**: UX enhancements (manual trigger, sensory feedback) - current release
-- **Constitutional Compliance**: All features follow project constitution (`.specify/memory/constitution.md`)
+- **Constitutional Compliance**: All features follow project constitution ([CLAUDE.md](CLAUDE.md#constitutional-requirements-️))
   - Article I: Simplicity & Anti-Abstraction
   - Article II: Vibe-First Imperative (P1 = un-deletable only)
   - Article III: Test-First Imperative (TDD workflow)

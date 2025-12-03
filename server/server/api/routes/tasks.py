@@ -15,12 +15,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from server.api.dependencies import get_task_repository
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
+from server.domain.repositories.task_repository import TaskRepository
 from server.infrastructure.persistence.database import get_session
-from server.infrastructure.persistence.postgresql_task_repository import (
-    PostgreSQLTaskRepository,
-)
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
 
@@ -116,12 +115,14 @@ class InterventionHistoryResponse(BaseModel):
 @router.post("/", response_model=TaskResponse, status_code=201)
 async def create_task(
     request: TaskCreateRequest,
+    repository: TaskRepository = Depends(get_task_repository),
     session: AsyncSession = Depends(get_session),
 ) -> TaskResponse:
     """Create new task.
 
     Args:
         request: Task creation request.
+        repository: Task repository (injected via DIP).
         session: Database session (injected).
 
     Returns:
@@ -134,7 +135,6 @@ async def create_task(
           -d '{"content": "Initial content", "lock_ids": []}'
         ```
     """
-    repository = PostgreSQLTaskRepository(session)
     task = await repository.create_task(request.content, request.lock_ids)
     await session.commit()
 
@@ -144,13 +144,13 @@ async def create_task(
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
     task_id: UUID,
-    session: AsyncSession = Depends(get_session),
+    repository: TaskRepository = Depends(get_task_repository),
 ) -> TaskResponse:
     """Get task by ID.
 
     Args:
         task_id: Task UUID.
-        session: Database session (injected).
+        repository: Task repository (injected via DIP).
 
     Returns:
         TaskResponse: Task details.
@@ -163,7 +163,6 @@ async def get_task(
         curl http://localhost:8000/api/v1/tasks/{task_id}
         ```
     """
-    repository = PostgreSQLTaskRepository(session)
     task = await repository.get_task(task_id)
 
     if not task:
@@ -176,6 +175,7 @@ async def get_task(
 async def update_task(
     task_id: UUID,
     request: TaskUpdateRequest,
+    repository: TaskRepository = Depends(get_task_repository),
     session: AsyncSession = Depends(get_session),
 ) -> TaskResponse:
     """Update task content and lock IDs.
@@ -183,6 +183,7 @@ async def update_task(
     Args:
         task_id: Task UUID.
         request: Task update request.
+        repository: Task repository (injected via DIP).
         session: Database session (injected).
 
     Returns:
@@ -198,7 +199,6 @@ async def update_task(
           -d '{"content": "Updated", "lock_ids": ["lock_1"], "version": 0}'
         ```
     """
-    repository = PostgreSQLTaskRepository(session)
     task = await repository.get_task(task_id)
 
     if not task:
@@ -225,12 +225,14 @@ async def update_task(
 @router.delete("/{task_id}", status_code=204)
 async def delete_task(
     task_id: UUID,
+    repository: TaskRepository = Depends(get_task_repository),
     session: AsyncSession = Depends(get_session),
 ) -> None:
     """Delete task (cascade deletes intervention actions).
 
     Args:
         task_id: Task UUID.
+        repository: Task repository (injected via DIP).
         session: Database session (injected).
 
     Raises:
@@ -241,8 +243,6 @@ async def delete_task(
         curl -X DELETE http://localhost:8000/api/v1/tasks/{task_id}
         ```
     """
-    repository = PostgreSQLTaskRepository(session)
-
     try:
         await repository.delete_task(task_id)
         await session.commit()
@@ -255,7 +255,7 @@ async def get_intervention_history(
     task_id: UUID,
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
-    session: AsyncSession = Depends(get_session),
+    repository: TaskRepository = Depends(get_task_repository),
 ) -> InterventionHistoryResponse:
     """Get intervention action history for task (paginated).
 
@@ -263,7 +263,7 @@ async def get_intervention_history(
         task_id: Task UUID.
         limit: Maximum number of actions to return (1-100).
         offset: Number of actions to skip.
-        session: Database session (injected).
+        repository: Task repository (injected via DIP).
 
     Returns:
         InterventionHistoryResponse: Paginated intervention history.
@@ -280,8 +280,6 @@ async def get_intervention_history(
         curl http://localhost:8000/api/v1/tasks/{task_id}/actions?limit=10&offset=10
         ```
     """
-    repository = PostgreSQLTaskRepository(session)
-
     # Verify task exists
     task = await repository.get_task(task_id)
     if not task:
