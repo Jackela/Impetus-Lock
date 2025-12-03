@@ -330,7 +330,8 @@ describe("extractLockAttributes - LockManager Integration", () => {
     const { lockManager } = await import("../services/LockManager");
     const node = createMockNode({ lockId: "lock_muse_query" });
 
-    const result = extractLockAttributes(node);
+    // Pass lockManager explicitly (now a required parameter for source lookup)
+    const result = extractLockAttributes(node, lockManager);
 
     expect(lockManager.getLockSource).toHaveBeenCalledWith("lock_muse_query");
     expect(result?.source).toBe("muse"); // Mocked to return 'muse' for IDs containing 'muse'

@@ -19,7 +19,7 @@ import type { EditorView } from "@milkdown/prose/view";
 import type { Node } from "@milkdown/prose/model";
 import { Plugin, PluginKey } from "@milkdown/prose/state";
 import { extractLockAttributes } from "../../utils/prosemirror-helpers";
-import { lockManager } from "../../services/LockManager";
+import type { LockManager } from "../../services/LockManager";
 
 /**
  * Plugin key for lock decorations.
@@ -34,21 +34,22 @@ export const lockDecorationsKey = new PluginKey("lockDecorations");
  * lock IDs (embedded as HTML comments: `<!-- lock:lock_id -->`).
  *
  * @param doc - ProseMirror document node to scan
+ * @param lockManager - LockManager instance for metadata lookup
  * @returns DecorationSet with node decorations for locked content
  *
  * @example
  * ```typescript
  * // Document with locked blockquote:
  * // > AI-generated provocation <!-- lock:lock_001 -->
- * const decos = createLockDecorations(doc);
+ * const decos = createLockDecorations(doc, lockManager);
  * // Returns decoration with class="locked-content" data-lock-id="lock_001"
  * ```
  */
-function createLockDecorations(doc: Node): DecorationSet {
+function createLockDecorations(doc: Node, lockManager: LockManager): DecorationSet {
   const decorations: Decoration[] = [];
 
   doc.descendants((node, pos) => {
-    const metadata = extractLockAttributes(node);
+    const metadata = extractLockAttributes(node, lockManager);
     if (!metadata?.lockId) {
       return;
     }
@@ -114,6 +115,7 @@ function createLockDecorations(doc: Node): DecorationSet {
  *
  * **Performance**: Only rescans on document changes (not selection changes)
  *
+ * @param lockManager - LockManager instance for metadata lookup
  * @returns ProseMirror Plugin instance
  *
  * @example
@@ -121,31 +123,31 @@ function createLockDecorations(doc: Node): DecorationSet {
  * // Apply to EditorView (in EditorCore.tsx):
  * editor.action((ctx) => {
  *   const view = ctx.get(editorViewCtx);
- *   const lockPlugin = createLockDecorationsPlugin();
+ *   const lockPlugin = createLockDecorationsPlugin(lockManager);
  *   // ... add to view plugins
  * });
  * ```
  */
-export function createLockDecorationsPlugin(): Plugin {
+export function createLockDecorationsPlugin(lockManager: LockManager): Plugin {
   return new Plugin({
     key: lockDecorationsKey,
 
     state: {
       // Initialize decorations on editor load
       init(_, { doc }) {
-        return createLockDecorations(doc);
+        return createLockDecorations(doc, lockManager);
       },
 
       // Update decorations on document changes
       apply(tr, oldDecorations) {
         const refreshMeta = tr.getMeta(lockDecorationsKey);
         if (refreshMeta?.refresh) {
-          return createLockDecorations(tr.doc);
+          return createLockDecorations(tr.doc, lockManager);
         }
 
         if (tr.docChanged) {
           // Document changed - rescan for lock IDs
-          return createLockDecorations(tr.doc);
+          return createLockDecorations(tr.doc, lockManager);
         }
 
         // No document changes - map existing decorations to new positions
@@ -182,17 +184,18 @@ const lockDecorationsInstalled = new WeakSet<EditorView>();
  * when useEffect runs multiple times due to unstable dependencies.
  *
  * @param view - ProseMirror EditorView instance
+ * @param lockManager - LockManager instance for metadata lookup
  *
  * @example
  * ```typescript
  * // In EditorCore.tsx, after editor initialization:
  * editor.action((ctx) => {
  *   const view = ctx.get(editorViewCtx);
- *   applyLockDecorations(view);
+ *   applyLockDecorations(view, lockManager);
  * });
  * ```
  */
-export function applyLockDecorations(view: EditorView): void {
+export function applyLockDecorations(view: EditorView, lockManager: LockManager): void {
   // CRITICAL: Guard flag prevents race condition from multiple parallel calls
   if (lockDecorationsInstalled.has(view)) {
     return;
@@ -212,7 +215,7 @@ export function applyLockDecorations(view: EditorView): void {
   // Set guard flag IMMEDIATELY to block concurrent calls for this view
   lockDecorationsInstalled.add(view);
 
-  const lockPlugin = createLockDecorationsPlugin();
+  const lockPlugin = createLockDecorationsPlugin(lockManager);
 
   // Add lock decorations plugin to editor state
   view.updateState(

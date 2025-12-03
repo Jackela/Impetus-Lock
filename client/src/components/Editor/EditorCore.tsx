@@ -14,7 +14,8 @@ import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import type { Node as ProseMirrorNode } from "@milkdown/prose/model";
-import { lockManager } from "../../services/LockManager";
+import { useLockManager, LockManagerProvider } from "../../contexts/LockManagerContext";
+import type { LockManager } from "../../services/LockManager";
 import { createLockTransactionFilter } from "./TransactionFilter";
 import { applyLockDecorations, refreshLockDecorations } from "./LockDecorations";
 import { useWritingState, type AgentMode } from "../../hooks/useWritingState";
@@ -47,7 +48,7 @@ const ensureContext = (text: string) =>
 
 declare global {
   interface Window {
-    lockManager?: typeof lockManager;
+    lockManager?: LockManager;
     editorInstance?: Editor;
     insertLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
     rewriteLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
@@ -97,6 +98,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   onTimerUpdate,
   onInterventionError,
 }) => {
+  // Get LockManager from context (DIP - Article IV)
+  const lockManager = useLockManager();
+
   const editorRef = useRef<Editor | null>(null);
   const [docVersion, setDocVersion] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
@@ -222,7 +226,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, onInterventionError, showSensoryAction]);
+  }, [cursorPosition, docVersion, lockManager, onInterventionError, showSensoryAction]);
 
   // Handle Loki chaos trigger
   const handleLokiTrigger = useCallback(async () => {
@@ -279,7 +283,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, onInterventionError, showSensoryAction]);
+  }, [cursorPosition, docVersion, lockManager, onInterventionError, showSensoryAction]);
 
   // Handle manual delete trigger (Test Delete button)
   const handleManualDelete = useCallback(() => {
@@ -516,7 +520,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       // T008: Apply lock content decorations for visual styling FIRST
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-        applyLockDecorations(view);
+        applyLockDecorations(view, lockManager);
       });
 
       // Apply lock transaction filter for lock enforcement AFTER decorations
@@ -571,7 +575,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
             // before TransactionFilter checks them on the NEXT transaction (e.g., deletion).
             // Uses same pattern as LockDecorations (which successfully detects locks).
             tr.doc.descendants((node) => {
-              const metadata = extractLockAttributes(node as ProseMirrorNode);
+              const metadata = extractLockAttributes(node as ProseMirrorNode, lockManager);
               if (metadata?.lockId && !lockManager.hasLock(metadata.lockId)) {
                 lockManager.applyLock(metadata.lockId, { source: metadata.source });
                 refreshLockDecorations(view);
@@ -596,7 +600,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     return () => {
       mounted = false;
     };
-  }, [initialContent, showSensoryAction]);
+  }, [initialContent, lockManager, showSensoryAction]);
 
   // Always render immediately - no loading state
   return (
@@ -619,18 +623,21 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 };
 
 /**
- * EditorCore - Wrapper component with MilkdownProvider
+ * EditorCore - Wrapper component with MilkdownProvider and LockManagerProvider
  *
  * Fixes React 19 + Milkdown compatibility by:
  * - Providing Milkdown context at root level
+ * - Providing LockManager context for dependency injection (Article IV)
  * - Removing loading state blocking
  * - Using stable refs for callbacks
  */
 export const EditorCore: React.FC<EditorCoreProps> = (props) => {
   return (
-    <MilkdownProvider>
-      <EditorCoreInner {...props} />
-    </MilkdownProvider>
+    <LockManagerProvider>
+      <MilkdownProvider>
+        <EditorCoreInner {...props} />
+      </MilkdownProvider>
+    </LockManagerProvider>
   );
 };
 

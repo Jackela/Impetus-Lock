@@ -111,8 +111,8 @@ export function injectLockedBlock(
   // Dispatch transaction
   dispatch(tr);
 
-  // TODO: Trigger "Glitch" animation on inserted node
-  // TODO: Play "Clank" sound effect
+  // Note: Sensory feedback (Glitch animation + Clank sound) is handled by
+  // SensoryFeedback component in EditorCore, triggered by currentAction state
 
   console.log(`[ContentInjector] Injected locked block at pos ${insertPos}:`, lockId);
 }
@@ -135,15 +135,10 @@ export function injectLockedBlock(
  * }
  * ```
  */
-// Global throttle for delete operations to prevent rapid-fire deletions
-// Store on window to survive HMR (Hot Module Reload)
-declare global {
-  interface Window {
-    __lastDeleteTimestamp?: number;
-  }
-}
-
+// Module-level throttle state for delete operations
+// Using closure instead of window global to avoid state pollution
 const DELETE_THROTTLE_MS = 1500; // 1.5 seconds minimum between deletes
+let lastDeleteTimestamp: number | null = null;
 
 export function deleteContentAtAnchor(
   view: EditorView,
@@ -160,13 +155,13 @@ export function deleteContentAtAnchor(
     deleteLength: to - from,
     throttleRemaining: Math.max(
       0,
-      DELETE_THROTTLE_MS - (Date.now() - (window.__lastDeleteTimestamp || 0))
+      DELETE_THROTTLE_MS - (Date.now() - (lastDeleteTimestamp ?? 0))
     ),
   });
 
   // CRITICAL: Throttle to prevent rapid-fire deletions
   const now = Date.now();
-  const lastDelete = window.__lastDeleteTimestamp || 0;
+  const lastDelete = lastDeleteTimestamp ?? 0;
 
   if (now - lastDelete < DELETE_THROTTLE_MS) {
     console.log(
@@ -175,7 +170,7 @@ export function deleteContentAtAnchor(
     return;
   }
 
-  window.__lastDeleteTimestamp = now;
+  lastDeleteTimestamp = now;
 
   // Validate range
   if (from < 0 || to > state.doc.content.size || from >= to) {

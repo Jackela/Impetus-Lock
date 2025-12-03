@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
@@ -239,7 +239,7 @@ class ProviderRegistry:
                 status_code=422,
                 provider=normalized,
             )
-        return normalized  # type: ignore[return-value]
+        return cast(ProviderName, normalized)
 
 
 def _normalize(value: str | None) -> str | None:

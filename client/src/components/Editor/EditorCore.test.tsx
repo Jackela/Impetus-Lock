@@ -50,14 +50,42 @@ vi.mock("@milkdown/theme-nord", () => ({
   nord: {},
 }));
 
-// Mock services
-vi.mock("../../services/LockManager", () => ({
-  lockManager: {
+// Mock services - include both class and singleton for context compatibility
+vi.mock("../../services/LockManager", () => {
+  const mockLockManagerInstance = {
     applyLock: vi.fn(),
     hasLock: vi.fn(() => false),
     extractLockEntriesFromMarkdown: vi.fn(() => []),
-  },
-}));
+    extractLocksFromMarkdown: vi.fn(() => []),
+    getLockCount: vi.fn(() => 0),
+    getAllLocks: vi.fn(() => []),
+    removeLock: vi.fn(),
+    getLockMetadata: vi.fn(),
+    getLockSource: vi.fn(),
+    injectLockComment: vi.fn((content: string) => content),
+    clear: vi.fn(),
+  };
+
+  // Create a proper class mock that can be instantiated with `new`
+  class MockLockManager {
+    applyLock = mockLockManagerInstance.applyLock;
+    hasLock = mockLockManagerInstance.hasLock;
+    extractLockEntriesFromMarkdown = mockLockManagerInstance.extractLockEntriesFromMarkdown;
+    extractLocksFromMarkdown = mockLockManagerInstance.extractLocksFromMarkdown;
+    getLockCount = mockLockManagerInstance.getLockCount;
+    getAllLocks = mockLockManagerInstance.getAllLocks;
+    removeLock = mockLockManagerInstance.removeLock;
+    getLockMetadata = mockLockManagerInstance.getLockMetadata;
+    getLockSource = mockLockManagerInstance.getLockSource;
+    injectLockComment = mockLockManagerInstance.injectLockComment;
+    clear = mockLockManagerInstance.clear;
+  }
+
+  return {
+    lockManager: mockLockManagerInstance,
+    LockManager: MockLockManager,
+  };
+});
 
 vi.mock("./TransactionFilter", () => ({
   createLockTransactionFilter: vi.fn(() => vi.fn()),

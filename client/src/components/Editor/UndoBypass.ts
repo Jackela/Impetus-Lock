@@ -127,8 +127,8 @@ export function insertWithoutUndo(
   let node;
   if (typeof content === "string") {
     // Parse Markdown to ProseMirror node
-    // TODO: Use Milkdown's parser when available
-    // For now, create a simple text node
+    // Note: Currently creates simple text node. To support rich Markdown content,
+    // use ctx.get(parserCtx)(content) from Milkdown context when available.
     node = state.schema.text(content);
   } else {
     node = content;

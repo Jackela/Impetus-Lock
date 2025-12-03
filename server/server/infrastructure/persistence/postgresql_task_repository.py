@@ -9,6 +9,7 @@ Constitutional Compliance:
 - Article V (Documentation): Complete Google-style docstrings
 """
 
+from typing import Literal, cast
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -21,6 +22,10 @@ from server.infrastructure.persistence.models import (
     InterventionActionModel,
     TaskModel,
 )
+
+# Type aliases for literal types (used for casting ORM strings to domain literals)
+ActionType = Literal["provoke", "delete", "rewrite"]
+AgentMode = Literal["muse", "loki"]
 
 
 class PostgreSQLTaskRepository(TaskRepository):
@@ -303,15 +308,17 @@ class PostgreSQLTaskRepository(TaskRepository):
         Returns:
             InterventionAction: Domain entity.
         """
+        # Cast ORM string types to domain Literal types
+        # DB CHECK constraints guarantee valid values, so casts are safe
         return InterventionAction(
             id=model.id,
             task_id=model.task_id,
-            action_type=model.action_type,  # type: ignore
+            action_type=cast(ActionType, model.action_type),
             action_id=model.action_id,
             lock_id=model.lock_id,
             content=model.content,
             anchor=model.anchor,
-            mode=model.mode,  # type: ignore
+            mode=cast(AgentMode, model.mode),
             context=model.context,
             issued_at=model.issued_at,
             created_at=model.created_at,
