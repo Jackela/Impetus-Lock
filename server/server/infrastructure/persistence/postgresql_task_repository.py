@@ -15,10 +15,6 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Type aliases for literal types (used for casting ORM strings to domain literals)
-ActionType = Literal["provoke", "delete", "rewrite"]
-AgentMode = Literal["muse", "loki"]
-
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
 from server.domain.repositories.task_repository import TaskRepository
@@ -26,6 +22,10 @@ from server.infrastructure.persistence.models import (
     InterventionActionModel,
     TaskModel,
 )
+
+# Type aliases for literal types (used for casting ORM strings to domain literals)
+ActionType = Literal["provoke", "delete", "rewrite"]
+AgentMode = Literal["muse", "loki"]
 
 
 class PostgreSQLTaskRepository(TaskRepository):
