@@ -13,36 +13,28 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.domain.repositories.task_repository import TaskRepository
-from server.infrastructure.persistence.database import get_session
+from server.infrastructure.persistence.database import get_session_optional
 from server.infrastructure.persistence.postgresql_task_repository import (
     PostgreSQLTaskRepository,
 )
+from server.infrastructure.persistence.in_memory_task_repository import InMemoryTaskRepository
 
 
 async def get_task_repository(
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session_optional),
 ) -> AsyncGenerator[TaskRepository, None]:
-    """FastAPI dependency for TaskRepository.
+    """FastAPI dependency for TaskRepository with testing fallback."""
 
-    Provides abstract TaskRepository interface (DIP compliant).
-    Concrete implementation is PostgreSQLTaskRepository.
+    if session is None:
+        yield _get_in_memory_repository()
+        return
 
-    Args:
-        session: Database session (injected via Depends).
-
-    Yields:
-        TaskRepository: Repository instance for task operations.
-
-    Example:
-        ```python
-        # In FastAPI route
-        @router.post("/tasks")
-        async def create_task(
-            request: TaskCreateRequest,
-            repository: TaskRepository = Depends(get_task_repository),
-        ) -> TaskResponse:
-            task = await repository.create_task(...)
-            return TaskResponse.from_entity(task)
-        ```
-    """
     yield PostgreSQLTaskRepository(session)
+
+
+def _get_in_memory_repository() -> InMemoryTaskRepository:
+    # Singleton in-memory repo to retain state across requests in TESTING.
+    global _in_memory_repository
+    if "_in_memory_repository" not in globals():
+        _in_memory_repository = InMemoryTaskRepository()
+    return _in_memory_repository  # type: ignore[misc]

@@ -64,6 +64,8 @@ function createLockDecorations(doc: Node, lockManager: LockManager): DecorationS
           class: `locked-content${source ? ` source-${source}` : ""}`,
           "data-lock-id": metadata.lockId,
           "data-lock-shape": "block",
+          role: "note",
+          "aria-label": "AI-added content (locked)",
           ...(source ? { "data-source": source } : {}),
         })
       );
@@ -74,6 +76,8 @@ function createLockDecorations(doc: Node, lockManager: LockManager): DecorationS
       class: `locked-content${source ? ` source-${source}` : ""}`,
       "data-lock-id": metadata.lockId,
       "data-lock-shape": "inline",
+      role: "note",
+      "aria-label": "AI-added content (locked)",
       ...(source ? { "data-source": source } : {}),
     };
 

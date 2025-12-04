@@ -247,16 +247,26 @@ class TestInterventionAPIContract:
         assert data["lock_id"].startswith("lock")
         assert data["source"] == "muse"
 
-    def test_missing_contract_version_returns_422(self) -> None:
-        """Test that missing X-Contract-Version header returns 422.
+    def test_missing_contract_version_defaults_to_server(self) -> None:
+        """Missing X-Contract-Version should be accepted and echoed."""
 
-        X-Contract-Version is required per OpenAPI contract.
-
-        Expected (RED): 404 Not Found (endpoint not implemented)
-        """
         headers = {
-            "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000"
-            # Missing X-Contract-Version
+            "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
+        }
+
+        response = client.post(
+            "/api/v1/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
+        )
+
+        assert response.status_code == 200
+        assert response.headers.get("X-Contract-Version") == "1.0.1"
+
+    def test_major_contract_version_mismatch_rejected(self) -> None:
+        """Major version mismatch should return 422."""
+
+        headers = {
+            "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
+            "X-Contract-Version": "2.0.0",
         }
 
         response = client.post(
@@ -264,6 +274,7 @@ class TestInterventionAPIContract:
         )
 
         assert response.status_code == 422
+        assert response.json()["detail"]["error"] == "ContractVersionMismatch"
 
     def test_empty_context_returns_422(self) -> None:
         """Test that empty context returns 422.
@@ -335,3 +346,37 @@ class TestInterventionAPIContract:
         monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
         intervention_module._provider_registry.reload()
         intervention_module._intervention_service = None
+
+    def test_persists_action_when_repository_available(self) -> None:
+        """Intervention responses should be persisted when repo is available."""
+
+        from server.infrastructure.persistence.in_memory_task_repository import InMemoryTaskRepository
+
+        captured_repo = InMemoryTaskRepository()
+
+        async def override_repo():
+            return captured_repo
+
+        app.dependency_overrides[intervention_module.get_task_repository] = override_repo
+
+        headers = {
+            **REQUIRED_HEADERS,
+            "X-Task-Id": "550e8400-e29b-41d4-a716-446655440000",
+            "Idempotency-Key": "task-persistence-unique",
+        }
+
+        response = client.post(
+            "/api/v1/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+
+        actions = captured_repo._actions  # type: ignore[attr-defined]
+        assert len(actions) == 1
+        stored_actions = list(actions.values())[0]
+        assert len(stored_actions) == 1
+        assert stored_actions[0].task_id.hex == "550e8400e29b41d4a716446655440000"
+
+        app.dependency_overrides.pop(intervention_module.get_task_repository, None)

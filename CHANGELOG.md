@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Backend testing mode now tolerates missing `DATABASE_URL` (in-memory repo) and accepts backward-compatible `X-Contract-Version` headers while persisting interventions when a repository is available.
+- Editor now loads/saves documents through Task API with local cache fallback and optimistic versioning; timer/lock visuals align with spec (non-intrusive timer, hover-only lock icon + aria label).
+
 ### Added - P2 Vibe Enhancements (2025-11-07)
 
 #### Manual Trigger Button (User Story 1)

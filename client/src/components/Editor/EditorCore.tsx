@@ -59,8 +59,12 @@ declare global {
 interface EditorCoreProps {
   initialContent?: string;
   mode?: AgentMode;
-  onChange?: (markdown: string) => void;
+  onChange?: (markdown: string, lockIds: string[]) => void;
   onReady?: (editor: Editor) => void;
+  /**
+   * Initial lock IDs loaded from persistence.
+   */
+  initialLocks?: string[];
   /**
    * External trigger for manual AI intervention.
    * When provided, triggers sensory feedback on change.
@@ -93,6 +97,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   initialContent = "",
   mode = "off",
   onReady,
+  initialLocks,
   externalTrigger,
   onTriggerProcessed,
   onTimerUpdate,
@@ -520,6 +525,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       // T008: Apply lock content decorations for visual styling FIRST
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
+        if (initialLocks && initialLocks.length > 0) {
+          initialLocks.forEach((lockId) => lockManager.applyLock(lockId));
+        }
         applyLockDecorations(view, lockManager);
       });
 
@@ -581,6 +589,8 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
                 refreshLockDecorations(view);
               }
             });
+
+            onChange?.(tr.doc.textContent, lockManager.getAllLocks());
           }
           originalDispatchTransaction(tr);
         };

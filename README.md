@@ -268,6 +268,9 @@ cp .env.example .env
 > TESTING=1 LLM_ALLOW_DEBUG_PROVIDER=1 LLM_DEFAULT_PROVIDER=debug
 > ```
 > 这会启用内置的 `debug` provider，返回可预测的 JSON 响应，避免真实 API 依赖。
+>
+> 🧭 **No-DB testing fallback**  
+> 在 CI 或本地测试不方便启动 Postgres 时，可设置 `TESTING=1` 且不提供 `DATABASE_URL`，后端会退回到内存仓储（不会持久化数据）。`./scripts/dev-start.sh` 仍默认启动 Postgres + Alembic 迁移；仅在显式 `TESTING=1` 且缺少 `DATABASE_URL` 时才使用内存模式。
 
 # Run development server
 poetry run uvicorn server.main:app --reload

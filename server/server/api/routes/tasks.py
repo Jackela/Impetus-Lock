@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.dependencies import get_task_repository
+from server.infrastructure.persistence.database import get_session_optional
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
 from server.domain.repositories.task_repository import TaskRepository
@@ -116,7 +117,7 @@ class InterventionHistoryResponse(BaseModel):
 async def create_task(
     request: TaskCreateRequest,
     repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session_optional),
 ) -> TaskResponse:
     """Create new task.
 
@@ -136,7 +137,8 @@ async def create_task(
         ```
     """
     task = await repository.create_task(request.content, request.lock_ids)
-    await session.commit()
+    if session:
+        await session.commit()
 
     return TaskResponse.from_entity(task)
 
@@ -176,7 +178,7 @@ async def update_task(
     task_id: UUID,
     request: TaskUpdateRequest,
     repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session_optional),
 ) -> TaskResponse:
     """Update task content and lock IDs.
 
@@ -216,7 +218,8 @@ async def update_task(
 
     try:
         updated_task = await repository.update_task(task)
-        await session.commit()
+        if session:
+            await session.commit()
         return TaskResponse.from_entity(updated_task)
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -226,7 +229,7 @@ async def update_task(
 async def delete_task(
     task_id: UUID,
     repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session_optional),
 ) -> None:
     """Delete task (cascade deletes intervention actions).
 
@@ -245,7 +248,8 @@ async def delete_task(
     """
     try:
         await repository.delete_task(task_id)
-        await session.commit()
+        if session:
+            await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 

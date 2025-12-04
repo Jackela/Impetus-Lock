@@ -10,18 +10,20 @@ Constitutional Compliance:
 
 import logging
 from typing import Annotated, cast
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 
 from server.application.services.intervention_service import InterventionService
 from server.domain.errors import LLMProviderError
 from server.domain.models.intervention import InterventionRequest, InterventionResponse
 from server.infrastructure.cache.idempotency_cache import IdempotencyCache
-from server.infrastructure.llm.provider_registry import (
-    ProviderOverride,
-    ProviderRegistry,
-)
+from server.infrastructure.llm.provider_registry import ProviderOverride, ProviderRegistry
+from server.api.dependencies import get_task_repository
+from server.infrastructure.persistence.database import get_session_optional
+from server.domain.repositories.task_repository import TaskRepository
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/v1/impetus", tags=["intervention"])
 logger = logging.getLogger(__name__)
@@ -31,6 +33,7 @@ logger = logging.getLogger(__name__)
 _idempotency_cache = IdempotencyCache(ttl=15)
 _provider_registry = ProviderRegistry()
 _intervention_service = None
+SERVER_CONTRACT_VERSION = "1.0.1"
 
 
 def get_intervention_service() -> InterventionService:
@@ -61,14 +64,18 @@ def get_intervention_service() -> InterventionService:
         500: {"description": "Internal Server Error - LLM or backend failure"},
     },
 )
-def generate_intervention(
+async def generate_intervention(
     http_request: Request,
+    response: Response,
     request: InterventionRequest,
     idempotency_key: Annotated[str, Header(alias="Idempotency-Key")],
-    contract_version: Annotated[str, Header(alias="X-Contract-Version")],
+    contract_version: Annotated[str | None, Header(alias="X-Contract-Version")] = None,
     provider_header: Annotated[str | None, Header(alias="X-LLM-Provider")] = None,
     model_header: Annotated[str | None, Header(alias="X-LLM-Model")] = None,
     api_key_header: Annotated[str | None, Header(alias="X-LLM-Api-Key")] = None,
+    task_id_header: Annotated[str | None, Header(alias="X-Task-Id")] = None,
+    repository: TaskRepository = Depends(get_task_repository),
+    session: AsyncSession | None = Depends(get_session_optional),
     service: InterventionService = Depends(get_intervention_service),
 ) -> InterventionResponse | JSONResponse:
     """Generate AI intervention action based on context and mode.
@@ -102,20 +109,28 @@ def generate_intervention(
           }'
         ```
     """
-    # Validate contract version
-    if contract_version != "1.0.1":
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error": "ContractVersionMismatch",
-                "message": f"Unsupported contract version: {contract_version}. Expected: 1.0.1",
-            },
-        )
+    # Validate contract version (accepts missing or older minor versions)
+    if contract_version:
+        client_major = contract_version.split(".")[0]
+        server_major = SERVER_CONTRACT_VERSION.split(".")[0]
+        if client_major != server_major:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "ContractVersionMismatch",
+                    "message": (
+                        f"Unsupported contract version: {contract_version}. "
+                        f"Expected major: {server_major}"
+                    ),
+                    "server_version": SERVER_CONTRACT_VERSION,
+                },
+            )
 
     # Check idempotency cache
     cached_response = _idempotency_cache.get(idempotency_key)
     if cached_response is not None:
         # Return cached response (within 15s window)
+        response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
         return cast(InterventionResponse, cached_response)
 
     overrides_provided = any(filter(None, [provider_header, model_header, api_key_header]))
@@ -141,7 +156,7 @@ def generate_intervention(
                 code="llm_not_configured",
                 message="LLM provider unavailable",
                 status_code=503,
-            )
+        )
         http_request.state.llm_provider = getattr(provider, "provider_name", None)
         logger.debug(
             "Resolved LLM provider",
@@ -152,12 +167,27 @@ def generate_intervention(
         )
 
         # Delegate to service layer (SRP - endpoint handles HTTP only)
-        response = service.generate_intervention(request, llm_override=provider)
+        intervention_response = await service.generate_intervention_async(
+            request,
+            task_id=_safe_uuid(task_id_header),
+            repository=repository,
+            llm_override=provider,
+        )
 
         # Cache response for idempotency
-        _idempotency_cache.set(idempotency_key, response)
+        _idempotency_cache.set(idempotency_key, intervention_response)
 
-        return response
+        response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
+
+        # Commit persistence when applicable
+        if session is not None:
+            try:
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+        return intervention_response
 
     except LLMProviderError as exc:
         logger.info(
@@ -186,3 +216,14 @@ def generate_intervention(
                 "details": {"llm_error": str(e)},
             },
         ) from e
+
+
+def _safe_uuid(value: str | None) -> UUID | None:
+    """Parse UUID string safely, returning None on failure."""
+
+    if value is None:
+        return None
+    try:
+        return UUID(value)
+    except ValueError:
+        return None

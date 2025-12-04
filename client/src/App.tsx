@@ -17,6 +17,7 @@ import { isInterventionAPIError, type InterventionAPIError } from "./hooks/useIn
 import { INITIAL_STORY } from "./constants/initialStory";
 import { TelemetryToggle } from "./components/TelemetryToggle";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
+import { useTaskSync } from "./hooks/useTaskSync";
 
 /**
  * Impetus Lock Main Application
@@ -24,6 +25,17 @@ import { OnboardingChecklist } from "./components/OnboardingChecklist";
  * Production editor with full lock enforcement and AI intervention system.
  */
 function App() {
+  const {
+    content: taskContent,
+    lockIds: taskLocks,
+    taskId,
+    version: taskVersion,
+    status: taskStatus,
+    error: taskError,
+    isSaving,
+    onChange: handleTaskChange,
+  } = useTaskSync(INITIAL_STORY);
+
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -142,17 +154,18 @@ function App() {
         }
       />
 
-      {/* T005: Timer indicator for Muse mode */}
-      <TimerIndicator
-        progress={timerProgress}
-        visible={mode === "muse"}
-        remainingTime={timerRemaining}
-      />
-
       <header className="app-header">
         <h1>Impetus Lock</h1>
         <div className="header-actions">
           <TelemetryToggle />
+          <span className="task-status" role="status">
+            {taskStatus === "loading" ? "Loading draft…" : isSaving ? "Saving…" : "Synced"}
+          </span>
+          {taskError && (
+            <span className="task-error" role="alert">
+              {taskError}
+            </span>
+          )}
           <button
             type="button"
             className="secondary"
@@ -209,14 +222,23 @@ function App() {
       </header>
 
       <main className="app-main" role="main">
+        {/* T005: Timer indicator for Muse mode */}
+        <TimerIndicator
+          progress={timerProgress}
+          visible={mode === "muse"}
+          remainingTime={timerRemaining}
+        />
         <OnboardingChecklist />
         <EditorCore
+          key={`${taskId ?? "local"}:${taskVersion}`}
           mode={mode}
-          initialContent={INITIAL_STORY}
+          initialContent={taskContent}
+          initialLocks={taskLocks}
           externalTrigger={manualTrigger}
           onTriggerProcessed={() => setManualTrigger(null)}
           onTimerUpdate={setTimerRemaining}
           onInterventionError={handleInterventionError}
+          onChange={handleTaskChange}
         />
       </main>
 

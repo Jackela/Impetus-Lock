@@ -236,6 +236,16 @@
   align-items: center;
 }
 
+.task-status {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.task-error {
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
 .llm-feedback {
   font-size: 0.75rem;
   color: rgba(248, 250, 252, 0.85);
