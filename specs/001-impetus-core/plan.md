@@ -132,7 +132,7 @@ Implement the core "Vibe" of Impetus Lock: an adversarial AI agent that enforces
 ### Article IV: SOLID Principles ✅
 
 - [x] **SRP - Endpoints delegate to services**:
-  - `/api/v1/impetus/generate-intervention` → `InterventionService.generate()`
+  - `/impetus/generate-intervention` → `InterventionService.generate()`
   - Endpoint ONLY handles HTTP (validation, headers, status codes)
   - Service layer handles business logic (LLM call, decision logic)
   
@@ -166,7 +166,7 @@ Implement the core "Vibe" of Impetus Lock: an adversarial AI agent that enforces
   
 - [x] **Backend Docstrings**:
   - `InterventionService.generate()` - Google-style docstring with Args/Returns/Raises
-  - `/api/v1/impetus/generate-intervention` - FastAPI auto-docs + docstring summary
+  - `/impetus/generate-intervention` - FastAPI auto-docs + docstring summary
   
 - [x] **Public interfaces documented**:
   - `LockManager.applyLock()` - JSDoc with @param lock_id, @returns success boolean
@@ -247,7 +247,7 @@ server/
 │   └── api/
 │       ├── main.py                  # FastAPI app + health endpoint
 │       └── routes/
-│           └── intervention.py      # POST /api/v1/impetus/generate-intervention
+│           └── intervention.py      # POST /impetus/generate-intervention
 ├── tests/
 │   ├── test_intervention_api.py     # API contract tests
 │   └── test_health.py               # Health endpoint test

@@ -86,7 +86,7 @@ Require-InWsl poetry
 Require-InWsl npm
 
 # Compose backend/frontend commands (run inside WSL)
-$BACKEND_PORT   = if ($env:BACKEND_PORT)   { $env:BACKEND_PORT }   else { '8081' }
+$BACKEND_PORT   = if ($env:BACKEND_PORT)   { $env:BACKEND_PORT }   else { '8000' }
 $FRONTEND_PORT  = if ($env:FRONTEND_PORT)  { $env:FRONTEND_PORT }  else { '5173' }
 $FRONTEND_HOST  = if ($env:FRONTEND_HOST)  { $env:FRONTEND_HOST }  else { '0.0.0.0' }
 $API_HOST       = if ($env:API_HOST)       { $env:API_HOST }       else { '0.0.0.0' }

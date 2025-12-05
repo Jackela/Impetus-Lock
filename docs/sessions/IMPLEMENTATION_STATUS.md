@@ -48,7 +48,7 @@
 ### TDD GREEN Phase - Backend (2/2 tasks) ✅
 
 - ✅ T026: `InterventionService` with constructor injection
-- ✅ T027: `/api/v1/impetus/generate-intervention` endpoint + CORS
+- ✅ T027: `/impetus/generate-intervention` endpoint + CORS
 
 **Files Created**:
 ```
@@ -184,7 +184,7 @@ act
 ### Backend Architecture
 
 ```
-POST /api/v1/impetus/generate-intervention
+POST /impetus/generate-intervention
   │
   ├─ Headers: Idempotency-Key, X-Contract-Version
   ├─ Body: { context, mode, client_meta }

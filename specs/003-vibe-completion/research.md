@@ -153,7 +153,7 @@ export function handleAPIError(error: Error, onError: (type: AIActionType) => vo
 
 // Usage in components:
 try {
-  const response = await fetch('/api/v1/impetus/generate-intervention', {
+  const response = await fetch('/impetus/generate-intervention', {
     method: 'POST',
     signal: AbortSignal.timeout(5000)  // 5s timeout
   });

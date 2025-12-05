@@ -134,7 +134,7 @@ npm run test -- useAnimationController.test.ts
 **Current State**: API call without error handling
 ```typescript
 const handleClick = () => {
-  fetch('/api/v1/impetus/generate-intervention', { method: 'POST' })
+  fetch('/impetus/generate-intervention', { method: 'POST' })
     .then(() => onTrigger());
 };
 ```
@@ -143,7 +143,7 @@ const handleClick = () => {
 ```typescript
 const handleClick = async () => {
   try {
-    const response = await fetch('/api/v1/impetus/generate-intervention', {
+    const response = await fetch('/impetus/generate-intervention', {
       method: 'POST',
       signal: AbortSignal.timeout(5000)  // 5s timeout
     });

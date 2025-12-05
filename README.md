@@ -51,7 +51,7 @@
   .\scripts\dev-start.ps1
   ```
 
-脚本会自动在 WSL 中启动 FastAPI（端口 8081）和 Vite（端口 5173），并将日志写入 `server/server_dev.log` 与 `client/devserver.log`。
+脚本会自动在 WSL 中启动 FastAPI（端口 8000）和 Vite（端口 5173），并将日志写入 `server/server_dev.log` 与 `client/devserver.log`。
 
 ### 🎥 录制 Playwright 演示
 
@@ -122,7 +122,7 @@ graph LR
 - Agent **行动（Act）**：在光标位置强制注入 Markdown 格式的约束块
 - 当 Agent 认为需要“硬重写”时，会直接替换用户刚写完的句子，并对新文本加锁，确保只能沿着 AI 指定的方向继续写
 - 约束块包含 `lock_id`，通过 ProseMirror `filterTransaction` 实现**不可删除**
-- API 调用：`POST /api/v1/impetus/generate-intervention` (mode: "muse")
+- API 调用：`POST /impetus/generate-intervention` (mode: "muse")
 
 **核心约束 | Core Constraint:**
 ✅ 注入的文本块**不可删除**  

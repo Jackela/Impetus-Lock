@@ -3,14 +3,14 @@
 
   - Opens two PowerShell windows (backend/frontend) with live output
   - Creates a per-project venv at server\.venv.windows and installs deps
-  - Starts uvicorn on 127.0.0.1:8081 and Vite on localhost:5173
+  - Starts uvicorn on 127.0.0.1:8000 and Vite on localhost:5173
   - Skips database initialization by default (sets SKIP_DB=1)
 
   Usage: .\scripts\dev-start-native.ps1
 #>
 
 param(
-  [int]$BackendPort = 8081,
+  [int]$BackendPort = 8000,
   [int]$FrontendPort = 5173,
   [string]$FrontendHost = '0.0.0.0',
   [switch]$NoInstall

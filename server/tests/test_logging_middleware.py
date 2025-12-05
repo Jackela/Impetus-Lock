@@ -30,7 +30,7 @@ def test_http_exception_logs_real_status(caplog: LogCaptureFixture) -> None:
     client = TestClient(app)
     caplog.set_level("INFO")
 
-    response = client.post("/api/v1/impetus/generate-intervention", json={})
+    response = client.post("/impetus/generate-intervention", json={})
     assert response.status_code == 422
 
     record = next(
@@ -38,7 +38,7 @@ def test_http_exception_logs_real_status(caplog: LogCaptureFixture) -> None:
             rec
             for rec in caplog.records
             if rec.getMessage() == "http_request"
-            and getattr(rec, "path", None) == "/api/v1/impetus/generate-intervention"
+            and getattr(rec, "path", None) == "/impetus/generate-intervention"
         ),
         None,
     )

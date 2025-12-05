@@ -22,7 +22,7 @@ const metaKey = "impetus.task.meta";
 const cacheKey = "impetus.task.cache";
 
 function mockFetchQueue(queue: Array<{ status?: number; body?: unknown; reject?: Error }>) {
-  return vi.fn(async (_url: string, _options?: RequestInit) => {
+  return vi.fn(async () => {
     const next = queue.shift();
     if (!next) {
       throw new Error("No mock response");

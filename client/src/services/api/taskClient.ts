@@ -1,3 +1,5 @@
+import type { components } from "../../types/api.generated";
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export interface TaskRecord {
@@ -9,14 +11,7 @@ export interface TaskRecord {
   version: number;
 }
 
-interface TaskResponse {
-  id: string;
-  content: string;
-  lock_ids: string[];
-  created_at: string;
-  updated_at: string;
-  version: number;
-}
+type ApiTaskResponse = components["schemas"]["TaskResponse"];
 
 export class TaskAPIError extends Error {
   constructor(
@@ -29,9 +24,7 @@ export class TaskAPIError extends Error {
   }
 }
 
-type TaskResponse = components["schemas"]["TaskResponse"];
-
-function mapTask(task: TaskResponse): TaskRecord {
+function mapTask(task: ApiTaskResponse): TaskRecord {
   return {
     id: task.id,
     content: task.content,
@@ -43,16 +36,16 @@ function mapTask(task: TaskResponse): TaskRecord {
 }
 
 export async function fetchTask(taskId: string): Promise<TaskRecord> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/tasks/${taskId}`);
+  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`);
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to fetch task");
   }
-  const data = (await res.json()) as TaskResponse;
+  const data = (await res.json()) as ApiTaskResponse;
   return mapTask(data);
 }
 
 export async function createTask(content: string, lockIds: string[]): Promise<TaskRecord> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/tasks`, {
+  const res = await fetch(`${API_BASE_URL}/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content, lock_ids: lockIds }),
@@ -60,7 +53,7 @@ export async function createTask(content: string, lockIds: string[]): Promise<Ta
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to create task");
   }
-  const data = (await res.json()) as TaskResponse;
+  const data = (await res.json()) as ApiTaskResponse;
   return mapTask(data);
 }
 
@@ -70,7 +63,7 @@ export async function updateTask(
   lockIds: string[],
   version: number
 ): Promise<TaskRecord> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/tasks/${taskId}`, {
+  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content, lock_ids: lockIds, version }),
@@ -84,6 +77,6 @@ export async function updateTask(
     throw new TaskAPIError(res.status, "Failed to update task");
   }
 
-  const data = (await res.json()) as TaskResponse;
+  const data = (await res.json()) as ApiTaskResponse;
   return mapTask(data);
 }

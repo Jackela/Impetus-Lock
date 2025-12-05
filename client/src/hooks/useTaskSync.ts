@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createTask, fetchTask, updateTask, TaskAPIError, type TaskRecord } from "../services/api/taskClient";
+import {
+  createTask,
+  fetchTask,
+  updateTask,
+  TaskAPIError,
+  type TaskRecord,
+} from "../services/api/taskClient";
 
 const LOCAL_CACHE_KEY = "impetus.task.cache";
 const LOCAL_META_KEY = "impetus.task.meta";
@@ -79,7 +85,7 @@ export function useTaskSync(defaultContent: string): TaskSyncState {
       setVersion(created.version);
       cacheMeta({ taskId: created.id, version: created.version });
       setStatus("ready");
-    } catch (err) {
+    } catch {
       loadFromCache();
       setError("Task API unavailable. Using local draft.");
       setStatus("error");

@@ -76,7 +76,7 @@ Audio assets have been moved to their correct location:
 - **client/src/assets/audio/** - Audio files for sensory feedback
   - ✅ clank.mp3 (28.8 KB) - Provoke action sound
   - ✅ whoosh.mp3 (18.4 KB) - Delete action sound
-  - ⚠️ bonk.mp3 - Still needed for REJECT action
+  - ✅ bonk.mp3 - REJECT/lock block action sound
 
 ## Archive Purpose
 

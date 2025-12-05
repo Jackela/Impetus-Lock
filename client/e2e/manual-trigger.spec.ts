@@ -100,11 +100,10 @@ test.describe("Manual Trigger Button", () => {
     const { button } = await enableMuseMode(page);
 
     // Set up API request listener
-    // API endpoint: /api/v1/impetus/generate-intervention (POST)
+    // API endpoint: /impetus/generate-intervention (POST)
     const apiRequestPromise = page.waitForRequest(
       (request) =>
-        request.url().includes("/api/v1/impetus/generate-intervention") &&
-        request.method() === "POST",
+        request.url().includes("/impetus/generate-intervention") && request.method() === "POST",
       { timeout: 5000 }
     );
 

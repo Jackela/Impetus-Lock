@@ -90,7 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Loki Mode**: Random interventions (Provoke or Delete)
   - Safety guards: Prevents DELETE on short context (<50 chars)
 - **Backend API** (FastAPI):
-  - `/api/v1/impetus/generate-intervention` endpoint
+  - `/impetus/generate-intervention` endpoint
   - Idempotency cache (TOCTOU protection, thread-safe)
   - Contract versioning support
   - Health check endpoint

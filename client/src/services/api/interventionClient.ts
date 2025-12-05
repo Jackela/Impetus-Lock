@@ -22,7 +22,7 @@ type InterventionResponse = components["schemas"]["InterventionResponse"];
  * API client configuration.
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-const CONTRACT_VERSION = "1.0.1";
+const CONTRACT_VERSION = "2.0.0";
 
 /**
  * Generate UUID v4 for Idempotency-Key.
@@ -80,7 +80,7 @@ export class InterventionAPIError extends Error {
 /**
  * Call backend API to generate intervention action.
  *
- * Sends intervention request to POST /api/v1/impetus/generate-intervention
+ * Sends intervention request to POST /impetus/generate-intervention
  * with required headers (Idempotency-Key, X-Contract-Version).
  *
  * @param request - Intervention request payload
@@ -133,7 +133,7 @@ export async function generateIntervention(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/impetus/generate-intervention`, {
+      const response = await fetch(`${API_BASE_URL}/impetus/generate-intervention`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

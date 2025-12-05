@@ -419,7 +419,7 @@ def generate_intervention(
 
 ```typescript
 const response = await fetch(
-    `${API_BASE_URL}/api/v1/impetus/generate-intervention`,
+    `${API_BASE_URL}/impetus/generate-intervention`,
     {
         method: 'POST',
         headers: { ... },
@@ -1294,7 +1294,7 @@ def valid_loki_request():
 
 # Usage in tests
 def test_muse_mode(valid_muse_request):
-    response = client.post("/api/v1/impetus/generate-intervention", json=valid_muse_request)
+    response = client.post("/impetus/generate-intervention", json=valid_muse_request)
     assert response.status_code == 200
 ```
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Impetus Lock - Agent Intervention API
-  version: 1.0.1
+  version: 2.0.0
   description: |
     API contract for AI Agent intervention system (Muse + Loki modes).
     
@@ -12,7 +12,7 @@ info:
     **Idempotency**: All requests require `Idempotency-Key` header (UUID v4).
     Duplicate requests within 15s window return cached response.
     
-    **Contract Version**: Client MUST send `X-Contract-Version: 1.0.1` header.
+    **Contract Version**: Client MUST send `X-Contract-Version: 2.0.0` header.
     Breaking changes will increment major version.
 
 servers:
@@ -22,7 +22,7 @@ servers:
     description: Production server (placeholder)
 
 paths:
-  /api/v1/impetus/generate-intervention:
+  /impetus/generate-intervention:
     post:
       summary: Generate AI intervention action
       description: |
@@ -57,11 +57,11 @@ paths:
         - name: X-Contract-Version
           in: header
           required: true
-          description: API contract version (MUST be "1.0.1")
+          description: API contract version (MUST be "2.0.0")
           schema:
             type: string
-            enum: ["1.0.1"]
-            example: "1.0.1"
+            enum: ["2.0.0"]
+            example: "2.0.0"
       
       requestBody:
         required: true
@@ -188,6 +188,145 @@ paths:
                 details:
                   llm_provider: "openai"
                   error_code: "503"
+  /tasks:
+    post:
+      summary: Create task with initial content and locks
+      description: |
+        Creates a task record storing the current Markdown and lock IDs.
+        Used by the editor to persist adversarial constraints across sessions.
+      operationId: createTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateRequest'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '422':
+          description: Validation error (content too short/long)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tasks/{task_id}:
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        description: Task identifier (UUID v4)
+        schema:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+    get:
+      summary: Get task by ID
+      operationId: getTask
+      responses:
+        '200':
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update task content and locks (optimistic locking)
+      operationId: updateTask
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateRequest'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Version conflict (optimistic locking failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete task and its intervention history
+      operationId: deleteTask
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tasks/{task_id}/actions:
+    parameters:
+      - name: task_id
+        in: path
+        required: true
+        description: Task identifier (UUID v4)
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: List intervention actions for a task (most recent first)
+      operationId: listTaskActions
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          example: 0
+      responses:
+        '200':
+          description: Intervention history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterventionHistoryResponse'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -294,6 +433,148 @@ components:
       # Conditional validation (not enforced by OpenAPI, handled by backend)
       # If action === "provoke": content, lock_id MUST be present
       # If action === "delete": anchor MUST be present
+    TaskCreateRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 100000
+          description: Initial task content (Markdown)
+        lock_ids:
+          type: array
+          items:
+            type: string
+          description: Lock IDs present in the content
+          example: ["lock_01j4z3m8a6q3qz2x8j4z3m8a"]
+          default: []
+    TaskUpdateRequest:
+      type: object
+      required:
+        - content
+        - lock_ids
+        - version
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 100000
+          description: Updated Markdown content
+        lock_ids:
+          type: array
+          items:
+            type: string
+          description: Updated lock IDs extracted from content
+        version:
+          type: integer
+          minimum: 0
+          description: Expected current version for optimistic locking
+    TaskResponse:
+      type: object
+      required:
+        - id
+        - content
+        - lock_ids
+        - created_at
+        - updated_at
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        content:
+          type: string
+          description: Task content (Markdown)
+        lock_ids:
+          type: array
+          items:
+            type: string
+          description: Lock IDs present in the content
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:45.123Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:31:45.123Z"
+        version:
+          type: integer
+          description: Optimistic lock version
+          example: 1
+    InterventionActionResponse:
+      type: object
+      required:
+        - id
+        - task_id
+        - action_type
+        - action_id
+        - anchor
+        - mode
+        - context
+        - issued_at
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "7c4a3c5c-2fb7-41cb-8f6c-7d7b9d77a111"
+        task_id:
+          type: string
+          format: uuid
+        action_type:
+          type: string
+          enum: ["provoke", "delete", "rewrite"]
+        action_id:
+          type: string
+          description: Stable client-facing action identifier
+        lock_id:
+          type: string
+          nullable: true
+          description: Present for provoke/rewrite actions
+        content:
+          type: string
+          nullable: true
+          description: Present for provoke/rewrite actions
+        anchor:
+          $ref: '#/components/schemas/Anchor'
+        mode:
+          type: string
+          enum: ["muse", "loki"]
+        context:
+          type: string
+          description: Author context captured when the action was generated
+        issued_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    InterventionHistoryResponse:
+      type: object
+      required:
+        - total
+        - limit
+        - offset
+        - actions
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterventionActionResponse'
     
     Anchor:
       oneOf:

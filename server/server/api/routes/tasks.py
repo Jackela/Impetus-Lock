@@ -12,17 +12,20 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.dependencies import get_task_repository
-from server.infrastructure.persistence.database import get_session_optional
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
+from server.domain.models.anchor import Anchor
 from server.domain.repositories.task_repository import TaskRepository
-from server.infrastructure.persistence.database import get_session
+from server.infrastructure.persistence.database import get_session_optional
 
-router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
+router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+# TypeAdapter for validating Anchor union type
+_anchor_adapter: TypeAdapter[Anchor] = TypeAdapter(Anchor)
 
 
 # Request/Response Models
@@ -77,7 +80,7 @@ class InterventionActionResponse(BaseModel):
     action_id: str
     lock_id: str | None
     content: str | None
-    anchor: dict[str, str]
+    anchor: Anchor
     mode: str
     context: str
     issued_at: str
@@ -93,7 +96,7 @@ class InterventionActionResponse(BaseModel):
             action_id=action.action_id,
             lock_id=action.lock_id,
             content=action.content,
-            anchor=action.anchor,
+            anchor=_anchor_adapter.validate_python(action.anchor),
             mode=action.mode,
             context=action.context,
             issued_at=action.issued_at.isoformat(),
@@ -131,7 +134,7 @@ async def create_task(
 
     Example:
         ```bash
-        curl -X POST http://localhost:8000/api/v1/tasks \
+        curl -X POST http://localhost:8000/tasks \
           -H "Content-Type: application/json" \
           -d '{"content": "Initial content", "lock_ids": []}'
         ```
@@ -162,7 +165,7 @@ async def get_task(
 
     Example:
         ```bash
-        curl http://localhost:8000/api/v1/tasks/{task_id}
+        curl http://localhost:8000/tasks/{task_id}
         ```
     """
     task = await repository.get_task(task_id)
@@ -196,7 +199,7 @@ async def update_task(
 
     Example:
         ```bash
-        curl -X PUT http://localhost:8000/api/v1/tasks/{task_id} \
+        curl -X PUT http://localhost:8000/tasks/{task_id} \
           -H "Content-Type: application/json" \
           -d '{"content": "Updated", "lock_ids": ["lock_1"], "version": 0}'
         ```
@@ -243,7 +246,7 @@ async def delete_task(
 
     Example:
         ```bash
-        curl -X DELETE http://localhost:8000/api/v1/tasks/{task_id}
+        curl -X DELETE http://localhost:8000/tasks/{task_id}
         ```
     """
     try:
@@ -278,10 +281,10 @@ async def get_intervention_history(
     Example:
         ```bash
         # Get first 10 actions
-        curl http://localhost:8000/api/v1/tasks/{task_id}/actions?limit=10
+        curl http://localhost:8000/tasks/{task_id}/actions?limit=10
 
         # Get next 10 actions
-        curl http://localhost:8000/api/v1/tasks/{task_id}/actions?limit=10&offset=10
+        curl http://localhost:8000/tasks/{task_id}/actions?limit=10&offset=10
         ```
     """
     # Verify task exists

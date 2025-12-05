@@ -14,10 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.domain.repositories.task_repository import TaskRepository
 from server.infrastructure.persistence.database import get_session_optional
+from server.infrastructure.persistence.in_memory_task_repository import InMemoryTaskRepository
 from server.infrastructure.persistence.postgresql_task_repository import (
     PostgreSQLTaskRepository,
 )
-from server.infrastructure.persistence.in_memory_task_repository import InMemoryTaskRepository
+
+# Module-level singleton for in-memory fallback (TESTING mode)
+_in_memory_repository: InMemoryTaskRepository | None = None
 
 
 async def get_task_repository(
@@ -33,8 +36,8 @@ async def get_task_repository(
 
 
 def _get_in_memory_repository() -> InMemoryTaskRepository:
-    # Singleton in-memory repo to retain state across requests in TESTING.
+    """Get or create singleton in-memory repository for TESTING mode."""
     global _in_memory_repository
-    if "_in_memory_repository" not in globals():
+    if _in_memory_repository is None:
         _in_memory_repository = InMemoryTaskRepository()
-    return _in_memory_repository  # type: ignore[misc]
+    return _in_memory_repository

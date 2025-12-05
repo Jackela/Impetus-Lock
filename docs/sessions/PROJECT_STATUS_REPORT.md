@@ -575,7 +575,7 @@ def generate_intervention(
     service: InterventionService = Depends(get_intervention_service)
 ) -> InterventionResponse:
     # 1. 验证契约版本
-    if contract_version != "1.0.1":
+    if contract_version != "2.0.0":
         raise HTTPException(422, detail="版本不匹配")
     
     # 2. 检查幂等缓存
@@ -609,7 +609,7 @@ def generate_intervention(
 ```python
 app = FastAPI(
     title="Impetus Lock API",
-    version="1.0.1"
+    version="2.0.0"
 )
 
 # CORS 配置
@@ -647,7 +647,7 @@ def setup_test_environment() -> None:
 def test_muse_mode_returns_provoke_with_lock_id():
     """Muse 模式必须返回 Provoke 动作"""
     response = client.post(
-        "/api/v1/impetus/generate-intervention",
+        "/impetus/generate-intervention",
         json=VALID_MUSE_REQUEST,
         headers=REQUIRED_HEADERS
     )

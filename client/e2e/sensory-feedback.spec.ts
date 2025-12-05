@@ -49,7 +49,7 @@ test.describe("Sensory Feedback", () => {
    * **Blocker**: SensoryFeedback not yet wired to AI action events
    */
   test("plays Clank sound and shows Glitch animation on Provoke", async ({ page }) => {
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -110,7 +110,7 @@ test.describe("Sensory Feedback", () => {
     await modeSelector.selectOption("loki");
 
     // Trigger DELETE action via test endpoint (bypasses random timer)
-    const response = await request.post("http://localhost:8000/api/v1/test/trigger-delete", {
+    const response = await request.post("http://localhost:8000/test/trigger-delete", {
       data: {
         from_pos: 10,
         to_pos: 20,
@@ -165,7 +165,7 @@ test.describe("Sensory Feedback", () => {
     await expect(feedbackElement).toHaveAttribute("data-animation", "glitch", { timeout: 5000 });
 
     // Immediately trigger second action (DELETE via test endpoint)
-    const deleteResponse = await request.post("http://localhost:8000/api/v1/test/trigger-delete", {
+    const deleteResponse = await request.post("http://localhost:8000/test/trigger-delete", {
       data: {
         from_pos: 10,
         to_pos: 20,

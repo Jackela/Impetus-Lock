@@ -30,8 +30,7 @@ test.describe("Loki Mode - Provoke Action", () => {
     // Set up API request interception
     const apiCall = page.waitForRequest(
       (request) =>
-        request.url().includes("/api/v1/impetus/generate-intervention") &&
-        request.method() === "POST"
+        request.url().includes("/impetus/generate-intervention") && request.method() === "POST"
     );
 
     // Wait for random timer to fire (max 120 seconds in real mode, should be faster in test)
@@ -54,8 +53,7 @@ test.describe("Loki Mode - Provoke Action", () => {
     // Wait for Loki intervention API call
     const responsePromise = page.waitForResponse(
       (response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention") &&
-        response.status() === 200
+        response.url().includes("/impetus/generate-intervention") && response.status() === 200
     );
 
     const response = await responsePromise.timeout(150000);
@@ -88,9 +86,7 @@ test.describe("Loki Mode - Provoke Action", () => {
 
     // Wait for intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -117,9 +113,7 @@ test.describe("Loki Mode - Provoke Action", () => {
 
     // Wait for intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -150,9 +144,7 @@ test.describe("Loki Mode - Provoke Action", () => {
     try {
       // Wait for Loki intervention (should happen even during typing)
       const response = await page
-        .waitForResponse((response) =>
-          response.url().includes("/api/v1/impetus/generate-intervention")
-        )
+        .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
         .timeout(150000);
 
       const responseBody = await response.json();
@@ -178,7 +170,7 @@ test.describe("Loki Mode - Provoke Action", () => {
     // Set up timeout for intervention (should NOT happen)
     let interventionCalled = false;
     page.on("request", (request) => {
-      if (request.url().includes("/api/v1/impetus/generate-intervention")) {
+      if (request.url().includes("/impetus/generate-intervention")) {
         interventionCalled = true;
       }
     });
@@ -202,7 +194,7 @@ test.describe("Loki Mode - Provoke Action", () => {
     // Loki timer should NOT be active in Muse mode
     let lokiInterventionCalled = false;
     page.on("request", (request) => {
-      if (request.url().includes("/api/v1/impetus/generate-intervention")) {
+      if (request.url().includes("/impetus/generate-intervention")) {
         const postData = request.postDataJSON();
         if (postData?.mode === "loki") {
           lokiInterventionCalled = true;
@@ -224,9 +216,7 @@ test.describe("Loki Mode - Provoke Action", () => {
 
     // Wait for intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -258,9 +248,7 @@ test.describe("Loki Mode - Provoke Action", () => {
 
     // Wait for first intervention
     const firstResponse = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const firstBody = await firstResponse.json();
@@ -268,9 +256,7 @@ test.describe("Loki Mode - Provoke Action", () => {
 
     // Wait for second intervention (new timer should be scheduled)
     const secondResponse = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const secondBody = await secondResponse.json();

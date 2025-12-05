@@ -16,6 +16,7 @@
 ## 4. Testing
 - [x] 4.1 Backend: unit/integration tests covering no-DB fallback, contract header, repo persistence path
 - [x] 4.2 Frontend: unit/e2e covering load/save, offline fallback, timer/lock visuals
+- [x] 4.3 Update tests/docs for contract version 2.0.0 (backend + frontend + specs)
 
 ## 5. Documentation
 - [x] 5.1 Update README/DEVELOPMENT/dev-start notes for fallback mode

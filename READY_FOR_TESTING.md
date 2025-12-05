@@ -123,7 +123,7 @@ npm run dev
 3. Wait 60 seconds without typing
 4. **Expected**: 
    - State transitions: WRITING → IDLE (5s) → STUCK (60s)
-   - API call to /api/v1/impetus/generate-intervention
+   - API call to /impetus/generate-intervention
    - Locked blockquote injected with Muse content
    - Content is un-deletable
 

@@ -1,6 +1,6 @@
 """API Contract Tests for Intervention Endpoint.
 
-Tests POST /api/v1/impetus/generate-intervention endpoint.
+Tests POST /impetus/generate-intervention endpoint.
 Validates request/response contract, idempotency, and error handling.
 
 Constitutional Compliance:
@@ -22,6 +22,7 @@ from server.api.main import app
 from server.api.routes import intervention as intervention_module
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
+from server.infrastructure.llm.provider_registry import ProviderRegistry
 
 client = TestClient(app)
 
@@ -40,7 +41,7 @@ VALID_LOKI_REQUEST = {
 
 REQUIRED_HEADERS = {
     "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
-    "X-Contract-Version": "1.0.1",
+    "X-Contract-Version": "2.0.0",
 }
 
 
@@ -85,7 +86,7 @@ class TestInterventionAPIContract:
         Expected (RED): 404 Not Found (endpoint not implemented)
         """
         response = client.post(
-            "/api/v1/impetus/generate-intervention",
+            "/impetus/generate-intervention",
             json=VALID_MUSE_REQUEST,
             headers=REQUIRED_HEADERS,
         )
@@ -117,7 +118,7 @@ class TestInterventionAPIContract:
         Expected (RED): 404 Not Found (endpoint not implemented)
         """
         response = client.post(
-            "/api/v1/impetus/generate-intervention",
+            "/impetus/generate-intervention",
             json=VALID_LOKI_REQUEST,
             headers=REQUIRED_HEADERS,
         )
@@ -149,11 +150,11 @@ class TestInterventionAPIContract:
         Expected (RED): 404 Not Found (endpoint not implemented)
         """
         idempotency_key = "test-key-12345"
-        headers = {"Idempotency-Key": idempotency_key, "X-Contract-Version": "1.0.1"}
+        headers = {"Idempotency-Key": idempotency_key, "X-Contract-Version": "2.0.0"}
 
         # First request
         response1 = client.post(
-            "/api/v1/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
+            "/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
         )
 
         assert response1.status_code == 200
@@ -161,7 +162,7 @@ class TestInterventionAPIContract:
 
         # Second request with same key (within 15s)
         response2 = client.post(
-            "/api/v1/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
+            "/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
         )
 
         assert response2.status_code == 200
@@ -187,7 +188,7 @@ class TestInterventionAPIContract:
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention", json=invalid_request, headers=REQUIRED_HEADERS
+            "/impetus/generate-intervention", json=invalid_request, headers=REQUIRED_HEADERS
         )
 
         assert response.status_code == 422
@@ -202,12 +203,12 @@ class TestInterventionAPIContract:
         Expected (RED): 404 Not Found (endpoint not implemented)
         """
         headers = {
-            "X-Contract-Version": "1.0.1"
+            "X-Contract-Version": "2.0.0"
             # Missing Idempotency-Key
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
+            "/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
         )
 
         assert response.status_code == 422
@@ -230,12 +231,12 @@ class TestInterventionAPIContract:
 
         headers = {
             "Idempotency-Key": "rewrite-key-12345",
-            "X-Contract-Version": "1.0.1",
+            "X-Contract-Version": "2.0.0",
         }
 
         with patch(mock_path, return_value=rewrite_response):
             response = client.post(
-                "/api/v1/impetus/generate-intervention",
+                "/impetus/generate-intervention",
                 json=VALID_MUSE_REQUEST,
                 headers=headers,
             )
@@ -247,30 +248,30 @@ class TestInterventionAPIContract:
         assert data["lock_id"].startswith("lock")
         assert data["source"] == "muse"
 
-    def test_missing_contract_version_defaults_to_server(self) -> None:
-        """Missing X-Contract-Version should be accepted and echoed."""
+    def test_missing_contract_version_rejected(self) -> None:
+        """Missing X-Contract-Version should be rejected."""
 
         headers = {
             "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
+            "/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
         )
 
-        assert response.status_code == 200
-        assert response.headers.get("X-Contract-Version") == "1.0.1"
+        assert response.status_code == 422
+        assert response.json()["detail"]["error"] == "ContractVersionMismatch"
 
-    def test_major_contract_version_mismatch_rejected(self) -> None:
-        """Major version mismatch should return 422."""
+    def test_contract_version_mismatch_rejected(self) -> None:
+        """Any mismatch should return 422."""
 
         headers = {
             "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
-            "X-Contract-Version": "2.0.0",
+            "X-Contract-Version": "1.0.1",
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
+            "/impetus/generate-intervention", json=VALID_MUSE_REQUEST, headers=headers
         )
 
         assert response.status_code == 422
@@ -289,7 +290,7 @@ class TestInterventionAPIContract:
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention", json=invalid_request, headers=REQUIRED_HEADERS
+            "/impetus/generate-intervention", json=invalid_request, headers=REQUIRED_HEADERS
         )
 
         assert response.status_code == 422
@@ -298,8 +299,7 @@ class TestInterventionAPIContract:
         """API should raise 503 when no server key and no BYOK override."""
 
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        intervention_module._provider_registry.reload()
-        intervention_module._intervention_service = None
+        app.state.provider_registry = ProviderRegistry()
 
         headers = {
             **REQUIRED_HEADERS,
@@ -307,7 +307,7 @@ class TestInterventionAPIContract:
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention",
+            "/impetus/generate-intervention",
             json=VALID_MUSE_REQUEST,
             headers=headers,
         )
@@ -316,15 +316,13 @@ class TestInterventionAPIContract:
         assert response.json()["code"] == "llm_not_configured"
 
         monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
-        intervention_module._provider_registry.reload()
-        intervention_module._intervention_service = None
+        app.state.provider_registry = ProviderRegistry()
 
     def test_byok_override_invokes_endpoint(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """User supplied headers should enable Anthropic without server env."""
 
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        intervention_module._provider_registry.reload()
-        intervention_module._intervention_service = None
+        app.state.provider_registry = ProviderRegistry()
 
         headers = {
             **REQUIRED_HEADERS,
@@ -335,7 +333,7 @@ class TestInterventionAPIContract:
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention",
+            "/impetus/generate-intervention",
             json=VALID_MUSE_REQUEST,
             headers=headers,
         )
@@ -344,17 +342,18 @@ class TestInterventionAPIContract:
         assert response.json()["source"] == "muse"
 
         monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
-        intervention_module._provider_registry.reload()
-        intervention_module._intervention_service = None
+        app.state.provider_registry = ProviderRegistry()
 
     def test_persists_action_when_repository_available(self) -> None:
         """Intervention responses should be persisted when repo is available."""
 
-        from server.infrastructure.persistence.in_memory_task_repository import InMemoryTaskRepository
+        from server.infrastructure.persistence.in_memory_task_repository import (
+            InMemoryTaskRepository,
+        )
 
         captured_repo = InMemoryTaskRepository()
 
-        async def override_repo():
+        async def override_repo() -> InMemoryTaskRepository:
             return captured_repo
 
         app.dependency_overrides[intervention_module.get_task_repository] = override_repo
@@ -366,14 +365,14 @@ class TestInterventionAPIContract:
         }
 
         response = client.post(
-            "/api/v1/impetus/generate-intervention",
+            "/impetus/generate-intervention",
             json=VALID_MUSE_REQUEST,
             headers=headers,
         )
 
         assert response.status_code == 200
 
-        actions = captured_repo._actions  # type: ignore[attr-defined]
+        actions = captured_repo._actions  # noqa: SLF001
         assert len(actions) == 1
         stored_actions = list(actions.values())[0]
         assert len(stored_actions) == 1

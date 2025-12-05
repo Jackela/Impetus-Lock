@@ -7,7 +7,7 @@ The intervention API SHALL accept optional BYOK overrides (provider, model, API 
 
 #### Scenario: User supplies Anthropic key at runtime
 - **GIVEN** the client sends `X-LLM-Provider: anthropic`, `X-LLM-Model: claude-3-5-haiku-latest`, and `X-LLM-Api-Key: sk-ant-...`
-- **WHEN** `/api/v1/impetus/generate-intervention` executes
+- **WHEN** `/impetus/generate-intervention` executes
 - **THEN** the backend SHALL instantiate an Anthropic client using the supplied key
 - **AND** forward the Muse/Loki prompt to that client while keeping the key in-memory only for that request
 - **AND** respond 200 with the structured intervention payload if the provider call succeeds.

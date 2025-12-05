@@ -235,7 +235,7 @@ enum AgentMode {
            │                 ▼
            │        ┌─────────────────┐
            │        │     STUCK       │──► Trigger API call
-           │        │  (>60s idle)    │    POST /api/v1/impetus/generate-intervention
+           │        │  (>60s idle)    │    POST /impetus/generate-intervention
            │        └────────┬─────────┘    { mode: "muse", context: "..." }
            │                 │
            │                 │ API responds
@@ -276,7 +276,7 @@ enum AgentMode {
                              │ Timer fires
                              ▼
                     ┌─────────────────┐
-                    │ Trigger API     │──► POST /api/v1/impetus/generate-intervention
+                    │ Trigger API     │──► POST /impetus/generate-intervention
                     │ call            │    { mode: "loki", context: "..." }
                     └────────┬─────────┘
                              │
@@ -335,7 +335,7 @@ interface InterventionRequest {
 
 **Headers**:
 - `Idempotency-Key`: UUID v4 (prevents duplicate interventions on retry)
-- `X-Contract-Version`: "1.0.1" (API contract version)
+- `X-Contract-Version`: "2.0.0" (API contract version)
 
 ### Response: InterventionResponse
 

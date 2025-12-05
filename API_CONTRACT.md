@@ -1,6 +1,6 @@
 # Impetus Lock - API Contract (SSOT)
 
-**Version:** 1.0.1  
+**Version:** 2.0.0  
 **Protocol:** OpenAPI 3.0.3  
 **Description:** 对抗式 AI Agent 的核心 API。通过幂等键和锚点保证 Vibe 的健壮性。
 
@@ -29,8 +29,8 @@
 ## 🌐 服务器配置 | Server Configuration
 
 ```yaml
-Production:  /api/v1  (相对路径，便于网关代理)
-Development: http://127.0.0.1:8000/api/v1
+Production:  /  (相对路径，便于网关代理)
+Development: http://127.0.0.1:8000/
 ```
 
 ---
@@ -56,7 +56,7 @@ Development: http://127.0.0.1:8000/api/v1
 
 ### 2. Generate Intervention (核心端点)
 
-**`POST /api/v1/impetus/generate-intervention`**
+**`POST /impetus/generate-intervention`**
 
 这是项目的**核心端点**。客户端调用此端点，告知 Agent 当前的模式和上下文。Agent（后端）将决策并返回一个具体的行动。
 
@@ -67,7 +67,7 @@ Development: http://127.0.0.1:8000/api/v1
 | Header | Required | Type | Description |
 |--------|----------|------|-------------|
 | `Idempotency-Key` | ✅ | string (UUID) | 请求幂等键。相同 key 在冷却窗口内返回相同结果 |
-| `X-Contract-Version` | ❌ | string | 客户端理解的契约版本（例如 "1.0.1"） |
+| `X-Contract-Version` | ✅ | string | 客户端契约版本（必须等于 "2.0.0"） |
 | `Content-Type` | ✅ | string | 必须为 `application/json` |
 
 **Idempotency-Key 规范:**
@@ -201,6 +201,8 @@ Development: http://127.0.0.1:8000/api/v1
 | `pos` | `{ "type": "pos", "from": 1250 }` | 单点位置 |
 | `range` | `{ "type": "range", "from": 1245, "to": 1289 }` | 位置范围 |
 | `lock_id` | `{ "type": "lock_id", "ref_lock_id": "lock_xxx" }` | 引用已存在的锁 ID |
+
+> **Current implementation:** 服务端对 `delete`/`rewrite` 行动要求 `range` 锚点；`lock_id`/`pos` 锚点当前不会通过验证，需要先在服务端/客户端支持后再使用。
 
 **客户端处理流程:**
 1. 根据 `anchor.type` 定位文档位置
@@ -386,7 +388,7 @@ ProseMirror 文档是**可变的**（用户不断编辑），绝对位置（如 
 
 **Request:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
+curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
   -d '{
@@ -419,7 +421,7 @@ curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
 
 **Request:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
+curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 660e8400-e29b-41d4-a716-446655440001" \
   -d '{
@@ -445,7 +447,7 @@ curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
 
 **Response Headers:**
 ```
-X-Cooldown-Seconds: 45
+X-Cooldown-Seconds: <30-120 derived from Idempotency-Key>
 ```
 
 ---
@@ -454,7 +456,7 @@ X-Cooldown-Seconds: 45
 
 **Request 1:**
 ```bash
-curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
+curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 770e8400-e29b-41d4-a716-446655440002" \
   -H "Content-Type: application/json" \
   -d '{"context": "测试", "mode": "muse"}'
@@ -462,7 +464,7 @@ curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
 
 **Request 2 (15 秒内，相同 Idempotency-Key):**
 ```bash
-curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
+curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 770e8400-e29b-41d4-a716-446655440002" \
   -H "Content-Type: application/json" \
   -d '{"context": "测试", "mode": "muse"}'
@@ -477,7 +479,7 @@ curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
 
 **Request (无效 mode):**
 ```bash
-curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
+curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 880e8400-e29b-41d4-a716-446655440003" \
   -H "Content-Type: application/json" \
   -d '{"context": "测试", "mode": "chaos"}'
@@ -504,14 +506,14 @@ curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.1 | 2025-01-15 | 初始契约定义 |
+| 2.0.0 | 2025-12-04 | 严格契约验证（必填且精确匹配） |
 
 ### 客户端版本协商
 
 客户端通过 `X-Contract-Version` header 声明其理解的契约版本：
 
 ```bash
-curl -H "X-Contract-Version: 1.0.1" ...
+curl -H "X-Contract-Version: 2.0.0" ...
 ```
 
 **服务端行为:**
@@ -558,6 +560,39 @@ curl -H "X-Contract-Version: 1.0.1" ...
 
 ---
 
+## 🗂️ 任务持久化 API
+
+用于在前端会话之间保存文稿内容与锁信息，支持乐观锁更新与审计历史。
+
+### 1) Create Task — `POST /tasks`
+- Body: `TaskCreateRequest`（`content`, 可选 `lock_ids`）
+- Response: `201 Created` → `TaskResponse`（包含 `id`, `version`）
+
+### 2) Get Task — `GET /tasks/{task_id}`
+- Response: `200 OK` → `TaskResponse`
+- Errors: `404`（不存在）
+
+### 3) Update Task — `PUT /tasks/{task_id}`
+- Body: `TaskUpdateRequest`（`content`, `lock_ids`, `version`）
+- Response: `200 OK` → `TaskResponse`
+- Errors: `404`（不存在）, `409`（版本冲突，需先 GET 最新）
+
+### 4) Delete Task — `DELETE /tasks/{task_id}`
+- Response: `204 No Content`
+- Errors: `404`（不存在）
+
+### 5) List Actions — `GET /tasks/{task_id}/actions?limit&offset`
+- Response: `200 OK` → `InterventionHistoryResponse`（`total`, `limit`, `offset`, `actions[]`）
+- `actions[].anchor` 复用 `Anchor` 枚举，数值字段保持整数类型
+- Errors: `404`（任务不存在）
+
+### Schema 摘要
+- `TaskResponse`: `id` (uuid), `content` (string), `lock_ids` (string[]), `created_at`, `updated_at` (ISO 8601), `version` (int)
+- `InterventionActionResponse`: `action_type` (`provoke`/`delete`/`rewrite`), `lock_id?`, `content?`, `anchor` (Anchor), `mode` (`muse`/`loki`), `context`, `issued_at`, `created_at`
+- `InterventionHistoryResponse`: `total`, `limit`, `offset`, `actions[]`
+
+---
+
 ## 📝 附录 | Appendix
 
 ### OpenAPI 3.0.3 完整规范
@@ -599,3 +634,13 @@ yq -P '.specify/openapi.json' > .specify/openapi.yaml
 **Last Updated:** 2025-01-15  
 **Maintainer:** Impetus Lock Core Team  
 **Contact:** <team@impetus-lock.dev>
+
+---
+
+## 实现现状速记（2025-xx）
+
+- 版本协商：服务端仅接受 `X-Contract-Version: 2.0.0`，缺失或不匹配会返回 422 `ContractVersionMismatch`。
+- 冷却头：服务端在 Loki 响应中返回 `X-Cooldown-Seconds`，值由 Idempotency-Key 决定且落在 30-120 秒范围内，确保缓存命中时保持一致。
+- 锚点约束：服务端验证要求 `delete`/`rewrite` 仅使用 `range` 锚点；`lock_id`/`pos` 目前会被拒绝。
+- Muse 安全护栏：Muse 模式收到 `delete` 响应会在服务端转写为 `provoke/rewrite` 并附带新 `lock_id`，避免 Muse 删除内容。
+- 短文档保护：服务端在 context <50 字时会强制改写为 `provoke`，与“全文 <50 字不删除”原则接近但基于上下文长度。

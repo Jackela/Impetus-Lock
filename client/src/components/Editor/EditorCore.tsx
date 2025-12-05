@@ -610,7 +610,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     return () => {
       mounted = false;
     };
-  }, [initialContent, lockManager, showSensoryAction]);
+  }, [initialContent, initialLocks, lockManager, showSensoryAction]);
 
   // Always render immediately - no loading state
   return (

@@ -110,15 +110,16 @@ export function ManualTriggerButton({
         <span>{isLoading ? "Thinking..." : "I'm stuck!"}</span>
       </button>
 
-      {isLokiMode && (
+      {/* Loki manual trigger is dev-only; production keeps Loki purely random */}
+      {isLokiMode && import.meta.env.DEV && (
         <button
           onClick={handleLokiChaosTrigger}
-          aria-label="Trigger Loki chaos"
+          aria-label="Trigger Loki chaos (dev only)"
           data-testid="manual-loki-trigger"
-          className="manual-trigger-button"
+          className="manual-trigger-button dev-only"
           style={{ backgroundColor: "#ef4444" }}
         >
-          Summon Loki
+          Summon Loki (dev)
         </button>
       )}
 
