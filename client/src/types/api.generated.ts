@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/v1/impetus/generate-intervention": {
+    "/impetus/generate-intervention": {
         parameters: {
             query?: never;
             header?: never;
@@ -32,6 +32,69 @@ export interface paths {
          *     - If anchor out of bounds → 400 Bad Request
          */
         post: operations["generateIntervention"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create task with initial content and locks
+         * @description Creates a task record storing the current Markdown and lock IDs.
+         *     Used by the editor to persist adversarial constraints across sessions.
+         */
+        post: operations["createTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task identifier (UUID v4) */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        /** Get task by ID */
+        get: operations["getTask"];
+        /** Update task content and locks (optimistic locking) */
+        put: operations["updateTask"];
+        post?: never;
+        /** Delete task and its intervention history */
+        delete: operations["deleteTask"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tasks/{task_id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task identifier (UUID v4) */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        /** List intervention actions for a task (most recent first) */
+        get: operations["listTaskActions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -79,31 +142,29 @@ export interface components {
         InterventionResponse: {
             /**
              * @description Intervention action type:
-                 *     - **provoke**: Inject new locked content
-                 *     - **delete**: Remove a sentence range
-                 *     - **rewrite**: Replace existing sentence with locked variant
+             *     - **provoke**: Inject content with lock_id (un-deletable)
+             *     - **delete**: Remove text at anchor position (irreversible)
+             *     - **rewrite**: Replace an anchor range with locked content
              * @example provoke
              * @enum {string}
              */
             action: "provoke" | "delete" | "rewrite";
             /**
-             * @description Content payload:
-             *     - provoke: Plain text snippet to render as blockquote
-             *     - rewrite: Plain text replacement for the targeted range
-             *     - delete: null
+             * @description Plain text snippet rendered as Markdown (blockquote for provoke, inline for rewrite).
+             *     No `[AI施压]` prefixes; UI handles vibe styling.
              * @example 门后是一堵砖墙。
              */
             content?: string | null;
             /**
-             * @description Unique lock identifier (required for provoke/rewrite).
+             * @description Unique lock identifier (ONLY for "provoke" action).
              *     Format: `lock_{ulid}` (sortable UUID alternative)
              * @example lock_01j4z3m8a6q3qz2x8j4z3m8a
              */
             lock_id?: string | null;
             /**
              * @description Target location for action.
-                 *     - **provoke**: Optional, defaults to cursor position
-             *     - **delete / rewrite**: Required
+             *     - **provoke**: Optional, defaults to cursor position
+             *     - **delete**: Required
              */
             anchor?: components["schemas"]["Anchor"];
             /**
@@ -112,18 +173,84 @@ export interface components {
              * @example act_550e8400-e29b-41d4-a716-446655440000
              */
             action_id: string;
+        };
+        TaskCreateRequest: {
+            /** @description Initial task content (Markdown) */
+            content: string;
             /**
-             * @description Agent mode that produced this action.
-             * @example muse
-             * @enum {string}
+             * @description Lock IDs present in the content
+             * @default []
+             * @example [
+             *       "lock_01j4z3m8a6q3qz2x8j4z3m8a"
+             *     ]
              */
-            source: "muse" | "loki";
+            lock_ids: string[];
+        };
+        TaskUpdateRequest: {
+            /** @description Updated Markdown content */
+            content: string;
+            /** @description Updated lock IDs extracted from content */
+            lock_ids: string[];
+            /** @description Expected current version for optimistic locking */
+            version: number;
+        };
+        TaskResponse: {
+            /**
+             * Format: uuid
+             * @example 550e8400-e29b-41d4-a716-446655440000
+             */
+            id: string;
+            /** @description Task content (Markdown) */
+            content: string;
+            /** @description Lock IDs present in the content */
+            lock_ids: string[];
             /**
              * Format: date-time
-             * @description Server-issued timestamp for the action (ISO 8601 string)
              * @example 2025-01-15T10:30:45.123Z
              */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @example 2025-01-15T10:31:45.123Z
+             */
+            updated_at: string;
+            /**
+             * @description Optimistic lock version
+             * @example 1
+             */
+            version: number;
+        };
+        InterventionActionResponse: {
+            /**
+             * Format: uuid
+             * @example 7c4a3c5c-2fb7-41cb-8f6c-7d7b9d77a111
+             */
+            id: string;
+            /** Format: uuid */
+            task_id: string;
+            /** @enum {string} */
+            action_type: "provoke" | "delete" | "rewrite";
+            /** @description Stable client-facing action identifier */
+            action_id: string;
+            /** @description Present for provoke/rewrite actions */
+            lock_id?: string | null;
+            /** @description Present for provoke/rewrite actions */
+            content?: string | null;
+            anchor: components["schemas"]["Anchor"];
+            /** @enum {string} */
+            mode: "muse" | "loki";
+            /** @description Author context captured when the action was generated */
+            context: string;
+            /** Format: date-time */
             issued_at: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        InterventionHistoryResponse: {
+            total: number;
+            limit: number;
+            offset: number;
+            actions: components["schemas"]["InterventionActionResponse"][];
         };
         Anchor: components["schemas"]["AnchorPos"] | components["schemas"]["AnchorRange"] | components["schemas"]["AnchorLockId"];
         AnchorPos: {
@@ -196,8 +323,8 @@ export interface operations {
             header: {
                 /** @description UUID v4 to prevent duplicate interventions on retry */
                 "Idempotency-Key": string;
-                /** @description API contract version (MUST be "1.0.1") */
-                "X-Contract-Version": "1.0.1";
+                /** @description API contract version (MUST be "2.0.0") */
+                "X-Contract-Version": "2.0.0";
             };
             path?: never;
             cookie?: never;
@@ -297,6 +424,192 @@ export interface operations {
                      *       }
                      *     }
                      */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Task created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Validation error (content too short/long) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task identifier (UUID v4) */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Task found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task identifier (UUID v4) */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Task updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskResponse"];
+                };
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Version conflict (optimistic locking failed) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task identifier (UUID v4) */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listTaskActions: {
+        parameters: {
+            query?: {
+                /** @example 50 */
+                limit?: number;
+                /** @example 0 */
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Task identifier (UUID v4) */
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Intervention history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterventionHistoryResponse"];
+                };
+            };
+            /** @description Task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };

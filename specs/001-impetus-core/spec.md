@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-impetus-core`  
 **Created**: 2025-11-06  
-**Status**: Draft  
+**Status**: Implemented  
 **Input**: User description: "实现 Impetus Lock 的核心 Vibe，包括 Muse 模式（卡壳检测与施压注入）、Loki 模式（随机混沌介入）、以及不可删除约束的交互范式"
 
 ## User Scenarios & Testing *(mandatory)*
@@ -59,7 +59,7 @@
 
 1. **Given** 小王在 Muse 模式下写作，当前文档内容为"他打开门，犹豫着要不要进去。"，  
    **When** 小王停止输入达到 60 秒（状态机：WRITING → IDLE → STUCK），  
-   **Then** Agent 必须调用后端 API `/api/v1/impetus/generate-intervention`（mode: "muse"），并在光标位置注入返回的 Provoke 内容（例如：`> Muse 注入：门后传来低沉的呼吸声。`）
+   **Then** Agent 必须调用后端 API `/impetus/generate-intervention`（mode: "muse"），并在光标位置注入返回的 Provoke 内容（例如：`> Muse 注入：门后传来低沉的呼吸声。`）
 
 2. **Given** 小王在 STUCK 状态下收到 AI 注入的施压块，  
    **When** 注入完成，  
@@ -76,6 +76,8 @@
 5. **Given** 后端 API 调用失败或超时（例如网络错误），  
    **When** STUCK 状态触发介入，  
    **Then** 前端必须显示友好的错误提示（例如："AI 暂时无法连接，请稍后再试"），且不应注入空白或损坏的锁定块
+
+**Implementation note:** 当前实现如果 Muse 收到服务端返回的 `delete` 行动，会在服务端强制转为 `provoke/rewrite` 并生成新的 `lock_id`，保持“Muse 不删除”语义。
 
 ---
 
@@ -97,7 +99,7 @@
 
 1. **Given** 小王启用 Loki 模式，当前文档内容为"他打开门，犹豫着要不要进去。突然，门后传来脚步声。"，  
    **When** 随机定时器触发（例如 45 秒后），  
-   **Then** Agent 必须调用后端 API `/api/v1/impetus/generate-intervention`（mode: "loki"），并执行返回的 action
+   **Then** Agent 必须调用后端 API `/impetus/generate-intervention`（mode: "loki"），并执行返回的 action
 
 2. **Given** 后端 API 返回 `{ "action": "provoke", "content": "脚步声突然停止。", "lock_id": "lock_xxx" }`，  
    **When** 前端接收响应，  
@@ -229,14 +231,14 @@
 
 - **FR-006**: 系统必须实现一个状态机，跟踪用户的写作状态（WRITING、IDLE、STUCK）
 - **FR-007**: 当用户在 60 秒内没有输入任何字符时，状态机必须从 IDLE 转换到 STUCK
-- **FR-008**: 当状态转换到 STUCK 时，系统必须调用后端 API `/api/v1/impetus/generate-intervention`（mode: "muse"），传递光标前最后 3 句话作为 context
+- **FR-008**: 当状态转换到 STUCK 时，系统必须调用后端 API `/impetus/generate-intervention`（mode: "muse"），传递光标前最后 3 句话作为 context
 - **FR-009**: 系统必须在收到后端响应后，在光标位置注入返回的 Markdown blockquote 内容，并应用 `lock_id` 标记
 - **FR-010**: 注入完成后，系统必须触发"Glitch"闪烁动画和"Clank"音效
 
 #### Loki Mode - Random Chaos
 
 - **FR-011**: 系统必须实现一个随机定时器，在 30-120 秒的随机间隔内触发 Loki 介入
-- **FR-012**: 当定时器触发时，系统必须调用后端 API `/api/v1/impetus/generate-intervention`（mode: "loki"），传递当前上下文
+- **FR-012**: 当定时器触发时，系统必须调用后端 API `/impetus/generate-intervention`（mode: "loki"），传递当前上下文
 - **FR-013**: 系统必须根据后端返回的 `action` 字段执行相应操作：
   - 如果 `action` 为 "provoke"：注入 `content` 内容并应用 `lock_id`
   - 如果 `action` 为 "delete"：根据 `anchor` 定位并删除指定文本范围，绕过 Undo 栈
@@ -333,7 +335,7 @@
 
 ## Assumptions
 
-1. **后端 API 已实现**：假设 `/api/v1/impetus/generate-intervention` 端点已按照 API_CONTRACT.md 规范实现，且 LLM 服务（Instructor + Pydantic）能够可靠生成结构化输出。
+1. **后端 API 已实现**：假设 `/impetus/generate-intervention` 端点已按照 API_CONTRACT.md 规范实现，且 LLM 服务（Instructor + Pydantic）能够可靠生成结构化输出。
 
 2. **编辑器选型**：假设前端使用 Milkdown（基于 ProseMirror）作为编辑器，因为它提供了 `filterTransaction` API，这是实现"不可删除"约束的核心技术依赖。
 
@@ -368,3 +370,11 @@
 6. **高级锚点类型**：P1 仅支持 `pos`、`range`、`lock_id` 三种基本锚点类型。基于语义的锚点（例如"删除包含关键词 X 的句子"）不在 P1 范围内。
 
 7. **离线模式**：P1 依赖后端 API，不支持离线使用。本地 LLM 集成不在 P1 范围内。
+
+---
+
+## Contract Versioning (P1 enforcement)
+
+- 所有 `/impetus/generate-intervention` 请求必须携带 `X-Contract-Version: 2.0.0`，缺失或不匹配即返回 422 `ContractVersionMismatch`。
+- 服务器响应必须回显 `X-Contract-Version: 2.0.0`。
+- 不需要向后兼容旧版本。

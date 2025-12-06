@@ -3,6 +3,6 @@
 Idempotency and response caching implementations.
 """
 
-from server.infrastructure.cache.idempotency_cache import IdempotencyCache
+from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 
-__all__ = ["IdempotencyCache"]
+__all__ = ["AsyncIdempotencyCache"]

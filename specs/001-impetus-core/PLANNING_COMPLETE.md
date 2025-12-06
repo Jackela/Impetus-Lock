@@ -68,11 +68,11 @@
 
 #### API Contract
 
-**Endpoint**: `POST /api/v1/impetus/generate-intervention`
+**Endpoint**: `POST /impetus/generate-intervention`
 
 **Key Features**:
 - Idempotency via `Idempotency-Key` header (15s cache)
-- Contract versioning via `X-Contract-Version: 1.0.1`
+- Contract versioning via `X-Contract-Version: 2.0.0`
 - Safety guards: Reject Delete if doc <50 chars
 - Error handling: 400, 422, 429, 500
 
@@ -340,7 +340,7 @@ server/
 │   └── api/
 │       ├── main.py                      # FastAPI app
 │       └── routes/
-│           └── intervention.py          # POST /api/v1/impetus/generate-intervention
+│           └── intervention.py          # POST /impetus/generate-intervention
 ├── tests/
 │   ├── test_intervention_api.py         # Contract tests
 │   └── test_loki_logic.py               # Loki decision logic tests

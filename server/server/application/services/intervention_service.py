@@ -236,6 +236,8 @@ class InterventionService:
         self,
         request: InterventionRequest,
         task_id: UUID | None = None,
+        repository: "TaskRepository | None" = None,
+        llm_override: LLMProvider | None = None,
     ) -> InterventionResponse:
         """Generate intervention action with optional persistence (async version).
 
@@ -262,10 +264,11 @@ class InterventionService:
             ```
         """
         # Generate intervention using existing sync logic
-        response = self.generate_intervention(request)
+        response = self.generate_intervention(request, llm_override=llm_override)
 
+        repo = repository or self.task_repository
         # Persist to database if repository and task_id provided
-        if self.task_repository and task_id:
+        if repo and task_id:
             action = InterventionAction.create(
                 task_id=task_id,
                 action_type=response.action,
@@ -277,6 +280,6 @@ class InterventionService:
                 context=request.context,
                 issued_at=response.issued_at,
             )
-            await self.task_repository.save_action(action)
+            await repo.save_action(action)
 
         return response

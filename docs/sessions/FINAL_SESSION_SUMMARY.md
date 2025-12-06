@@ -103,7 +103,7 @@ extractLastSentences(fullText, 3, cursor)
     ↓
 triggerMuseIntervention(context, cursor, docVersion)
     ↓
-POST /api/v1/impetus/generate-intervention
+POST /impetus/generate-intervention
     {
       context: "他打开门，犹豫着要不要进去。",
       mode: "muse",

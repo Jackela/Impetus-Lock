@@ -366,7 +366,7 @@ export function TaskList() {
 
 // Services: API communication (can use openapi-typescript-codegen)
 export async function fetchTasks(): Promise<Task[]> {
-  const response = await fetch('/api/tasks');
+  const response = await fetch('/tasks');
   if (!response.ok) throw new Error('Failed to fetch tasks');
   return response.json();
 }

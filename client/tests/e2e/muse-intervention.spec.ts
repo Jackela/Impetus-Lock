@@ -29,8 +29,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
     // Setup API intercept to verify request
     const apiCall = page.waitForRequest(
       (request) =>
-        request.url().includes("/api/v1/impetus/generate-intervention") &&
-        request.method() === "POST"
+        request.url().includes("/impetus/generate-intervention") && request.method() === "POST"
     );
 
     // Type a sentence
@@ -51,14 +50,14 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
 
     // Verify Idempotency-Key and Contract-Version headers
     expect(request.headers()["idempotency-key"]).toMatch(/^[0-9a-f-]{36}$/);
-    expect(request.headers()["x-contract-version"]).toBe("1.0.1");
+    expect(request.headers()["x-contract-version"]).toBe("2.0.0");
   });
 
   test("should inject locked blockquote with correct lock_id after intervention", async ({
     page,
   }) => {
     // Mock API response
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -100,7 +99,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
 
   test('should play "Glitch" animation on intervention injection', async ({ page }) => {
     // Mock API response
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -142,7 +141,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
     });
 
     // Mock API response
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -188,7 +187,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
     ];
 
     let callCount = 0;
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -224,8 +223,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
   test("should extract last 3 sentences as context for API request", async ({ page }) => {
     const apiCall = page.waitForRequest(
       (request) =>
-        request.url().includes("/api/v1/impetus/generate-intervention") &&
-        request.method() === "POST"
+        request.url().includes("/impetus/generate-intervention") && request.method() === "POST"
     );
 
     // Type multiple sentences
@@ -248,8 +246,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
   test("should handle edge case: document has <3 sentences", async ({ page }) => {
     const apiCall = page.waitForRequest(
       (request) =>
-        request.url().includes("/api/v1/impetus/generate-intervention") &&
-        request.method() === "POST"
+        request.url().includes("/impetus/generate-intervention") && request.method() === "POST"
     );
 
     // Type only 2 sentences
@@ -274,7 +271,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
 
     // Setup API spy to verify NO calls
     let apiCalled = false;
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       apiCalled = true;
       route.fulfill({ status: 200, body: "{}" });
     });
@@ -291,7 +288,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
 
   test("should handle API error gracefully (show error notification)", async ({ page }) => {
     // Mock API failure
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 500,
         contentType: "application/json",
@@ -324,7 +321,7 @@ test.describe("Muse Mode - STUCK Detection and Intervention", () => {
       action_id: "act_idempotent",
     };
 
-    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+    await page.route("**/impetus/generate-intervention", (route) => {
       callCount++;
       route.fulfill({
         status: 200,

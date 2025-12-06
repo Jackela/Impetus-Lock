@@ -12,16 +12,20 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.dependencies import get_task_repository
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
+from server.domain.models.anchor import Anchor
 from server.domain.repositories.task_repository import TaskRepository
-from server.infrastructure.persistence.database import get_session
+from server.infrastructure.persistence.database import get_session_optional
 
-router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
+router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+# TypeAdapter for validating Anchor union type
+_anchor_adapter: TypeAdapter[Anchor] = TypeAdapter(Anchor)
 
 
 # Request/Response Models
@@ -76,7 +80,7 @@ class InterventionActionResponse(BaseModel):
     action_id: str
     lock_id: str | None
     content: str | None
-    anchor: dict[str, str]
+    anchor: Anchor
     mode: str
     context: str
     issued_at: str
@@ -92,7 +96,7 @@ class InterventionActionResponse(BaseModel):
             action_id=action.action_id,
             lock_id=action.lock_id,
             content=action.content,
-            anchor=action.anchor,
+            anchor=_anchor_adapter.validate_python(action.anchor),
             mode=action.mode,
             context=action.context,
             issued_at=action.issued_at.isoformat(),
@@ -116,7 +120,7 @@ class InterventionHistoryResponse(BaseModel):
 async def create_task(
     request: TaskCreateRequest,
     repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session_optional),
 ) -> TaskResponse:
     """Create new task.
 
@@ -130,13 +134,14 @@ async def create_task(
 
     Example:
         ```bash
-        curl -X POST http://localhost:8000/api/v1/tasks \
+        curl -X POST http://localhost:8000/tasks \
           -H "Content-Type: application/json" \
           -d '{"content": "Initial content", "lock_ids": []}'
         ```
     """
     task = await repository.create_task(request.content, request.lock_ids)
-    await session.commit()
+    if session:
+        await session.commit()
 
     return TaskResponse.from_entity(task)
 
@@ -160,7 +165,7 @@ async def get_task(
 
     Example:
         ```bash
-        curl http://localhost:8000/api/v1/tasks/{task_id}
+        curl http://localhost:8000/tasks/{task_id}
         ```
     """
     task = await repository.get_task(task_id)
@@ -176,7 +181,7 @@ async def update_task(
     task_id: UUID,
     request: TaskUpdateRequest,
     repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session_optional),
 ) -> TaskResponse:
     """Update task content and lock IDs.
 
@@ -194,7 +199,7 @@ async def update_task(
 
     Example:
         ```bash
-        curl -X PUT http://localhost:8000/api/v1/tasks/{task_id} \
+        curl -X PUT http://localhost:8000/tasks/{task_id} \
           -H "Content-Type: application/json" \
           -d '{"content": "Updated", "lock_ids": ["lock_1"], "version": 0}'
         ```
@@ -216,7 +221,8 @@ async def update_task(
 
     try:
         updated_task = await repository.update_task(task)
-        await session.commit()
+        if session:
+            await session.commit()
         return TaskResponse.from_entity(updated_task)
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
@@ -226,7 +232,7 @@ async def update_task(
 async def delete_task(
     task_id: UUID,
     repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession | None = Depends(get_session_optional),
 ) -> None:
     """Delete task (cascade deletes intervention actions).
 
@@ -240,12 +246,13 @@ async def delete_task(
 
     Example:
         ```bash
-        curl -X DELETE http://localhost:8000/api/v1/tasks/{task_id}
+        curl -X DELETE http://localhost:8000/tasks/{task_id}
         ```
     """
     try:
         await repository.delete_task(task_id)
-        await session.commit()
+        if session:
+            await session.commit()
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
@@ -274,10 +281,10 @@ async def get_intervention_history(
     Example:
         ```bash
         # Get first 10 actions
-        curl http://localhost:8000/api/v1/tasks/{task_id}/actions?limit=10
+        curl http://localhost:8000/tasks/{task_id}/actions?limit=10
 
         # Get next 10 actions
-        curl http://localhost:8000/api/v1/tasks/{task_id}/actions?limit=10&offset=10
+        curl http://localhost:8000/tasks/{task_id}/actions?limit=10&offset=10
         ```
     """
     # Verify task exists

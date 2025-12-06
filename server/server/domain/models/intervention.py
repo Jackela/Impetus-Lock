@@ -1,6 +1,6 @@
 """Intervention request and response models (Pydantic).
 
-Matches OpenAPI contract specification (contracts/intervention.yaml v1.0.1).
+    Matches OpenAPI contract specification (contracts/intervention.yaml v2.0.0).
 Used for request validation and LLM-structured outputs via Instructor.
 
 Constitutional Compliance:
@@ -40,9 +40,9 @@ class ClientMeta(BaseModel):
 
 
 class InterventionRequest(BaseModel):
-    """Request schema for POST /api/v1/impetus/generate-intervention.
+    """Request schema for POST /impetus/generate-intervention.
 
-    Matches OpenAPI contract (intervention.yaml v1.0.1).
+    Matches OpenAPI contract (intervention.yaml v2.0.0).
 
     Attributes:
         context: Writing context for LLM decision-making.
@@ -78,7 +78,7 @@ class InterventionResponse(BaseModel):
     """Response schema for successful intervention generation.
 
     Returned by LLM via Instructor (strongly-typed structured output).
-    Matches OpenAPI contract (intervention.yaml v1.0.1).
+    Matches OpenAPI contract (intervention.yaml v2.0.0).
 
     Attributes:
         action: Intervention action type ("provoke", "delete", "rewrite").

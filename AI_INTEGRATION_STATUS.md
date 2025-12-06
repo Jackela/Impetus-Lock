@@ -13,13 +13,13 @@ The Impetus Lock project has **FULL integration** of AI intervention functionali
 
 ### ✅ API Implementation: COMPLETE
 
-**Endpoint**: `POST /api/v1/impetus/generate-intervention`
+**Endpoint**: `POST /impetus/generate-intervention`
 
 **Location**: `/mnt/d/Code/Impetus-Lock/server/server/api/routes/intervention.py`
 
 **Features Implemented**:
 - ✅ Idempotency support (15-second cache with UUID v4 keys)
-- ✅ Contract version validation (v1.0.1)
+- ✅ Contract version validation (v2.0.0)
 - ✅ Multi-provider registry (OpenAI/Anthropic/Gemini) with BYOK headers
 - ✅ Service layer architecture (SOLID compliance)
 - ✅ Comprehensive error handling (400, 422, 429, 500 status codes)
@@ -27,11 +27,11 @@ The Impetus Lock project has **FULL integration** of AI intervention functionali
 
 **API Contract**:
 ```typescript
-POST /api/v1/impetus/generate-intervention
+POST /impetus/generate-intervention
 Headers:
   - Content-Type: application/json
   - Idempotency-Key: <UUID v4>
-  - X-Contract-Version: 1.0.1
+  - X-Contract-Version: 2.0.0
 
 Request Body:
 {
@@ -321,14 +321,14 @@ VITE_API_URL=http://localhost:8000
    # 1. Open http://localhost:5173 in browser
    # 2. Open DevTools Console (F12)
    # 3. Wait for Muse mode trigger (60s idle) or click Manual Trigger button
-   # 4. Check Network tab for API call to /api/v1/impetus/generate-intervention
+   # 4. Check Network tab for API call to /impetus/generate-intervention
    ```
 
 2. **Verify API Call in Browser**:
    - Open frontend: `http://localhost:5173`
    - Open DevTools Network tab
    - Type text in editor and wait 60 seconds (Muse mode)
-   - Check for `POST /api/v1/impetus/generate-intervention` request
+   - Check for `POST /impetus/generate-intervention` request
    - Verify response contains `action`, `content`, `lock_id`
 
 3. **Test Lock Enforcement**:
@@ -450,10 +450,10 @@ cd client
 npm run dev
 
 # Test API manually (from Windows Command Prompt)
-curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention ^
+curl -X POST http://localhost:8000/impetus/generate-intervention ^
   -H "Content-Type: application/json" ^
   -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440099" ^
-  -H "X-Contract-Version: 1.0.1" ^
+  -H "X-Contract-Version: 2.0.0" ^
   -d "{\"context\": \"他打开门，犹豫着要不要进去。\", \"mode\": \"muse\", \"client_meta\": {\"doc_version\": 1, \"selection_from\": 50, \"selection_to\": 50}}"
 ```
 

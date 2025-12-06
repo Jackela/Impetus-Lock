@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-const API_ENDPOINT = "**/api/v1/impetus/generate-intervention";
+const API_ENDPOINT = "**/impetus/generate-intervention";
 
 interface InterventionMockOptions {
   delayMs?: number;
