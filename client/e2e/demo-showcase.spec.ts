@@ -19,7 +19,7 @@ test.describe("Impetus Lock demo showcase", () => {
         console.log("[browser]", msg.text());
       }
     });
-    await page.route("**/api/v1/impetus/generate-intervention", (route, request) => {
+    await page.route("**/impetus/generate-intervention", (route, request) => {
       const body = request.postDataJSON();
       const isMuse = body?.mode === "muse";
       const selectionFrom = body?.client_meta?.selection_from ?? 80;
@@ -93,8 +93,8 @@ test.describe("Impetus Lock demo showcase", () => {
     await editor.click();
     await editor.type("他打开门，犹豫着要不要进去。空气里有铁锈味，像是有人刚拔出一把刀。");
 
-    const provokeRequest = page.waitForRequest("**/api/v1/impetus/generate-intervention");
-    const provokeResponse = page.waitForResponse("**/api/v1/impetus/generate-intervention");
+    const provokeRequest = page.waitForRequest("**/impetus/generate-intervention");
+    const provokeResponse = page.waitForResponse("**/impetus/generate-intervention");
     await manualTrigger.click();
     await Promise.all([provokeRequest, provokeResponse]);
 
@@ -104,8 +104,8 @@ test.describe("Impetus Lock demo showcase", () => {
     await page.keyboard.press("Backspace");
     await expect(lockedBlock).toBeVisible();
 
-    const rewriteRequest = page.waitForRequest("**/api/v1/impetus/generate-intervention");
-    const rewriteResponse = page.waitForResponse("**/api/v1/impetus/generate-intervention");
+    const rewriteRequest = page.waitForRequest("**/impetus/generate-intervention");
+    const rewriteResponse = page.waitForResponse("**/impetus/generate-intervention");
     await page.evaluate(() => (window as any).triggerMuseRewriteForTest?.());
     await Promise.all([rewriteRequest, rewriteResponse]);
     const inlineRewrite = page.locator('.locked-content[data-lock-id="lock_demo_rewrite"]').first();

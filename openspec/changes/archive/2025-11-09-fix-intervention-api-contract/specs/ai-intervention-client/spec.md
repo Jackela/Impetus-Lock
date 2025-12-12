@@ -7,7 +7,7 @@ Frontend client for AI intervention API communication, providing contract-compli
 
 ### Requirement: API Contract Compliance
 
-The intervention client SHALL construct API requests that exactly match the backend Pydantic schema for `/api/v1/impetus/generate-intervention`.
+The intervention client SHALL construct API requests that exactly match the backend Pydantic schema for `/impetus/generate-intervention`.
 
 **Rationale**: Prevents validation errors (HTTP 422) and ensures reliable AI intervention functionality.
 

@@ -20,7 +20,7 @@ test.describe("Database Persistence", () => {
 
   test("creates task via API", async ({ request }) => {
     // Create task
-    const response = await request.post(`${API_BASE}/api/v1/tasks`, {
+    const response = await request.post(`${API_BASE}/tasks`, {
       data: {
         content: "Initial task content",
         lock_ids: [],
@@ -40,7 +40,7 @@ test.describe("Database Persistence", () => {
 
   test("gets task by ID", async ({ request }) => {
     // Create task first
-    const createResponse = await request.post(`${API_BASE}/api/v1/tasks`, {
+    const createResponse = await request.post(`${API_BASE}/tasks`, {
       data: {
         content: "Test content for get",
         lock_ids: ["lock_1"],
@@ -50,7 +50,7 @@ test.describe("Database Persistence", () => {
     const createdTask = await createResponse.json();
 
     // Get task by ID
-    const getResponse = await request.get(`${API_BASE}/api/v1/tasks/${createdTask.id}`);
+    const getResponse = await request.get(`${API_BASE}/tasks/${createdTask.id}`);
 
     expect(getResponse.status()).toBe(200);
 
@@ -62,7 +62,7 @@ test.describe("Database Persistence", () => {
 
   test("updates task with optimistic locking", async ({ request }) => {
     // Create task
-    const createResponse = await request.post(`${API_BASE}/api/v1/tasks`, {
+    const createResponse = await request.post(`${API_BASE}/tasks`, {
       data: {
         content: "Original content",
         lock_ids: [],
@@ -72,7 +72,7 @@ test.describe("Database Persistence", () => {
     const task = await createResponse.json();
 
     // Update task
-    const updateResponse = await request.put(`${API_BASE}/api/v1/tasks/${task.id}`, {
+    const updateResponse = await request.put(`${API_BASE}/tasks/${task.id}`, {
       data: {
         content: "Updated content",
         lock_ids: ["lock_new"],
@@ -90,7 +90,7 @@ test.describe("Database Persistence", () => {
 
   test("rejects update with stale version (optimistic locking)", async ({ request }) => {
     // Create task
-    const createResponse = await request.post(`${API_BASE}/api/v1/tasks`, {
+    const createResponse = await request.post(`${API_BASE}/tasks`, {
       data: {
         content: "Content for version conflict",
         lock_ids: [],
@@ -100,7 +100,7 @@ test.describe("Database Persistence", () => {
     const task = await createResponse.json();
 
     // First update (succeeds)
-    await request.put(`${API_BASE}/api/v1/tasks/${task.id}`, {
+    await request.put(`${API_BASE}/tasks/${task.id}`, {
       data: {
         content: "First update",
         lock_ids: [],
@@ -109,7 +109,7 @@ test.describe("Database Persistence", () => {
     });
 
     // Second update with stale version (should fail)
-    const conflictResponse = await request.put(`${API_BASE}/api/v1/tasks/${task.id}`, {
+    const conflictResponse = await request.put(`${API_BASE}/tasks/${task.id}`, {
       data: {
         content: "Second update",
         lock_ids: [],
@@ -122,7 +122,7 @@ test.describe("Database Persistence", () => {
 
   test("deletes task and cascades to actions", async ({ request }) => {
     // Create task
-    const createResponse = await request.post(`${API_BASE}/api/v1/tasks`, {
+    const createResponse = await request.post(`${API_BASE}/tasks`, {
       data: {
         content: "Task to be deleted",
         lock_ids: [],
@@ -132,18 +132,18 @@ test.describe("Database Persistence", () => {
     const task = await createResponse.json();
 
     // Delete task
-    const deleteResponse = await request.delete(`${API_BASE}/api/v1/tasks/${task.id}`);
+    const deleteResponse = await request.delete(`${API_BASE}/tasks/${task.id}`);
 
     expect(deleteResponse.status()).toBe(204); // No Content
 
     // Verify task no longer exists
-    const getResponse = await request.get(`${API_BASE}/api/v1/tasks/${task.id}`);
+    const getResponse = await request.get(`${API_BASE}/tasks/${task.id}`);
     expect(getResponse.status()).toBe(404);
   });
 
   test("returns 404 for non-existent task", async ({ request }) => {
     const fakeId = "550e8400-e29b-41d4-a716-446655440000";
-    const response = await request.get(`${API_BASE}/api/v1/tasks/${fakeId}`);
+    const response = await request.get(`${API_BASE}/tasks/${fakeId}`);
 
     expect(response.status()).toBe(404);
   });
@@ -154,7 +154,7 @@ test.describe("Intervention History", () => {
 
   test("queries empty intervention history", async ({ request }) => {
     // Create task
-    const createResponse = await request.post(`${API_BASE}/api/v1/tasks`, {
+    const createResponse = await request.post(`${API_BASE}/tasks`, {
       data: {
         content: "Task with no interventions",
         lock_ids: [],
@@ -164,7 +164,7 @@ test.describe("Intervention History", () => {
     const task = await createResponse.json();
 
     // Query history
-    const historyResponse = await request.get(`${API_BASE}/api/v1/tasks/${task.id}/actions`);
+    const historyResponse = await request.get(`${API_BASE}/tasks/${task.id}/actions`);
 
     expect(historyResponse.status()).toBe(200);
 
@@ -176,7 +176,7 @@ test.describe("Intervention History", () => {
   test("queries intervention history with pagination", async ({ request }) => {
     // Note: This test would require intervention actions to be saved
     // For now, it verifies the pagination structure works
-    const createResponse = await request.post(`${API_BASE}/api/v1/tasks`, {
+    const createResponse = await request.post(`${API_BASE}/tasks`, {
       data: {
         content: "Task for pagination test",
         lock_ids: [],
@@ -187,7 +187,7 @@ test.describe("Intervention History", () => {
 
     // Query with pagination parameters
     const historyResponse = await request.get(
-      `${API_BASE}/api/v1/tasks/${task.id}/actions?limit=10&offset=0`
+      `${API_BASE}/tasks/${task.id}/actions?limit=10&offset=0`
     );
 
     expect(historyResponse.status()).toBe(200);
@@ -201,7 +201,7 @@ test.describe("Intervention History", () => {
 
   test("returns 404 for history of non-existent task", async ({ request }) => {
     const fakeId = "550e8400-e29b-41d4-a716-446655440000";
-    const response = await request.get(`${API_BASE}/api/v1/tasks/${fakeId}/actions`);
+    const response = await request.get(`${API_BASE}/tasks/${fakeId}/actions`);
 
     expect(response.status()).toBe(404);
   });

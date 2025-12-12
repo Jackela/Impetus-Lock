@@ -4,7 +4,8 @@ import logging
 import os
 import time
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from typing import Literal
 
 from dotenv import load_dotenv
@@ -13,8 +14,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from server.api.routes import intervention, metrics, tasks
+from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
+from server.infrastructure.llm.provider_registry import ProviderRegistry
 from server.infrastructure.logging.json_formatter import setup_json_logging
-from server.infrastructure.persistence.database import init_database
+from server.infrastructure.persistence.database import (
+    get_db_manager,
+    init_database,
+    is_database_initialized,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,17 +33,27 @@ logger = logging.getLogger("server.api")
 if os.getenv("TESTING"):
     from server.api.routes import testing
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Initialize shared resources and close them on shutdown."""
+
+    init_database()
+    app.state.idempotency_cache = AsyncIdempotencyCache(ttl=15)
+    app.state.provider_registry = ProviderRegistry()
+    try:
+        yield
+    finally:
+        if is_database_initialized():
+            await get_db_manager().close()
+
+
 app = FastAPI(
     title="Impetus Lock API",
     version="0.1.0",
     description="Un-deletable task pressure system API",
+    lifespan=lifespan,
 )
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
-    """Initialize database connection on startup."""
-    init_database()
 
 
 # CORS middleware for local development

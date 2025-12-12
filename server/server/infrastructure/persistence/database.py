@@ -180,7 +180,7 @@ def get_db_manager() -> DatabaseManager:
     return _db_manager
 
 
-def init_database(database_url: str | None = None) -> DatabaseManager:
+def init_database(database_url: str | None = None) -> DatabaseManager | None:
     """Initialize global database manager.
 
     Args:
@@ -197,29 +197,44 @@ def init_database(database_url: str | None = None) -> DatabaseManager:
         ```
     """
     global _db_manager
-    _db_manager = DatabaseManager(database_url)
+    allow_fallback = os.getenv("TESTING") in {"1", "true", "yes", "on"}
+
+    try:
+        _db_manager = DatabaseManager(database_url)
+    except ValueError:
+        if allow_fallback:
+            # In testing mode, allow running without a real database.
+            _db_manager = None
+            return None
+        raise
+
     return _db_manager
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """FastAPI dependency for database sessions.
 
-    Yields:
-        AsyncSession: SQLAlchemy async session.
-
-    Example:
-        ```python
-        # In FastAPI route
-        @app.post("/tasks")
-        async def create_task(
-            session: AsyncSession = Depends(get_session)
-        ):
-            repository = PostgreSQLTaskRepository(session)
-            task = await repository.create_task("Content", [])
-            await session.commit()
-            return task
-        ```
+    Raises RuntimeError when database is not initialized.
     """
-    db_manager = get_db_manager()
-    async with db_manager.session() as session:
+    if _db_manager is None:
+        raise RuntimeError("Database manager not initialized")
+
+    async with _db_manager.session() as session:
         yield session
+
+
+async def get_session_optional() -> AsyncGenerator[AsyncSession | None, None]:
+    """Optional database session dependency for fallback modes."""
+
+    if _db_manager is None:
+        yield None
+        return
+
+    async with _db_manager.session() as session:
+        yield session
+
+
+def is_database_initialized() -> bool:
+    """Return True if a database manager is available."""
+
+    return _db_manager is not None

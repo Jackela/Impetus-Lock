@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
 
-router = APIRouter(prefix="/api/v1/test", tags=["testing"])
+router = APIRouter(prefix="/test", tags=["testing"])
 
 
 def _check_testing_enabled() -> None:
@@ -62,7 +62,7 @@ def trigger_delete_action(request: TestTriggerDeleteRequest) -> InterventionResp
         ```bash
         TESTING=true poetry run uvicorn server.api.main:app --reload
 
-        curl -X POST http://localhost:8000/api/v1/test/trigger-delete \
+        curl -X POST http://localhost:8000/test/trigger-delete \
           -H "Content-Type: application/json" \
           -d '{"from_pos": 10, "to_pos": 20, "context": "Test context"}'
         ```
@@ -93,7 +93,7 @@ def trigger_provoke_action() -> InterventionResponse:
 
     Example:
         ```bash
-        curl -X POST http://localhost:8000/api/v1/test/trigger-provoke
+        curl -X POST http://localhost:8000/test/trigger-provoke
         ```
     """
     _check_testing_enabled()
@@ -125,7 +125,7 @@ def test_health() -> TestHealthResponse:
 
     Example:
         ```bash
-        curl http://localhost:8000/api/v1/test/health
+        curl http://localhost:8000/test/health
         ```
     """
     testing_enabled = bool(os.getenv("TESTING"))

@@ -41,9 +41,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Wait for Loki intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -74,9 +72,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Wait for delete intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -106,9 +102,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Wait for delete intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -138,9 +132,7 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type("淡出动画测试文本。需要足够长以通过安全检查。继续添加内容确保测试有效。");
 
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -162,9 +154,7 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type("声音测试文本。需要足够长度以通过安全检查。添加更多内容来确保有效性。");
 
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -188,9 +178,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Wait for intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -215,9 +203,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Wait for intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -250,9 +236,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Wait for delete intervention
     const response = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const responseBody = await response.json();
@@ -280,9 +264,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Wait for first intervention (might be Provoke or Delete)
     const firstResponse = await page
-      .waitForResponse((response) =>
-        response.url().includes("/api/v1/impetus/generate-intervention")
-      )
+      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
       .timeout(150000);
 
     const firstBody = await firstResponse.json();
@@ -302,9 +284,7 @@ test.describe("Loki Mode - Delete Action", () => {
       // After delete, lock system should still work for future interventions
       // Wait for next intervention
       const secondResponse = await page
-        .waitForResponse((response) =>
-          response.url().includes("/api/v1/impetus/generate-intervention")
-        )
+        .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
         .timeout(150000);
 
       const secondBody = await secondResponse.json();
