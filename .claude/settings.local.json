@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(xargs:*)",
+      "Bash(poetry run ruff check:*)",
+      "Bash(act -j lint:*)",
+      "Bash(cat:*)",
+      "Skill(example-skills:skill-creator)",
+      "Bash(find:*)",
+      "Bash(gh --version:*)",
+      "Bash(gh help:*)",
+      "Bash(gh pr --help:*)",
+      "Bash(gh run --help:*)",
+      "Bash(gh workflow --help:*)",
+      "Bash(gh pr create --help:*)",
+      "Bash(gh run watch --help:*)",
+      "Bash(gh pr merge --help:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

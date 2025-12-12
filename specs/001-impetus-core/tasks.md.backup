@@ -98,7 +98,7 @@
 
 #### Backend Tests (API Contract)
 
-- [ ] T019 [P] [US1] Write contract test for POST /api/v1/impetus/generate-intervention in server/tests/test_intervention_api.py:
+- [ ] T019 [P] [US1] Write contract test for POST /impetus/generate-intervention in server/tests/test_intervention_api.py:
   - Test valid Muse mode request returns provoke action with lock_id
   - Test valid Loki mode request returns provoke or delete action
   - Test idempotency: same Idempotency-Key returns cached response
@@ -150,7 +150,7 @@
   - Include Google-style docstrings with Args/Returns/Raises per Article V
   - **Dependency**: T008 (LLMProvider protocol), T009 (InstructorLLMProvider)
 
-- [ ] T027 [US1] Implement POST /api/v1/impetus/generate-intervention endpoint in server/server/api/routes/intervention.py:
+- [ ] T027 [US1] Implement POST /impetus/generate-intervention endpoint in server/server/api/routes/intervention.py:
   - Validate Idempotency-Key header (UUID format)
   - Validate X-Contract-Version header (must be "1.0.1")
   - Check idempotency cache before processing
@@ -160,7 +160,7 @@
   - Include endpoint docstring per Article V
   - **Dependency**: T026 (InterventionService), T013 (idempotency cache)
 
-- [ ] T028 [US1] Register intervention route in server/server/api/main.py FastAPI app (include in router with /api/v1 prefix)
+- [ ] T028 [US1] Register intervention route in server/server/api/main.py FastAPI app (register unversioned route)
 
 #### Frontend Implementation (Lock Enforcement)
 
@@ -343,7 +343,7 @@
 - [ ] T062 [US2] Implement Muse intervention trigger in client/src/services/api/interventionClient.ts:
   - Method: triggerMuseIntervention(context: string) → Promise<InterventionResponse>
   - Generate Idempotency-Key (UUID v4)
-  - Call POST /api/v1/impetus/generate-intervention with mode="muse"
+  - Call POST /impetus/generate-intervention with mode="muse"
   - Extract context using contextExtractor
   - Include client_meta (doc_version, selection_from, selection_to)
   - Handle API errors gracefully (show user-friendly toast)
@@ -504,7 +504,7 @@
 - [ ] T092 [US3] Implement Loki intervention trigger in client/src/services/api/interventionClient.ts:
   - Method: triggerLokiIntervention(context: string) → Promise<InterventionResponse>
   - Generate Idempotency-Key (UUID v4)
-  - Call POST /api/v1/impetus/generate-intervention with mode="loki"
+  - Call POST /impetus/generate-intervention with mode="loki"
   - Include full document context (or last 10 sentences if >2000 chars)
   - Handle API errors gracefully
   - Include JSDoc per Article V

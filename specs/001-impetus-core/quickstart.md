@@ -258,7 +258,7 @@ npm run test
 
 ### Workflow 3: Calling Backend API (Integration Test)
 
-**Goal**: Verify frontend can call `/api/v1/impetus/generate-intervention` and handle response.
+**Goal**: Verify frontend can call `/impetus/generate-intervention` and handle response.
 
 **1. Write Integration Test** (server/tests/test_intervention_api.py):
 ```python
@@ -271,10 +271,10 @@ client = TestClient(app)
 def test_generate_intervention_muse_mode():
     """Test Muse mode returns provoke action"""
     response = client.post(
-        "/api/v1/impetus/generate-intervention",
+        "/impetus/generate-intervention",
         headers={
             "Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
-            "X-Contract-Version": "1.0.1"
+          "X-Contract-Version": "2.0.0"
         },
         json={
             "context": "他打开门,犹豫着要不要进去。",
@@ -326,13 +326,13 @@ class InterventionResponse(BaseModel):
     lock_id: str | None = None
     action_id: str
 
-@router.post("/api/v1/impetus/generate-intervention")
+@router.post("/impetus/generate-intervention")
 async def generate_intervention(
     request: InterventionRequest,
     idempotency_key: str = Header(..., alias="Idempotency-Key"),
     contract_version: str = Header(..., alias="X-Contract-Version")
 ):
-    if contract_version != "1.0.1":
+    if contract_version != "2.0.0":
         raise HTTPException(status_code=400, detail="Unsupported contract version")
     
     # TODO: Check idempotency cache
@@ -375,8 +375,8 @@ npx openapi-typescript ../specs/001-impetus-core/contracts/intervention.yaml -o 
 ```typescript
 import type { paths } from '@/types/api.generated';
 
-type InterventionRequest = paths['/api/v1/impetus/generate-intervention']['post']['requestBody']['content']['application/json'];
-type InterventionResponse = paths['/api/v1/impetus/generate-intervention']['post']['responses']['200']['content']['application/json'];
+type InterventionRequest = paths['/impetus/generate-intervention']['post']['requestBody']['content']['application/json'];
+type InterventionResponse = paths['/impetus/generate-intervention']['post']['responses']['200']['content']['application/json'];
 ```
 
 ---
@@ -415,10 +415,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 **Test with curl**:
 ```bash
-curl -X POST http://localhost:8000/api/v1/impetus/generate-intervention \
+curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: $(uuidgen)" \
-  -H "X-Contract-Version: 1.0.1" \
+  -H "X-Contract-Version: 2.0.0" \
   -d '{
     "context": "他打开门,犹豫着要不要进去。",
     "mode": "muse",

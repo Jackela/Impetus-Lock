@@ -313,7 +313,7 @@ class AudioPlayer {
 Use **native `fetch` API** with TypeScript types generated from OpenAPI spec.
 
 ### Rationale
-- **Core Requirement**: Call `/api/v1/impetus/generate-intervention` (FR-016, FR-017)
+- **Core Requirement**: Call `/impetus/generate-intervention` (FR-016, FR-017)
 - **Simplicity**: No HTTP library needed (axios/ky adds 10KB+ for no benefit)
 - **Type Safety**: Generate TypeScript types from OpenAPI spec using `openapi-typescript`
 - **Idempotency**: Easy to add custom headers (Idempotency-Key)
@@ -322,20 +322,20 @@ Use **native `fetch` API** with TypeScript types generated from OpenAPI spec.
 ```typescript
 import type { paths } from './generated/api'; // Auto-generated from OpenAPI
 
-type InterventionRequest = paths['/api/v1/impetus/generate-intervention']['post']['requestBody']['content']['application/json'];
-type InterventionResponse = paths['/api/v1/impetus/generate-intervention']['post']['responses']['200']['content']['application/json'];
+type InterventionRequest = paths['/impetus/generate-intervention']['post']['requestBody']['content']['application/json'];
+type InterventionResponse = paths['/impetus/generate-intervention']['post']['responses']['200']['content']['application/json'];
 
 export async function callIntervention(
   req: InterventionRequest
 ): Promise<InterventionResponse> {
   const idempotencyKey = crypto.randomUUID();
   
-  const response = await fetch('/api/v1/impetus/generate-intervention', {
+  const response = await fetch('/impetus/generate-intervention', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Idempotency-Key': idempotencyKey,
-      'X-Contract-Version': '1.0.1'
+      'X-Contract-Version': '2.0.0'
     },
     body: JSON.stringify(req)
   });

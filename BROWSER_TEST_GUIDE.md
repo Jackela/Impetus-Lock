@@ -41,7 +41,7 @@ Verify that AI intervention is triggered after 60 seconds of inactivity.
 3. **Wait 60 Seconds** (do NOT type anything):
    - Watch the **Network tab** for a request to:
      ```
-     POST /api/v1/impetus/generate-intervention
+     POST /impetus/generate-intervention
      ```
 
 4. **Expected Behavior**:
@@ -119,7 +119,7 @@ Verify that the manual trigger button calls the API immediately.
 
 2. **Click Button**:
    - Watch **Network tab** (DevTools)
-   - Should see immediate `POST /api/v1/impetus/generate-intervention`
+   - Should see immediate `POST /impetus/generate-intervention`
 
 3. **Expected Behavior**:
    - ✅ API call appears immediately (no 60s wait)
@@ -272,7 +272,7 @@ Verify graceful error handling when backend is unavailable.
 
 ### Expected Request
 
-**URL**: `http://localhost:8000/api/v1/impetus/generate-intervention`
+**URL**: `http://localhost:8000/impetus/generate-intervention`
 **Method**: `POST`
 **Status**: `200 OK`
 
@@ -280,7 +280,7 @@ Verify graceful error handling when backend is unavailable.
 ```
 Content-Type: application/json
 Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000 (UUID v4)
-X-Contract-Version: 1.0.1
+  X-Contract-Version: 2.0.0
 ```
 
 **Request Payload**:
