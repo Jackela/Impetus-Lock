@@ -113,7 +113,55 @@ class InterventionHistoryResponse(BaseModel):
     actions: list[InterventionActionResponse]
 
 
+class TaskListResponse(BaseModel):
+    """Response schema for task list query."""
+
+    total: int
+    limit: int
+    offset: int
+    tasks: list[TaskResponse]
+
+
 # Endpoints
+
+
+@router.get("/", response_model=TaskListResponse)
+async def list_tasks(
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    repository: TaskRepository = Depends(get_task_repository),
+) -> TaskListResponse:
+    """List all tasks (paginated).
+
+    Args:
+        limit: Maximum number of tasks to return (1-100).
+        offset: Number of tasks to skip.
+        repository: Task repository (injected via DIP).
+
+    Returns:
+        TaskListResponse: Paginated task list in reverse chronological order.
+
+    Example:
+        ```bash
+        # Get first 10 tasks
+        curl http://localhost:8000/tasks/?limit=10
+
+        # Get next 10 tasks
+        curl http://localhost:8000/tasks/?limit=10&offset=10
+        ```
+    """
+    tasks = await repository.list_tasks(limit=limit, offset=offset)
+
+    # Get total count (fetch all tasks with high limit and count)
+    all_tasks = await repository.list_tasks(limit=10000, offset=0)
+    total = len(all_tasks)
+
+    return TaskListResponse(
+        total=total,
+        limit=limit,
+        offset=offset,
+        tasks=[TaskResponse.from_entity(t) for t in tasks],
+    )
 
 
 @router.post("/", response_model=TaskResponse, status_code=201)

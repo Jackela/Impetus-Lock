@@ -44,6 +44,41 @@ export async function fetchTask(taskId: string): Promise<TaskRecord> {
   return mapTask(data);
 }
 
+export interface TaskListResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  tasks: TaskRecord[];
+}
+
+export async function fetchTasks(
+  limit: number = 100,
+  offset: number = 0
+): Promise<TaskListResponse> {
+  const url = new URL(`${API_BASE_URL}/tasks/`);
+  if (limit > 0) url.searchParams.set("limit", limit.toString());
+  if (offset > 0) url.searchParams.set("offset", offset.toString());
+
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    throw new TaskAPIError(res.status, "Failed to fetch tasks");
+  }
+
+  const data = (await res.json()) as {
+    total: number;
+    limit: number;
+    offset: number;
+    tasks: ApiTaskResponse[];
+  };
+
+  return {
+    total: data.total,
+    limit: data.limit,
+    offset: data.offset,
+    tasks: data.tasks.map(mapTask),
+  };
+}
+
 export async function createTask(content: string, lockIds: string[]): Promise<TaskRecord> {
   const res = await fetch(`${API_BASE_URL}/tasks`, {
     method: "POST",

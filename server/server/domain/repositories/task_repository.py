@@ -196,3 +196,29 @@ class TaskRepository(ABC):
             ```
         """
         pass
+
+    @abstractmethod
+    async def list_tasks(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[Task]:
+        """List all tasks (paginated).
+
+        Args:
+            limit: Maximum number of tasks to return (default 100).
+            offset: Number of tasks to skip for pagination (default 0).
+
+        Returns:
+            list[Task]: Tasks in reverse chronological order (newest first).
+
+        Example:
+            ```python
+            # Get most recent 10 tasks
+            tasks = await repository.list_tasks(limit=10)
+            for task in tasks:
+                print(f"{task.created_at}: {task.content[:50]}...")
+
+            # Get next page
+            next_tasks = await repository.list_tasks(limit=10, offset=10)
+            ```
+        """
+        pass

@@ -5,6 +5,8 @@
 - Client tests use Vitest with custom wrapper script at `scripts/run-vitest.mjs`
 - Frontend quality gates: lint (ESLint), type-check (tsc), test (Vitest)
 - Backend quality gates: lint (Ruff), type-check (mypy), test (pytest)
+- Article I (Simplicity): Use framework-native features over external libraries (e.g., native React hooks instead of React Query)
+- When adding new API endpoints: update TaskRepository protocol, both implementations, and routes
 
 ---
 
@@ -107,4 +109,39 @@
   - Used semantic HTML: `<ul role="list">`, `<button>`, `<time>` elements
   - Accessibility attributes: `aria-selected`, `aria-label`, `data-testid` for testing
   - Snapshot tests need to account for dynamic content (dates, time)
+---
+
+## 2025-02-04 - UX-002 (useTasks Hook)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/src/hooks/useTasks.ts` (107 lines - React hook for fetching tasks)
+  - `client/src/hooks/useTasks.test.ts` (159 lines - 7 tests)
+- **Files modified**:
+  - `client/src/hooks/index.ts` - Added useTasks export
+  - `client/src/services/api/taskClient.ts` - Added fetchTasks() function and TaskListResponse type
+  - `server/server/domain/repositories/task_repository.py` - Added list_tasks() abstract method
+  - `server/server/infrastructure/persistence/postgresql_task_repository.py` - Implemented list_tasks()
+  - `server/server/infrastructure/persistence/in_memory_task_repository.py` - Implemented list_tasks()
+  - `server/server/api/routes/tasks.py` - Added GET /tasks/ endpoint with pagination
+- **Features implemented**:
+  - Backend: New `GET /tasks/` endpoint returning paginated task list
+  - Backend: `TaskListResponse` with total, limit, offset, tasks[] fields
+  - Frontend: `fetchTasks()` API client function with limit/offset params
+  - Frontend: `useTasks()` hook using native React hooks (useState, useEffect, useCallback)
+  - Loading state (isLoading), error handling, data state
+  - Manual refetch capability via refetch() function
+- **Tests**: 7 tests passing (loading, success, error handling, empty list, refetch)
+- **Verification**:
+  - ✅ Backend: Ruff passed, mypy passed
+  - ✅ Backend: pytest 58 passed
+  - ✅ Frontend: ESLint passed, TypeScript passed
+  - ✅ Frontend: Vitest 295 passed, 4 skipped (+7 new tests)
+- **Learnings for future iterations:**
+  - Article I (Simplicity): PRD specified React Query, but it's not installed. Used native React hooks instead.
+  - When adding new repository methods: update protocol, PostgreSQL implementation, AND in-memory implementation
+  - FastAPI routes: use Query() with Annotated for pagination params (ge, le constraints)
+  - List endpoints should return both data AND pagination metadata (total, limit, offset)
+  - Vite environment variables (import.meta.env.VITE_*) are compile-time constants, not runtime mutable
+  - For list endpoints, fetch ALL tasks to get total count (inefficient but simple for MVP)
+  - Test fetch mocks must match exact URL including query params (e.g., `/tasks/?limit=100`)
 ---

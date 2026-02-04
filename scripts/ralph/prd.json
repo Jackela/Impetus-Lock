@@ -118,11 +118,17 @@
         "Lint passes"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "依赖 UX-001",
+      "passes": true,
+      "notes": "Implemented using native React hooks (useState, useEffect, useCallback) instead of React Query - Article I (Simplicity) compliance. Also added backend list_tasks endpoint and GET /tasks/ API route.",
       "files": [
         "client/src/hooks/useTasks.ts",
-        "client/src/hooks/useTasks.test.ts"
+        "client/src/hooks/useTasks.test.ts",
+        "client/src/hooks/index.ts",
+        "client/src/services/api/taskClient.ts",
+        "server/server/domain/repositories/task_repository.py",
+        "server/server/infrastructure/persistence/postgresql_task_repository.py",
+        "server/server/infrastructure/persistence/in_memory_task_repository.py",
+        "server/server/api/routes/tasks.py"
       ]
     },
     {

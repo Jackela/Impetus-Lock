@@ -279,6 +279,35 @@ class PostgreSQLTaskRepository(TaskRepository):
 
         return result.scalar() or 0
 
+    async def list_tasks(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[Task]:
+        """List all tasks (paginated).
+
+        Args:
+            limit: Maximum number of tasks to return (default 100).
+            offset: Number of tasks to skip for pagination (default 0).
+
+        Returns:
+            list[Task]: Tasks in reverse chronological order (newest first).
+
+        Example:
+            ```python
+            # Get most recent 10 tasks
+            tasks = await repository.list_tasks(limit=10)
+            for task in tasks:
+                print(f"{task.created_at}: {task.content[:50]}...")
+            ```
+        """
+        result = await self._session.execute(
+            select(TaskModel)
+            .order_by(TaskModel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        return [self._to_entity(m) for m in result.scalars().all()]
+
     @staticmethod
     def _to_entity(model: TaskModel) -> Task:
         """Convert TaskModel (ORM) to Task (domain entity).
