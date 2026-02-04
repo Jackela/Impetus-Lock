@@ -145,3 +145,33 @@
   - For list endpoints, fetch ALL tasks to get total count (inefficient but simple for MVP)
   - Test fetch mocks must match exact URL including query params (e.g., `/tasks/?limit=100`)
 ---
+
+## 2025-02-04 - UX-003 (TaskList Integration in App)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/e2e/task-list-integration.spec.ts` (165 lines - 10 E2E tests)
+- **Files modified**:
+  - `client/src/App.tsx` - Added task list integration with sidebar layout
+  - `client/src/App.css` - Added sidebar, header, and responsive styles
+- **Features implemented**:
+  - Task list sidebar (320px width) on the left side of the app
+  - Toggle button in header with icon and "Tasks" label
+  - Keyboard shortcut: Alt+T to toggle sidebar visibility
+  - Loading state and error handling for task list
+  - Responsive design: sidebar overlays editor on mobile (under 768px)
+  - Task selection state management (visual only - TODO: load selected task in editor)
+  - E2E tests for: visibility, toggle, keyboard shortcut, loading state, empty state, screenshots
+- **Tests**: 295 unit tests passing (same as before), 10 new E2E tests
+- **Verification**:
+  - ✅ ESLint passed (after removing unused `refetch` variable)
+  - ✅ TypeScript type-check passed
+  - ✅ Vitest 295 passed, 4 skipped
+  - ✅ Browser verification: toggle button works, Alt+T shortcut works, layout correct
+- **Learnings for future iterations:**
+  - Header layout needed restructuring: added `.header-left` wrapper for title + toggle button
+  - Mobile responsive: sidebar uses `position: fixed` to overlay editor instead of flex layout
+  - Keyboard shortcuts using `e.altKey` with `e.key` works consistently across platforms
+  - E2E tests need to account for modal overlays that block interactions (close welcome modal first)
+  - For toggle states, use `aria-pressed` attribute for accessibility
+  - Task selection is currently visual only - future iterations need to load task content into editor
+---

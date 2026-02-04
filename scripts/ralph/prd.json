@@ -147,9 +147,9 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": "依赖 UX-001, UX-002",
-      "files": ["client/src/App.tsx"]
+      "passes": true,
+      "notes": "Implemented with sidebar layout, toggle button, Alt+T keyboard shortcut, E2E tests, and responsive design",
+      "files": ["client/src/App.tsx", "client/src/App.css", "client/e2e/task-list-integration.spec.ts"]
     },
     {
       "id": "UX-004",
