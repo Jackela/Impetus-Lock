@@ -534,3 +534,29 @@
   - Use collapsible `<details>` sections for long README content to improve scannability
   - One-command startup should be the most prominent section in Quick Start
 ---
+
+## 2025-02-04 - GH-005 (Optimize CI Workflow)
+- **Status**: ✅ Complete
+- **Files modified**: `.github/workflows/ci.yml`
+- **Changes made**:
+  - Added concurrency control:
+    - Group: `${{ github.workflow }}-${{ github.ref }}`
+    - `cancel-in-progress: true` to cancel previous runs for same PR/branch
+  - Optimized dependency caching:
+    - Expanded Poetry cache path to include both `~/.cache/pypoetry` and `server/.venv`
+    - This caches both the Poetry cache and installed virtual environment
+  - Added debug information output:
+    - lint job: Shows workflow, actor, event, ref, SHA, OS, Python/Node versions
+    - type-check job: Shows job name, OS, versions
+    - backend-tests job: Shows job name, OS, Python/Poetry versions
+    - frontend-tests job: Shows job name, OS, Node/npm versions
+- **Verification**:
+  - ✅ YAML syntax validated with Python yaml.safe_load
+  - Note: act validation skipped (requires Docker, WSL environment limitations)
+- **Learnings for future iterations**:
+  - Concurrency group should use `github.ref` to differentiate PRs from main branch
+  - `cancel-in-progress: true` saves CI minutes by cancelling stale runs
+  - Caching `.venv` alongside Poetry cache speeds up dependency installation
+  - Debug steps at job start help diagnose CI issues without needing to re-run
+  - Use `|| true` after version checks to prevent failures if tools aren't installed yet
+---

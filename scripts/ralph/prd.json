@@ -373,8 +373,8 @@
         "Tests pass"
       ],
       "priority": 19,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Added concurrency group with cancel-in-progress, expanded Poetry cache to include .venv, added debug information steps to all 4 jobs showing workflow/actor/event/ref/SHA/OS/version info.",
       "files": [".github/workflows/ci.yml"]
     },
     {
