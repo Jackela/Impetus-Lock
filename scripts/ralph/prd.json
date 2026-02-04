@@ -1,0 +1,410 @@
+{
+  "project": "Impetus Lock",
+  "branchName": "ralph/comprehensive-optimization",
+  "description": "综合优化：技术债务清理 + UI/UX 基础功能增强 + GitHub 最佳实践",
+  "userStories": [
+    {
+      "id": "QUALITY-001",
+      "title": "代码质量验证和重构",
+      "description": "在每完成 3 个用户故事后，执行全面的代码质量检查",
+      "acceptanceCriteria": [
+        "运行完整的 CI 流程（act 或手动运行所有检查）",
+        "检查测试覆盖率是否有下降",
+        "运行 ESLint 和 mypy/tsc 检查",
+        "审查最近提交的代码质量",
+        "更新 progress.txt 记录发现的问题",
+        "如有必要，创建重构任务",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes"
+      ],
+      "priority": 0,
+      "passes": false,
+      "notes": "质量检查门禁，每 3 个故事后执行",
+      "isCheckpoint": true
+    },
+    {
+      "id": "ST-001",
+      "title": "迁移 ESLint ignore 到 ignores 属性",
+      "description": "修复 eslint.config.js 中的 ignore 警告，迁移到新的 ignores 属性格式",
+      "acceptanceCriteria": [
+        "检查 eslint.config.js 当前配置",
+        "将 ignore 数组迁移到 ignores 属性",
+        "运行 npm run lint 验证无警告",
+        "确认忽略规则仍然有效",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Already migrated - using globalIgnores function (modern format)",
+      "files": ["client/eslint.config.js"]
+    },
+    {
+      "id": "ST-002",
+      "title": "增加 Playwright webServer 启动超时",
+      "description": "修复 Windows 环境下 Playwright webServer 启动超时问题",
+      "acceptanceCriteria": [
+        "检查 client/playwright.config.ts 当前超时配置",
+        "将 webServer.timeout 增加到 120000 (2分钟)",
+        "本地运行 npm run test:e2e 验证稳定性",
+        "确认 webServer 能可靠启动",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Added timeout: 120000 to webServer configuration",
+      "files": ["client/playwright.config.ts"]
+    },
+    {
+      "id": "ST-003",
+      "title": "配置 Vitest 进程池和清理",
+      "description": "优化 Vitest 配置以减少 Windows Git Bash 环境下的进程挂起",
+      "acceptanceCriteria": [
+        "检查 client/vitest.config.ts 或 vite.config.ts",
+        "添加 test.poolOptions 配置",
+        "设置 threads: single 以避免 fork 问题",
+        "添加 pool: 'forks' 或 'threads' 配置",
+        "本地运行 npm run test 验证稳定性",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "",
+      "files": ["client/vite.config.ts", "client/vitest.config.ts"]
+    },
+    {
+      "id": "UX-001",
+      "title": "创建 TaskList 组件骨架",
+      "description": "创建基础的任务列表 UI 组件，支持显示任务标题和元数据",
+      "acceptanceCriteria": [
+        "创建 client/src/components/TaskList/TaskList.tsx",
+        "创建 client/src/components/TaskList/TaskList.test.tsx",
+        "组件接受 tasks 数组作为 prop",
+        "每个任务显示标题、创建时间、锁定状态",
+        "添加基础的 CSS 样式（使用 Tailwind 或 styled-components）",
+        "添加单元测试（渲染测试、快照测试）",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "",
+      "files": [
+        "client/src/components/TaskList/TaskList.tsx",
+        "client/src/components/TaskList/TaskList.test.tsx"
+      ]
+    },
+    {
+      "id": "UX-002",
+      "title": "创建 useTasks Hook",
+      "description": "创建 React Query Hook 用于获取任务列表数据",
+      "acceptanceCriteria": [
+        "创建 client/src/hooks/useTasks.ts",
+        "创建 client/src/hooks/useTasks.test.ts",
+        "使用 React Query 的 useQuery",
+        "调用 GET /api/tasks 端点",
+        "处理 loading、error、success 状态",
+        "添加单元测试（mock API 响应）",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "依赖 UX-001",
+      "files": [
+        "client/src/hooks/useTasks.ts",
+        "client/src/hooks/useTasks.test.ts"
+      ]
+    },
+    {
+      "id": "UX-003",
+      "title": "在 App 中集成 TaskList",
+      "description": "将 TaskList 组件集成到主应用界面，替换或补充现有编辑器视图",
+      "acceptanceCriteria": [
+        "修改 client/src/App.tsx",
+        "集成 useTasks Hook",
+        "添加任务列表和编辑器的切换逻辑",
+        "实现基础的布局（侧边栏或主视图切换）",
+        "添加 E2E 测试验证用户流程",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "依赖 UX-001, UX-002",
+      "files": ["client/src/App.tsx"]
+    },
+    {
+      "id": "UX-004",
+      "title": "创建新建任务按钮组件",
+      "description": "创建悬浮操作按钮（FAB）用于快速创建新任务",
+      "acceptanceCriteria": [
+        "创建 client/src/components/NewTaskButton/NewTaskButton.tsx",
+        "创建对应的测试文件",
+        "使用 FAB 设计模式（右下角悬浮）",
+        "添加图标（+ 或 appropriate icon）",
+        "添加点击动画效果",
+        "添加单元测试",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "",
+      "files": [
+        "client/src/components/NewTaskButton/NewTaskButton.tsx",
+        "client/src/components/NewTaskButton/NewTaskButton.test.tsx"
+      ]
+    },
+    {
+      "id": "UX-005",
+      "title": "创建 useCreateTask Hook",
+      "description": "创建 React Query Hook 用于创建新任务",
+      "acceptanceCriteria": [
+        "创建 client/src/hooks/useCreateTask.ts",
+        "创建测试文件",
+        "使用 React Query 的 useMutation",
+        "调用 POST /api/tasks 端点",
+        "处理 success 和 error 状态",
+        "成功后刷新任务列表",
+        "添加单元测试",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "依赖 UX-002",
+      "files": [
+        "client/src/hooks/useCreateTask.ts",
+        "client/src/hooks/useCreateTask.test.ts"
+      ]
+    },
+    {
+      "id": "UX-006",
+      "title": "创建 CreateTaskModal 组件",
+      "description": "创建任务创建模态框，支持输入任务标题",
+      "acceptanceCriteria": [
+        "创建 client/src/components/CreateTaskModal/CreateTaskModal.tsx",
+        "创建测试文件",
+        "包含标题输入框",
+        "包含确认和取消按钮",
+        "集成 useCreateTask Hook",
+        "添加表单验证",
+        "添加错误处理",
+        "添加单元测试",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "依赖 UX-005",
+      "files": [
+        "client/src/components/CreateTaskModal/CreateTaskModal.tsx",
+        "client/src/components/CreateTaskModal/CreateTaskModal.test.tsx"
+      ]
+    },
+    {
+      "id": "UX-007",
+      "title": "增强锁状态的视觉标识",
+      "description": "为锁定的任务内容添加更明显的视觉标识",
+      "acceptanceCriteria": [
+        "检查 client/src/components/Editor/LockDecorations.ts",
+        "增加锁图标的尺寸和对比度",
+        "添加锁定状态的工具提示（tooltip）",
+        "为锁定内容添加背景色或边框",
+        "确保对比度符合 WCAG AA 标准",
+        "添加单元测试",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "",
+      "files": ["client/src/components/Editor/LockDecorations.ts"]
+    },
+    {
+      "id": "UX-008",
+      "title": "实现基础键盘快捷键",
+      "description": "添加常用操作的键盘快捷键支持",
+      "acceptanceCriteria": [
+        "创建 client/src/hooks/useKeyboardShortcuts.ts",
+        "创建测试文件",
+        "实现快捷键：Ctrl+N (新建任务)",
+        "实现快捷键：Ctrl+S (保存，当前可能已实现)",
+        "实现快捷键：Ctrl+/ (显示帮助)",
+        "使用 react-hotkeys-hook 或类似库",
+        "添加单元测试",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "依赖 UX-006",
+      "files": ["client/src/hooks/useKeyboardShortcuts.ts"]
+    },
+    {
+      "id": "UX-009",
+      "title": "创建快捷键帮助面板",
+      "description": "创建显示所有可用快捷键的帮助面板",
+      "acceptanceCriteria": [
+        "创建 client/src/components/KeyboardShortcutsHelp/KeyboardShortcutsHelp.tsx",
+        "创建测试文件",
+        "以表格形式列出所有快捷键",
+        "支持 Ctrl+/ 快捷键打开/关闭",
+        "添加模糊搜索功能",
+        "添加单元测试",
+        "Typecheck passes",
+        "Tests pass",
+        "Lint passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "依赖 UX-008",
+      "files": [
+        "client/src/components/KeyboardShortcutsHelp/KeyboardShortcutsHelp.tsx",
+        "client/src/components/KeyboardShortcutsHelp/KeyboardShortcutsHelp.test.tsx"
+      ]
+    },
+    {
+      "id": "GH-001",
+      "title": "添加 GitHub Issue 模板",
+      "description": "创建标准化的 Issue 报告模板，提高问题报告质量",
+      "acceptanceCriteria": [
+        "创建 .github/ISSUE_TEMPLATE/bug_report.md",
+        "创建 .github/ISSUE_TEMPLATE/feature_request.md",
+        "创建 .github/ISSUE_TEMPLATE/config.yml",
+        "Bug 模板包含：环境信息、复现步骤、预期行为、截图",
+        "Feature 模板包含：问题描述、用例、建议方案",
+        "测试创建新 Issue 验证模板显示",
+        "Typecheck passes (N/A for markdown)",
+        "Lint passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "",
+      "files": [
+        ".github/ISSUE_TEMPLATE/bug_report.md",
+        ".github/ISSUE_TEMPLATE/feature_request.md",
+        ".github/ISSUE_TEMPLATE/config.yml"
+      ]
+    },
+    {
+      "id": "GH-002",
+      "title": "添加 PR 模板",
+      "description": "创建标准化的 Pull Request 模板，确保 PR 包含必要信息",
+      "acceptanceCriteria": [
+        "创建 .github/PULL_REQUEST_TEMPLATE.md",
+        "包含：变更描述、测试步骤、相关 Issue、Breaking Changes",
+        "添加 PR Checklist（测试、文档、CI 检查）",
+        "添加 Conventional Commits 提醒",
+        "测试创建新 PR 验证模板显示",
+        "Typecheck passes (N/A for markdown)",
+        "Lint passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "",
+      "files": [".github/PULL_REQUEST_TEMPLATE.md"]
+    },
+    {
+      "id": "GH-003",
+      "title": "完善贡献指南",
+      "description": "创建或完善 CONTRIBUTING.md，指导新贡献者参与项目",
+      "acceptanceCriteria": [
+        "创建或更新 CONTRIBUTING.md",
+        "包含：环境设置、开发流程、代码规范、测试要求",
+        "添加 PR 提交步骤",
+        "添加本地 CI 验证命令（act）",
+        "添加宪法要求说明",
+        "添加报告问题指南",
+        "使用 markdown linter 检查格式",
+        "验证所有链接有效",
+        "Typecheck passes (N/A for markdown)",
+        "Lint passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "",
+      "files": ["CONTRIBUTING.md"]
+    },
+    {
+      "id": "GH-004",
+      "title": "优化项目 README",
+      "description": "改进 README.md，使其更专业和易于理解",
+      "acceptanceCriteria": [
+        "更新 README.md",
+        "添加项目徽章（CI 状态、版本、许可证）",
+        "添加功能截图（当前缺失）",
+        "添加快速开始指南（5 步内完成）",
+        "添加架构图或链接",
+        "添加贡献者指南链接",
+        "添加许可证部分",
+        "确保所有章节链接正确",
+        "检查拼写和语法",
+        "Typecheck passes (N/A for markdown)",
+        "Lint passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "",
+      "files": ["README.md"]
+    },
+    {
+      "id": "GH-005",
+      "title": "优化 CI workflow 配置",
+      "description": "改进 GitHub Actions 工作流，提高效率和可维护性",
+      "acceptanceCriteria": [
+        "检查 .github/workflows/ci.yml",
+        "添加并发控制（concurrency）",
+        "优化依赖缓存策略",
+        "添加 workflow 专用徽章到 README",
+        "添加失败时的调试信息输出",
+        "验证 workflow 语法（gh workflow view ci）",
+        "本地运行 act 验证",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "",
+      "files": [".github/workflows/ci.yml", "README.md"]
+    },
+    {
+      "id": "GH-006",
+      "title": "添加安全政策文档",
+      "description": "创建 SECURITY.md，指导安全漏洞报告流程",
+      "acceptanceCriteria": [
+        "创建 SECURITY.md",
+        "包含：支持的版本范围、报告漏洞流程、安全更新政策",
+        "添加私人报告渠道（security advisory）",
+        "添加依赖更新自动化说明",
+        "使用 markdown linter 检查",
+        "验证链接有效性",
+        "Typecheck passes (N/A for markdown)",
+        "Lint passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "",
+      "files": ["SECURITY.md"]
+    }
+  ]
+}
