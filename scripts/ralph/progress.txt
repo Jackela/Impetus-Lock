@@ -678,3 +678,36 @@
   - Suppress `console.error` in tests with beforeEach/afterEach for expected errors
 
 ---
+
+## 2025-02-04 - ST-006 (Error Handling Hook)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/src/hooks/useErrorHandler.ts` (187 lines)
+  - `client/src/hooks/useErrorHandler.test.ts` (173 lines)
+- **Files modified**:
+  - `client/src/hooks/index.ts` - Added useErrorHandler export
+- **Features implemented**:
+  - Error categorization into types: network, timeout, server, client, unknown
+  - Retryable flag based on error type
+  - handleError function for processing unknown errors
+  - clearError function to reset error state
+  - setError function for setting custom error messages
+  - Automatic detection from status codes (4xx, 5xx)
+  - Keyword-based detection from error messages
+  - Original error preservation for Error objects
+- **Tests**: 18 tests passing (initial state, Error objects, strings, objects with message, null handling, categorization for each type, clearError, setError)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 380 passed, 4 skipped (+18 new tests)
+- **Learnings for future iterations**:
+  - Error categorization helps determine retry behavior
+  - 5xx errors are retryable (server issues)
+  - 4xx errors are generally not retryable (client issues) except 408 (timeout) and 429 (rate limit)
+  - TypeError with "fetch" in message indicates network error
+  - DOMException with name "AbortError" indicates timeout
+  - Always check if error is object/null before accessing properties
+  - Use type guards (instanceof) for reliable error type checking
+  - Fallback to "unknown" type for unrecognized errors
+
+---
