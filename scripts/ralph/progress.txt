@@ -75,3 +75,36 @@
   - Configuration-only changes have minimal test coverage impact
   - The single-thread Vitest configuration may slightly slow down tests but improves stability
 ---
+
+## 2025-02-04 - UX-001 (TaskList Component)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/src/components/TaskList/TaskList.tsx` (125 lines)
+  - `client/src/components/TaskList/TaskList.css` (109 lines)
+  - `client/src/components/TaskList/TaskList.test.tsx` (160 lines)
+  - `client/src/types/task.ts` (9 lines - type re-export)
+- **Files modified**:
+  - `client/eslint.config.js` - Added types/ directory override for service imports
+- **Features implemented**:
+  - Accepts `tasks` array prop of type `TaskRecord[]`
+  - Displays task title (truncated to 100 chars with "...")
+  - Shows creation time as relative time (e.g., "2h ago")
+  - Shows lock badge with count for tasks with locks
+  - Shows version badge for tasks with version > 1
+  - Supports task selection state with visual styling
+  - Optional `onTaskClick` callback for task selection
+  - Empty state with helpful message
+- **Tests**: 25 tests passing (rendering, lock status, metadata, interactions, accessibility, snapshots)
+- **Verification**:
+  - ✅ ESLint passed (after adding types/ directory override)
+  - ✅ TypeScript type-check passed
+  - ✅ Vitest tests passed (289 total, +21 new tests)
+- **Learnings for future iterations:**
+  - Architecture rule: Components cannot import from services directory
+  - Solution: Created `types/task.ts` to re-export `TaskRecord` type
+  - Added ESLint override for `**/types/**/*.ts` to allow service imports for type re-exports
+  - Plain CSS is the preferred styling approach in this codebase (not Tailwind)
+  - Used semantic HTML: `<ul role="list">`, `<button>`, `<time>` elements
+  - Accessibility attributes: `aria-selected`, `aria-label`, `data-testid` for testing
+  - Snapshot tests need to account for dynamic content (dates, time)
+---

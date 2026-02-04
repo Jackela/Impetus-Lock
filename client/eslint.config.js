@@ -131,6 +131,13 @@ export default defineConfig([
       "no-restricted-imports": "off",
     },
   },
+  // Override for types: Type definition files can import from services
+  {
+    files: ["**/types/**/*.ts"],
+    rules: {
+      "no-restricted-imports": "off",
+    },
+  },
   // Test files: Relax JSDoc requirements
   {
     files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "**/e2e/**/*.{ts,tsx}"],
