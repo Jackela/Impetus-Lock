@@ -34,3 +34,19 @@
   - E2E tests are optional for verification in this story since unit tests cover the config change
   - The 2-minute timeout (120000ms) provides enough buffer for slower Windows systems
 ---
+
+## 2025-02-04 - ST-003 (Vitest pool options configuration)
+- **Status**: ✅ Complete
+- **Files changed**: `client/vitest.config.ts`
+- **Changes made**: Added `poolOptions` with `single: true` for both threads and forks pools
+- **Verification**:
+  - ✅ ESLint passed
+  - ✅ TypeScript type-check passed
+  - ✅ Vitest tests passed (268 passed, 4 skipped)
+- **Learnings for future iterations:**
+  - The codebase already had `pool` configuration using `VITEST_POOL` environment variable
+  - Added `poolOptions` to configure worker behavior for both pool types (threads and forks)
+  - Setting `single: true` runs tests in a single worker process, avoiding Windows Git Bash fork issues
+  - The `single-thread` configuration is safer on Windows but may slow down parallel test execution
+  - This is a trade-off between stability (avoiding hanging processes) and speed (parallel execution)
+---
