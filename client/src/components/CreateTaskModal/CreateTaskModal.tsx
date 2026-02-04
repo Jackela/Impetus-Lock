@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCreateTask } from "../../hooks/useCreateTask";
 import "./CreateTaskModal.css";
 
@@ -52,21 +52,30 @@ export function CreateTaskModal({
 }) {
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isExiting, setIsExiting] = useState(false);
   const { mutate, isLoading: isCreating } = useCreateTask();
+  const isExitingRef = useRef(false);
 
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
+      setIsExiting(false);
+      isExitingRef.current = false;
       setTitle("");
       setError(null);
     }
   }, [open]);
 
   const handleClose = useCallback(() => {
-    if (!isCreating) {
-      setTitle("");
-      setError(null);
-      onClose();
+    if (!isCreating && !isExitingRef.current) {
+      isExitingRef.current = true;
+      setIsExiting(true);
+      // Wait for exit animation to complete before closing
+      setTimeout(() => {
+        setTitle("");
+        setError(null);
+        onClose();
+      }, 150);
     }
   }, [isCreating, onClose]);
 
@@ -114,7 +123,7 @@ export function CreateTaskModal({
   // Handle Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open) {
+      if (e.key === "Escape" && open && !isExitingRef.current) {
         handleClose();
       }
     };
@@ -140,9 +149,9 @@ export function CreateTaskModal({
 
   return (
     <div
-      className="create-task-modal-overlay"
+      className={`create-task-modal-overlay${isExiting ? " modal-exit" : ""}`}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isCreating) {
+        if (e.target === e.currentTarget && !isCreating && !isExitingRef.current) {
           handleClose();
         }
       }}

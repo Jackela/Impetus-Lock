@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CreateTaskModal } from "./CreateTaskModal";
@@ -27,6 +27,7 @@ describe("CreateTaskModal", () => {
   };
 
   beforeEach(() => {
+    vi.useFakeTimers();
     queryClient = new QueryClient({
       defaultOptions: {
         mutations: {
@@ -42,6 +43,10 @@ describe("CreateTaskModal", () => {
     });
 
     vi.mocked(useCreateTaskModule.useCreateTask).mockReturnValue(mockUseCreateTask);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -151,6 +156,9 @@ describe("CreateTaskModal", () => {
       const cancelButton = screen.getByTestId("create-task-cancel");
       cancelButton.click();
 
+      // Fast-forward time for exit animation
+      vi.advanceTimersByTime(150);
+
       expect(defaultProps.onClose).toHaveBeenCalled();
     });
 
@@ -160,6 +168,9 @@ describe("CreateTaskModal", () => {
       const overlay = screen.getByTestId("create-task-modal");
       overlay.click();
 
+      // Fast-forward time for exit animation
+      vi.advanceTimersByTime(150);
+
       expect(defaultProps.onClose).toHaveBeenCalled();
     });
 
@@ -168,6 +179,9 @@ describe("CreateTaskModal", () => {
 
       const modalContent = screen.getByText("Create New Task").closest(".create-task-modal");
       modalContent?.click();
+
+      // Fast-forward time to ensure no delayed call
+      vi.advanceTimersByTime(150);
 
       expect(defaultProps.onClose).not.toHaveBeenCalled();
     });
@@ -222,6 +236,9 @@ describe("CreateTaskModal", () => {
 
       const cancelButton = screen.getByTestId("create-task-cancel");
       cancelButton.click();
+
+      // Fast-forward time for exit animation
+      vi.advanceTimersByTime(150);
 
       expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
     });
