@@ -21,6 +21,8 @@ import { useTaskSync } from "./hooks/useTaskSync";
 import { TaskList } from "./components/TaskList/TaskList";
 import { useTasks } from "./hooks/useTasks";
 import type { TaskRecord } from "./types/task";
+import { NewTaskButton } from "./components/NewTaskButton";
+import { CreateTaskModal } from "./components/CreateTaskModal";
 
 /**
  * Impetus Lock Main Application
@@ -50,8 +52,11 @@ function App() {
   const [showTaskList, setShowTaskList] = useState(true);
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null);
 
-  // Fetch task list
-  const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasks();
+  // UX-010: Create task modal state
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+
+  // Fetch task list with refetch for new task creation
+  const { data: tasks, isLoading: tasksLoading, error: tasksError, refetch } = useTasks();
   const {
     config: llmConfig,
     isConfigured,
@@ -180,6 +185,15 @@ function App() {
           llmConfig?.provider ||
           null
         }
+      />
+      {/* UX-010: Create task modal */}
+      <CreateTaskModal
+        open={showCreateTaskModal}
+        onClose={() => setShowCreateTaskModal(false)}
+        onSuccess={() => {
+          // Refetch task list after successful creation
+          refetch();
+        }}
       />
 
       <header className="app-header">
@@ -327,6 +341,12 @@ function App() {
       <footer className="app-footer">
         Press <kbd>?</kbd> for help
       </footer>
+
+      {/* UX-010: New task button (FAB) */}
+      <NewTaskButton
+        onClick={() => setShowCreateTaskModal(true)}
+        ariaLabel="Create new task"
+      />
     </div>
   );
 }
