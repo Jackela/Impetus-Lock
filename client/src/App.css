@@ -377,10 +377,50 @@ button:focus-visible {
   align-items: center;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .app-header h1 {
   margin: 0;
   font-size: 1.5rem;
   color: #8b5cf6;
+}
+
+/* UX-003: Task list toggle button */
+.task-list-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2a2a2a;
+  color: #9ca3af;
+  border: 1px solid #444;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.task-list-toggle:hover {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+.task-list-toggle.active {
+  background-color: #374151;
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.task-list-toggle svg {
+  flex-shrink: 0;
+}
+
+.toggle-label {
+  font-weight: 500;
 }
 
 .controls {
@@ -417,11 +457,59 @@ button:focus-visible {
 /* Main Content */
 .app-main {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   background-color: #0a0a0a;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: row;
+}
+
+/* UX-003: Task list sidebar */
+.task-sidebar {
+  width: 320px;
+  min-width: 320px;
+  background-color: #111827;
+  border-right: 1px solid #1f2937;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.task-sidebar-header {
+  padding: 1rem;
+  border-bottom: 1px solid #1f2937;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-sidebar-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.task-sidebar-error {
+  color: #f87171;
+  font-size: 0.75rem;
+}
+
+.task-sidebar-loading {
+  padding: 1rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Editor area */
+.editor-area {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .editor-container {
@@ -441,6 +529,11 @@ button:focus-visible {
     padding: 1rem;
   }
 
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .app-header h1 {
     font-size: 1.25rem;
   }
@@ -448,6 +541,18 @@ button:focus-visible {
   .controls {
     flex-wrap: wrap;
     gap: 0.75rem;
+  }
+
+  /* UX-003: Mobile - sidebar overlays editor */
+  .task-sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    min-width: unset;
+    z-index: 100;
   }
 
   .editor-container {
