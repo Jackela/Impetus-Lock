@@ -174,8 +174,8 @@
         "Lint passes"
       ],
       "priority": 9,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "API endpoints already exist (create_task, list_tasks, get_task, update_task, delete_task). Added 19 comprehensive tests covering all CRUD operations.",
       "files": [
         "server/server/domain/repositories/task_repository.py",
         "server/server/infrastructure/persistence/postgresql_task_repository.py",
@@ -198,11 +198,11 @@
         "Lint passes"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": "依赖 UX-006, UX-004",
+      "passes": true,
+      "notes": "Implemented useMutation hook with automatic cache invalidation. 9 tests passing. Test file is .tsx (not .ts).",
       "files": [
         "client/src/hooks/useCreateTask.ts",
-        "client/src/hooks/useCreateTask.test.ts",
+        "client/src/hooks/useCreateTask.test.tsx",
         "client/src/hooks/index.ts"
       ]
     },

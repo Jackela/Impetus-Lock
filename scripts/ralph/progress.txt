@@ -10,6 +10,9 @@
 - When adding new API endpoints: update TaskRepository protocol, both implementations, and routes
 - React Query hooks need QueryClient wrapper (already configured in main.tsx)
 - When testing React Query hooks: use QueryClient wrapper from `@tanstack/react-query`
+- React Query v7: useMutation returns `isPending` internally, expose as `isLoading` for consistency
+- React Query v7: State updates are asynchronous, use `waitFor` in tests for async state assertions
+- Test files with JSX must use .tsx extension (not .ts) for proper parsing
 
 ---
 
@@ -235,4 +238,67 @@
     - refetch is a function provided by useQuery
   - When using React Query, QueryClient default options can be configured for all queries
   - Query keys should be stable and include all dependencies (limit, offset in this case)
+---
+
+## 2025-02-04 - UX-006 (Backend Create Task API Tests)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `server/tests/test_tasks.py` (325 lines - 19 tests)
+- **Findings**:
+  - The PRD mentioned adding a `create()` method, but the actual method name is `create_task()`
+  - All API endpoints were already implemented:
+    - `POST /tasks/` - Create task (lines 167-194 in tasks.py)
+    - `GET /tasks/` - List tasks with pagination
+    - `GET /tasks/{id}` - Get single task
+    - `PUT /tasks/{id}` - Update task (with optimistic locking)
+    - `DELETE /tasks/{id}` - Delete task
+    - `GET /tasks/{id}/actions` - Get intervention history
+  - Repository methods already existed: `create_task()`, `list_tasks()`, `get_task()`, `update_task()`, `delete_task()`
+- **What was implemented**:
+  - Comprehensive test suite covering all CRUD operations (19 tests)
+  - TestCreateTask: 5 tests for POST /tasks/ endpoint
+  - TestListTasks: 3 tests for GET /tasks/ with pagination
+  - TestGetTask: 3 tests for GET /tasks/{id}
+  - TestUpdateTask: 3 tests for PUT /tasks/{id} with optimistic locking
+  - TestDeleteTask: 3 tests for DELETE /tasks/{id}
+  - TestGetInterventionHistory: 2 tests for GET /tasks/{id}/actions
+- **Tests**: 19 tests passing, 77 total backend tests passing
+- **Verification**:
+  - ✅ Ruff linting passed (0 errors)
+  - ✅ mypy type checking passed (0 errors)
+  - ✅ pytest 77 passed
+- **Learnings for future iterations**:
+  - Always verify existing implementation before starting new work
+  - The codebase uses `create_task()` as the method name, not `create()`
+  - Use `InMemoryTaskRepository` for API tests to avoid database dependencies
+  - FastAPI dependency override pattern: `app.dependency_overrides[module.get_dep] = override_func`
+  - Generator fixtures must return `Generator[None, None, None]` not `None` for mypy strict mode
+  - Test fixtures with `autouse=True` apply to all tests in the module
+---
+
+## 2025-02-04 - UX-007 (useCreateTask Hook)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/src/hooks/useCreateTask.ts` (106 lines - React hook for creating tasks)
+  - `client/src/hooks/useCreateTask.test.tsx` (293 lines - 9 tests)
+- **Files modified**:
+  - `client/src/hooks/index.ts` - Added useCreateTask export
+- **Features implemented**:
+  - `useCreateTask()` hook using React Query's useMutation
+  - Mutations call `POST /tasks` endpoint with content and optional lock_ids
+  - Returns `{ mutate, mutateAsync, isLoading, error }`
+  - Automatic cache invalidation on success (invalidates `["tasks"]` query)
+- **Tests**: 9 tests passing (idle state, mutate, mutateAsync, error handling, cache invalidation, loading state)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed
+  - ✅ Vitest 305 passed, 4 skipped (+9 new tests)
+- **Learnings for future iterations**:
+  - Test files with JSX must use .tsx extension (not .ts) for proper parsing
+  - React Query v7 updates state asynchronously - loading state may not be immediately available
+  - Use `waitFor` for checking async state updates in tests
+  - For mutation tests with delayed promises, use Promise with manual resolve
+  - `mutateAsync` throws errors directly, so error state is not set in the hook
+  - Cache invalidation uses `queryClient.invalidateQueries()` with query key prefix
+  - `useMutation` returns `isPending` not `isLoading` in React Query v7, but we expose as `isLoading`
 ---
