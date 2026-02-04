@@ -6,7 +6,10 @@
 - Frontend quality gates: lint (ESLint), type-check (tsc), test (Vitest)
 - Backend quality gates: lint (Ruff), type-check (mypy), test (pytest)
 - Article I (Simplicity): Use framework-native features over external libraries (e.g., native React hooks instead of React Query)
+- **Exception**: React Query (v7.22.1) is now available for data fetching hooks (useQuery, useMutation)
 - When adding new API endpoints: update TaskRepository protocol, both implementations, and routes
+- React Query hooks need QueryClient wrapper (already configured in main.tsx)
+- When testing React Query hooks: use QueryClient wrapper from `@tanstack/react-query`
 
 ---
 
@@ -174,4 +177,62 @@
   - E2E tests need to account for modal overlays that block interactions (close welcome modal first)
   - For toggle states, use `aria-pressed` attribute for accessibility
   - Task selection is currently visual only - future iterations need to load task content into editor
+---
+
+## 2025-02-04 - UX-004 (Install and Configure React Query)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/src/vite.d.ts` (7 lines - React Query module declarations)
+- **Files modified**:
+  - `client/package.json` - Added @tanstack/react-query v7.22.1
+  - `client/package-lock.json` - Updated lock file
+  - `client/src/main.tsx` - Added QueryClientProvider wrapper
+- **Features implemented**:
+  - Installed @tanstack/react-query package (v7.22.1)
+  - Wrapped App with QueryClientProvider in main.tsx
+  - Configured QueryClient with default options:
+    - `staleTime: 5 minutes` - Data remains fresh for 5 minutes
+    - `retry: 1` - Single retry on failure
+  - Created vite.d.ts for React Query module declarations
+- **Tests**: All existing tests still pass (295 passed, 4 skipped)
+- **Verification**:
+  - ✅ ESLint passed (after removing unused eslint-disable)
+  - ✅ TypeScript type-check passed
+  - ✅ Vitest 295 passed, 4 skipped
+- **Learnings for future iterations:**
+  - React Query v7 is now installed and ready for use in hooks
+  - The QueryClientProvider must wrap the App component at the root level
+  - Default options can be configured at QueryClient creation time
+  - The vite.d.ts file helps with module resolution for type checking
+  - Next step (UX-005): Refactor useTasks to use useQuery instead of native hooks
+---
+
+## 2025-02-04 - UX-005 (Refactor useTasks to use React Query)
+- **Status**: ✅ Complete
+- **Files modified**:
+  - `client/src/hooks/useTasks.ts` - Refactored to use useQuery
+  - `client/src/hooks/useTasks.test.tsx` - Renamed from .ts, added QueryClient wrapper
+  - `client/src/components/App.test.tsx` - Added QueryClient wrapper for tests
+- **Changes made**:
+  - Replaced native React hooks (useState, useEffect, useCallback) with useQuery
+  - Added getQueryKey() factory for cache management
+  - Maintained same API interface (isLoading, error, data, refetch)
+  - Created test QueryClient wrapper utility
+  - Added test for different query keys with different limit/offset values
+- **Tests**: 296 passed, 4 skipped (+1 new test)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed
+  - ✅ Vitest 296 passed, 4 skipped
+- **Learnings for future iterations**:
+  - Test files with JSX need .tsx extension, not .ts
+  - React Query hooks must be wrapped with QueryClientProvider in tests
+  - Create a reusable wrapper function for testing React Query hooks
+  - React Query's useQuery returns different structure than native hooks:
+    - data is available directly (not wrapped in response object)
+    - isLoading is provided by useQuery
+    - error is provided by useQuery (null by default)
+    - refetch is a function provided by useQuery
+  - When using React Query, QueryClient default options can be configured for all queries
+  - Query keys should be stable and include all dependencies (limit, offset in this case)
 ---
