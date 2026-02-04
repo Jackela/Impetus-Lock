@@ -30,6 +30,9 @@ import { CreateTaskModal } from "./components/CreateTaskModal";
  * Production editor with full lock enforcement and AI intervention system.
  */
 function App() {
+  // ST-001: Track the task being edited (must be declared before useTaskSync)
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
   const {
     content: taskContent,
     lockIds: taskLocks,
@@ -39,7 +42,7 @@ function App() {
     error: taskError,
     isSaving,
     onChange: handleTaskChange,
-  } = useTaskSync(INITIAL_STORY);
+  } = useTaskSync(INITIAL_STORY, { externalTaskId: editingTaskId });
 
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
@@ -133,12 +136,11 @@ function App() {
     }, 3000);
   }, [clearConfig]);
 
-  // UX-003: Handle task selection from list
+  // ST-001: Handle task selection from list - load task into editor
   const handleTaskClick = useCallback(
     (task: TaskRecord) => {
       setSelectedTask(task);
-      // TODO: In future iterations, load the selected task into the editor
-      // For now, just select it visually
+      setEditingTaskId(task.id);
     },
     []
   );

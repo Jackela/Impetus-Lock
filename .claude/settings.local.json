@@ -17,7 +17,17 @@
       "Bash(gh workflow --help:*)",
       "Bash(gh pr create --help:*)",
       "Bash(gh run watch --help:*)",
-      "Bash(gh pr merge --help:*)"
+      "Bash(gh pr merge --help:*)",
+      "Bash(scripts/ralph/ralph.sh:*)",
+      "Bash(jq:*)",
+      "Bash(git checkout:*)",
+      "Bash(git checkout -b:*)",
+      "Bash(cd server && poetry run ruff check:*)",
+      "Bash(cd server && poetry run mypy:*)",
+      "Bash(cd server && poetry run pytest:*)",
+      "Bash(cd client && npm run lint:*)",
+      "Bash(cd client && npm run type-check:*)",
+      "Bash(cd client && npm run test:*)"
     ],
     "deny": [],
     "ask": []
