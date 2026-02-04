@@ -1,16 +1,44 @@
+/**
+ * LLM Key Vault
+ *
+ * Secure storage for LLM API keys with support for local, encrypted,
+ * and session storage modes. Uses Web Crypto API for AES-GCM encryption.
+ *
+ * @module services/llmKeyVault
+ */
+
 import type { LLMConfig } from "./llmConfigStore";
 
+/**
+ * Vault storage mode.
+ *
+ * - "local": Plain text in localStorage (default)
+ * - "encrypted": AES-256-GCM encrypted with user passphrase
+ * - "session": In-memory only, cleared on idle/visibility change
+ */
 export type VaultMode = "local" | "encrypted" | "session";
 
+/**
+ * Vault preferences stored in localStorage.
+ */
 interface VaultPreferences {
+  /** Current storage mode */
   mode: VaultMode;
+  /** Last update timestamp */
   updatedAt?: string;
+  /** Whether passphrase is set (encrypted mode) */
   hasPassphrase?: boolean;
 }
 
+/**
+ * Encrypted payload structure.
+ */
 interface EncryptedPayload {
+  /** Base64-encoded ciphertext */
   ciphertext: string;
+  /** Base64-encoded IV */
   iv: string;
+  /** Encryption timestamp */
   updatedAt: string;
 }
 
@@ -20,16 +48,29 @@ const SALT_KEY = "impetus.llmVault.salt";
 const LOCAL_KEY = "impetus.llmConfig";
 const SESSION_IDLE_MS = Number(import.meta.env.VITE_SESSION_IDLE_MS ?? 5 * 60 * 1000);
 
+/** In-memory cache for current config */
 let cache: LLMConfig | null = null;
+/** Derived encryption key */
 let encryptionKey: CryptoKey | null = null;
+/** Whether vault is locked (awaiting passphrase) */
 let pendingUnlock = false;
+/** Session idle timer */
 let sessionTimer: number | undefined;
+/** State change subscribers */
 const subscribers = new Set<() => void>();
 
+/**
+ * Notify all subscribers of state change.
+ */
 function notify(): void {
   subscribers.forEach((fn) => fn());
 }
 
+/**
+ * Read vault preferences from localStorage.
+ *
+ * @returns Vault preferences
+ */
 function readPreferences(): VaultPreferences {
   try {
     const raw = window.localStorage.getItem(PREF_KEY);
@@ -40,40 +81,96 @@ function readPreferences(): VaultPreferences {
   return { mode: "local" };
 }
 
+/**
+ * Write vault preferences to localStorage.
+ *
+ * @param pref - Preferences to write
+ */
 function writePreferences(pref: VaultPreferences): void {
   window.localStorage.setItem(PREF_KEY, JSON.stringify(pref));
 }
 
+/**
+ * Get current vault storage mode.
+ *
+ * @returns Current mode (defaults to "local")
+ */
 export function getVaultMode(): VaultMode {
   return readPreferences().mode ?? "local";
 }
 
+/**
+ * Get vault metadata/preferences.
+ *
+ * @returns Current vault preferences
+ */
 export function getVaultMetadata(): VaultPreferences {
   return readPreferences();
 }
 
+/**
+ * Subscribe to vault state changes.
+ *
+ * @param listener - Callback function on state change
+ * @returns Unsubscribe function
+ *
+ * @example
+ * ```ts
+ * const unsubscribe = subscribeVault(() => {
+ *   console.log('Vault state changed');
+ * });
+ * // Later: unsubscribe();
+ * ```
+ */
 export function subscribeVault(listener: () => void): () => void {
   subscribers.add(listener);
   return () => subscribers.delete(listener);
 }
 
+/**
+ * Get cached vault config.
+ *
+ * @returns Cached config or null
+ */
 export function getVaultCache(): LLMConfig | null {
   return cache;
 }
 
+/**
+ * Check if encrypted vault is locked.
+ *
+ * @returns True if vault is locked and awaiting passphrase
+ */
 export function isVaultLocked(): boolean {
   return pendingUnlock;
 }
 
+/**
+ * Encode ArrayBuffer/Uint8Array to base64.
+ *
+ * @param buffer - Buffer to encode
+ * @returns Base64 string
+ */
 function encode(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
   return window.btoa(String.fromCharCode(...bytes));
 }
 
+/**
+ * Decode base64 to Uint8Array.
+ *
+ * @param value - Base64 string
+ * @returns Decoded bytes
+ */
 function decode(value: string): Uint8Array {
   return Uint8Array.from(window.atob(value), (c) => c.charCodeAt(0));
 }
 
+/**
+ * Get or create salt for key derivation.
+ *
+ * @returns Salt bytes
+ */
 function ensureSalt(): Uint8Array {
   const raw = window.localStorage.getItem(SALT_KEY);
   if (raw) return decode(raw);
@@ -82,6 +179,13 @@ function ensureSalt(): Uint8Array {
   return salt;
 }
 
+/**
+ * Derive encryption key from passphrase using PBKDF2.
+ *
+ * @param passphrase - User passphrase
+ * @param salt - Salt for key derivation
+ * @returns Derived AES-GCM key
+ */
 async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const passKey = await window.crypto.subtle.importKey(
@@ -108,6 +212,18 @@ async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKe
   );
 }
 
+/**
+ * Set passphrase for encrypted vault mode.
+ *
+ * Unlocks vault if passphrase is correct, or re-encrypts with new passphrase.
+ *
+ * @param passphrase - User passphrase
+ *
+ * @example
+ * ```ts
+ * await setVaultPassphrase('my-secret-passphrase');
+ * ```
+ */
 export async function setVaultPassphrase(passphrase: string): Promise<void> {
   const salt = ensureSalt();
   const newKey = await deriveKey(passphrase, salt);
@@ -137,6 +253,11 @@ export async function setVaultPassphrase(passphrase: string): Promise<void> {
   notify();
 }
 
+/**
+ * Reset session idle timer.
+ *
+ * Clears cache after inactivity in session mode.
+ */
 function resetSessionTimer(): void {
   if (sessionTimer) {
     window.clearTimeout(sessionTimer);
@@ -151,6 +272,7 @@ function resetSessionTimer(): void {
   }, SESSION_IDLE_MS);
 }
 
+// Set up session mode event listeners
 if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "hidden" && getVaultMode() === "session") {
@@ -164,6 +286,19 @@ if (typeof document !== "undefined") {
   });
 }
 
+/**
+ * Set vault storage mode.
+ *
+ * Switches between local, encrypted, and session modes.
+ * Clears existing data when switching to session mode.
+ *
+ * @param mode - New vault mode
+ *
+ * @example
+ * ```ts
+ * await setVaultMode('encrypted'); // Enable BYOK mode
+ * ```
+ */
 export async function setVaultMode(mode: VaultMode): Promise<void> {
   const pref = readPreferences();
   if (pref.mode === mode) {
@@ -194,6 +329,24 @@ export async function setVaultMode(mode: VaultMode): Promise<void> {
   notify();
 }
 
+/**
+ * Load LLM config from vault.
+ *
+ * Handles all three storage modes. Returns null if vault is locked.
+ *
+ * @returns Loaded config or null
+ * @throws {Error} If decryption fails in encrypted mode
+ *
+ * @example
+ * ```ts
+ * const config = await loadVaultConfig();
+ * if (config) {
+ *   console.log('Loaded:', config.provider);
+ * } else {
+ *   console.log('Vault is empty or locked');
+ * }
+ * ```
+ */
 export async function loadVaultConfig(): Promise<LLMConfig | null> {
   const mode = getVaultMode();
   if (mode === "session") {
@@ -245,6 +398,23 @@ export async function loadVaultConfig(): Promise<LLMConfig | null> {
   }
 }
 
+/**
+ * Save LLM config to vault.
+ *
+ * Encrypts data in encrypted mode, uses plain localStorage in local mode.
+ *
+ * @param config - Config to save
+ * @throws {Error} If passphrase not set in encrypted mode
+ *
+ * @example
+ * ```ts
+ * await saveVaultConfig({
+ *   provider: 'openai',
+ *   model: 'gpt-4o-mini',
+ *   apiKey: 'sk-...'
+ * });
+ * ```
+ */
 export async function saveVaultConfig(config: LLMConfig): Promise<void> {
   const mode = getVaultMode();
   const updatedAt = new Date().toISOString();
@@ -278,6 +448,16 @@ export async function saveVaultConfig(config: LLMConfig): Promise<void> {
   notify();
 }
 
+/**
+ * Clear all vault data.
+ *
+ * Removes stored config and resets metadata.
+ *
+ * @example
+ * ```ts
+ * await clearVault(); // Wipe all data
+ * ```
+ */
 export async function clearVault(): Promise<void> {
   window.localStorage.removeItem(LOCAL_KEY);
   window.localStorage.removeItem(ENCRYPTED_KEY);
@@ -293,6 +473,16 @@ export async function clearVault(): Promise<void> {
   notify();
 }
 
+/**
+ * Reset encrypted vault.
+ *
+ * Removes salt and encrypted data, forcing user to set new passphrase.
+ *
+ * @example
+ * ```ts
+ * resetEncryptedVault(); // Reset BYOK vault
+ * ```
+ */
 export function resetEncryptedVault(): void {
   window.localStorage.removeItem(SALT_KEY);
   window.localStorage.removeItem(ENCRYPTED_KEY);
@@ -306,6 +496,16 @@ export function resetEncryptedVault(): void {
   notify();
 }
 
+/**
+ * Lock the vault.
+ *
+ * Clears encryption key from memory. In session mode, also clears cache.
+ *
+ * @example
+ * ```ts
+ * lockVault(); // Lock vault (requires passphrase to unlock)
+ * ```
+ */
 export function lockVault(): void {
   if (getVaultMode() === "session") {
     cache = null;
@@ -315,4 +515,5 @@ export function lockVault(): void {
   notify();
 }
 
+/** Vault metadata type alias. */
 export type VaultMetadata = VaultPreferences;
