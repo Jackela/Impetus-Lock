@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCreateTask } from "../../hooks/useCreateTask";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 import "./CreateTaskModal.css";
 
 /**
@@ -20,7 +21,9 @@ import "./CreateTaskModal.css";
  *
  * **Accessibility**:
  * - `role="dialog"` and `aria-modal` for screen readers
- * - Focus management on input when opened
+ * - Focus trap keeps Tab key cycling within modal
+ * - Focus moves to first focusable element when opened
+ * - Focus returns to trigger element when closed
  * - Escape key closes modal
  * - Enter key submits form (when input has content)
  *
@@ -55,6 +58,7 @@ export function CreateTaskModal({
   const [isExiting, setIsExiting] = useState(false);
   const { mutate, isLoading: isCreating } = useCreateTask();
   const isExitingRef = useRef(false);
+  const { ref: focusTrapRef } = useFocusTrap({ active: open && !isExiting });
 
   // Reset form when modal opens
   useEffect(() => {
@@ -109,17 +113,6 @@ export function CreateTaskModal({
     );
   }, [title, mutate, onClose, onSuccess]);
 
-  // Focus input when modal opens
-  useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => {
-        const input = document.getElementById("create-task-title");
-        input?.focus();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [open]);
-
   // Handle Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -160,7 +153,7 @@ export function CreateTaskModal({
       aria-labelledby="create-task-title-label"
       data-testid="create-task-modal"
     >
-      <div className="create-task-modal">
+      <div ref={focusTrapRef} className="create-task-modal">
         <h2 id="create-task-title-label">Create New Task</h2>
 
         <div className="create-task-form">
@@ -169,6 +162,7 @@ export function CreateTaskModal({
             <input
               id="create-task-title"
               type="text"
+              autoFocus
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
