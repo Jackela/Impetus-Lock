@@ -643,3 +643,38 @@
   - Test with `renderHook` using `rerender` for prop change testing
 
 ---
+
+## 2025-02-04 - ST-005 (Error Boundary Component)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/src/components/ErrorBoundary/ErrorBoundary.tsx` (91 lines)
+  - `client/src/components/ErrorBoundary/ErrorBoundary.css` (82 lines)
+  - `client/src/components/ErrorBoundary/index.ts` (2 lines)
+  - `client/src/components/ErrorBoundary/ErrorBoundary.test.tsx` (124 lines)
+- **Files modified**:
+  - `client/src/App.tsx` - Added ErrorBoundary import and wrapped TaskList and Editor area
+- **Features implemented**:
+  - Class component implementing React error boundary API
+  - `getDerivedStateFromError` for capturing error state
+  - `componentDidCatch` for error logging and custom error handlers
+  - Default fallback UI with error details and reset button
+  - Optional custom fallback UI via prop
+  - Optional onError callback prop for custom error handling
+  - ARIA attributes (role="alert", aria-live="assertive") for accessibility
+  - CSS styling with CSS variables for theming
+- **Tests**: 7 tests passing (rendering, error catching, error details, custom fallback, onError callback, reset button, ARIA attributes)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 362 passed, 4 skipped (+7 new tests)
+- **Learnings for future iterations**:
+  - Error boundaries must be class components (React limitation)
+  - `getDerivedStateFromError` is static, receives error, returns partial state
+  - `componentDidCatch` receives error + errorInfo (componentStack)
+  - Error boundaries catch errors in child components during rendering, lifecycle methods, and constructors
+  - Error boundaries do NOT catch errors in: event handlers, async code, server-side rendering, errors thrown in error boundary itself
+  - Test error behavior with components that conditionally throw
+  - Use `key` prop change to force remount after reset in tests
+  - Suppress `console.error` in tests with beforeEach/afterEach for expected errors
+
+---

@@ -380,8 +380,8 @@
         "Lint passes"
       ],
       "priority": 22,
-      "passes": false,
-      "notes": "依赖 ST-004",
+      "passes": true,
+      "notes": "Implemented class component with componentDidCatch, getDerivedStateFromError, custom fallback, and reset button. 7 tests passing.",
       "files": [
         "client/src/components/ErrorBoundary/ErrorBoundary.tsx",
         "client/src/components/ErrorBoundary/index.ts",

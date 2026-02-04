@@ -1,0 +1,90 @@
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 1rem;
+  background-color: var(--color-error-bg, rgba(220, 38, 38, 0.1));
+  border: 1px solid var(--color-error-border, rgba(220, 38, 38, 0.3));
+  border-radius: 0.5rem;
+  margin: 1rem;
+}
+
+.error-boundary-content {
+  max-width: 600px;
+  text-align: center;
+}
+
+.error-boundary-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-error-text, #dc2627);
+  margin: 0 0 0.75rem 0;
+}
+
+.error-boundary-message {
+  font-size: 1rem;
+  color: var(--color-text-primary, #374151);
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.error-boundary-details {
+  margin: 1rem 0;
+  text-align: left;
+}
+
+.error-boundary-summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.15s ease;
+}
+
+.error-boundary-summary:hover {
+  background-color: var(--color-hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+.error-boundary-stack {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  font-family: ui-monospace, monospace;
+  line-height: 1.4;
+  color: var(--color-text-secondary, #6b7280);
+  background-color: var(--color-bg-secondary, #f9fafb);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.25rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.error-boundary-reset {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-button-text, #ffffff);
+  background-color: var(--color-primary, #6366f1);
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.error-boundary-reset:hover {
+  background-color: var(--color-primary-hover, #4f46e5);
+}
+
+.error-boundary-reset:active {
+  transform: scale(0.98);
+}
+
+.error-boundary-reset:focus-visible {
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: 2px;
+}

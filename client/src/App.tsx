@@ -23,6 +23,7 @@ import { useTasks } from "./hooks/useTasks";
 import type { TaskRecord } from "./types/task";
 import { NewTaskButton } from "./components/NewTaskButton";
 import { CreateTaskModal } from "./components/CreateTaskModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 /**
  * Impetus Lock Main Application
@@ -292,52 +293,58 @@ function App() {
       </header>
 
       <main className="app-main" role="main">
-        {/* UX-003: Task list sidebar */}
-        {showTaskList && (
-          <aside className="task-sidebar" data-testid="task-sidebar">
-            <div className="task-sidebar-header">
-              <h2>Tasks</h2>
-              {tasksError && (
-                <span className="task-sidebar-error" role="alert">
-                  Failed to load
-                </span>
-              )}
-            </div>
-            {tasksLoading ? (
-              <div className="task-sidebar-loading" role="status">
-                Loading tasks…
+        {/* ST-005: Error boundary for task list sidebar */}
+        <ErrorBoundary>
+          {/* UX-003: Task list sidebar */}
+          {showTaskList && (
+            <aside className="task-sidebar" data-testid="task-sidebar">
+              <div className="task-sidebar-header">
+                <h2>Tasks</h2>
+                {tasksError && (
+                  <span className="task-sidebar-error" role="alert">
+                    Failed to load
+                  </span>
+                )}
               </div>
-            ) : (
-              <TaskList
-                tasks={tasks}
-                onTaskClick={handleTaskClick}
-                selectedTaskId={selectedTask?.id}
-              />
-            )}
-          </aside>
-        )}
+              {tasksLoading ? (
+                <div className="task-sidebar-loading" role="status">
+                  Loading tasks…
+                </div>
+              ) : (
+                <TaskList
+                  tasks={tasks}
+                  onTaskClick={handleTaskClick}
+                  selectedTaskId={selectedTask?.id}
+                />
+              )}
+            </aside>
+          )}
+        </ErrorBoundary>
 
-        {/* Editor area */}
-        <div className="editor-area">
-          {/* T005: Timer indicator for Muse mode */}
-          <TimerIndicator
-            progress={timerProgress}
-            visible={mode === "muse"}
-            remainingTime={timerRemaining}
-          />
-          <OnboardingChecklist />
-          <EditorCore
-            key={`${taskId ?? "local"}:${taskVersion}`}
-            mode={mode}
-            initialContent={taskContent}
-            initialLocks={taskLocks}
-            externalTrigger={manualTrigger}
-            onTriggerProcessed={() => setManualTrigger(null)}
-            onTimerUpdate={setTimerRemaining}
-            onInterventionError={handleInterventionError}
-            onChange={handleTaskChange}
-          />
-        </div>
+        {/* ST-005: Error boundary for editor area */}
+        <ErrorBoundary>
+          {/* Editor area */}
+          <div className="editor-area">
+            {/* T005: Timer indicator for Muse mode */}
+            <TimerIndicator
+              progress={timerProgress}
+              visible={mode === "muse"}
+              remainingTime={timerRemaining}
+            />
+            <OnboardingChecklist />
+            <EditorCore
+              key={`${taskId ?? "local"}:${taskVersion}`}
+              mode={mode}
+              initialContent={taskContent}
+              initialLocks={taskLocks}
+              externalTrigger={manualTrigger}
+              onTriggerProcessed={() => setManualTrigger(null)}
+              onTimerUpdate={setTimerRemaining}
+              onInterventionError={handleInterventionError}
+              onChange={handleTaskChange}
+            />
+          </div>
+        </ErrorBoundary>
       </main>
 
       <footer className="app-footer">
