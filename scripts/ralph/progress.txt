@@ -711,3 +711,36 @@
   - Fallback to "unknown" type for unrecognized errors
 
 ---
+
+## 2025-02-04 - ST-008 (Skeleton Loading Component)
+- **Status**: ✅ Complete
+- **Files created**:
+  - `client/src/components/Skeleton/Skeleton.tsx` (73 lines)
+  - `client/src/components/Skeleton/Skeleton.css` (67 lines)
+  - `client/src/components/Skeleton/index.ts` (2 lines)
+  - `client/src/components/Skeleton/Skeleton.test.tsx` (122 lines)
+- **Files modified**:
+  - `client/src/App.tsx` - Added Skeleton import, replaced loading text with Skeleton
+- **Features implemented**:
+  - Shimmer animation using CSS gradient and keyframes
+  - Multiple variants: text (default), circle, rect
+  - Multi-line support for text skeleton
+  - Custom width and height props
+  - Animation toggle (animate prop)
+  - prefers-reduced-motion support
+  - aria-hidden attribute for accessibility
+- **Tests**: 13 tests passing (default props, className, width/height, animation toggle, variants, multi-line, aria-hidden, custom styles)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 393 passed, 4 skipped (+13 new tests)
+- **Learnings for future iterations**:
+  - Skeleton screens provide better UX than loading text
+  - Shimmer animation uses gradient moving across background
+  - Multi-line skeleton needs container div for proper spacing
+  - Circle variant uses border-radius: 50% for avatars
+  - prefers-reduced-motion disables animation, uses static gradient instead
+  - aria-hidden="true" prevents screen readers from announcing placeholder content
+  - Testing aria-hidden requires direct DOM query, not testing-library queries
+
+---

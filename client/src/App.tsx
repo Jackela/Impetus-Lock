@@ -24,6 +24,7 @@ import type { TaskRecord } from "./types/task";
 import { NewTaskButton } from "./components/NewTaskButton";
 import { CreateTaskModal } from "./components/CreateTaskModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Skeleton } from "./components/Skeleton";
 
 /**
  * Impetus Lock Main Application
@@ -307,8 +308,8 @@ function App() {
                 )}
               </div>
               {tasksLoading ? (
-                <div className="task-sidebar-loading" role="status">
-                  Loading tasks…
+                <div className="task-sidebar-skeleton" role="status" aria-label="Loading tasks">
+                  <Skeleton lines={5} height="48px" />
                 </div>
               ) : (
                 <TaskList
