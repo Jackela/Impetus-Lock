@@ -613,3 +613,33 @@
 - ST-012: Add JSDoc documentation for hooks and components (Article V compliance)
 
 ---
+
+## 2025-02-04 - ST-004 (Task Loading to Editor)
+- **Status**: ✅ Complete (Already implemented)
+- **Files modified**:
+  - `client/src/hooks/useTaskSync.test.tsx` - Added 3 tests for externalTaskId functionality
+  - `scripts/ralph/prd.json` - Updated story status to passes: true
+  - `scripts/ralph/progress.txt` - Added progress entry
+- **Findings**:
+  - The feature was already fully implemented in the codebase
+  - `useTaskSync` hook already accepts `externalTaskId` option (lines 26-33)
+  - `useTaskSync` has useEffect that loads external tasks when ID changes (lines 126-131)
+  - `App.tsx` has `editingTaskId` state (line 34)
+  - `App.tsx` passes `externalTaskId: editingTaskId` to useTaskSync (line 45)
+  - `handleTaskClick` sets `editingTaskId` when a task is clicked (lines 140-146)
+- **Tests added**:
+  - "loads external task when externalTaskId changes"
+  - "does not reload when externalTaskId is the same as current task"
+  - "switches between external tasks"
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 355 passed, 4 skipped (+3 new tests)
+- **Learnings for future iterations**:
+  - Always verify existing implementation before starting new work
+  - The `externalTaskId` option pattern is a clean way to trigger external data loading
+  - The `useEffect` dependency array `[externalTaskId, taskId, loadTask]` correctly triggers on ID changes
+  - Using `isLoadingExternal.current` ref prevents race conditions with rapid ID changes
+  - Test with `renderHook` using `rerender` for prop change testing
+
+---

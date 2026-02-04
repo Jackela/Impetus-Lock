@@ -358,8 +358,8 @@
         "Lint passes"
       ],
       "priority": 21,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Already implemented in codebase. Added 3 tests for externalTaskId functionality.",
       "files": [
         "client/src/hooks/useTaskSync.ts",
         "client/src/App.tsx"

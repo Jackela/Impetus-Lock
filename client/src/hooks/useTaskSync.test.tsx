@@ -21,6 +21,9 @@ function baseRecord() {
 const metaKey = "impetus.task.meta";
 const cacheKey = "impetus.task.cache";
 
+/**
+ * Mock fetch with a queue of responses.
+ */
 function mockFetchQueue(queue: Array<{ status?: number; body?: unknown; reject?: Error }>) {
   return vi.fn(async () => {
     const next = queue.shift();
@@ -93,6 +96,84 @@ describe("useTaskSync", () => {
 
     await waitFor(() => expect(result.current.version).toBe(1), { timeout: 3000 });
     expect(result.current.lockIds).toContain("lock_z");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  // ST-004: Test external task ID loading
+  it("loads external task when externalTaskId changes", async () => {
+    const defaultTask = record({ id: "task-default", content: "default task" });
+    const task2 = record({ id: "task-2", content: "external task content", lock_ids: ["lock_b"] });
+    const fetchMock = mockFetchQueue([
+      { status: 200, body: defaultTask }, // bootstrap creates default task
+      { status: 200, body: task2 },       // then loads external task
+    ]);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ externalTaskId }) => useTaskSync("default", { externalTaskId }),
+      { initialProps: { externalTaskId: null } }
+    );
+
+    // Initially loading (no external task, will bootstrap to create new task)
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+
+    // Change externalTaskId to load a different task
+    rerender({ externalTaskId: "task-2" });
+
+    // Should load the external task
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.content).toBe("external task content");
+    expect(result.current.lockIds).toEqual(["lock_b"]);
+    // Should have made 2 calls: create during bootstrap, then load external task
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not reload when externalTaskId is the same as current task", async () => {
+    const task1 = record({ id: "task-1", content: "task 1 content" });
+    const fetchMock = mockFetchQueue([
+      { status: 200, body: task1 },
+    ]);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ externalTaskId }) => useTaskSync("default", { externalTaskId }),
+      { initialProps: { externalTaskId: "task-1" } }
+    );
+
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Re-render with same externalTaskId
+    rerender({ externalTaskId: "task-1" });
+
+    // Should not fetch again
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("switches between external tasks", async () => {
+    const task1 = record({ id: "task-1", content: "first task" });
+    const task2 = record({ id: "task-2", content: "second task", lock_ids: ["lock_x"] });
+    const fetchMock = mockFetchQueue([
+      { status: 200, body: task1 },
+      { status: 200, body: task2 },
+    ]);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ externalTaskId }) => useTaskSync("default", { externalTaskId }),
+      { initialProps: { externalTaskId: "task-1" } }
+    );
+
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.content).toBe("first task");
+
+    // Switch to task-2
+    rerender({ externalTaskId: "task-2" });
+
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.content).toBe("second task");
+    expect(result.current.lockIds).toEqual(["lock_x"]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
