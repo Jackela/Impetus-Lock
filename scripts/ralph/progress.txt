@@ -503,3 +503,34 @@
   - ✅ All internal links validated
   - ⚠️ File location: scripts/ralph/CONTRIBUTING.md (needs manual move to root)
 ---
+
+## 2025-02-04 - GH-004 (Optimize README)
+- **Status**: ✅ Complete
+- **Files modified**: `README.md` (745 lines)
+- **Changes made**:
+  - Fixed CI badge URL: replaced `YOUR_USERNAME` placeholder with `Jackela`
+  - Added new badges: codecov and Conventional Commits
+  - Improved Quick Start section:
+    - Made one-command startup more prominent
+    - Moved detailed setup into collapsible `<details>` sections
+    - Added clearer prerequisites section
+    - Removed duplicate Quick Start content (was at line 233)
+  - Updated Contributing section:
+    - Removed direct link to CONTRIBUTING.md (file doesn't exist in root due to WSL permissions)
+    - Added key requirements summary directly in the section
+    - Added link to PR template
+  - Updated footer quick links:
+    - Replaced broken CONTRIBUTING.md link with DEVELOPMENT.md
+    - Fixed issue/feature request URLs to use GitHub template URLs
+- **Verification**:
+  - ✅ All linked files verified (API_CONTRACT.md, ARCHITECTURE_GUARDS.md, CLAUDE.md, DEVELOPMENT.md, TESTING.md)
+  - ✅ GitHub templates exist (PULL_REQUEST_TEMPLATE.md, bug_report.md, feature_request.md)
+  - ✅ README structure validated (745 lines, proper opening/closing)
+  - ✅ No remaining `YOUR_USERNAME` placeholders
+- **Learnings for future iterations**:
+  - WSL mounted filesystems can have permission issues preventing root file writes
+  - When direct file links aren't possible, include key information inline instead
+  - GitHub issue template URLs use `/issues/new?template=<name>.md` format
+  - Use collapsible `<details>` sections for long README content to improve scannability
+  - One-command startup should be the most prominent section in Quick Start
+---

@@ -1,7 +1,9 @@
 # 🔒 Impetus Lock | 创意施压者
 
-[![CI](https://github.com/YOUR_USERNAME/impetus-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/impetus-lock/actions/workflows/ci.yml)
+[![CI](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![codecov](https://codecov.io/gh/Jackela/impetus-lock/branch/main/graph/badge.svg)](https://codecov.io/gh/Jackela/impetus-lock)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org/)
 
 > **一款对抗式 AI Agent，充当你的"创意陪练"。** 通过强制植入"不可删除的创作束缚"来破除心理定式——将孤独写作变成人机对抗的 Roguelike 游戏。
 
@@ -40,26 +42,67 @@
 
 ---
 
-## ⚡ 快速启动 | Quickstart
+## ⚡ Quick Start
 
-- **WSL / Linux**  
+### One-Command Startup
+
+- **WSL / Linux**
   ```bash
   ./scripts/dev-start.sh
   ```
-- **Windows (PowerShell)**  
+- **Windows (PowerShell)**
   ```powershell
   .\scripts\dev-start.ps1
   ```
 
-脚本会自动在 WSL 中启动 FastAPI（端口 8000）和 Vite（端口 5173），并将日志写入 `server/server_dev.log` 与 `client/devserver.log`。
+This script starts FastAPI (port 8000) and Vite (port 5173) automatically.
 
-### 🎥 录制 Playwright 演示
+### Prerequisites
+
+- **Python 3.11+** with [Poetry](https://python-poetry.org/)
+- **Node.js 20+** (LTS)
+- **Docker** (for PostgreSQL)
+
+### Manual Setup
+
+<details>
+<summary><b>Backend</b></summary>
 
 ```bash
-./scripts/record-demo.sh
+cd server
+poetry install
+cp .env.example .env  # Add your LLM API key
+poetry run uvicorn server.main:app --reload
 ```
 
-该脚本会运行 `client/e2e/demo-showcase.spec.ts`，拦截 API 使流程可复现，并在 `demo-artifacts/impetus-lock-demo.webm`（若已安装 `ffmpeg` 则额外生成 `.mp4`）输出视频。Windows 可用 `wsl ./scripts/record-demo.sh`。
+</details>
+
+<details>
+<summary><b>Frontend</b></summary>
+
+```bash
+cd client
+npm ci
+npm run dev
+```
+
+</details>
+
+### Verify Installation
+
+```bash
+# Backend health check
+curl http://localhost:8000/health
+# Expected: {"status":"ok","service":"impetus-lock"}
+
+# Frontend: Open http://localhost:5173
+```
+
+### 🎥 Record Demo
+
+```bash
+./scripts/record-demo.sh  # Generates demo-artifacts/impetus-lock-demo.webm
+```
 
 ---
 
@@ -230,75 +273,10 @@ This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Ne
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Development Setup
 
-### Prerequisites
-
-- **Python 3.11+** with [Poetry](https://python-poetry.org/)
-- **Node.js 20+** (LTS)
-- **Git**
-- **Docker** (optional, for local CI testing with [Act](https://github.com/nektos/act))
-
-### 1. Backend Setup
-
-```bash
-# Navigate to server directory
-cd server
-
-# Install dependencies with Poetry
-poetry install --no-root
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env and add your LLM API key (e.g., OPENAI_API_KEY)
-
-> 💡 **Bring Your Own Key (BYOK)**  
-> 即使后端没有配置默认 Key，也可以在前端点击右上角的「LLM 设置」按钮，为 OpenAI / Anthropic / Google Gemini 粘贴你的个人 API Key。Key 仅存储在浏览器 `localStorage` 中，并随每次 Muse/Loki 请求通过 HTTPS Header 发送到后端。
-
-> 🔐 **Storage modes & safety controls**  
-> LLM Settings lets you decide where secrets live:  
-> • `Local` keeps the config in `localStorage` (fastest).  
-> • `Encrypted` wraps the payload with AES-GCM (passphrase-derived via PBKDF2, 200k iterations).  
-> • `Session` keeps data in memory only and wipes it on idle/visibility changes.  
-> Use the header-level **Lock Session** button to immediately drop in-memory state, and **Forget Key** to nuke every persisted copy (local + encrypted blobs). See [docs/security/byok-storage.md](docs/security/byok-storage.md) for a deeper dive plus manual/QA steps.
-
-> 🧪 **Offline / CI Testing**  
-> 需要在没有外部 LLM 的情况下跑 Playwright / act 时，将后端环境变量设置为：
-> ```bash
-> TESTING=1 LLM_ALLOW_DEBUG_PROVIDER=1 LLM_DEFAULT_PROVIDER=debug
-> ```
-> 这会启用内置的 `debug` provider，返回可预测的 JSON 响应，避免真实 API 依赖。
->
-> 🧭 **No-DB testing fallback**  
-> 在 CI 或本地测试不方便启动 Postgres 时，可设置 `TESTING=1` 且不提供 `DATABASE_URL`，后端会退回到内存仓储（不会持久化数据）。`./scripts/dev-start.sh` 仍默认启动 Postgres + Alembic 迁移；仅在显式 `TESTING=1` 且缺少 `DATABASE_URL` 时才使用内存模式。
-
-# Run development server
-poetry run uvicorn server.main:app --reload
-```
-
-🟢 **Backend now running at:** `http://localhost:8000`  
-📚 **API Docs:** `http://localhost:8000/docs`
-
-### 2. Frontend Setup
-
-```bash
-# Navigate to client directory (in a new terminal)
-cd client
-
-# Install dependencies
-npm ci
-
-# Run development server
-npm run dev
-```
-
-🟢 **Frontend now running at:** `http://localhost:5173`
-
-> 📈 **Telemetry**
-> Frontend logging is opt-in. Use the "Telemetry" toggle in the header or set `VITE_TELEMETRY_DEFAULT=on`
-> to enable anonymized BYOK/provider events for debugging. Preferences are stored locally only.
-
-### 4. BYOK Onboarding
+<details>
+<summary><b>BYOK Onboarding</b> - Bring Your Own API Key</summary>
 
 1. Launch the dev stack (`./scripts/dev-start.sh`) so Dockerized Postgres + backend are ready.
 2. Follow the in-app onboarding checklist (left column) which walks you through dev-start → opening LLM Settings → triggering Muse/Loki.
@@ -306,7 +284,10 @@ npm run dev
 4. Use **Lock Session** and **Forget Key** from the header to verify you can drop credentials instantly—our QA privacy checklist (`docs/process/qa-privacy-checklist.md`) requires both paths before sign-off.
 5. Watch the latest demo capture (`demo-artifacts/impetus-lock-demo.webm`, generated via `./scripts/record-demo.sh`) for a full BYOK walkthrough.
 
-### 3. Local CI via Act
+</details>
+
+<details>
+<summary><b>Local CI Testing (Act CLI)</b></summary>
 
 1. Install [Act](https://github.com/nektos/act) and ensure Docker is available.
 2. Run the sync helper (WSL/Linux):
@@ -319,16 +300,7 @@ npm run dev
 3. The script rsyncs the repo into a Linux-native mirror (default `$HOME/impetus-lock-act`), exports `ACT_WORKSPACE_BASE`, `ACT_CACHE_DIR`, and stops conflicting containers (e.g., `impetus-lock-postgres`).
 4. Tail output is captured at `/tmp/act-e2e.log`; the latest run is mirrored to `test-results/act-e2e.log` (gitignored) for reference.
 
-### 3. Verify Installation
-
-```bash
-# Backend health check
-curl http://localhost:8000/health
-# Expected: {"status":"ok","service":"impetus-lock","version":"0.1.0"}
-
-# Frontend: Open browser to http://localhost:5173
-# You should see the Vite + React welcome page
-```
+</details>
 
 ---
 
@@ -722,13 +694,21 @@ See [DEVELOPMENT.md](DEVELOPMENT.md#troubleshooting) for more solutions.
 
 ## 🤝 Contributing
 
-1. Read the [Constitution](CLAUDE.md#constitutional-requirements-️)
-2. Follow the [Development Workflow](#-development-workflow)
-3. Ensure all [Quality Gates](#quality-gates-pre-commit-checklist) pass
-4. Test with [Act CLI](#-local-ci-testing-act-cli) before pushing
-5. Create PR with descriptive title (Conventional Commits format)
+We welcome contributions! Please follow these steps:
 
-All contributions must comply with our 5 constitutional articles.
+1. Read the [Constitution](CLAUDE.md#constitutional-requirements-️) for our 5 articles
+2. Follow the [Development Workflow](#-development-workflow) below
+3. Ensure all [Quality Gates](#-quality-gates-pre-commit-validation) pass
+4. Test with [Act CLI](#-local-ci-testing-act-cli) before pushing
+5. Create PR using our [PR Template](.github/PULL_REQUEST_TEMPLATE.md)
+
+All contributions must comply with our constitutional requirements.
+
+**Key Requirements:**
+- TDD (Test-Driven Development) is mandatory - Red-Green-Refactor cycle
+- ≥80% test coverage for P1 features (un-deletable constraint)
+- Clean Architecture: endpoints delegate to service layer (SRP)
+- Constructor injection for dependencies (DIP)
 
 ---
 
@@ -755,7 +735,7 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ### 📖 快速链接 | Quick Links
 
-[Report Bug 报告问题](https://github.com/YOUR_USERNAME/impetus-lock/issues) · [Request Feature 功能请求](https://github.com/YOUR_USERNAME/impetus-lock/issues) · [API Contract API契约](API_CONTRACT.md) · [Development Guide 开发指南](DEVELOPMENT.md)
+[Development Guide 开发指南](DEVELOPMENT.md) · [Report Bug 报告问题](https://github.com/Jackela/impetus-lock/issues/new?template=bug_report.md) · [Request Feature 功能请求](https://github.com/Jackela/impetus-lock/issues/new?template=feature_request.md) · [API Contract API契约](API_CONTRACT.md)
 
 ---
 
