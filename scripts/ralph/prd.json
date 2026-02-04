@@ -475,8 +475,8 @@
         "Lint passes"
       ],
       "priority": 26,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Already implemented. Modal has isLoading: isCreating from useCreateTask, disables buttons during creation, shows 'Creating...' text. 22 tests passing.",
       "files": [
         "client/src/components/CreateTaskModal/CreateTaskModal.tsx",
         "client/src/components/CreateTaskModal/CreateTaskModal.test.tsx"

@@ -712,6 +712,34 @@
 
 ---
 
+## 2025-02-04 - ST-009 (CreateTaskModal Loading State)
+- **Status**: ✅ Complete (Already implemented)
+- **Files verified**:
+  - `client/src/components/CreateTaskModal/CreateTaskModal.tsx` - Loading state already exists
+  - `client/src/components/CreateTaskModal/CreateTaskModal.test.tsx` - 22 tests passing
+- **Findings**:
+  - The feature was already fully implemented in the codebase
+  - `isLoading: isCreating` extracted from `useCreateTask` hook (line 55)
+  - Input disabled during creation: `disabled={isCreating}` (line 170)
+  - Cancel button disabled during creation: `disabled={isCreating}` (line 197)
+  - Confirm button disabled during creation: `disabled={isCreating || !title.trim()}` (line 206)
+  - Button text shows "Creating..." during submission: `{isCreating ? "Creating..." : "Create Task"}` (line 209)
+  - Modal close prevented during creation: `if (!isCreating)` check in handleClose (line 66)
+  - Enter key submission disabled during creation: `!isCreating` check in handleKeyDown (line 129)
+- **Tests**: 22 tests passing (existing tests cover loading state behavior)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 393 passed, 4 skipped (same as ST-008)
+- **Learnings for future iterations**:
+  - Always verify existing implementation before starting new work
+  - React Query's useMutation returns `isLoading` state (exposed as isCreating via destructuring)
+  - Modal loading state should disable: input, buttons, overlay click, Escape key, Enter key submission
+  - Button text change ("Creating..." vs "Create Task") provides clear feedback to user
+  - Prevent modal close during submission to avoid race conditions
+
+---
+
 ## 2025-02-04 - ST-008 (Skeleton Loading Component)
 - **Status**: ✅ Complete
 - **Files created**:
