@@ -3,19 +3,20 @@
  *
  * React hook for fetching and managing task list from the API.
  *
- * Uses native React hooks (useState, useEffect, useCallback) for data fetching.
- * Follows the simplicity principle of Article I - no external dependencies like React Query.
+ * Uses React Query's useQuery for data fetching with caching, refetching,
+ * and automatic re-querying. Leverages the QueryClientProvider configured
+ * in main.tsx with 5-minute staleTime.
  *
  * Constitutional Compliance:
- * - Article I (Simplicity): Uses framework-native hooks, no external data fetching libraries
+ * - Article I (Simplicity): Uses configured library (@tanstack/react-query)
  * - Article V (Documentation): Complete JSDoc comments
  *
  * @module hooks/useTasks
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { fetchTasks, TaskAPIError, type TaskListResponse } from "../services/api/taskClient";
+import { fetchTasks } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
 
 export interface UseTasksResult {
@@ -36,10 +37,19 @@ export interface UseTasksResult {
 }
 
 /**
+ * Query key factory for useTasks hook.
+ * Provides stable query keys for React Query caching.
+ */
+function getQueryKey(limit: number, offset: number) {
+  return ["tasks", { limit, offset }] as const;
+}
+
+/**
  * Hook for fetching and managing the task list.
  *
  * Provides loading state, error handling, and manual refetch capability.
  * Tasks are fetched on mount and can be refreshed via the refetch function.
+ * Data is cached for 5 minutes (configured in main.tsx QueryClient).
  *
  * @param options - Optional configuration for the query
  * @param options.limit - Maximum number of tasks to fetch (default: 100)
@@ -68,42 +78,18 @@ export function useTasks(
 ): UseTasksResult {
   const { limit = 100, offset = 0 } = options;
 
-  const [data, setData] = useState<TaskRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [total, setTotal] = useState(0);
-
-  const fetch = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result: TaskListResponse = await fetchTasks(limit, offset);
-      setData(result.tasks);
-      setTotal(result.total);
-    } catch (err) {
-      const errorObj =
-        err instanceof TaskAPIError || err instanceof Error
-          ? err
-          : new Error("Failed to fetch tasks");
-      setError(errorObj);
-      setData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [limit, offset]);
-
-  useEffect(() => {
-    void fetch();
-  }, [fetch]);
+  const query = useQuery({
+    queryKey: getQueryKey(limit, offset),
+    queryFn: () => fetchTasks(limit, offset),
+  });
 
   return {
-    data,
-    isLoading,
-    error,
-    total,
+    data: query.data?.tasks ?? [],
+    isLoading: query.isLoading,
+    error: query.error ?? null,
+    total: query.data?.total ?? 0,
     limit,
     offset,
-    refetch: fetch,
+    refetch: query.refetch,
   };
 }

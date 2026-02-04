@@ -1,11 +1,36 @@
 import { render, screen, act } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "../App";
+
+/**
+ * Creates a test QueryClient with default options.
+ */
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+        retry: false, // Disable retry for faster tests
+      },
+    },
+    logger: {
+      log: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    },
+  });
+}
 
 const renderApp = async () => {
   let utils: ReturnType<typeof render> | undefined;
   await act(async () => {
-    utils = render(<App />);
+    const queryClient = createTestQueryClient();
+    utils = render(
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    );
   });
   if (!utils) {
     throw new Error("Failed to render App");
