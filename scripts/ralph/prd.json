@@ -546,12 +546,20 @@
         "Lint passes"
       ],
       "priority": 29,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Added comprehensive JSDoc to hooks, component index files, and services. 11 files updated with 868 insertions.",
       "files": [
-        "client/src/hooks/*.ts",
-        "client/src/components/**/index.ts",
-        "client/src/services/**/*.ts"
+        "client/src/hooks/useTelemetry.ts",
+        "client/src/hooks/useLLMConfig.ts",
+        "client/src/hooks/useTaskSync.ts",
+        "client/src/hooks/useInterventionApiError.ts",
+        "client/src/components/Toast/index.ts",
+        "client/src/components/Skeleton/index.ts",
+        "client/src/components/ErrorBoundary/index.ts",
+        "client/src/services/api/taskClient.ts",
+        "client/src/services/telemetry.ts",
+        "client/src/services/llmConfigStore.ts",
+        "client/src/services/llmKeyVault.ts"
       ]
     }
   ]
