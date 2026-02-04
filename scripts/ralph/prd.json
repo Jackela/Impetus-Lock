@@ -219,11 +219,13 @@
         "Lint passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Implemented FAB with Material Design-inspired styling, smooth animations, and accessibility features.",
       "files": [
         "client/src/components/NewTaskButton/NewTaskButton.tsx",
-        "client/src/components/NewTaskButton/NewTaskButton.test.tsx"
+        "client/src/components/NewTaskButton/NewTaskButton.test.tsx",
+        "client/src/components/NewTaskButton/NewTaskButton.css",
+        "client/src/components/NewTaskButton/index.ts"
       ]
     },
     {
@@ -241,11 +243,13 @@
         "Lint passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": "依赖 UX-007",
+      "passes": true,
+      "notes": "Implemented modal with form validation, error handling, keyboard shortcuts, and accessibility features.",
       "files": [
         "client/src/components/CreateTaskModal/CreateTaskModal.tsx",
-        "client/src/components/CreateTaskModal/CreateTaskModal.test.tsx"
+        "client/src/components/CreateTaskModal/CreateTaskModal.test.tsx",
+        "client/src/components/CreateTaskModal/CreateTaskModal.css",
+        "client/src/components/CreateTaskModal/index.ts"
       ]
     },
     {
@@ -261,8 +265,8 @@
         "Lint passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": "依赖 UX-009, UX-008",
+      "passes": true,
+      "notes": "Complete integration - FAB opens modal, modal closes on success, task list refreshes via refetch.",
       "files": ["client/src/App.tsx"]
     },
     {
@@ -280,9 +284,12 @@
         "Lint passes"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": "",
-      "files": ["client/src/components/Editor/LockDecorations.ts"]
+      "passes": true,
+      "notes": "Enhanced with larger icons (1.1rem), always visible opacity 0.7, tooltips on hover, thicker border (4px), increased background opacity.",
+      "files": [
+        "client/src/components/Editor/LockDecorations.ts",
+        "client/src/styles/locked-content.css"
+      ]
     },
     {
       "id": "GH-001",
@@ -296,8 +303,8 @@
         "Lint passes"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Created bug_report.md, feature_request.md, and config.yml",
       "files": [
         ".github/ISSUE_TEMPLATE/bug_report.md",
         ".github/ISSUE_TEMPLATE/feature_request.md",
@@ -315,8 +322,8 @@
         "Lint passes"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": "",
+      "passes": true,
+      "notes": "Created PULL_REQUEST_TEMPLATE.md with constitutional requirements checklist",
       "files": [".github/PULL_REQUEST_TEMPLATE.md"]
     },
     {
