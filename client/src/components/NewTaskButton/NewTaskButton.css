@@ -1,0 +1,123 @@
+/**
+ * NewTaskButton - Floating Action Button (FAB) Styles
+ *
+ * Material Design-inspired FAB with smooth animations and elevation.
+ */
+
+.new-task-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #8b5cf6;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  z-index: 1000;
+}
+
+/* Hover state */
+.new-task-button:not(:disabled):hover {
+  background-color: #7c3aed;
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Icon rotation on hover */
+.new-task-button:not(:disabled):hover .new-task-button-icon {
+  transform: rotate(90deg);
+}
+
+/* Active/pressed state */
+.new-task-button:not(:disabled):active {
+  background-color: #6d28d9;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  transform: translateY(0) scale(0.95);
+}
+
+/* Click animation */
+.new-task-button.clicking {
+  animation: fab-click 0.2s ease;
+}
+
+@keyframes fab-click {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Disabled state */
+.new-task-button:disabled {
+  background-color: #4b5563;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* Focus visible for keyboard navigation */
+.new-task-button:focus-visible {
+  outline: 3px solid #a78bfa;
+  outline-offset: 3px;
+}
+
+/* Icon transition */
+.new-task-button-icon {
+  transition: transform 0.3s ease;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .new-task-button {
+    transition:
+      background-color 0.01ms ease,
+      box-shadow 0.01ms ease;
+  }
+
+  .new-task-button:not(:disabled):hover {
+    transform: none;
+  }
+
+  .new-task-button:not(:disabled):hover .new-task-button-icon {
+    transform: none;
+  }
+
+  .new-task-button.clicking {
+    animation: none;
+  }
+}
+
+/* Mobile responsive positioning */
+@media (max-width: 768px) {
+  .new-task-button {
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (max-width: 480px) {
+  .new-task-button {
+    bottom: 1rem;
+    right: 1rem;
+    width: 48px;
+    height: 48px;
+  }
+}

@@ -1,0 +1,110 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NewTaskButton > snapshot > should match snapshot 1`] = `
+<button
+  aria-disabled="false"
+  aria-label="Create new task"
+  class="new-task-button"
+  data-testid="new-task-button"
+  type="button"
+>
+  <svg
+    aria-hidden="true"
+    class="new-task-button-icon"
+    fill="none"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2.5"
+    viewBox="0 0 24 24"
+    width="24"
+  >
+    <line
+      x1="12"
+      x2="12"
+      y1="5"
+      y2="19"
+    />
+    <line
+      x1="5"
+      x2="19"
+      y1="12"
+      y2="12"
+    />
+  </svg>
+</button>
+`;
+
+exports[`NewTaskButton > snapshot > should match snapshot when disabled 1`] = `
+<button
+  aria-disabled="true"
+  aria-label="Create new task"
+  class="new-task-button"
+  data-testid="new-task-button"
+  disabled=""
+  type="button"
+>
+  <svg
+    aria-hidden="true"
+    class="new-task-button-icon"
+    fill="none"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2.5"
+    viewBox="0 0 24 24"
+    width="24"
+  >
+    <line
+      x1="12"
+      x2="12"
+      y1="5"
+      y2="19"
+    />
+    <line
+      x1="5"
+      x2="19"
+      y1="12"
+      y2="12"
+    />
+  </svg>
+</button>
+`;
+
+exports[`NewTaskButton > snapshot > should match snapshot with custom className 1`] = `
+<button
+  aria-disabled="false"
+  aria-label="Create new task"
+  class="new-task-button  custom-class"
+  data-testid="new-task-button"
+  type="button"
+>
+  <svg
+    aria-hidden="true"
+    class="new-task-button-icon"
+    fill="none"
+    height="24"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2.5"
+    viewBox="0 0 24 24"
+    width="24"
+  >
+    <line
+      x1="12"
+      x2="12"
+      y1="5"
+      y2="19"
+    />
+    <line
+      x1="5"
+      x2="19"
+      y1="12"
+      y2="12"
+    />
+  </svg>
+</button>
+`;
