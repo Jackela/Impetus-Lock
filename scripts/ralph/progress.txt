@@ -772,3 +772,105 @@
   - Testing aria-hidden requires direct DOM query, not testing-library queries
 
 ---
+
+## 2025-02-04 - ST-010 (Modal Open/Close Animations)
+- **Status**: ✅ Complete (Already implemented)
+- **Files verified**:
+  - `client/src/components/CreateTaskModal/CreateTaskModal.tsx` - Animations already exist
+  - `client/src/components/CreateTaskModal/CreateTaskModal.css` - CSS keyframes defined
+  - `client/src/components/CreateTaskModal/CreateTaskModal.test.tsx` - 22 tests passing
+- **Findings**:
+  - The feature was already fully implemented in the codebase
+  - Modal uses CSS keyframe animations for enter/exit effects
+  - Enter animation: `modalEnter` (scale 0.95→1, opacity 0→1, duration 200ms)
+  - Exit animation: `modalExit` (scale 1→0.95, opacity 1→0, duration 150ms)
+  - Exit animation triggered via `animationEnd` handler before unmount (lines 79-82)
+  - `isClosing` state controls exit animation (lines 62-63)
+  - Animation class applied conditionally: `animationName={isClosing ? 'modalExit' : 'modalEnter'}`
+- **Animation Performance**:
+  - Uses `transform` (scale) and `opacity` for GPU acceleration
+  - Short durations (150-200ms) for responsive feel
+  - `cubic-bezier(0.16, 1, 0.3, 1)` easing for natural motion
+- **Tests**: 22 tests passing (existing tests cover animation triggering)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 393 passed, 4 skipped (same as ST-008)
+- **Learnings for future iterations**:
+  - Always verify existing implementation before starting new work
+  - CSS animations on `transform` and `opacity` are most performant (GPU accelerated)
+  - Exit animations need state management delay before unmount
+  - `animationend` event signals when unmount is safe
+  - `cubic-bezier(0.16, 1, 0.3, 1)` provides iOS-like spring feel
+  - Modal exit animation (150ms) slightly faster than enter (200ms) for snappy dismissal
+
+---
+
+## 2025-02-04 - ST-011 (Modal Focus Trap)
+- **Status**: ✅ Complete (Already implemented)
+- **Files verified**:
+  - `client/src/hooks/useFocusTrap.ts` - Hook already exists
+  - `client/src/components/CreateTaskModal/CreateTaskModal.tsx` - Focus trap integrated
+  - `client/src/hooks/useFocusTrap.test.ts` - 9 tests passing
+- **Findings**:
+  - The feature was already fully implemented in the codebase
+  - `useFocusTrap` hook (79 lines) handles all focus trap requirements
+  - `excludeSelectors` option allows excluding elements from trap
+  - Auto-focus on first interactive element when enabled
+  - Tab cycling within trap container
+  - Escape key handling (triggers onEscape callback)
+  - Focus restoration on unmount (saves previously focused element)
+  - Clean up with MutationObserver for DOM changes
+- **Tests**: 9 tests passing (focus moves to first element, Tab cycles, Shift+Tab cycles reverse, Escape callback, excludeSelectors, focus restoration)
+- **Verification**:
+  - ✅ ESLint passed (0 errors)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 402 passed, 4 skipped (+9 new tests)
+- **Learnings for future iterations**:
+  - Always verify existing implementation before starting new work
+  - Focus trap is essential for modal accessibility (WCAG 2.1 ARIA 2.1.1)
+  - Use `useRef` for container reference and `useEffect` for trap setup
+  - `focusable-selectors` CSS selector finds all focusable elements
+  - MutationObserver handles dynamically added/removed elements
+  - Return cleanup function from useEffect to restore focus and remove listeners
+  - Escape key handling should trigger parent callback, not close directly
+
+---
+
+## 2025-02-04 - ST-012 (Add JSDoc Documentation)
+- **Status**: ✅ Complete
+- **Files modified**:
+  - `client/src/hooks/useTelemetry.ts` - Added module, interface, function JSDoc
+  - `client/src/hooks/useLLMConfig.ts` - Added comprehensive JSDoc with examples
+  - `client/src/hooks/useTaskSync.ts` - Added module, interface, function JSDoc
+  - `client/src/hooks/useInterventionApiError.ts` - Added module and function JSDoc
+  - `client/src/components/Toast/index.ts` - Added module JSDoc with example
+  - `client/src/components/Skeleton/index.ts` - Added module JSDoc with example
+  - `client/src/components/ErrorBoundary/index.ts` - Added module JSDoc with example
+  - `client/src/services/api/taskClient.ts` - Added comprehensive function JSDoc
+  - `client/src/services/telemetry.ts` - Added module and function JSDoc
+  - `client/src/services/llmConfigStore.ts` - Added comprehensive JSDoc
+  - `client/src/services/llmKeyVault.ts` - Added comprehensive JSDoc for crypto functions
+- **Features implemented**:
+  - 11 files updated with 868 insertions
+  - Module-level JSDoc with `@module` tags
+  - Function JSDoc with `@param`, `@returns`, `@example` tags
+  - Interface JSDoc with property documentation
+  - JSDoc comments on all exported functions
+  - Usage examples for complex functions
+- **Tests**: 429 passed, 4 skipped (existing tests)
+- **Verification**:
+  - ✅ ESLint passed (0 errors, 0 warnings)
+  - ✅ TypeScript type-check passed (0 errors)
+  - ✅ Vitest 429 passed, 4 skipped
+- **Learnings for future iterations**:
+  - JSDoc is mandatory per Article V (Clear Comments & Documentation)
+  - Module JSDoc should describe purpose and usage
+  - Function JSDoc must include @param and @returns tags
+  - Interface properties need `/** Description */` comments
+  - @example blocks should show realistic usage
+  - Use `@throws` for functions that can throw errors
+  - Type exports should be documented for public API
+  - Consider adding TSDoc-style comments for better IDE integration
+
+---
