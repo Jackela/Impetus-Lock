@@ -11,3 +11,4 @@ export { useTaskSync } from "./useTaskSync";
 export { useTasks } from "./useTasks";
 export { useCreateTask } from "./useCreateTask";
 export { useErrorHandler } from "./useErrorHandler";
+export { useToast } from "./useToast";

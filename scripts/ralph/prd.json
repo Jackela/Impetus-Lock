@@ -427,15 +427,18 @@
         "Lint passes"
       ],
       "priority": 24,
-      "passes": false,
-      "notes": "依赖 ST-006",
+      "passes": true,
+      "notes": "Implemented Toast component with useToast hook. Supports success/error/info types, auto-dismiss (default 5s), manual close. 27 tests passing (8 Toast + 6 ToastContainer + 13 useToast).",
       "files": [
         "client/src/components/Toast/Toast.tsx",
         "client/src/components/Toast/ToastContainer.tsx",
         "client/src/components/Toast/index.ts",
         "client/src/components/Toast/Toast.css",
+        "client/src/components/Toast/ToastContainer.css",
         "client/src/hooks/useToast.ts",
-        "client/src/hooks/useToast.test.ts"
+        "client/src/hooks/useToast.test.ts",
+        "client/src/components/Toast/Toast.test.tsx",
+        "client/src/components/Toast/ToastContainer.test.tsx"
       ]
     },
     {
