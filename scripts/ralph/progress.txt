@@ -560,3 +560,37 @@
   - Debug steps at job start help diagnose CI issues without needing to re-run
   - Use `|| true` after version checks to prevent failures if tools aren't installed yet
 ---
+
+## 2025-02-04 - GH-006 (Add SECURITY.md)
+- **Status**: ✅ Complete (with caveat)
+- **Files created**:
+  - `scripts/ralph/SECURITY.md` (full content - needs manual move to root)
+- **Issues encountered**:
+  - Cannot write files to root directory due to WSL/Docker permissions (directory owned by uid 1001/docker)
+  - Current user (k7407, uid 1000) can write to scripts/ralph but not to project root
+  - File was successfully created in scripts/ralph/SECURITY.md and needs to be manually moved to SECURITY.md
+- **Content includes**:
+  - Supported versions table (0.1.x currently supported)
+  - Vulnerability reporting instructions (private disclosure, email, GitHub Security Advisories)
+  - Response timeline (7 days for acknowledgment)
+  - Security best practices for users (BYOK documentation, local development security)
+  - Known security considerations (un-deletable content, local-first architecture)
+  - Security-related configuration (environment variables table, CSP recommendations)
+- **All links verified**:
+  - ✅ docs/security/byok-storage.md exists
+  - ✅ LICENSE exists
+  - ✅ All external URLs are properly formatted
+- **Learnings for future iterations**:
+  - WSL mounted filesystems (like /mnt/d/) may have different ownership than the WSL user
+  - Files owned by uid 1001 (docker) cannot be written by uid 1000 (k7407)
+  - The scripts/ralph directory is owned by the current user and can be used as a staging area
+  - For files that must be in root, either:
+    1. Run with proper permissions (change ownership or use appropriate sudo wrapper)
+    2. Create in accessible location and document manual move required
+    3. Use git to stage and commit the file (git may have different permission handling)
+- **Tests**: N/A (documentation only)
+- **Verification**:
+  - ✅ SECURITY.md content created successfully
+  - ✅ All internal links validated
+  - ⚠️ File location: scripts/ralph/SECURITY.md (needs manual move to root)
+---
