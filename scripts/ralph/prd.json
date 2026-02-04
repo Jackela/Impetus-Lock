@@ -19,8 +19,8 @@
         "Lint passes"
       ],
       "priority": 0,
-      "passes": false,
-      "notes": "质量检查门禁，每 3 个故事后执行",
+      "passes": true,
+      "notes": "Quality checkpoint passed - All gates green (ESLint, TypeScript, Vitest), Coverage stable at 58.35%",
       "isCheckpoint": true
     },
     {
