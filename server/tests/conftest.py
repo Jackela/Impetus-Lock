@@ -45,35 +45,8 @@ def anyio_backend() -> str:
     return "asyncio"
 
 
-@pytest.fixture(autouse=True)
-def clean_database(db_session: object | None) -> Generator[None, None, None]:
-    """Clean all tables after each test to prevent state leakage.
-
-    This is crucial for tests that run sequentially in CI, as it prevents
-    data from one test from affecting another. Local tests often pass
-    because they run in isolation, but CI runs tests sequentially.
-
-    Note: This fixture only runs if db_session is available (integration tests).
-    Unit tests without db_session are unaffected.
-
-    Args:
-        db_session: Database session fixture (None for unit tests)
-
-    Yields:
-        None
-    """
-    yield
-
-    # Check if db_session fixture was provided (integration test)
-    # We need to use hasattr check since db_session might be a fixture marker
-    # or we can catch the exception
-    if db_session is not None and hasattr(db_session, "execute"):
-        try:
-            # Truncate all tables that tests might modify
-            # Using TRUNCATE with CASCADE for clean state
-            db_session.execute(text("TRUNCATE TABLE tasks CASCADE"))
-            db_session.execute(text("TRUNCATE TABLE interventions CASCADE"))
-            db_session.commit()  # type: ignore[attr-defined]
-        except Exception:
-            # If tables don't exist (e.g., unit tests), ignore
-            pass
+# Note: Database cleanup fixture removed because:
+# 1. This project uses in-memory repositories for most tests
+# 2. Database tests use dependency override to set session to None
+# 3. No db_session fixture exists in the test suite
+# Tests are responsible for their own state isolation.
