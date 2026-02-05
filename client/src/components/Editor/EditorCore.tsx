@@ -121,11 +121,13 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   // Prevent multiple initializations (critical for preventing infinite loop)
   const editorInitializedRef = useRef(false);
 
-  // Stable ref for onReady to avoid useEffect re-runs
+  // Stable refs for callbacks to avoid useEffect re-runs
   const onReadyRef = useRef(onReady);
+  const onChangeRef = useRef(onChange);
   useEffect(() => {
     onReadyRef.current = onReady;
-  }, [onReady]);
+    onChangeRef.current = onChange;
+  }, [onReady, onChange]);
 
   // Track last processed trigger to prevent duplicates
   const lastProcessedTriggerRef = useRef<AIActionType | null>(null);
@@ -591,7 +593,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
               }
             });
 
-            onChange?.(tr.doc.textContent, lockManager.getAllLocks());
+            onChangeRef.current?.(tr.doc.textContent, lockManager.getAllLocks());
           }
           originalDispatchTransaction(tr);
         };
