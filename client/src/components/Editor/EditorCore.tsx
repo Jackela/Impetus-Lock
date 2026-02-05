@@ -96,6 +96,7 @@ const logger = createLogger("EditorCore");
 const EditorCoreInner: React.FC<EditorCoreProps> = ({
   initialContent = "",
   mode = "off",
+  onChange,
   onReady,
   initialLocks,
   externalTrigger,
