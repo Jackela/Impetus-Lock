@@ -97,12 +97,14 @@ test.describe("Lock Rejection Feedback", () => {
     const lockedContent = page.locator("blockquote.locked-content");
     await expect(lockedContent).toBeAttached({ timeout: 5000 });
 
-    // Wait for content to fully render (fixes race condition where "Impetus" becomes "Impet")
-    await page.waitForTimeout(1000);
-
-    // Capture locked content text before deletion (more robust than full document)
-    // Use evaluate to get text content directly from the element
-    const lockedContentBefore = await lockedContent.evaluate((el) => el.textContent ?? '');
+    // Capture locked content text before deletion - do this immediately after
+    // finding the element to avoid it being re-rendered or detached
+    // Use first() to get the first matching element and evaluate it directly
+    const element = await lockedContent.elementHandle();
+    if (!element) {
+      throw new Error('Locked content element not found');
+    }
+    const lockedContentBefore = await element.evaluate((el) => el.textContent ?? '');
 
     // Attempt multiple delete actions
     const prosemirror = page.locator('.milkdown [contenteditable="true"]');
@@ -122,7 +124,11 @@ test.describe("Lock Rejection Feedback", () => {
     await page.waitForTimeout(200);
 
     // Assert: Locked content text is still the same (ignores page title rendering issues)
-    const lockedContentAfter = await lockedContent.evaluate((el) => el.textContent ?? '');
+    const elementAfter = await lockedContent.elementHandle({ timeout: 3000 });
+    if (!elementAfter) {
+      throw new Error('Locked content element not found after deletion attempts');
+    }
+    const lockedContentAfter = await elementAfter.evaluate((el) => el.textContent ?? '');
     expect(lockedContentAfter).toBe(lockedContentBefore);
 
     // Assert: Locked content still visible
