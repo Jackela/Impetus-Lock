@@ -13,7 +13,12 @@ import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
 test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
   // Hide task sidebar to prevent click interception during editor operations
   test.beforeEach(async ({ page }) => {
-    await page.addInitStyle('[data-testid="task-sidebar"] { display: none !important; }');
+    // Inject CSS to hide sidebar before page loads
+    await page.addInitScript(`
+      const style = document.createElement('style');
+      style.textContent = '[data-testid="task-sidebar"] { display: none !important; }';
+      document.head.appendChild(style);
+    `);
   });
 
   test("should have no horizontal scrolling at 375px mobile viewport", async ({ page }) => {

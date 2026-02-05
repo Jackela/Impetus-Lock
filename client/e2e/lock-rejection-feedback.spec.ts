@@ -18,9 +18,13 @@ import { insertLockedContent, clearEditor } from "./helpers/milkdown-helpers";
 
 test.describe("Lock Rejection Feedback", () => {
   // Hide task sidebar to prevent click interception
-  // Note: addInitStyle must be called before page.goto()
   test.beforeEach(async ({ page }) => {
-    await page.addInitStyle('[data-testid="task-sidebar"] { display: none !important; }');
+    // Inject CSS to hide sidebar before page loads
+    await page.addInitScript(`
+      const style = document.createElement('style');
+      style.textContent = '[data-testid="task-sidebar"] { display: none !important; }';
+      document.head.appendChild(style);
+    `);
   });
 
   test("Lock rejection triggers sensory feedback (shake animation)", async ({ page }) => {
