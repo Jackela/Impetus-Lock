@@ -73,7 +73,9 @@
   border: none;
   border-radius: 0.375rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .error-boundary-reset:hover {

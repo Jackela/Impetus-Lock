@@ -5,21 +5,15 @@ import type { ToastItem } from "./ToastContainer";
 
 describe("ToastContainer Component", () => {
   it("renders null when there are no toasts", () => {
-    const { container } = render(
-      <ToastContainer toasts={[]} onDismiss={vi.fn()} />
-    );
+    const { container } = render(<ToastContainer toasts={[]} onDismiss={vi.fn()} />);
 
     expect(container.firstChild).toBe(null);
   });
 
   it("renders a single toast", () => {
-    const toasts: ToastItem[] = [
-      { id: "toast-1", type: "success", message: "Success message" },
-    ];
+    const toasts: ToastItem[] = [{ id: "toast-1", type: "success", message: "Success message" }];
 
-    render(
-      <ToastContainer toasts={toasts} onDismiss={vi.fn()} />
-    );
+    render(<ToastContainer toasts={toasts} onDismiss={vi.fn()} />);
 
     expect(screen.getByTestId("toast-container")).toBeInTheDocument();
     expect(screen.getByTestId("toast-toast-1")).toBeInTheDocument();
@@ -33,9 +27,7 @@ describe("ToastContainer Component", () => {
       { id: "toast-3", type: "info", message: "Third" },
     ];
 
-    render(
-      <ToastContainer toasts={toasts} onDismiss={vi.fn()} />
-    );
+    render(<ToastContainer toasts={toasts} onDismiss={vi.fn()} />);
 
     expect(screen.getByTestId("toast-toast-1")).toBeInTheDocument();
     expect(screen.getByTestId("toast-toast-2")).toBeInTheDocument();
@@ -49,13 +41,9 @@ describe("ToastContainer Component", () => {
 
   it("calls onDismiss with correct id when toast is dismissed", () => {
     const onDismiss = vi.fn();
-    const toasts: ToastItem[] = [
-      { id: "toast-1", type: "info", message: "Test" },
-    ];
+    const toasts: ToastItem[] = [{ id: "toast-1", type: "info", message: "Test" }];
 
-    render(
-      <ToastContainer toasts={toasts} onDismiss={onDismiss} />
-    );
+    render(<ToastContainer toasts={toasts} onDismiss={onDismiss} />);
 
     const closeButton = screen.getByTestId("toast-close-toast-1");
     closeButton.click();
@@ -64,13 +52,9 @@ describe("ToastContainer Component", () => {
   });
 
   it("has correct ARIA region attributes", () => {
-    const toasts: ToastItem[] = [
-      { id: "toast-1", type: "info", message: "Test" },
-    ];
+    const toasts: ToastItem[] = [{ id: "toast-1", type: "info", message: "Test" }];
 
-    render(
-      <ToastContainer toasts={toasts} onDismiss={vi.fn()} />
-    );
+    render(<ToastContainer toasts={toasts} onDismiss={vi.fn()} />);
 
     const container = screen.getByTestId("toast-container");
     expect(container).toHaveAttribute("role", "region");
@@ -84,14 +68,10 @@ describe("ToastContainer Component", () => {
       { id: "toast-2", type: "error", message: "Second" },
     ];
 
-    const { rerender } = render(
-      <ToastContainer toasts={toasts} onDismiss={vi.fn()} />
-    );
+    const { rerender } = render(<ToastContainer toasts={toasts} onDismiss={vi.fn()} />);
 
     // Re-render with first toast removed
-    const updatedToasts: ToastItem[] = [
-      { id: "toast-2", type: "error", message: "Second" },
-    ];
+    const updatedToasts: ToastItem[] = [{ id: "toast-2", type: "error", message: "Second" }];
 
     rerender(<ToastContainer toasts={updatedToasts} onDismiss={vi.fn()} />);
 

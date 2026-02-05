@@ -88,11 +88,7 @@ function categorizeError(err: unknown): { type: ErrorType; retryable: boolean } 
     }
 
     // Check for timeout-related keywords
-    if (
-      message.includes("timeout") ||
-      message.includes("timed out") ||
-      message.includes("abort")
-    ) {
+    if (message.includes("timeout") || message.includes("timed out") || message.includes("abort")) {
       return { type: "timeout", retryable: true };
     }
   }

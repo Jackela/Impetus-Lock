@@ -83,11 +83,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <pre className="error-boundary-stack">{this.state.error.toString()}</pre>
               </details>
             )}
-            <button
-              type="button"
-              className="error-boundary-reset"
-              onClick={this.handleReset}
-            >
+            <button type="button" className="error-boundary-reset" onClick={this.handleReset}>
               Try again
             </button>
           </div>

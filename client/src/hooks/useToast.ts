@@ -71,12 +71,15 @@ export function useToast(defaultDuration: number = DEFAULT_DURATION): UseToastRe
     }
   }, []);
 
-  const dismiss = useCallback((id: string) => {
-    clearTimeoutById(id);
-    setState((prev) => ({
-      toasts: prev.toasts.filter((t) => t.id !== id),
-    }));
-  }, [clearTimeoutById]);
+  const dismiss = useCallback(
+    (id: string) => {
+      clearTimeoutById(id);
+      setState((prev) => ({
+        toasts: prev.toasts.filter((t) => t.id !== id),
+      }));
+    },
+    [clearTimeoutById]
+  );
 
   const dismissAll = useCallback(() => {
     // Clear all timeouts

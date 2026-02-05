@@ -281,9 +281,7 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(),
     });
 
-    await expect(
-      result.current.mutateAsync({ content: "Bad task" })
-    ).rejects.toThrow();
+    await expect(result.current.mutateAsync({ content: "Bad task" })).rejects.toThrow();
 
     // After mutateAsync throws, the mutation is complete
     expect(result.current.isLoading).toBe(false);

@@ -60,23 +60,19 @@ export function useFocusTrap({
     if (!container) return [];
 
     const selectors = [
-      'a[href]',
-      'button:not([disabled])',
-      'textarea:not([disabled])',
-      'input:not([disabled])',
-      'select:not([disabled])',
+      "a[href]",
+      "button:not([disabled])",
+      "textarea:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
       '[tabindex]:not([tabindex="-1"])',
-    ].join(', ');
+    ].join(", ");
 
-    const focusable = Array.from(
-      container.querySelectorAll<HTMLElement>(selectors)
-    );
+    const focusable = Array.from(container.querySelectorAll<HTMLElement>(selectors));
 
     // Filter out excluded elements
     return focusable.filter((el) => {
-      return !excludeSelectors.some((selector) =>
-        el.matches(selector)
-      );
+      return !excludeSelectors.some((selector) => el.matches(selector));
     });
   }, [excludeSelectors]);
 
@@ -95,7 +91,7 @@ export function useFocusTrap({
     if (!container) return;
 
     // Try to find an element with autoFocus, otherwise first focusable
-    const autoFocusEl = container.querySelector<HTMLElement>('[autofocus]');
+    const autoFocusEl = container.querySelector<HTMLElement>("[autofocus]");
     const focusableElements = getFocusableElements();
     const firstElement = autoFocusEl || focusableElements[0];
 

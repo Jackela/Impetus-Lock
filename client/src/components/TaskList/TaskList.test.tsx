@@ -27,7 +27,9 @@ describe("TaskList", () => {
       render(<TaskList tasks={[]} />);
 
       expect(screen.getByTestId("task-list-empty")).toBeInTheDocument();
-      expect(screen.getByText("No tasks yet. Create your first task to get started!")).toBeInTheDocument();
+      expect(
+        screen.getByText("No tasks yet. Create your first task to get started!")
+      ).toBeInTheDocument();
     });
 
     it("should render list of tasks", () => {
@@ -55,7 +57,9 @@ describe("TaskList", () => {
 
       render(<TaskList tasks={[longTask]} />);
 
-      const titleElement = screen.getByTestId(`task-item-${longTask.id}`).querySelector(".task-item-title");
+      const titleElement = screen
+        .getByTestId(`task-item-${longTask.id}`)
+        .querySelector(".task-item-title");
       expect(titleElement).toBeInTheDocument();
       // Content is truncated to 100 chars + "..." (103 total)
       expect(titleElement?.textContent).toHaveLength(103);

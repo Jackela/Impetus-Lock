@@ -57,11 +57,7 @@ export function Skeleton({
     return (
       <div className="skeleton-lines" style={{ width }}>
         {Array.from({ length: lines }).map((_, index) => (
-          <div
-            key={index}
-            className={skeletonClass}
-            style={{ height }}
-          />
+          <div key={index} className={skeletonClass} style={{ height }} />
         ))}
       </div>
     );

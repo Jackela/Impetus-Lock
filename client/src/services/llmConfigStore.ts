@@ -43,10 +43,7 @@ const STORAGE_KEY = "impetus.llmConfig";
 /**
  * Metadata for all supported LLM providers.
  */
-export const PROVIDER_METADATA: Record<
-  LLMProviderName,
-  ProviderMetadata
-> = {
+export const PROVIDER_METADATA: Record<LLMProviderName, ProviderMetadata> = {
   openai: {
     label: "OpenAI",
     defaultModel: "gpt-4o-mini",

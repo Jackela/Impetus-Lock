@@ -279,9 +279,7 @@ class PostgreSQLTaskRepository(TaskRepository):
 
         return result.scalar() or 0
 
-    async def list_tasks(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[Task]:
+    async def list_tasks(self, limit: int = 100, offset: int = 0) -> list[Task]:
         """List all tasks (paginated).
 
         Args:
@@ -300,10 +298,7 @@ class PostgreSQLTaskRepository(TaskRepository):
             ```
         """
         result = await self._session.execute(
-            select(TaskModel)
-            .order_by(TaskModel.created_at.desc())
-            .limit(limit)
-            .offset(offset)
+            select(TaskModel).order_by(TaskModel.created_at.desc()).limit(limit).offset(offset)
         )
 
         return [self._to_entity(m) for m in result.scalars().all()]

@@ -105,7 +105,7 @@ describe("useTaskSync", () => {
     const task2 = record({ id: "task-2", content: "external task content", lock_ids: ["lock_b"] });
     const fetchMock = mockFetchQueue([
       { status: 200, body: defaultTask }, // bootstrap creates default task
-      { status: 200, body: task2 },       // then loads external task
+      { status: 200, body: task2 }, // then loads external task
     ]);
     vi.stubGlobal("fetch", fetchMock);
 
@@ -130,9 +130,7 @@ describe("useTaskSync", () => {
 
   it("does not reload when externalTaskId is the same as current task", async () => {
     const task1 = record({ id: "task-1", content: "task 1 content" });
-    const fetchMock = mockFetchQueue([
-      { status: 200, body: task1 },
-    ]);
+    const fetchMock = mockFetchQueue([{ status: 200, body: task1 }]);
     vi.stubGlobal("fetch", fetchMock);
 
     const { result, rerender } = renderHook(

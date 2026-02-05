@@ -57,9 +57,7 @@ class InMemoryTaskRepository(TaskRepository):
     async def get_action_count(self, task_id: UUID) -> int:
         return len(self._actions.get(task_id, []))
 
-    async def list_tasks(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[Task]:
+    async def list_tasks(self, limit: int = 100, offset: int = 0) -> list[Task]:
         """List all tasks (paginated).
 
         Args:

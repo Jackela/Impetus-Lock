@@ -198,9 +198,7 @@ class TaskRepository(ABC):
         pass
 
     @abstractmethod
-    async def list_tasks(
-        self, limit: int = 100, offset: int = 0
-    ) -> list[Task]:
+    async def list_tasks(self, limit: int = 100, offset: int = 0) -> list[Task]:
         """List all tasks (paginated).
 
         Args:

@@ -88,10 +88,7 @@ export interface UseTaskSyncOptions {
  * }
  * ```
  */
-export function useTaskSync(
-  defaultContent: string,
-  options?: UseTaskSyncOptions
-): TaskSyncState {
+export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions): TaskSyncState {
   const { externalTaskId } = options || {};
   const [content, setContent] = useState(defaultContent);
   const [lockIds, setLockIds] = useState<string[]>([]);
@@ -160,9 +157,7 @@ export function useTaskSync(
     setStatus("loading");
     try {
       const cachedMetaRaw = localStorage.getItem(LOCAL_META_KEY);
-      const cachedMeta = cachedMetaRaw
-        ? (JSON.parse(cachedMetaRaw) as { taskId?: string })
-        : null;
+      const cachedMeta = cachedMetaRaw ? (JSON.parse(cachedMetaRaw) as { taskId?: string }) : null;
 
       if (cachedMeta?.taskId) {
         const existing = await fetchTask(cachedMeta.taskId);

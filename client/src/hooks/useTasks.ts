@@ -73,9 +73,7 @@ function getQueryKey(limit: number, offset: number) {
  * }
  * ```
  */
-export function useTasks(
-  options: { limit?: number; offset?: number } = {}
-): UseTasksResult {
+export function useTasks(options: { limit?: number; offset?: number } = {}): UseTasksResult {
   const { limit = 100, offset = 0 } = options;
 
   const query = useQuery({

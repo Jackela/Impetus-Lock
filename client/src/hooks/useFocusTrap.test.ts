@@ -183,7 +183,9 @@ describe("useFocusTrap Hook", () => {
       bubbles: true,
     });
     Object.defineProperty(enterEvent, "preventDefault", {
-      value: () => { prevented = true; },
+      value: () => {
+        prevented = true;
+      },
     });
 
     firstInput.dispatchEvent(enterEvent);

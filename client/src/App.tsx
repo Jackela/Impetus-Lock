@@ -139,13 +139,10 @@ function App() {
   }, [clearConfig]);
 
   // ST-001: Handle task selection from list - load task into editor
-  const handleTaskClick = useCallback(
-    (task: TaskRecord) => {
-      setSelectedTask(task);
-      setEditingTaskId(task.id);
-    },
-    []
-  );
+  const handleTaskClick = useCallback((task: TaskRecord) => {
+    setSelectedTask(task);
+    setEditingTaskId(task.id);
+  }, []);
 
   return (
     <div
@@ -353,10 +350,7 @@ function App() {
       </footer>
 
       {/* UX-010: New task button (FAB) */}
-      <NewTaskButton
-        onClick={() => setShowCreateTaskModal(true)}
-        ariaLabel="Create new task"
-      />
+      <NewTaskButton onClick={() => setShowCreateTaskModal(true)} ariaLabel="Create new task" />
     </div>
   );
 }

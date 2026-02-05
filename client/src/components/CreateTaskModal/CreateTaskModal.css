@@ -117,7 +117,9 @@
   border-radius: 8px;
   color: #e5e5e5;
   font-size: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-group input[type="text"]:focus {
