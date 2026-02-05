@@ -79,7 +79,7 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     await page.evaluate(() => {
       const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
       if (sidebar) {
-        sidebar.style.setProperty('display', 'none', 'important');
+        sidebar.style.setProperty("display", "none", "important");
       }
     });
 
@@ -171,7 +171,7 @@ test.describe("Responsive Design - Device Orientation", () => {
     await page.evaluate(() => {
       const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
       if (sidebar) {
-        sidebar.style.setProperty('display', 'none', 'important');
+        sidebar.style.setProperty("display", "none", "important");
       }
     });
 
