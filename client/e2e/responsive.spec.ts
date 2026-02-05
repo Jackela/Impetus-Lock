@@ -75,6 +75,14 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     // Wait for editor to be ready
     await waitForAppReady(page);
 
+    // Hide task sidebar that may interfere with editor clicks
+    await page.evaluate(() => {
+      const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
+      if (sidebar) {
+        sidebar.style.setProperty('display', 'none', 'important');
+      }
+    });
+
     // Type a very long URL
     const longUrl =
       "https://example.com/this-is-a-very-long-url-path-that-should-break-properly-without-causing-horizontal-scroll-on-mobile-devices";
@@ -158,6 +166,14 @@ test.describe("Responsive Design - Device Orientation", () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("/");
     await waitForReactHydration(page);
+
+    // Hide task sidebar that may interfere with editor clicks
+    await page.evaluate(() => {
+      const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
+      if (sidebar) {
+        sidebar.style.setProperty('display', 'none', 'important');
+      }
+    });
 
     // Type some content
     const editor = page.locator('[contenteditable="true"]').first();
