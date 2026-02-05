@@ -4,8 +4,10 @@ Sets up test environment with mocked OpenAI API key.
 """
 
 import os
+from collections.abc import Generator
 
 import pytest
+from sqlalchemy import text
 
 from server.api.main import app as fastapi_app
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
@@ -41,3 +43,37 @@ def anyio_backend() -> str:
     """Force anyio tests to use asyncio backend (trio not installed in dev env)."""
 
     return "asyncio"
+
+
+@pytest.fixture(autouse=True)
+def clean_database(db_session: object | None) -> Generator[None, None, None]:
+    """Clean all tables after each test to prevent state leakage.
+
+    This is crucial for tests that run sequentially in CI, as it prevents
+    data from one test from affecting another. Local tests often pass
+    because they run in isolation, but CI runs tests sequentially.
+
+    Note: This fixture only runs if db_session is available (integration tests).
+    Unit tests without db_session are unaffected.
+
+    Args:
+        db_session: Database session fixture (None for unit tests)
+
+    Yields:
+        None
+    """
+    yield
+
+    # Check if db_session fixture was provided (integration test)
+    # We need to use hasattr check since db_session might be a fixture marker
+    # or we can catch the exception
+    if db_session is not None and hasattr(db_session, "execute"):
+        try:
+            # Truncate all tables that tests might modify
+            # Using TRUNCATE with CASCADE for clean state
+            db_session.execute(text("TRUNCATE TABLE tasks CASCADE"))
+            db_session.execute(text("TRUNCATE TABLE interventions CASCADE"))
+            db_session.commit()  # type: ignore[attr-defined]
+        except Exception:
+            # If tables don't exist (e.g., unit tests), ignore
+            pass

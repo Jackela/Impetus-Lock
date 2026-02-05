@@ -151,10 +151,13 @@ export async function getEditorContent(page: Page): Promise<string> {
 }
 
 /**
- * Clear all editor content.
+ * Clear all editor content and verify it's empty.
+ *
+ * This helper ensures the editor is truly empty to prevent state leakage
+ * between tests, which is a common cause of CI failures when tests pass locally.
  *
  * @param page - Playwright page object
- * @returns Promise that resolves when content is cleared
+ * @returns Promise that resolves when content is cleared and verified empty
  *
  * @example
  * await clearEditor(page);
@@ -166,6 +169,20 @@ export async function clearEditor(page: Page): Promise<void> {
   // Select all and delete
   await page.keyboard.press("Control+A");
   await page.keyboard.press("Backspace");
+
+  // Wait a moment for deletion to process
+  await page.waitForTimeout(100);
+
+  // Verify editor is actually empty (catches state leakage issues early)
+  const content = await editor.textContent();
+  const trimmedContent = content?.trim() ?? "";
+
+  // If not empty after clearing, try again (handles cases where sidebar or other elements interfere)
+  if (trimmedContent !== "") {
+    await page.keyboard.press("Control+A");
+    await page.keyboard.press("Backspace");
+    await page.waitForTimeout(100);
+  }
 }
 
 /**

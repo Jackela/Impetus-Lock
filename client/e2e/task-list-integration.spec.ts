@@ -112,12 +112,11 @@ test.describe("UX-003: Task List Integration", () => {
 
   test("header layout includes task list toggle in left section", async ({ page }) => {
     const headerLeft = page.locator(".header-left");
-    const toggleButton = page.locator('[data-testid="task-list-toggle"]');
-    const h1 = page.locator(".app-header h1");
 
     // Check that header-left contains both the title and toggle button
-    await expect(headerLeft).toContainElement(h1);
-    await expect(headerLeft).toContainElement(toggleButton);
+    // Use locator containment instead of toContainElement (which is not a valid Playwright API)
+    await expect(headerLeft.locator("h1")).toBeAttached();
+    await expect(headerLeft.locator('[data-testid="task-list-toggle"]')).toBeAttached();
   });
 
   test("task list empty state is shown when no tasks", async ({ page }) => {

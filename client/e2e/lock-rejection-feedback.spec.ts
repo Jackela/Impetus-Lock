@@ -17,6 +17,12 @@ import { waitForAppReady } from "./helpers/waitHelpers";
 import { insertLockedContent, clearEditor } from "./helpers/milkdown-helpers";
 
 test.describe("Lock Rejection Feedback", () => {
+  // Hide task sidebar to prevent click interception
+  // Note: addInitStyle must be called before page.goto()
+  test.beforeEach(async ({ page }) => {
+    await page.addInitStyle('[data-testid="task-sidebar"] { display: none !important; }');
+  });
+
   test("Lock rejection triggers sensory feedback (shake animation)", async ({ page }) => {
     // Capture console logs for debugging
     page.on("console", (msg) => {
@@ -69,6 +75,11 @@ test.describe("Lock Rejection Feedback", () => {
     await page.goto("/");
     await waitForAppReady(page);
     await clearEditor(page);
+
+    // Wait for editor to be truly empty (important for state isolation)
+    const editor = page.locator('.milkdown [contenteditable="true"]');
+    await expect(editor).toHaveText('', { timeout: 5000 });
+
     await insertLockedContent(
       page,
       "> AI-locked text that should not be deleted",
@@ -117,6 +128,11 @@ test.describe("Lock Rejection Feedback", () => {
     await page.goto("/");
     await waitForAppReady(page);
     await clearEditor(page);
+
+    // Verify empty state before test
+    const editor = page.locator('.milkdown [contenteditable="true"]');
+    await expect(editor).toHaveText('', { timeout: 5000 });
+
     await insertLockedContent(page, "> AI-locked content", "test_lock_reject_003");
 
     // Wait for decorations
@@ -148,10 +164,16 @@ test.describe("Lock Rejection Feedback", () => {
     await waitForAppReady(page);
     await clearEditor(page);
 
+    // Verify empty state before test
+    const editor = page.locator('.milkdown [contenteditable="true"]');
+    await expect(editor).toHaveText('', { timeout: 5000 });
+
     // Check if AudioContext is available (browsers may require user interaction)
     const audioContextAvailable = await page.evaluate(() => {
+      type AudioContextCtor = typeof window.AudioContext;
       const AudioContextConstructor =
-        (window as any).AudioContext || (window as any).webkitAudioContext;
+        (window as unknown as Record<string, AudioContextCtor>)["AudioContext"] ||
+        (window as unknown as Record<string, AudioContextCtor>)["webkitAudioContext"];
       return !!AudioContextConstructor;
     });
 
