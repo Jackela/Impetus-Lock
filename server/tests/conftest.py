@@ -4,10 +4,8 @@ Sets up test environment with mocked OpenAI API key.
 """
 
 import os
-from collections.abc import Generator
 
 import pytest
-from sqlalchemy import text
 
 from server.api.main import app as fastapi_app
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
