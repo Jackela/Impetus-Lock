@@ -45,7 +45,7 @@ exports[`TaskList > snapshot > should match snapshot with selected task 1`] = `
           <time
             class="task-item-time"
             datetime="2025-02-04T10:00:00Z"
-            title="2/4/2025, 6:00:00 PM"
+            title="2/4/2025, 10:00:00 AM"
           >
             2/4/2025
           </time>
@@ -90,7 +90,7 @@ exports[`TaskList > snapshot > should match snapshot with tasks 1`] = `
           <time
             class="task-item-time"
             datetime="2025-02-04T10:00:00Z"
-            title="2/4/2025, 6:00:00 PM"
+            title="2/4/2025, 10:00:00 AM"
           >
             2/4/2025
           </time>
@@ -154,7 +154,7 @@ exports[`TaskList > snapshot > should match snapshot with tasks 1`] = `
           <time
             class="task-item-time"
             datetime="2025-02-04T09:00:00Z"
-            title="2/4/2025, 5:00:00 PM"
+            title="2/4/2025, 9:00:00 AM"
           >
             2/4/2025
           </time>
