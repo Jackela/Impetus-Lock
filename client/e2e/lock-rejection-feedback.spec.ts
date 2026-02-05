@@ -101,7 +101,8 @@ test.describe("Lock Rejection Feedback", () => {
     await page.waitForTimeout(1000);
 
     // Capture locked content text before deletion (more robust than full document)
-    const lockedContentBefore = await lockedContent.textContent();
+    // Use evaluate to get text content directly from the element
+    const lockedContentBefore = await lockedContent.evaluate((el) => el.textContent ?? '');
 
     // Attempt multiple delete actions
     const prosemirror = page.locator('.milkdown [contenteditable="true"]');
@@ -121,7 +122,7 @@ test.describe("Lock Rejection Feedback", () => {
     await page.waitForTimeout(200);
 
     // Assert: Locked content text is still the same (ignores page title rendering issues)
-    const lockedContentAfter = await lockedContent.textContent();
+    const lockedContentAfter = await lockedContent.evaluate((el) => el.textContent ?? '');
     expect(lockedContentAfter).toBe(lockedContentBefore);
 
     // Assert: Locked content still visible
