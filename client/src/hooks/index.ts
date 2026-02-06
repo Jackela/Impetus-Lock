@@ -8,3 +8,8 @@ export { useLockEnforcement } from "./useLockEnforcement";
 export { useWritingState } from "./useWritingState";
 export { useTelemetry } from "./useTelemetry";
 export { useTaskSync } from "./useTaskSync";
+export { useTasks } from "./useTasks";
+export { useCreateTask } from "./useCreateTask";
+export { useErrorHandler } from "./useErrorHandler";
+export { useToast } from "./useToast";
+export { useFocusTrap } from "./useFocusTrap";

@@ -4,6 +4,8 @@ import { spawn } from "node:child_process";
 
 const isWindows = process.platform === "win32";
 process.env.ROLLUP_SKIP_NODE_JS_NATIVE = process.env.ROLLUP_SKIP_NODE_JS_NATIVE || "1";
+// Force UTC timezone for consistent test output across environments
+process.env.TZ = process.env.TZ || "UTC";
 
 const args = process.argv.slice(2);
 

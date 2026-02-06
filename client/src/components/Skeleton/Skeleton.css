@@ -1,0 +1,80 @@
+/* Base skeleton styles */
+.skeleton {
+  background-color: var(--skeleton-base, #e5e7eb);
+  border-radius: 0.25rem;
+  display: inline-block;
+}
+
+/* Shimmer animation for loading state */
+.skeleton--animate {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton--animate::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 20%,
+    rgba(255, 255, 255, 0.8) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Text variant - default horizontal bar */
+.skeleton--text {
+  height: 1em;
+  width: 100%;
+  border-radius: 0.25rem;
+}
+
+/* Circle variant - for avatars, icons */
+.skeleton--circle {
+  border-radius: 50%;
+}
+
+/* Rect variant - for images, cards */
+.skeleton--rect {
+  border-radius: 0.375rem;
+}
+
+/* Multiple lines container */
+.skeleton-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.skeleton-lines .skeleton {
+  width: 100%;
+}
+
+/* Reduce motion support */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton--animate::after {
+    animation: none;
+  }
+
+  .skeleton--animate {
+    background-image: linear-gradient(
+      90deg,
+      var(--skeleton-base, #e5e7eb) 0%,
+      var(--skeleton-highlight, #f3f4f6) 50%,
+      var(--skeleton-base, #e5e7eb) 100%
+    );
+  }
+}

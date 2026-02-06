@@ -18,6 +18,13 @@ import { INITIAL_STORY } from "./constants/initialStory";
 import { TelemetryToggle } from "./components/TelemetryToggle";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { useTaskSync } from "./hooks/useTaskSync";
+import { TaskList } from "./components/TaskList/TaskList";
+import { useTasks } from "./hooks/useTasks";
+import type { TaskRecord } from "./types/task";
+import { NewTaskButton } from "./components/NewTaskButton";
+import { CreateTaskModal } from "./components/CreateTaskModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { Skeleton } from "./components/Skeleton";
 
 /**
  * Impetus Lock Main Application
@@ -25,6 +32,9 @@ import { useTaskSync } from "./hooks/useTaskSync";
  * Production editor with full lock enforcement and AI intervention system.
  */
 function App() {
+  // ST-001: Track the task being edited (must be declared before useTaskSync)
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
   const {
     content: taskContent,
     lockIds: taskLocks,
@@ -34,7 +44,7 @@ function App() {
     error: taskError,
     isSaving,
     onChange: handleTaskChange,
-  } = useTaskSync(INITIAL_STORY);
+  } = useTaskSync(INITIAL_STORY, { externalTaskId: editingTaskId });
 
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
@@ -42,6 +52,16 @@ function App() {
   const [showConfigError, setShowConfigError] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [lastLLMError, setLastLLMError] = useState<InterventionAPIError | null>(null);
+
+  // UX-003: Task list integration
+  const [showTaskList, setShowTaskList] = useState(true);
+  const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null);
+
+  // UX-010: Create task modal state
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+
+  // Fetch task list with refetch for new task creation
+  const { data: tasks, isLoading: tasksLoading, error: tasksError, refetch } = useTasks();
   const {
     config: llmConfig,
     isConfigured,
@@ -61,8 +81,16 @@ function App() {
   const [timerRemaining, setTimerRemaining] = useState<number>(60);
 
   // Keyboard shortcut: "?" to re-open welcome modal
+  // UX-003: "Alt+T" to toggle task list sidebar
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      // Toggle task list with Alt+T
+      if (e.key === "t" && e.altKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setShowTaskList((prev) => !prev);
+        return;
+      }
+
       if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         // Only trigger if not typing in editor
         const target = e.target as HTMLElement;
@@ -110,6 +138,12 @@ function App() {
     }, 3000);
   }, [clearConfig]);
 
+  // ST-001: Handle task selection from list - load task into editor
+  const handleTaskClick = useCallback((task: TaskRecord) => {
+    setSelectedTask(task);
+    setEditingTaskId(task.id);
+  }, []);
+
   return (
     <div
       className="app"
@@ -153,9 +187,44 @@ function App() {
           null
         }
       />
+      {/* UX-010: Create task modal */}
+      <CreateTaskModal
+        open={showCreateTaskModal}
+        onClose={() => setShowCreateTaskModal(false)}
+        onSuccess={() => {
+          // Refetch task list after successful creation
+          refetch();
+        }}
+      />
 
       <header className="app-header">
-        <h1>Impetus Lock</h1>
+        <div className="header-left">
+          <h1>Impetus Lock</h1>
+          <button
+            type="button"
+            className={`task-list-toggle ${showTaskList ? "active" : ""}`}
+            onClick={() => setShowTaskList((prev) => !prev)}
+            aria-pressed={showTaskList}
+            title="Toggle task list (Alt+T)"
+            data-testid="task-list-toggle"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+            <span className="toggle-label">Tasks</span>
+          </button>
+        </div>
         <div className="header-actions">
           <TelemetryToggle />
           <span className="task-status" role="status">
@@ -222,29 +291,66 @@ function App() {
       </header>
 
       <main className="app-main" role="main">
-        {/* T005: Timer indicator for Muse mode */}
-        <TimerIndicator
-          progress={timerProgress}
-          visible={mode === "muse"}
-          remainingTime={timerRemaining}
-        />
-        <OnboardingChecklist />
-        <EditorCore
-          key={`${taskId ?? "local"}:${taskVersion}`}
-          mode={mode}
-          initialContent={taskContent}
-          initialLocks={taskLocks}
-          externalTrigger={manualTrigger}
-          onTriggerProcessed={() => setManualTrigger(null)}
-          onTimerUpdate={setTimerRemaining}
-          onInterventionError={handleInterventionError}
-          onChange={handleTaskChange}
-        />
+        {/* ST-005: Error boundary for task list sidebar */}
+        <ErrorBoundary>
+          {/* UX-003: Task list sidebar */}
+          {showTaskList && (
+            <aside className="task-sidebar" data-testid="task-sidebar">
+              <div className="task-sidebar-header">
+                <h2>Tasks</h2>
+                {tasksError && (
+                  <span className="task-sidebar-error" role="alert">
+                    Failed to load
+                  </span>
+                )}
+              </div>
+              {tasksLoading ? (
+                <div className="task-sidebar-skeleton" role="status" aria-label="Loading tasks">
+                  <Skeleton lines={5} height="48px" />
+                </div>
+              ) : (
+                <TaskList
+                  tasks={tasks}
+                  onTaskClick={handleTaskClick}
+                  selectedTaskId={selectedTask?.id}
+                />
+              )}
+            </aside>
+          )}
+        </ErrorBoundary>
+
+        {/* ST-005: Error boundary for editor area */}
+        <ErrorBoundary>
+          {/* Editor area */}
+          <div className="editor-area">
+            {/* T005: Timer indicator for Muse mode */}
+            <TimerIndicator
+              progress={timerProgress}
+              visible={mode === "muse"}
+              remainingTime={timerRemaining}
+            />
+            <OnboardingChecklist />
+            <EditorCore
+              key={`${taskId ?? "local"}:${taskVersion}`}
+              mode={mode}
+              initialContent={taskContent}
+              initialLocks={taskLocks}
+              externalTrigger={manualTrigger}
+              onTriggerProcessed={() => setManualTrigger(null)}
+              onTimerUpdate={setTimerRemaining}
+              onInterventionError={handleInterventionError}
+              onChange={handleTaskChange}
+            />
+          </div>
+        </ErrorBoundary>
       </main>
 
       <footer className="app-footer">
         Press <kbd>?</kbd> for help
       </footer>
+
+      {/* UX-010: New task button (FAB) */}
+      <NewTaskButton onClick={() => setShowCreateTaskModal(true)} ariaLabel="Create new task" />
     </div>
   );
 }

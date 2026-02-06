@@ -1,0 +1,173 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TaskList > snapshot > should match snapshot for empty state 1`] = `
+<div
+  class="task-list-empty"
+  data-testid="task-list-empty"
+>
+  <p>
+    No tasks yet. Create your first task to get started!
+  </p>
+</div>
+`;
+
+exports[`TaskList > snapshot > should match snapshot with selected task 1`] = `
+<div
+  class="task-list"
+  data-testid="task-list"
+>
+  <ul
+    class="task-list-items"
+    role="list"
+  >
+    <li
+      class="task-list-item"
+    >
+      <button
+        aria-selected="true"
+        class="task-list-item-button selected"
+        data-task-id="task-1"
+        data-testid="task-item-task-1"
+        type="button"
+      >
+        <div
+          class="task-item-header"
+        >
+          <h3
+            class="task-item-title"
+          >
+            Test task content
+          </h3>
+        </div>
+        <div
+          class="task-item-meta"
+        >
+          <time
+            class="task-item-time"
+            datetime="2025-02-04T10:00:00Z"
+            title="2/4/2025, 10:00:00 AM"
+          >
+            2/4/2025
+          </time>
+        </div>
+      </button>
+    </li>
+  </ul>
+</div>
+`;
+
+exports[`TaskList > snapshot > should match snapshot with tasks 1`] = `
+<div
+  class="task-list"
+  data-testid="task-list"
+>
+  <ul
+    class="task-list-items"
+    role="list"
+  >
+    <li
+      class="task-list-item"
+    >
+      <button
+        aria-selected="false"
+        class="task-list-item-button "
+        data-task-id="task-1"
+        data-testid="task-item-task-1"
+        type="button"
+      >
+        <div
+          class="task-item-header"
+        >
+          <h3
+            class="task-item-title"
+          >
+            Test task content
+          </h3>
+        </div>
+        <div
+          class="task-item-meta"
+        >
+          <time
+            class="task-item-time"
+            datetime="2025-02-04T10:00:00Z"
+            title="2/4/2025, 10:00:00 AM"
+          >
+            2/4/2025
+          </time>
+        </div>
+      </button>
+    </li>
+    <li
+      class="task-list-item"
+    >
+      <button
+        aria-selected="false"
+        class="task-list-item-button "
+        data-task-id="task-2"
+        data-testid="task-item-task-2"
+        type="button"
+      >
+        <div
+          class="task-item-header"
+        >
+          <h3
+            class="task-item-title"
+          >
+            Task with locks
+          </h3>
+          <span
+            aria-label="2 locked sections"
+            class="task-item-lock-badge"
+            title="2 locked sections"
+          >
+            <svg
+              aria-hidden="true"
+              fill="none"
+              height="16"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="16"
+            >
+              <rect
+                height="11"
+                rx="2"
+                ry="2"
+                width="18"
+                x="3"
+                y="11"
+              />
+              <path
+                d="M7 11V7a5 5 0 0 1 10 0v4"
+              />
+            </svg>
+            <span
+              class="lock-count"
+            >
+              2
+            </span>
+          </span>
+        </div>
+        <div
+          class="task-item-meta"
+        >
+          <time
+            class="task-item-time"
+            datetime="2025-02-04T09:00:00Z"
+            title="2/4/2025, 9:00:00 AM"
+          >
+            2/4/2025
+          </time>
+          <span
+            class="task-item-version"
+            title="Version 2"
+          >
+            v
+            2
+          </span>
+        </div>
+      </button>
+    </li>
+  </ul>
+</div>
+`;

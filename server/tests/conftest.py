@@ -41,3 +41,10 @@ def anyio_backend() -> str:
     """Force anyio tests to use asyncio backend (trio not installed in dev env)."""
 
     return "asyncio"
+
+
+# Note: Database cleanup fixture removed because:
+# 1. This project uses in-memory repositories for most tests
+# 2. Database tests use dependency override to set session to None
+# 3. No db_session fixture exists in the test suite
+# Tests are responsible for their own state isolation.

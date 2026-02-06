@@ -56,3 +56,21 @@ class InMemoryTaskRepository(TaskRepository):
 
     async def get_action_count(self, task_id: UUID) -> int:
         return len(self._actions.get(task_id, []))
+
+    async def list_tasks(self, limit: int = 100, offset: int = 0) -> list[Task]:
+        """List all tasks (paginated).
+
+        Args:
+            limit: Maximum number of tasks to return (default 100).
+            offset: Number of tasks to skip for pagination (default 0).
+
+        Returns:
+            list[Task]: Tasks in reverse chronological order (newest first).
+        """
+        # Sort by created_at descending (newest first)
+        sorted_tasks = sorted(
+            self._tasks.values(),
+            key=lambda t: t.created_at,
+            reverse=True,
+        )
+        return sorted_tasks[offset : offset + limit]

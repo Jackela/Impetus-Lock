@@ -59,11 +59,21 @@ function createLockDecorations(doc: Node, lockManager: LockManager): DecorationS
       metadata.source ?? lockInfo?.source ?? lockManager.getLockSource(metadata.lockId);
 
     if (lockInfo?.shape === "block" || node.type.name === "blockquote") {
+      // Build tooltip text based on source
+      const tooltipText = source
+        ? source === "muse"
+          ? "Muse inspiration (locked)"
+          : source === "loki"
+          ? "Loki chaos (locked)"
+          : `AI-generated (${source}) - locked`
+        : "AI-generated (locked)";
+
       decorations.push(
         Decoration.node(pos, pos + node.nodeSize, {
           class: `locked-content${source ? ` source-${source}` : ""}`,
           "data-lock-id": metadata.lockId,
           "data-lock-shape": "block",
+          "data-tooltip": tooltipText,
           role: "note",
           "aria-label": "AI-added content (locked)",
           ...(source ? { "data-source": source } : {}),
@@ -72,10 +82,20 @@ function createLockDecorations(doc: Node, lockManager: LockManager): DecorationS
       return false;
     }
 
+    // Build tooltip text based on source
+    const tooltipText = source
+      ? source === "muse"
+        ? "Muse inspiration (locked)"
+        : source === "loki"
+        ? "Loki chaos (locked)"
+        : `AI-generated (${source}) - locked`
+      : "AI-generated (locked)";
+
     const attrs: Record<string, string> = {
       class: `locked-content${source ? ` source-${source}` : ""}`,
       "data-lock-id": metadata.lockId,
       "data-lock-shape": "inline",
+      "data-tooltip": tooltipText,
       role: "note",
       "aria-label": "AI-added content (locked)",
       ...(source ? { "data-source": source } : {}),

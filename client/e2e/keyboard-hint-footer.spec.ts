@@ -96,6 +96,14 @@ test.describe("Keyboard Hint Footer", () => {
     // Wait for editor to be ready
     await page.waitForSelector('[data-testid="editor-ready"]', { timeout: 10000 });
 
+    // Hide task sidebar that may interfere with editor clicks
+    await page.evaluate(() => {
+      const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
+      if (sidebar) {
+        sidebar.style.setProperty('display', 'none', 'important');
+      }
+    });
+
     // Click on the editor area (which is above the footer)
     const editor = page.locator('.milkdown [contenteditable="true"]');
     await editor.click();

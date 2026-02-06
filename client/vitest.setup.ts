@@ -1,3 +1,11 @@
+/**
+ * Force UTC timezone for consistent test output across environments.
+ *
+ * This ensures that Date.toLocaleString() produces the same output
+ * in local development (which may use UTC+8) and CI (which uses UTC).
+ */
+process.env.TZ = "UTC";
+
 import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
 

@@ -62,6 +62,19 @@ Core project documentation remains in the root directory:
 - **QUICKSTART_TESTING.md** - Quick testing guide
 - **READY_FOR_TESTING.md** - Testing readiness checklist
 
+## Component Documentation (components/)
+
+UI component reference and usage documentation:
+
+- **catalog.md** - Complete component catalog with props, examples, and accessibility notes
+
+## Developer Guides (guides/)
+
+Developer-facing guides for common workflows:
+
+- **troubleshooting.md** - Common issues and solutions for development and deployment
+- **deployment.md** - Production deployment instructions with Docker and environment setup
+
 ## Feature Specifications (../specs/)
 
 Feature planning and task breakdown:
