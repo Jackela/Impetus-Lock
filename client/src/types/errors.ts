@@ -44,11 +44,7 @@ export class AppError extends Error {
  * Error for API-related failures.
  */
 export class APIError extends AppError {
-  constructor(
-    message: string,
-    statusCode: number,
-    context?: Record<string, unknown>
-  ) {
+  constructor(message: string, statusCode: number, context?: Record<string, unknown>) {
     super(message, "API_ERROR", statusCode, context);
     this.name = "APIError";
   }

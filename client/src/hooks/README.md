@@ -41,6 +41,7 @@ import { useWritingState, useLokiTimer, useSensoryFeedback } from "../hooks";
 ## Categories
 
 ### Editor Hooks
+
 - `useEditorInitialization` - Milkdown editor setup
 - `useWritingState` - STUCK detection state machine
 - `useLokiTimer` - Random chaos timer
@@ -48,11 +49,13 @@ import { useWritingState, useLokiTimer, useSensoryFeedback } from "../hooks";
 - `useManualDelete` - Delete operations
 
 ### Data Hooks
+
 - `useTasks` - Fetch task list
 - `useTaskSync` - Sync task content
 - `useCreateTask` - Create new tasks
 
 ### UI Hooks
+
 - `useMediaQuery` - Responsive breakpoints
 - `useToast` - Notifications
 - `useFocusTrap` - Accessibility
@@ -60,11 +63,13 @@ import { useWritingState, useLokiTimer, useSensoryFeedback } from "../hooks";
 - `useAudioFeedback` - Sound effects
 
 ### Configuration Hooks
+
 - `useLLMConfig` - LLM settings
 - `useTelemetry` - Analytics
 - `useLockEnforcement` - Lock management
 
 ### Utility Hooks
+
 - `useErrorHandler` - Error handling
 - `useInterventionApiError` - API error parsing
 - `useToolbarActions` - Toolbar utilities

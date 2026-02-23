@@ -16,11 +16,7 @@ config/
 Import configurations from the barrel export:
 
 ```typescript
-import {
-  DEFAULT_FEEDBACK_DURATION_MS,
-  LOKI_COOLDOWN_MS,
-  MUSE_STUCK_TIMEOUT_MS,
-} from "../config";
+import { DEFAULT_FEEDBACK_DURATION_MS, LOKI_COOLDOWN_MS, MUSE_STUCK_TIMEOUT_MS } from "../config";
 ```
 
 Or import specific modules:

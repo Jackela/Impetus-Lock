@@ -71,7 +71,9 @@ export function useEditorInitialization(
 
       if (!editor || !mounted) {
         if (!editor) {
-          logger.error("Editor failed to initialize", { timeoutMs: attempts * EDITOR_RETRY_INTERVAL_MS });
+          logger.error("Editor failed to initialize", {
+            timeoutMs: attempts * EDITOR_RETRY_INTERVAL_MS,
+          });
         }
         return;
       }

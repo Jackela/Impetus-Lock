@@ -25,7 +25,10 @@ services/
 Handles AI intervention requests to the backend.
 
 ```typescript
-import { triggerMuseIntervention, triggerLokiIntervention } from "../services/api/interventionClient";
+import {
+  triggerMuseIntervention,
+  triggerLokiIntervention,
+} from "../services/api/interventionClient";
 
 const response = await triggerMuseIntervention(context, cursorPosition, docVersion);
 ```
