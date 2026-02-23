@@ -156,6 +156,7 @@ class Task:
 @dataclass
 class Lock:
     """Lock domain entity placeholder."""
+
     id: object
     task_id: object
     user_id: object
@@ -166,6 +167,7 @@ class Lock:
 @dataclass
 class Intervention:
     """Intervention domain entity placeholder."""
+
     id: object
     task_id: object
     mode: str
