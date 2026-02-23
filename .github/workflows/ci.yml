@@ -82,7 +82,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./client
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Run ESLint
         working-directory: ./client
@@ -144,7 +144,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ./client
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Run TypeScript type check
         working-directory: ./client
