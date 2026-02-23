@@ -20,6 +20,7 @@ import {
 } from "@milkdown/preset-commonmark";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { hasMark, getHeadingLevel, isInBulletList } from "../../utils/prosemirror-helpers";
+import { FLOATING_UI_Z_INDEX } from "../../config/animation";
 
 /**
  * Props for FloatingToolbar component.
@@ -39,7 +40,7 @@ export interface FloatingToolbarProps {
 
   /**
    * Optional: Custom z-index for stacking context.
-   * Default: 1000 (above editor content, below modals)
+   * Default: FLOATING_UI_Z_INDEX (above editor content, below modals)
    */
   zIndex?: number;
 }
@@ -54,7 +55,7 @@ export interface FloatingToolbarProps {
 export const FloatingToolbar: FC<FloatingToolbarProps> = ({
   editor,
   className = "",
-  zIndex = 1000,
+  zIndex = FLOATING_UI_Z_INDEX,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);

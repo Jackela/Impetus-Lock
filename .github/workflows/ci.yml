@@ -70,8 +70,7 @@ jobs:
 
       - name: Run import-linter (Architecture Guard)
         working-directory: ./server
-        run: poetry run lint-imports || echo "⚠️ import-linter skipped (empty layers)"
-        continue-on-error: true
+        run: poetry run lint-imports
 
       # Frontend lint
       - name: Set up Node.js
