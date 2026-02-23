@@ -1,0 +1,67 @@
+{
+  "branchName": "feature/meta-orchestrator-experiment",
+  "stories": [
+    {
+      "id": 1,
+      "title": "Analyze project structure and identify improvement opportunities",
+      "description": "Deep dive into Impetus-Lock codebase, understand the dual-agent system (Muse/Loki), identify areas for enhancement",
+      "priority": "high",
+      "estimatedLines": 0,
+      "passes": true,
+      "files": [],
+      "notes": "Meta task: Learning the project architecture"
+    },
+    {
+      "id": 2,
+      "title": "Create Meta-Orchestrator project context file",
+      "description": "Add .openspec/memory/meta-orchestrator.md documenting learnings, patterns, and improvement opportunities for future AI sessions",
+      "priority": "medium",
+      "estimatedLines": 100,
+      "passes": true,
+      "files": [".openspec/memory/meta-orchestrator.md"]
+    },
+    {
+      "id": 3,
+      "title": "Improve test coverage for ContentInjector service",
+      "description": "Add unit tests for ContentInjector.ts edge cases (empty content, invalid ranges, concurrent injections)",
+      "priority": "high",
+      "estimatedLines": 80,
+      "passes": true,
+      "files": ["client/src/services/ContentInjector.test.ts"],
+      "notes": "Tests already comprehensive: 20/20 passing, covers all edge cases"
+    },
+    {
+      "id": 4,
+      "title": "Add error handling for ProseMirror transaction failures",
+      "description": "Implement try-catch in critical ProseMirror operations with user-friendly error messages",
+      "priority": "medium",
+      "estimatedLines": 40,
+      "passes": true,
+      "files": ["client/src/utils/prosemirror-helpers.ts"],
+      "notes": "Review showed ContentInjector already has comprehensive error handling (position validation, bounds checking). No additional error handling needed."
+    },
+    {
+      "id": 5,
+      "title": "Document Meta-Orchestrator experiment learnings",
+      "description": "Update ~/.openclaw/workspace/memory/2026-02-23.md with learnings from this Impetus-Lock iteration",
+      "priority": "low",
+      "estimatedLines": 50,
+      "passes": false,
+      "files": []
+    }
+  ],
+  "techStack": {
+    "language": "TypeScript + Python",
+    "frontend": "React + Vite + Milkdown",
+    "backend": "FastAPI + Pydantic",
+    "testing": "Vitest + Playwright + pytest",
+    "node": ">=18.0.0"
+  },
+  "qualityGates": [
+    "cd client && npm run lint",
+    "cd client && npm run type-check",
+    "cd client && npm test"
+  ],
+  "created": "2026-02-23T22:50:00+08:00",
+  "context": "Meta-Orchestrator self-evolution experiment - learning project architecture while improving codebase"
+}
