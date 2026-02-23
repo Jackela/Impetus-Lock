@@ -43,6 +43,7 @@ import { getLastSentenceRange } from "../../utils/textRange";
 import {
   DEFAULT_FEEDBACK_DURATION_MS,
   REJECTION_FEEDBACK_DURATION_MS,
+  MANUAL_ANIMATION_DURATION_MS,
   LOKI_COOLDOWN_MS,
   DELETE_RESET_DELAY_MS,
   EDITOR_RETRY_INTERVAL_MS,
@@ -325,7 +326,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
       // Safety check: Don't delete if document is too small
       if (docSize < MIN_DOCUMENT_SIZE_FOR_DELETE) {
-        showSensoryAction(AIActionType.ERROR, { duration: MANUAL_ANIMATION_DURATION }); // Show error feedback
+        showSensoryAction(AIActionType.ERROR, { duration: MANUAL_ANIMATION_DURATION_MS }); // Show error feedback
         return;
       }
 
@@ -339,7 +340,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const to = docSize;
 
       if (from < to && to <= docSize) {
-        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION });
+        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION_MS });
         deleteContentAtAnchor(view, { type: "range", from, to });
       }
     } finally {
@@ -409,20 +410,20 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onTriggerProcessed?.();
 
       if (externalTrigger === AIActionType.PROVOKE && mode === "muse") {
-        showSensoryAction(AIActionType.REWRITE, { duration: MANUAL_ANIMATION_DURATION });
+        showSensoryAction(AIActionType.REWRITE, { duration: MANUAL_ANIMATION_DURATION_MS });
         handleStuckRef.current();
         const timer = setTimeout(() => {
           isProcessingTriggerRef.current = false;
-        }, MANUAL_ANIMATION_DURATION);
+        }, MANUAL_ANIMATION_DURATION_MS);
         return () => clearTimeout(timer);
       }
 
       if (externalTrigger === AIActionType.DELETE) {
-        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION });
+        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION_MS });
         handleManualDeleteRef.current();
         const timer = setTimeout(() => {
           isProcessingTriggerRef.current = false;
-        }, MANUAL_ANIMATION_DURATION);
+        }, MANUAL_ANIMATION_DURATION_MS);
         return () => clearTimeout(timer);
       }
 
@@ -433,10 +434,10 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         return;
       }
 
-      showSensoryAction(externalTrigger, { duration: MANUAL_ANIMATION_DURATION });
+      showSensoryAction(externalTrigger, { duration: MANUAL_ANIMATION_DURATION_MS });
       const timer = setTimeout(() => {
         isProcessingTriggerRef.current = false;
-      }, MANUAL_ANIMATION_DURATION);
+      }, MANUAL_ANIMATION_DURATION_MS);
 
       return () => {
         clearTimeout(timer);
