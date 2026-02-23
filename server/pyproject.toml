@@ -100,63 +100,58 @@ match = "(?!test_).*\\.py"
 # Skip __init__.py files
 match_dir = "(?!tests).*"
 
-# import-linter configuration temporarily disabled for MVP phase
-# Will be re-enabled when P1 features are implemented and layers are populated
-#
-# Reason: Empty layers (domain/, application/, infrastructure/) cause
-# import-linter to fail with "Module does not exist" even with __init__.py
-# and placeholder.py files.
-#
-# This will be uncommented when implementing P1 (un-deletable task lock):
-# - server/server/domain/entities/task.py
-# - server/server/application/use_cases/lock_task.py
-# - server/server/infrastructure/persistence/task_repository.py
-#
-# For now, architecture enforcement relies on:
-# - Frontend: ESLint no-restricted-imports (active in CI)
-# - Backend: Manual code review using ARCHITECTURE_GUARDS.md
-# - Post-MVP: Re-enable import-linter contracts
+# import-linter configuration - ENABLED
+# Enforces Clean Architecture dependency rules
+# See ARCHITECTURE_GUARDS.md for detailed documentation
 
-# [tool.importlinter]
-# root_package = "server"
-# include_external_packages = true
-#
-# [[tool.importlinter.contracts]]
-# name = "Clean Architecture: Domain Layer Independence"
-# type = "forbidden"
-# source_modules = ["server.server.domain"]
-# forbidden_modules = [
-#     "server.server.application",
-#     "server.server.infrastructure",
-#     "server.server.api",
-# ]
-#
-# [[tool.importlinter.contracts]]
-# name = "Clean Architecture: Application Layer Dependencies"
-# type = "forbidden"
-# source_modules = ["server.server.application"]
-# forbidden_modules = [
-#     "server.server.api",
-#     "server.server.infrastructure",
-# ]
-#
-# [[tool.importlinter.contracts]]
-# name = "Clean Architecture: Infrastructure Layer Dependencies"
-# type = "forbidden"
-# source_modules = ["server.server.infrastructure"]
-# forbidden_modules = [
-#     "server.server.api",
-# ]
-#
+[tool.importlinter]
+root_package = "server"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture: Domain Layer Independence"
+type = "forbidden"
+source_modules = ["server.domain"]
+forbidden_modules = [
+    "server.application",
+    "server.infrastructure",
+    "server.api",
+]
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture: Application Layer Dependencies"
+type = "forbidden"
+source_modules = ["server.application"]
+forbidden_modules = [
+    "server.api",
+    "server.infrastructure",
+]
+# Observability imports are temporarily allowed for practical logging needs
+# TODO: Refactor to use domain-layer observability abstractions (see domain/observability.py)
+ignore_imports = [
+    "server.application.services.intervention_service -> server.infrastructure.observability.metrics",
+    "server.application.services.intervention_service -> server.infrastructure.observability.tracing",
+]
+
+[[tool.importlinter.contracts]]
+name = "Clean Architecture: Infrastructure Layer Dependencies"
+type = "forbidden"
+source_modules = ["server.infrastructure"]
+forbidden_modules = [
+    "server.api",
+]
+
+# Note: layers contract temporarily disabled due to import-linter behavior
+# The forbidden contracts above provide sufficient architecture enforcement
 # [[tool.importlinter.contracts]]
 # name = "Clean Architecture: API Layer (Outermost)"
 # type = "layers"
 # layers = [
-#     "server.server.api",
-#     "server.server.application",
-#     "server.server.domain",
+#     "api",
+#     "application",
+#     "domain",
 # ]
-# containers = ["server.server"]
+# containers = ["server"]
 
 [build-system]
 requires = ["poetry-core"]

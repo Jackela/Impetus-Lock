@@ -17,6 +17,7 @@
 
 import { useEffect, useRef, useCallback, useState, useLayoutEffect } from "react";
 import type { AgentMode } from "../types/mode";
+import { LOKI_MIN_INTERVAL_MS, LOKI_MAX_INTERVAL_MS } from "../config/animation";
 
 /**
  * Configuration options for useLokiTimer hook.
@@ -40,9 +41,9 @@ export interface UseLokiTimerReturn {
   manualTrigger: () => void;
 }
 
-// Timer configuration constants
-const MIN_INTERVAL = 30000; // 30 seconds
-const MAX_INTERVAL = 120000; // 120 seconds
+// Timer configuration constants (from centralized config)
+const MIN_INTERVAL = LOKI_MIN_INTERVAL_MS;
+const MAX_INTERVAL = LOKI_MAX_INTERVAL_MS;
 
 /**
  * Generate cryptographically random interval between min and max.

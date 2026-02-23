@@ -32,6 +32,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { MUSE_IDLE_TIMEOUT_MS, MUSE_STUCK_TIMEOUT_MS } from "../config/animation";
 
 /**
  * Writing state values.
@@ -89,9 +90,10 @@ export interface UseWritingStateReturn {
 
 /**
  * Time thresholds for state transitions (milliseconds).
+ * Imported from centralized animation config.
  */
-const IDLE_THRESHOLD = 5000; // 5 seconds
-const STUCK_THRESHOLD = 60000; // 60 seconds
+const IDLE_THRESHOLD = MUSE_IDLE_TIMEOUT_MS;
+const STUCK_THRESHOLD = MUSE_STUCK_TIMEOUT_MS;
 
 /**
  * Hook for detecting writing state (WRITING → IDLE → STUCK).

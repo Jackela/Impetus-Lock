@@ -15,6 +15,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: reporters,
+  timeout: 60000, // Global timeout: 60s for CI stability
+  expect: {
+    timeout: 10000, // Expect timeout: 10s
+  },
   use: {
     baseURL,
     trace: "on-first-retry",

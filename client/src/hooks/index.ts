@@ -13,3 +13,6 @@ export { useCreateTask } from "./useCreateTask";
 export { useErrorHandler } from "./useErrorHandler";
 export { useToast } from "./useToast";
 export { useFocusTrap } from "./useFocusTrap";
+export { useEditorInitialization } from "./useEditorInitialization";
+export { useSensoryFeedback } from "./useSensoryFeedback";
+export { useManualDelete } from "./useManualDelete";

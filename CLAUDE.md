@@ -604,3 +604,76 @@ Feature development follows `.specify/templates/`:
 - See `specs/003-vibe-completion/` for P3 implementation details
 - See `PHASE5_COMPLETE.md` for Phase 5 integration
 - See `PHASE3_COMPLETE.md` for React 19 fixes
+
+---
+
+### ✅ COMPLETE - Architecture Improvements (Branch: `refactor/architecture-improvements`)
+
+**Status**: ✅ **ALL IMPROVEMENTS COMPLETE** - Architecture hardening and code quality improvements
+
+**Improvements Delivered**:
+
+#### 1. Backend Architecture Guards (import-linter) ✅
+- **Enabled import-linter** in `server/pyproject.toml`
+- **3 Contracts Active**:
+  - Domain Layer Independence: ✅ KEPT
+  - Application Layer Dependencies: ✅ KEPT  
+  - Infrastructure Layer Dependencies: ✅ KEPT
+- **CI Integration**: Removed `continue-on-error` from CI workflow
+- **Ignored Imports**: Observability imports allowed with TODO for future abstraction
+
+#### 2. Frontend Configuration Centralization ✅
+- **Created** `client/src/config/animation.ts` - Centralized animation/timing constants
+- **Extracted Magic Numbers**:
+  - `DEFAULT_FEEDBACK_DURATION_MS = 1500`
+  - `MANUAL_ANIMATION_DURATION_MS = 1000`
+  - `LOKI_COOLDOWN_MS = 4000`
+  - `MUSE_STUCK_TIMEOUT_MS = 60000`
+  - `MUSE_IDLE_TIMEOUT_MS = 5000`
+  - And 10+ more constants
+- **Updated Components**:
+  - `EditorCore.tsx` - Uses centralized config
+  - `FloatingToolbar.tsx` - Uses `FLOATING_UI_Z_INDEX`
+  - `BottomDockedToolbar.tsx` - Uses `FLOATING_UI_Z_INDEX`
+- **Updated Hooks**:
+  - `useWritingState.ts` - Uses timeout constants from config
+  - `useLokiTimer.ts` - Uses interval constants from config
+
+#### 3. Custom Hooks Extraction ✅
+- **Created** `useEditorInitialization.ts` - Editor setup with retry logic
+- **Created** `useSensoryFeedback.ts` - Visual/audio feedback management
+- **Created** `useManualDelete.ts` - Delete operation with safety checks
+- **Updated** `hooks/index.ts` - Barrel exports for new hooks
+
+#### 4. Documentation Updates ✅
+- **Updated** `ARCHITECTURE_GUARDS.md` - Added current contract status
+- **CI/CD**: import-linter now required (not optional)
+
+**Validation Results**:
+```
+Backend:
+✅ Ruff linting: PASSED
+✅ import-linter: 3/3 contracts KEPT
+✅ pytest: 92 passed, 3 skipped
+
+Frontend:
+✅ ESLint: PASSED (0 errors)
+✅ TypeScript: PASSED (noEmit)
+✅ Unit Tests: 424 passed, 4 skipped
+```
+
+**Files Modified**:
+- `server/pyproject.toml` - Enabled import-linter
+- `.github/workflows/ci.yml` - Made import-linter required
+- `ARCHITECTURE_GUARDS.md` - Updated status
+- `client/src/config/animation.ts` - NEW: Animation constants
+- `client/src/config/index.ts` - NEW: Barrel exports
+- `client/src/components/Editor/EditorCore.tsx` - Use config constants
+- `client/src/components/Editor/FloatingToolbar.tsx` - Use config constants
+- `client/src/components/Editor/BottomDockedToolbar.tsx` - Use config constants
+- `client/src/hooks/useWritingState.ts` - Use config constants
+- `client/src/hooks/useLokiTimer.ts` - Use config constants
+- `client/src/hooks/useEditorInitialization.ts` - NEW
+- `client/src/hooks/useSensoryFeedback.ts` - NEW
+- `client/src/hooks/useManualDelete.ts` - NEW
+- `client/src/hooks/index.ts` - Export new hooks

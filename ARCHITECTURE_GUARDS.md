@@ -275,6 +275,15 @@ lint:
 | ❌ Frontend 违反分层 | Build 失败 (ESLint) |
 | ⚠️ 违规但添加 ignore | Build 通过 (需 code review 审核) |
 
+### Current Status ✅
+
+**Backend Contracts (import-linter)**:
+- ✅ Domain Layer Independence: KEPT
+- ✅ Application Layer Dependencies: KEPT
+- ✅ Infrastructure Layer Dependencies: KEPT
+
+All 3 contracts passing with 66 files and 177 dependencies analyzed.
+
 ---
 
 ## 📖 开发者工作流

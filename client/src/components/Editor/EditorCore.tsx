@@ -40,6 +40,19 @@ import { extractLockAttributes } from "../../utils/prosemirror-helpers";
 import type { AgentSource } from "../../types/mode";
 import { createLogger } from "../../utils/logger";
 import { getLastSentenceRange } from "../../utils/textRange";
+import {
+  DEFAULT_FEEDBACK_DURATION_MS,
+  REJECTION_FEEDBACK_DURATION_MS,
+  MANUAL_ANIMATION_DURATION_MS,
+  LOKI_COOLDOWN_MS,
+  DELETE_RESET_DELAY_MS,
+  EDITOR_RETRY_INTERVAL_MS,
+  EDITOR_MAX_RETRY_ATTEMPTS,
+  MIN_DOCUMENT_SIZE_FOR_DELETE,
+  DEFAULT_DELETE_PERCENTAGE,
+  MAX_DELETE_LENGTH,
+  MIN_DELETE_LENGTH,
+} from "../../config/animation";
 
 const EMPTY_CONTEXT_FALLBACK = "用户尚未输入内容，但请求 Muse 提供一个开场提示来打破空白。";
 
@@ -138,7 +151,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   // Track if delete is currently executing (separate from trigger processing)
   const isDeletingRef = useRef(false);
 
-  const DEFAULT_FEEDBACK_DURATION = 1500;
+  // Animation durations from centralized config
   const actionResetTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const showSensoryAction = useCallback(
@@ -149,7 +162,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         onComplete?: () => void;
       }
     ) => {
-      const duration = options?.duration ?? DEFAULT_FEEDBACK_DURATION;
+      const duration = options?.duration ?? DEFAULT_FEEDBACK_DURATION_MS;
       setCurrentAction(action);
       if (actionResetTimerRef.current) {
         clearTimeout(actionResetTimerRef.current);
@@ -312,26 +325,29 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const docSize = state.doc.content.size;
 
       // Safety check: Don't delete if document is too small
-      if (docSize < 50) {
-        showSensoryAction(AIActionType.ERROR, { duration: MANUAL_ANIMATION_DURATION }); // Show error feedback
+      if (docSize < MIN_DOCUMENT_SIZE_FOR_DELETE) {
+        showSensoryAction(AIActionType.ERROR, { duration: MANUAL_ANIMATION_DURATION_MS }); // Show error feedback
         return;
       }
 
       // Find the last paragraph or sentence (approximately 50-100 characters)
       // Simple heuristic: delete last 20% of document or minimum 50 chars
-      const deleteLength = Math.min(Math.max(Math.floor(docSize * 0.2), 50), 200);
+      const deleteLength = Math.min(
+        Math.max(Math.floor(docSize * DEFAULT_DELETE_PERCENTAGE), MIN_DELETE_LENGTH),
+        MAX_DELETE_LENGTH
+      );
       const from = Math.max(0, docSize - deleteLength);
       const to = docSize;
 
       if (from < to && to <= docSize) {
-        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION });
+        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION_MS });
         deleteContentAtAnchor(view, { type: "range", from, to });
       }
     } finally {
       // Reset flag after a delay to allow React to process state updates
       setTimeout(() => {
         isDeletingRef.current = false;
-      }, 1500); // 1.5 seconds to ensure all state updates complete
+      }, DELETE_RESET_DELAY_MS); // Ensure all state updates complete
     }
   }, [showSensoryAction]);
 
@@ -367,7 +383,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   }, [onInput]);
 
   const lastLokiTriggerRef = useRef(0);
-  const LOKI_COOLDOWN_MS = 4000;
+  // Loki cooldown from centralized config
 
   // Random chaos timer (Loki mode)
   useLokiTimer({
@@ -375,7 +391,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     onTrigger: handleLokiTrigger,
   });
 
-  const MANUAL_ANIMATION_DURATION = 1000;
+  // Manual animation duration from centralized config
 
   // Handle external manual trigger
   useEffect(() => {
@@ -394,20 +410,20 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onTriggerProcessed?.();
 
       if (externalTrigger === AIActionType.PROVOKE && mode === "muse") {
-        showSensoryAction(AIActionType.REWRITE, { duration: MANUAL_ANIMATION_DURATION });
+        showSensoryAction(AIActionType.REWRITE, { duration: MANUAL_ANIMATION_DURATION_MS });
         handleStuckRef.current();
         const timer = setTimeout(() => {
           isProcessingTriggerRef.current = false;
-        }, MANUAL_ANIMATION_DURATION);
+        }, MANUAL_ANIMATION_DURATION_MS);
         return () => clearTimeout(timer);
       }
 
       if (externalTrigger === AIActionType.DELETE) {
-        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION });
+        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION_MS });
         handleManualDeleteRef.current();
         const timer = setTimeout(() => {
           isProcessingTriggerRef.current = false;
-        }, MANUAL_ANIMATION_DURATION);
+        }, MANUAL_ANIMATION_DURATION_MS);
         return () => clearTimeout(timer);
       }
 
@@ -418,10 +434,10 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         return;
       }
 
-      showSensoryAction(externalTrigger, { duration: MANUAL_ANIMATION_DURATION });
+      showSensoryAction(externalTrigger, { duration: MANUAL_ANIMATION_DURATION_MS });
       const timer = setTimeout(() => {
         isProcessingTriggerRef.current = false;
-      }, MANUAL_ANIMATION_DURATION);
+      }, MANUAL_ANIMATION_DURATION_MS);
 
       return () => {
         clearTimeout(timer);
@@ -464,7 +480,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
     let mounted = true;
     let attempts = 0;
-    const maxAttempts = 50; // 5 seconds total (50 * 100ms)
+    const maxAttempts = EDITOR_MAX_RETRY_ATTEMPTS;
 
     const initEditor = async () => {
       const getEditor = getRef.current;
@@ -477,7 +493,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       let editor = getEditor();
 
       while (!editor && mounted && attempts < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, EDITOR_RETRY_INTERVAL_MS));
         editor = getEditor();
         attempts++;
       }
@@ -538,7 +554,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
         const lockFilter = createLockTransactionFilter(lockManager, () => {
-          showSensoryAction(AIActionType.REJECT, { duration: 1000 });
+          showSensoryAction(AIActionType.REJECT, { duration: REJECTION_FEEDBACK_DURATION_MS });
         });
 
         const existingFilter = view.props.filterTransaction;

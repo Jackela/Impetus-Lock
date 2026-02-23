@@ -15,3 +15,17 @@ export { isAgentMode, AGENT_MODE_META } from "./mode";
 
 // Re-export API types from generated file
 export type { components } from "./api.generated";
+
+// Error types
+export {
+  AppError,
+  APIError,
+  NetworkError,
+  ValidationError,
+  EditorError,
+  LockError,
+  isAppError,
+  isAPIError,
+  getErrorMessage,
+  getErrorCode,
+} from "./errors";
