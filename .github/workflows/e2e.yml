@@ -130,7 +130,9 @@ jobs:
 
       - name: Run Playwright E2E tests
         working-directory: ${{ github.workspace }}/client
-        run: npm run test:e2e
+        env:
+          VITE_API_URL: http://127.0.0.1:8000
+        run: npm run test:e2e:ci
 
       - name: Upload Playwright report
         if: ${{ env.ACT != 'true' && always() }}
