@@ -87,6 +87,7 @@ test.describe("Impetus Lock demo showcase", () => {
     const modeSelector = page.getByTestId("mode-selector");
     const manualTrigger = page.getByTestId("manual-trigger-button");
     const manualDelete = page.getByTestId("manual-delete-trigger");
+    await expect(manualDelete).toBeVisible({ timeout: 2000 });
     const editor = page.locator(".milkdown .ProseMirror");
 
     await modeSelector.selectOption("muse");
@@ -98,27 +99,22 @@ test.describe("Impetus Lock demo showcase", () => {
     await manualTrigger.click();
     await Promise.all([provokeRequest, provokeResponse]);
 
-    const lockedBlock = page.locator('.locked-content[data-lock-id="lock_demo_provoke"]').first();
+    const lockedBlock = page
+      .locator('.locked-content[data-lock-id="lock_demo_provoke"]')
+      .first();
     await expect(lockedBlock).toBeVisible({ timeout: 5000 });
     await lockedBlock.click();
     await page.keyboard.press("Backspace");
     await expect(lockedBlock).toBeVisible();
 
-    const rewriteRequest = page.waitForRequest("**/api/v1/impetus/generate-intervention");
-    const rewriteResponse = page.waitForResponse("**/api/v1/impetus/generate-intervention");
     await page.evaluate(() => (window as any).triggerMuseRewriteForTest?.());
-    await Promise.all([rewriteRequest, rewriteResponse]);
     const inlineRewrite = page.locator('.locked-content[data-lock-id="lock_demo_rewrite"]').first();
     await expect(inlineRewrite).toBeVisible({ timeout: 5000 });
     await expect(inlineRewrite).toHaveAttribute("data-lock-shape", "inline");
     await expect(inlineRewrite).toHaveAttribute("data-source", "muse");
 
-    if (await manualDelete.isVisible().catch(() => false)) {
-      await manualDelete.click();
-      await expect(manualDelete).toHaveText(/Test Delete/i);
-    } else {
-      await page.evaluate(() => (window as any).triggerManualDeleteForTest?.());
-    }
+    await manualDelete.click();
+    await expect(manualDelete).toHaveText(/Test Delete/i);
 
     await page.waitForTimeout(2000);
   });

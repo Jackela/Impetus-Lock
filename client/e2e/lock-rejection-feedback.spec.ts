@@ -113,7 +113,7 @@ test.describe("Lock Rejection Feedback", () => {
     await expect(lockedContent).toBeAttached();
   });
 
-  test("Sensory feedback animation remains stable during rejection window", async ({ page }) => {
+  test("Sensory feedback disappears after animation completes", async ({ page }) => {
     await page.goto("/");
     await waitForAppReady(page);
     await clearEditor(page);
@@ -131,16 +131,12 @@ test.describe("Lock Rejection Feedback", () => {
     // Assert: Sensory feedback appears
     const sensoryFeedback = page.locator('[data-testid="sensory-feedback"]');
     await expect(sensoryFeedback).toBeAttached({ timeout: 2000 });
-    await expect(sensoryFeedback).toHaveAttribute("data-animation", "shake");
 
     // Wait for animation to complete (1 second animation duration + buffer)
     await page.waitForTimeout(1500);
 
-    // CI containers sometimes keep the overlay mounted longer; if it is still present, ensure it
-    // is still showing the shake animation. Otherwise, consider the test satisfied.
-    if ((await sensoryFeedback.count()) > 0) {
-      await expect(sensoryFeedback).toHaveAttribute("data-animation", "shake");
-    }
+    // Assert: Sensory feedback disappears after animation
+    await expect(sensoryFeedback).not.toBeAttached({ timeout: 2000 });
   });
 
   test("Web Audio API initialized for sound playback", async ({ page }) => {

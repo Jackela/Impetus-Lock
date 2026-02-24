@@ -37,10 +37,9 @@ test("app has mode selector and manual trigger", async ({ page }) => {
   // Verify default mode is "off"
   await expect(modeSelector).toHaveValue("off");
 
-  // Manual trigger button is visible but disabled until Muse mode
+  // Manual trigger button only renders in Muse mode
   const manualTrigger = page.getByTestId("manual-trigger-button");
-  await expect(manualTrigger).toBeVisible({ timeout: 5000 });
-  await expect(manualTrigger).toBeDisabled();
+  await expect(manualTrigger).toHaveCount(0);
 
   await modeSelector.selectOption("muse");
   await expect(manualTrigger).toBeVisible({ timeout: 5000 });

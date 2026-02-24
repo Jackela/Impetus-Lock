@@ -1,27 +1,16 @@
-import { render, screen, act } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import App from "../App";
 
-const renderApp = async () => {
-  let utils: ReturnType<typeof render> | undefined;
-  await act(async () => {
-    utils = render(<App />);
-  });
-  if (!utils) {
-    throw new Error("Failed to render App");
-  }
-  return utils;
-};
-
 describe("App - Responsive Container", () => {
-  it("should render without crashing", async () => {
-    await renderApp();
+  it("should render without crashing", () => {
+    render(<App />);
     const appElement = screen.getByRole("main", { hidden: true }) || document.querySelector(".app");
     expect(appElement).toBeTruthy();
   });
 
-  it("should have max-width: 100% to prevent horizontal overflow", async () => {
-    const { container } = await renderApp();
+  it("should have max-width: 100% to prevent horizontal overflow", () => {
+    const { container } = render(<App />);
     const appElement = container.querySelector(".app");
 
     if (appElement) {
@@ -32,8 +21,8 @@ describe("App - Responsive Container", () => {
     }
   });
 
-  it("should use flexbox layout for responsive stacking", async () => {
-    const { container } = await renderApp();
+  it("should use flexbox layout for responsive stacking", () => {
+    const { container } = render(<App />);
     const appElement = container.querySelector(".app");
 
     if (appElement) {

@@ -58,10 +58,6 @@ export function ManualTriggerButton({
    * @see FR-006 (ERROR audio feedback)
    */
   const handleClick = async () => {
-    if (!isMuseMode || !isMuseEnabled) {
-      return;
-    }
-
     // Trigger PROVOKE feedback immediately (don't wait for API)
     // This provides instant user feedback even if backend is unavailable
     onTrigger?.(AIActionType.PROVOKE);
@@ -97,18 +93,19 @@ export function ManualTriggerButton({
 
   return (
     <>
-      <button
-        onClick={handleClick}
-        disabled={!isMuseEnabled}
-        aria-label="I'm stuck! Trigger AI assistance"
-        data-testid="manual-trigger-button"
-        className="manual-trigger-button"
-        data-loading={isLoading}
-        data-mode={mode}
-      >
-        {isLoading && <span className="button-spinner"></span>}
-        <span>{isLoading ? "Thinking..." : "I'm stuck!"}</span>
-      </button>
+      {isMuseMode && (
+        <button
+          onClick={handleClick}
+          disabled={!isMuseEnabled}
+          aria-label="I'm stuck! Trigger AI assistance"
+          data-testid="manual-trigger-button"
+          className="manual-trigger-button"
+          data-loading={isLoading}
+        >
+          {isLoading && <span className="button-spinner"></span>}
+          <span>{isLoading ? "Thinking..." : "I'm stuck!"}</span>
+        </button>
+      )}
 
       {isLokiMode && (
         <button

@@ -1,15 +1,14 @@
 import { test, expect } from "@playwright/test";
 import { waitForReactHydration } from "./helpers/waitHelpers";
-import { mockInterventionSuccess } from "./helpers/interventionMocks";
 
 /**
  * Test manual trigger button click and sensory feedback
  */
 test.describe("Manual Trigger Click Test", () => {
   test("clicking manual trigger shows sensory feedback", async ({ page }) => {
+    // Navigate to app
     await page.goto("http://localhost:5173");
     await waitForReactHydration(page);
-    await mockInterventionSuccess(page);
 
     console.log("✅ App loaded");
 
@@ -19,7 +18,7 @@ test.describe("Manual Trigger Click Test", () => {
     console.log("✅ Switched to Muse mode");
 
     // Find manual trigger button
-    const manualButton = page.getByTestId("manual-trigger-button");
+    const manualButton = page.locator('button:has-text("I\'m stuck")');
     await expect(manualButton).toBeEnabled({ timeout: 2000 });
     console.log("✅ Manual button is enabled");
 

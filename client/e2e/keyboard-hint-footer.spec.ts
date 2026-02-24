@@ -10,17 +10,7 @@
  * @see openspec/changes/chrome-audit-polish/design.md#5-welcome-modal-hierarchy
  */
 
-import { test, expect, type Page } from "@playwright/test";
-
-async function ensureWelcomeModalVisible(page: Page) {
-  const modal = page.locator(".welcome-modal");
-  if (await modal.isVisible()) {
-    return;
-  }
-
-  await page.keyboard.press("?");
-  await expect(modal).toBeVisible({ timeout: 5000 });
-}
+import { test, expect } from "@playwright/test";
 
 test.describe("Keyboard Hint Footer", () => {
   test("Footer displays keyboard hint", async ({ page }) => {
@@ -55,8 +45,11 @@ test.describe("Keyboard Hint Footer", () => {
   test("Clicking footer does not trigger modal", async ({ page }) => {
     await page.goto("/");
 
-    await ensureWelcomeModalVisible(page);
-    await page.locator(".welcome-button").click();
+    // Dismiss welcome modal if visible
+    const welcomeButton = page.locator(".welcome-button");
+    if (await welcomeButton.isVisible()) {
+      await welcomeButton.click();
+    }
 
     // Wait for modal to disappear
     await expect(page.locator(".welcome-modal")).not.toBeVisible();
@@ -71,7 +64,7 @@ test.describe("Keyboard Hint Footer", () => {
   test("Keyboard shortcut still works independently", async ({ page }) => {
     await page.goto("/");
 
-    await ensureWelcomeModalVisible(page);
+    // Dismiss welcome modal
     await page.locator(".welcome-button").click();
 
     // Wait for modal to disappear

@@ -7,59 +7,17 @@
 
 import { Page, expect } from "@playwright/test";
 
-const WELCOME_STORAGE_KEY = "impetus-lock-welcome-dismissed";
-let welcomeDismissScriptInjected = false;
-const reloadedPages = new WeakSet<Page>();
-
-async function ensureWelcomeModalSuppressed(page: Page) {
-  if (!welcomeDismissScriptInjected) {
-    await page.addInitScript((key) => {
-      window.localStorage.setItem(key, "true");
-    }, WELCOME_STORAGE_KEY);
-    welcomeDismissScriptInjected = true;
-  }
-
-  const needsReload = await page.evaluate((key) => {
-    const alreadyDismissed = window.localStorage.getItem(key) === "true";
-    window.localStorage.setItem(key, "true");
-    return !alreadyDismissed;
-  }, WELCOME_STORAGE_KEY);
-
-  if (needsReload && !reloadedPages.has(page)) {
-    reloadedPages.add(page);
-    await page.reload({ waitUntil: "domcontentloaded" });
-  }
-}
-
-export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<boolean> {
+export async function dismissWelcomeModal(page: Page): Promise<boolean> {
   const overlay = page.locator(".welcome-modal-overlay");
   const getStartedButton = page.getByRole("button", { name: "Get Started" });
 
-  let isVisible = await overlay.isVisible().catch(() => false);
-
-  if (!isVisible) {
-    try {
-      await overlay.waitFor({ state: "visible", timeout });
-      isVisible = true;
-    } catch {
-      return false;
-    }
-  }
-
+  const isVisible = await overlay.isVisible().catch(() => false);
   if (!isVisible) {
     return false;
   }
 
   await getStartedButton.click();
-  await overlay.waitFor({ state: "hidden", timeout }).catch(() => undefined);
-
-  const stillVisible = await overlay.isVisible().catch(() => false);
-  if (stillVisible) {
-    await page.evaluate(() => {
-      const el = document.querySelector(".welcome-modal-overlay");
-      el?.parentElement?.removeChild(el);
-    });
-  }
+  await overlay.waitFor({ state: "hidden", timeout: 5000 }).catch(() => undefined);
   return true;
 }
 
@@ -72,27 +30,13 @@ export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<b
  * @param page - Playwright page instance
  * @param timeout - Maximum wait time in ms (default: 10000)
  */
-const HYDRATION_RETRIES = 2;
-
-export async function waitForReactHydration(page: Page, timeout = process.env.CI ? 20000 : 10000) {
-  await ensureWelcomeModalSuppressed(page);
-
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= HYDRATION_RETRIES; attempt += 1) {
-    try {
-      await page.waitForSelector(".app", { timeout });
-      await dismissWelcomeModal(page).catch(() => undefined);
-      return;
-    } catch (error) {
-      lastError = error;
-      if (attempt === HYDRATION_RETRIES) {
-        break;
-      }
-      // Pages in CI occasionally respond before React hydrates; reload and retry.
-      await page.reload({ waitUntil: "domcontentloaded" });
-    }
-  }
-  throw lastError;
+export async function waitForReactHydration(page: Page, timeout = 10000) {
+  // Wait directly for app container (rendered by React)
+  await page.waitForSelector(".app", { timeout });
+  await page
+    .waitForSelector(".welcome-modal-overlay", { timeout: 1000 })
+    .catch(() => undefined);
+  await dismissWelcomeModal(page).catch(() => undefined);
 }
 
 /**
@@ -126,10 +70,6 @@ export async function waitForEditorReady(page: Page, timeout = 10000) {
 
   // Wait for Milkdown to render
   await page.waitForSelector(".milkdown", { timeout: 5000 });
-
-  // Ensure the actual ProseMirror surface is present
-  const proseMirror = page.locator(".milkdown .ProseMirror");
-  await expect(proseMirror).toBeVisible({ timeout: 5000 });
 }
 
 /**

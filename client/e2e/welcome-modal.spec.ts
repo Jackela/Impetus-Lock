@@ -1,16 +1,5 @@
 import { test, expect } from "@playwright/test";
 
-test.use({
-  storageState: {
-    origins: [
-      {
-        origin: "http://localhost:5173",
-        localStorage: [],
-      },
-    ],
-  },
-});
-
 /**
  * E2E Tests: Welcome Modal - New User Onboarding
  *
@@ -20,12 +9,17 @@ test.use({
 
 test.describe("Welcome Modal - New User Experience", () => {
   test.beforeEach(async ({ page }) => {
+    // Navigate to page and clear localStorage BEFORE React hydrates
+    // This ensures the WelcomeModal component sees a clean slate
     await page.goto("/");
-    await page.waitForLoadState("domcontentloaded");
-    await page.evaluate(() => {
-      localStorage.removeItem("impetus-lock-welcome-dismissed");
-    });
+
+    // Clear localStorage immediately
+    await page.evaluate(() => localStorage.clear());
+
+    // Reload to trigger modal with fresh localStorage state
     await page.reload();
+
+    // Wait for React to hydrate
     await page.waitForLoadState("domcontentloaded");
   });
 
@@ -233,11 +227,6 @@ test.describe("Welcome Modal - New User Experience", () => {
 });
 
 test.describe("Welcome Modal - Integration with App", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForLoadState("domcontentloaded");
-  });
-
   test("should allow user to interact with app after dismissing modal", async ({ page }) => {
     await page.goto("/");
 

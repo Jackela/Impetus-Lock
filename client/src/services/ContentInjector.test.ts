@@ -443,7 +443,9 @@ describe("ContentInjector - Edge Cases", () => {
 
     injectLockedBlock(view, longContent, "lock_long", anchor);
 
-    expect(view.state.schema.text).toHaveBeenCalledWith(`${longContent} <!-- lock:lock_long -->`);
+    expect(view.state.schema.text).toHaveBeenCalledWith(
+      `${longContent} <!-- lock:lock_long -->`
+    );
     expect(view.dispatch).toHaveBeenCalled();
   });
 

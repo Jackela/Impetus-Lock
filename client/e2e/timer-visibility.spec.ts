@@ -20,21 +20,19 @@ test.describe("Timer Indicator Visibility", () => {
 
     // Wait for timer element to be in DOM (even at 0% width)
     const timer = page.locator(".timer-indicator");
-    const timerFill = page.locator(".timer-indicator__fill");
     await timer.waitFor({ state: "attached", timeout: 5000 });
-    await timerFill.waitFor({ state: "attached", timeout: 5000 });
 
-    // Verify ARIA attributes live on the fill element
-    await expect(timerFill).toHaveAttribute("role", "progressbar");
-    await expect(timerFill).toHaveAttribute("aria-label", /STUCK timer: \d+ seconds remaining/);
-    await expect(timerFill).toHaveAttribute("aria-valuemin", "0");
-    await expect(timerFill).toHaveAttribute("aria-valuemax", "100");
+    // Verify ARIA attributes (even at 0% width, ARIA should be present)
+    await expect(timer).toHaveAttribute("role", "progressbar");
+    await expect(timer).toHaveAttribute("aria-label", /STUCK timer: \d+ seconds remaining/);
+    await expect(timer).toHaveAttribute("aria-valuemin", "0");
+    await expect(timer).toHaveAttribute("aria-valuemax", "100");
 
     // Wait for timer to start progressing (1-2 seconds for non-zero width)
     await page.waitForTimeout(2000);
 
     // Verify timer has some progress (should be > 0% after 2 seconds)
-    const ariaValue = await timerFill.getAttribute("aria-valuenow");
+    const ariaValue = await timer.getAttribute("aria-valuenow");
     expect(parseFloat(ariaValue || "0")).toBeGreaterThan(0);
   });
 
@@ -43,22 +41,20 @@ test.describe("Timer Indicator Visibility", () => {
     await page.selectOption("#mode-selector", "muse");
 
     const timer = page.locator(".timer-indicator");
-    const timerFill = page.locator(".timer-indicator__fill");
     await timer.waitFor({ state: "attached", timeout: 5000 });
-    await timerFill.waitFor({ state: "attached", timeout: 5000 });
 
     // Wait 1 second for initial progress
     await page.waitForTimeout(1000);
 
     // Get initial aria-valuenow
-    const initialProgress = await timerFill.getAttribute("aria-valuenow");
+    const initialProgress = await timer.getAttribute("aria-valuenow");
     const initialValue = parseFloat(initialProgress || "0");
 
     // Wait 3 more seconds (timer updates every 1 second)
     await page.waitForTimeout(3000);
 
     // Get updated aria-valuenow
-    const updatedProgress = await timerFill.getAttribute("aria-valuenow");
+    const updatedProgress = await timer.getAttribute("aria-valuenow");
     const updatedValue = parseFloat(updatedProgress || "0");
 
     // Progress should have increased
@@ -70,22 +66,20 @@ test.describe("Timer Indicator Visibility", () => {
     await page.selectOption("#mode-selector", "muse");
 
     const timer = page.locator(".timer-indicator");
-    const timerFill = page.locator(".timer-indicator__fill");
     await timer.waitFor({ state: "attached", timeout: 5000 });
-    await timerFill.waitFor({ state: "attached", timeout: 5000 });
 
     // Wait 3 seconds for initial progress
     await page.waitForTimeout(3000);
 
     // Get first measurement
-    const progress1 = await timerFill.getAttribute("aria-valuenow");
+    const progress1 = await timer.getAttribute("aria-valuenow");
     const value1 = parseFloat(progress1 || "0");
 
     // Wait 3 more seconds
     await page.waitForTimeout(3000);
 
     // Get second measurement
-    const progress2 = await timerFill.getAttribute("aria-valuenow");
+    const progress2 = await timer.getAttribute("aria-valuenow");
     const value2 = parseFloat(progress2 || "0");
 
     // Progress should have increased (validates timer is working)
@@ -99,9 +93,9 @@ test.describe("Timer Indicator Visibility", () => {
   test("Timer hidden in Off mode", async ({ page }) => {
     await page.goto("/");
 
-    // Verify timer is not attached in Off mode (default)
+    // Verify timer is not visible in Off mode (default)
     const timer = page.locator(".timer-indicator");
-    await expect(timer).not.toBeAttached();
+    await expect(timer).not.toBeVisible();
   });
 
   test("Timer hidden in Loki mode", async ({ page }) => {
@@ -110,9 +104,9 @@ test.describe("Timer Indicator Visibility", () => {
     // Select Loki mode
     await page.selectOption("#mode-selector", "loki");
 
-    // Verify timer is not attached
+    // Verify timer is not visible
     const timer = page.locator(".timer-indicator");
-    await expect(timer).not.toBeAttached();
+    await expect(timer).not.toBeVisible();
   });
 
   test("Timer visibility toggles when switching modes", async ({ page }) => {
@@ -147,22 +141,18 @@ test.describe("Timer Indicator Visibility", () => {
     await page.selectOption("#mode-selector", "muse");
 
     const timer = page.locator(".timer-indicator");
-    const timerFill = page.locator(".timer-indicator__fill");
     await timer.waitFor({ state: "attached", timeout: 5000 });
-    await timerFill.waitFor({ state: "attached", timeout: 5000 });
 
     // Get initial ARIA label (within first second)
-    const initialLabel = await timerFill.getAttribute("aria-label");
-    expect(initialLabel).not.toBeNull();
-    expect(initialLabel || "").toMatch(/STUCK timer: (60|59|58|57|56|55) seconds remaining/);
+    const initialLabel = await timer.getAttribute("aria-label");
+    expect(initialLabel).toMatch(/STUCK timer: (60|59|58|57|56|55) seconds remaining/);
 
     // Wait 5 seconds for timer to update
     await page.waitForTimeout(5000);
 
     // Get updated ARIA label
-    const updatedLabel = await timerFill.getAttribute("aria-label");
-    expect(updatedLabel).not.toBeNull();
-    expect(updatedLabel || "").toMatch(/STUCK timer: (55|54|53|52|51|50) seconds remaining/);
+    const updatedLabel = await timer.getAttribute("aria-label");
+    expect(updatedLabel).toMatch(/STUCK timer: (55|54|53|52|51|50) seconds remaining/);
 
     // Labels should be different (time has progressed)
     expect(updatedLabel).not.toBe(initialLabel);

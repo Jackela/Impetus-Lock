@@ -51,7 +51,6 @@ declare global {
     editorInstance?: Editor;
     insertLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
     rewriteLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
-    triggerManualDeleteForTest?: () => void;
   }
 }
 
@@ -126,39 +125,6 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   // Track if delete is currently executing (separate from trigger processing)
   const isDeletingRef = useRef(false);
 
-  const DEFAULT_FEEDBACK_DURATION = 1500;
-  const actionResetTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const showSensoryAction = useCallback(
-    (
-      action: AIActionType,
-      options?: {
-        duration?: number;
-        onComplete?: () => void;
-      }
-    ) => {
-      const duration = options?.duration ?? DEFAULT_FEEDBACK_DURATION;
-      setCurrentAction(action);
-      if (actionResetTimerRef.current) {
-        clearTimeout(actionResetTimerRef.current);
-      }
-      actionResetTimerRef.current = setTimeout(() => {
-        setCurrentAction(null);
-        actionResetTimerRef.current = null;
-        options?.onComplete?.();
-      }, duration);
-    },
-    []
-  );
-
-  useEffect(() => {
-    return () => {
-      if (actionResetTimerRef.current) {
-        clearTimeout(actionResetTimerRef.current);
-      }
-    };
-  }, [showSensoryAction]);
-
   // Handle STUCK state intervention (Muse mode)
   const handleStuck = useCallback(async () => {
     const editor = editorRef.current;
@@ -187,7 +153,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const resolvedSource: AgentSource = response.source ?? "muse";
 
       if (response.action === "rewrite" && response.content && response.lock_id) {
-        showSensoryAction(AIActionType.REWRITE);
+        setCurrentAction(AIActionType.REWRITE);
         const resolvedAnchor =
           response.anchor && response.anchor.type === "range" ? response.anchor : museAnchor;
         rewriteRangeWithLock({
@@ -200,7 +166,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         registerLockWithDecorations(response.lock_id, resolvedSource, "inline");
       } else if (response.action === "provoke" && response.content && response.lock_id) {
         // Muse provoke now enforces rewrite semantics for the most recent sentence
-        showSensoryAction(AIActionType.REWRITE);
+        setCurrentAction(AIActionType.REWRITE);
         rewriteRangeWithLock({
           view,
           content: response.content,
@@ -210,7 +176,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         });
         registerLockWithDecorations(response.lock_id, resolvedSource, "inline");
       } else if (response.action === "delete") {
-        showSensoryAction(AIActionType.DELETE);
+        setCurrentAction(AIActionType.DELETE);
         if (response.anchor && response.anchor.type === "range") {
           deleteContentAtAnchor(view, response.anchor);
         } else {
@@ -220,9 +186,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     } catch (error) {
       logger.error("Muse intervention failed", error);
       onInterventionError?.(error as Error);
-      showSensoryAction(AIActionType.ERROR);
+      setCurrentAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, onInterventionError, showSensoryAction]);
+  }, [cursorPosition, docVersion, onInterventionError]);
 
   // Handle Loki chaos trigger
   const handleLokiTrigger = useCallback(async () => {
@@ -239,7 +205,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const resolvedSource: AgentSource = response.source ?? "loki";
 
       if (response.action === "provoke" && response.content && response.lock_id) {
-        showSensoryAction(AIActionType.PROVOKE);
+        setCurrentAction(AIActionType.PROVOKE);
         injectLockedBlock(
           view,
           response.content,
@@ -250,7 +216,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         lockManager.applyLock(response.lock_id, { source: resolvedSource, shape: "block" });
         refreshLockDecorations(view);
       } else if (response.action === "rewrite" && response.content && response.lock_id) {
-        showSensoryAction(AIActionType.REWRITE);
+        setCurrentAction(AIActionType.REWRITE);
         rewriteRangeWithLock({
           view,
           content: response.content,
@@ -261,7 +227,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         lockManager.applyLock(response.lock_id, { source: resolvedSource, shape: "inline" });
         refreshLockDecorations(view);
       } else if (response.action === "delete") {
-        showSensoryAction(AIActionType.DELETE);
+        setCurrentAction(AIActionType.DELETE);
         if (response.anchor && response.anchor.type === "range") {
           deleteContentAtAnchor(view, response.anchor);
         } else {
@@ -271,9 +237,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     } catch (error) {
       logger.error("Loki intervention failed", error);
       onInterventionError?.(error as Error);
-      showSensoryAction(AIActionType.ERROR);
+      setCurrentAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, onInterventionError, showSensoryAction]);
+  }, [cursorPosition, docVersion, onInterventionError]);
 
   // Handle manual delete trigger (Test Delete button)
   const handleManualDelete = useCallback(() => {
@@ -295,7 +261,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
       // Safety check: Don't delete if document is too small
       if (docSize < 50) {
-        showSensoryAction(AIActionType.ERROR, { duration: MANUAL_ANIMATION_DURATION }); // Show error feedback
+        setCurrentAction(AIActionType.ERROR); // Show error feedback
         return;
       }
 
@@ -306,7 +272,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const to = docSize;
 
       if (from < to && to <= docSize) {
-        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION });
+        setCurrentAction(AIActionType.DELETE);
         deleteContentAtAnchor(view, { type: "range", from, to });
       }
     } finally {
@@ -315,7 +281,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         isDeletingRef.current = false;
       }, 1500); // 1.5 seconds to ensure all state updates complete
     }
-  }, [showSensoryAction]);
+  }, []);
 
   // Stable refs for callback functions to avoid useEffect re-runs
   const handleStuckRef = useRef(handleStuck);
@@ -373,18 +339,20 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onTriggerProcessed?.();
 
       if (externalTrigger === AIActionType.PROVOKE && mode === "muse") {
-        showSensoryAction(AIActionType.REWRITE, { duration: MANUAL_ANIMATION_DURATION });
+        setCurrentAction(AIActionType.REWRITE);
         handleStuckRef.current();
         const timer = setTimeout(() => {
+          setCurrentAction(null);
           isProcessingTriggerRef.current = false;
         }, MANUAL_ANIMATION_DURATION);
         return () => clearTimeout(timer);
       }
 
       if (externalTrigger === AIActionType.DELETE) {
-        showSensoryAction(AIActionType.DELETE, { duration: MANUAL_ANIMATION_DURATION });
+        setCurrentAction(AIActionType.DELETE);
         handleManualDeleteRef.current();
         const timer = setTimeout(() => {
+          setCurrentAction(null);
           isProcessingTriggerRef.current = false;
         }, MANUAL_ANIMATION_DURATION);
         return () => clearTimeout(timer);
@@ -397,8 +365,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         return;
       }
 
-      showSensoryAction(externalTrigger, { duration: MANUAL_ANIMATION_DURATION });
+      setCurrentAction(externalTrigger);
       const timer = setTimeout(() => {
+        setCurrentAction(null);
         isProcessingTriggerRef.current = false;
       }, MANUAL_ANIMATION_DURATION);
 
@@ -410,7 +379,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       lastProcessedTriggerRef.current = null;
       isProcessingTriggerRef.current = false;
     }
-  }, [externalTrigger, onTriggerProcessed, mode, showSensoryAction]);
+  }, [externalTrigger, onTriggerProcessed, mode]);
 
   // Initialize editor - don't use loading state
   const { get } = useEditor((root) => {
@@ -501,7 +470,6 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         };
 
         testWindow.triggerMuseRewriteForTest = () => handleStuckRef.current?.();
-        testWindow.triggerManualDeleteForTest = () => handleManualDeleteRef.current?.();
       }
 
       // T008: Apply lock content decorations for visual styling FIRST
@@ -514,7 +482,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
         const lockFilter = createLockTransactionFilter(lockManager, () => {
-          showSensoryAction(AIActionType.REJECT, { duration: 1000 });
+          setCurrentAction(AIActionType.REJECT);
+          // Auto-clear after animation completes (matches ANIMATION_DURATION from useAnimationController)
+          setTimeout(() => setCurrentAction(null), 1000);
         });
 
         const existingFilter = view.props.filterTransaction;
@@ -587,7 +557,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     return () => {
       mounted = false;
     };
-  }, [initialContent, showSensoryAction]);
+  }, [initialContent]);
 
   // Always render immediately - no loading state
   return (

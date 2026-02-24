@@ -1,6 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
 import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
-import { mockInterventionSuccess, mockInterventionFailure } from "./helpers/interventionMocks";
 
 async function enableMuseMode(page: Page) {
   const modeSelector = page.getByTestId("mode-selector");
@@ -67,15 +66,13 @@ test.describe("Manual Trigger Button", () => {
     await expect(buttonLocator()).toBeEnabled();
     await expect(buttonLocator()).toHaveCSS("opacity", "1");
 
-    // Test 2: Loki mode - button should remain visible but disabled
+    // Test 2: Loki mode - button should not be rendered
     await modeSelector.selectOption("loki");
-    await expect(buttonLocator()).toBeVisible();
-    await expect(buttonLocator()).toBeDisabled();
+    await expect(buttonLocator()).toHaveCount(0);
 
-    // Test 3: Off mode - button should remain visible but disabled
+    // Test 3: Off mode - button should not be rendered
     await modeSelector.selectOption("off");
-    await expect(buttonLocator()).toBeVisible();
-    await expect(buttonLocator()).toBeDisabled();
+    await expect(buttonLocator()).toHaveCount(0);
   });
 
   /**
@@ -92,8 +89,6 @@ test.describe("Manual Trigger Button", () => {
    * **Blocker**: Mode selector and API integration pending
    */
   test("manual trigger calls Provoke API and shows feedback", async ({ page }) => {
-    await mockInterventionSuccess(page);
-
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
 
@@ -146,7 +141,13 @@ test.describe("Manual Trigger Button", () => {
    */
   test("manual trigger API failure shows error feedback", async ({ page }) => {
     // Mock API to return error response BEFORE navigation
-    await mockInterventionFailure(page);
+    await page.route("**/api/v1/impetus/generate-intervention", (route) => {
+      route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Internal server error" }),
+      });
+    });
 
     // Wait for app header to be ready
     await page.waitForSelector(".app-header", { timeout: 5000 });
