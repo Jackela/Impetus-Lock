@@ -22,6 +22,12 @@ from sqlalchemy.ext.asyncio import (
 from server.infrastructure.persistence.models import Base
 
 
+def get_settings():
+    """Get settings instance (lazy import to avoid circular dependency)."""
+    from server.infrastructure.config import get_settings as _get_settings
+    return _get_settings()
+
+
 class DatabaseManager:
     """Database connection and session management.
 

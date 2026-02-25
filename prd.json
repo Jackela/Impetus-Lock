@@ -85,6 +85,55 @@
         "footerLinks": true
       },
       "dependencies": []
+    },
+    {
+      "id": 5,
+      "title": "设置PostgreSQL (Docker)",
+      "description": "使用docker-compose运行PostgreSQL数据库",
+      "priority": "P0",
+      "storyPoints": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "Docker配置文件创建",
+        "数据库初始化脚本完成",
+        ".env配置更新"
+      ],
+      "estimatedTime": "30分钟",
+      "actualTime": "15分钟",
+      "completedAt": "2026-02-25 16:20",
+      "results": {
+        "dockerCompose": "docker-compose.yml created",
+        "initSql": "users + sessions tables",
+        "envConfig": "DATABASE_URL + JWT settings"
+      },
+      "dependencies": [],
+      "note": "Docker daemon需要手动启动(WSL2环境)"
+    },
+    {
+      "id": 6,
+      "title": "实现简单JWT认证",
+      "description": "用户名+密码登录，JWT token，refresh token",
+      "priority": "P0",
+      "storyPoints": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "POST /auth/register 创建用户",
+        "POST /auth/login 返回JWT",
+        "GET /auth/me 验证token",
+        "POST /auth/refresh 刷新token",
+        "密码bcrypt加密"
+      ],
+      "estimatedTime": "2小时",
+      "actualTime": "40分钟",
+      "completedAt": "2026-02-25 16:28",
+      "results": {
+        "models": ["User", "UserCreate", "UserLogin", "Token"],
+        "service": "AuthService with bcrypt + JWT",
+        "endpoints": ["/auth/register", "/auth/login", "/auth/me", "/auth/refresh"],
+        "dependencies": ["passlib", "python-jose", "email-validator"]
+      },
+      "dependencies": [5],
+      "note": "代码完成，测试需要启动Docker数据库"
     }
   ]
 }

@@ -12,7 +12,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from server.api.routes import export, intervention, metrics, tasks
+from server.api.routes import auth, export, intervention, metrics, tasks
 from server.infrastructure.logging.json_formatter import setup_json_logging
 from server.infrastructure.persistence.database import init_database
 
@@ -60,6 +60,7 @@ app.add_middleware(
 )
 
 # Include API routes
+app.include_router(auth.router)
 app.include_router(intervention.router)
 app.include_router(tasks.router)
 app.include_router(metrics.router)
