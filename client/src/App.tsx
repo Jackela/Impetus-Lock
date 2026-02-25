@@ -23,7 +23,7 @@ import { OnboardingChecklist } from "./components/OnboardingChecklist";
  *
  * Production editor with full lock enforcement and AI intervention system.
  */
-function App() {
+export function App() {
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
   const [showWelcome, setShowWelcome] = useState(false);

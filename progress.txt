@@ -48,3 +48,17 @@ Story 3 更新: 使用纯Python实现（不依赖Pandoc）
   - 8个测试全部通过
 - 耗时: 35分钟 (含调试)
 - 发现模式: 纯Python库优先, 避免系统依赖
+
+[2026-02-25 13:18-13:25] Story 4 完成: 法律文档页面 ✅
+- 实现: TermsOfService + PrivacyPolicy
+- 路由: react-router-dom (/terms, /privacy)
+- GDPR合规: 明确说明用户权利、数据处理、法律依据
+- 构建成功: frontend build ✓
+- 耗时: 25分钟
+
+[2026-02-25 13:18] Sprint 1 总结
+- 完成stories: 4/4 (100%)
+- Tests: 71/71 passing
+- Commits: 3 (准备提交第4个)
+- 总耗时: ~40分钟
+- 阻塞任务: TASK-003到TASK-011都需要基础设施（PostgreSQL/AWS）
