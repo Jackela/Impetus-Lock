@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/api/routes/auth.py
+# hypothesis_version: 6.151.9
+
+[1800, '/auth', '/login', '/me', '/refresh', '/register', 'Bearer', 'Invalid token type', 'User not found', 'WWW-Authenticate', 'access', 'access_token', 'auth', 'bearer', 'expires_in', 'refresh', 'refresh_token', 'sub', 'token_type', 'type']

@@ -123,7 +123,7 @@ async def login(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": AuthService.access_token_expire_minutes * 60,
+        "expires_in": 1800,  # 30 minutes
     }
 
 
@@ -185,5 +185,5 @@ async def refresh_token(
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": AuthService.access_token_expire_minutes * 60,
+        "expires_in": 1800,  # 30 minutes
     }

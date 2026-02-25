@@ -9,9 +9,11 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from sqlalchemy import Column, String, DateTime, Boolean
+from sqlalchemy import UUID as SQL_UUID
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
-from server.infrastructure.persistence.database import Base
+# Use the same Base as other models
+from server.infrastructure.persistence.models import Base
 
 
 class User(Base):
@@ -22,7 +24,7 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(SQL_UUID, primary_key=True, default=uuid4)
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)

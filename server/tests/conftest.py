@@ -1,23 +1,51 @@
-"""Pytest configuration and fixtures for test suite.
+"""
+Test database configuration override for SQLite.
 
-Sets up test environment with mocked OpenAI API key.
+Uses SQLite for testing without requiring Docker/PostgreSQL.
 """
 
-import os
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.pool import StaticPool
 
-import pytest
+# Import User model only for auth tests
+from server.domain.models.user import User  # Import User model
+from sqlalchemy import MetaData
 
-# Ensure defaults exist before modules under test import ProviderRegistry
-os.environ.setdefault("OPENAI_API_KEY", "test-key-for-unit-tests")
-os.environ.setdefault("LLM_DEFAULT_PROVIDER", "openai")
-os.environ.setdefault("LLM_ALLOW_DEBUG_PROVIDER", "0")
+# Test database URL (SQLite in-memory)
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
+# Create async engine with StaticPool for SQLite
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    echo=False,
+    poolclass=StaticPool,
+    connect_args={"check_same_thread": False}
+)
+
+# Session factory
+TestSessionLocal = async_sessionmaker(
+    bind=test_engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment() -> None:
-    """Set up test environment variables.
+async def init_test_db():
+    """Initialize test database tables (User only for auth tests)."""
+    async with test_engine.begin() as conn:
+        # Only create User table, not all tables (SQLite doesn't support ARRAY)
+        await conn.run_sync(User.__table__.create, checkfirst=True)
 
-    Auto-used for all tests to ensure OPENAI_API_KEY is available.
-    Uses a dummy key since actual LLM calls are mocked in tests.
-    """
-    os.environ["OPENAI_API_KEY"] = "test-key-for-unit-tests"
+
+async def get_test_session() -> AsyncSession:
+    """Get test database session."""
+    async with TestSessionLocal() as session:
+        yield session
+
+
+# Cleanup function
+async def cleanup_test_db():
+    """Drop all tables after tests."""
+    async with test_engine.begin() as conn:
+        await conn.run_sync(User.__table__.drop, checkfirst=True)

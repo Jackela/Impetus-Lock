@@ -9,40 +9,19 @@ Tests cover:
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
 
 from server.api.main import app
-from server.infrastructure.persistence.database import Base, get_session
-from server.domain.models.user import User
-from server.application.services.auth_service import AuthService
+from server.infrastructure.persistence.database import get_session
+from tests.conftest import init_test_db, get_test_session, cleanup_test_db
 
-# Test database setup
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Override dependency
+app.dependency_overrides[get_session] = get_test_session
 
-engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-async def override_get_session():
-    """Override database session for testing."""
-    async with async_session_maker() as session:
-        yield session
-
-
-app.dependency_overrides[get_session] = override_get_session
+# Initialize database synchronously before tests
+import asyncio
+asyncio.run(init_test_db())
 
 client = TestClient(app)
-
-
-@pytest.fixture(autouse=True)
-async def setup_db():
-    """Create tables before each test."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
 
 
 class TestAuthEndpoints:

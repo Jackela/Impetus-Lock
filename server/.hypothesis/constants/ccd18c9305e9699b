@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/application/services/auth_service.py
+# hypothesis_version: 6.151.9
+
+['Email already exists', 'access', 'auto', 'bcrypt', 'exp', 'refresh', 'sub', 'type']

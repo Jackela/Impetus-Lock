@@ -98,10 +98,15 @@ class AuthService:
             raise ValueError("Email already exists")
 
         # Create user
+        try:
+            password_hash = AuthService.hash_password(user_create.password)
+        except Exception as e:
+            raise ValueError(f"Password hashing failed: {str(e)}")
+
         user = User(
             username=user_create.username,
             email=user_create.email,
-            password_hash=AuthService.hash_password(user_create.password),
+            password_hash=password_hash,
         )
         db.add(user)
         await db.commit()
@@ -125,8 +130,19 @@ class AuthService:
         return user
 
     @staticmethod
-    async def get_user_by_id(db: AsyncSession, user_id: UUID) -> Optional[User]:
-        """Get user by ID."""
+    async def get_user_by_id(db: AsyncSession, user_id) -> Optional[User]:
+        """Get user by ID.
+
+        Args:
+            user_id: Can be UUID or string (from JWT token)
+        """
+        # Convert string to UUID if needed
+        if isinstance(user_id, str):
+            try:
+                user_id = UUID(user_id)
+            except ValueError:
+                return None
+
         result = await db.execute(
             select(User).where(User.id == user_id)
         )
