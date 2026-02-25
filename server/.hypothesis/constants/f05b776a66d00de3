@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/application/services/intervention_service.py
+# hypothesis_version: 6.151.9
+
+[503, 1000, 'delete', 'from', 'llm.call', 'llm.mode', 'llm.model', 'llm.provider', 'llm_not_configured', 'model', 'muse', 'pos', 'provider_name', 'provoke', 'range', 'rewrite', 'to', 'type']

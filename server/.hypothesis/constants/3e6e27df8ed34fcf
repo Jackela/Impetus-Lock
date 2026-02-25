@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/domain/models/anchor.py
+# hypothesis_version: 6.151.9
+
+['from', 'lock_id', 'pos', 'range']

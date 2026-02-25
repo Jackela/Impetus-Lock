@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/infrastructure/llm/provider_registry.py
+# hypothesis_version: 6.151.9
+
+[0.0, 0.7, 0.8, 0.9, 422, 503, '1', 'ANTHROPIC_API_KEY', 'ANTHROPIC_MODEL', 'DEBUG_API_KEY', 'DEBUG_MODEL', 'DEBUG_TEMPERATURE', 'GEMINI_API_KEY', 'GEMINI_MODEL', 'GEMINI_TEMPERATURE', 'LLM_DEFAULT_PROVIDER', 'OPENAI_API_KEY', 'OPENAI_MODEL', 'OPENAI_TEMPERATURE', 'TESTING', 'anthropic', 'debug', 'debug-model', 'gemini', 'gpt-4o-mini', 'llm_not_configured', 'on', 'openai', 'true', 'unsupported_provider', 'yes']

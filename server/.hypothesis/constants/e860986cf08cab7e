@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/infrastructure/persistence/models.py
+# hypothesis_version: 6.151.9
+
+[100, 'CASCADE', 'TaskModel', 'action_id', 'actions', 'actions_mode_check', 'actions_type_check', 'all, delete-orphan', 'created_at', 'idx_actions_mode', 'idx_actions_task_id', 'idx_tasks_created_at', 'idx_tasks_updated_at', 'intervention_actions', 'issued_at', 'length(content) > 0', 'mode', 'task', 'task_id', 'tasks', 'tasks.id', 'updated_at', '{}']

@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/infrastructure/llm/instructor_provider.py
+# hypothesis_version: 6.151.9
+
+[0.9, 401, 402, 502, 'content', 'gpt-4o-mini', 'invalid_api_key', 'llm_api_error', 'openai', 'quota_exceeded', 'role', 'system', 'user']

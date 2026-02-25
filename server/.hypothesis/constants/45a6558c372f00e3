@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/infrastructure/logging/json_formatter.py
+# hypothesis_version: 6.151.9
+
+['INFO', '_', 'args', 'exc_info', 'exc_text', 'level', 'logger', 'message', 'msg', 'stack_info', 'timestamp']

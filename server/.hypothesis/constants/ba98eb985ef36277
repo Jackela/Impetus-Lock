@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/infrastructure/observability/tracing.py
+# hypothesis_version: 6.151.9
+
+[',', '=', 'OTEL_SERVICE_NAME', 'impetus-lock', 'service.name']

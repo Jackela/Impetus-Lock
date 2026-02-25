@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/infrastructure/llm/gemini_provider.py
+# hypothesis_version: 6.151.9
+
+[0.7, 401, 402, 403, 429, 502, 512, 'Gemini API error.', 'application/json', 'candidates', 'content', 'contents', 'gemini', 'generationConfig', 'invalid_api_key', 'invalid_response', 'llm_api_error', 'maxOutputTokens', 'parts', 'quota_exceeded', 'responseMimeType', 'role', 'systemInstruction', 'temperature', 'text', 'user']

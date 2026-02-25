@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/infrastructure/llm/anthropic_provider.py
+# hypothesis_version: 6.151.9
+
+[0.8, 400, 401, 402, 502, 'anthropic', 'content', 'invalid_api_key', 'invalid_response', 'llm_api_error', 'quota_exceeded', 'role', 'text', 'type', 'user']

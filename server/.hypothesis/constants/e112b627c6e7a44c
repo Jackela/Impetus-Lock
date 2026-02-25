@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/api/routes/tasks.py
+# hypothesis_version: 6.151.9
+
+[100, 201, 204, 404, 409, 500, 100000, '/', '/api/v1/tasks', '/{task_id}', '/{task_id}/actions', 'List of lock IDs', 'TaskResponse', 'Updated task content', 'tasks']

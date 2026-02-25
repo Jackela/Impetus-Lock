@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/api/routes/metrics.py
+# hypothesis_version: 6.151.9
+
+[404, '/metrics', 'Metrics disabled']
