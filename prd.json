@@ -39,6 +39,29 @@
         "warnings": 100,
         "executionTime": "10.51s"
       }
+    },
+    {
+      "id": 3,
+      "title": "实现PDF导出功能",
+      "description": "添加reportlab支持，实现\"Export as PDF\"按钮",
+      "priority": "P0",
+      "storyPoints": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "Export as PDF按钮触发下载",
+        "PDF格式正确（页边距、字体）",
+        "支持10k+字的文档"
+      ],
+      "estimatedTime": "3天",
+      "actualTime": "35分钟",
+      "completedAt": "2026-02-25 13:17",
+      "results": {
+        "testsPassed": 8,
+        "testsFailed": 0,
+        "library": "reportlab (pure Python)",
+        "note": "避免系统依赖，使用reportlab代替weasyprint"
+      },
+      "dependencies": []
     }
   ]
 }

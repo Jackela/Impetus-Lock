@@ -22,6 +22,9 @@ opentelemetry-sdk = "^1.27.0"
 opentelemetry-exporter-otlp-proto-http = "^1.27.0"
 prometheus-client = "^0.23.1"
 python-dotenv = "^1.0.1"
+markdown = "^3.7"
+python-docx = "^1.1.0"
+reportlab = "^4.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"

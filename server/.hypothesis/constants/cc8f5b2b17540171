@@ -1,0 +1,4 @@
+# file: /home/k7407/Impetus-Lock/server/server/api/routes/export.py
+# hypothesis_version: 6.151.9
+
+[500, 503, '/docx', '/export', '/pdf', 'Content-Disposition', 'Document', 'application/pdf', 'export', 'pdf']
