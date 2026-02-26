@@ -228,11 +228,16 @@ test.describe("Welcome Modal - New User Experience", () => {
 
 test.describe("Welcome Modal - Integration with App", () => {
   test("should allow user to interact with app after dismissing modal", async ({ page }) => {
-    // Wait for modal to appear after beforeEach cleared localStorage
+    // Clear localStorage and reload to trigger modal
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Wait for modal to appear
     const modal = page.locator(".welcome-modal");
     await expect(modal).toBeVisible({ timeout: 10000 });
 
-    // Wait for and dismiss modal
+    // Dismiss modal
     await page.locator(".welcome-button").click();
     await expect(modal).not.toBeVisible();
 
@@ -250,7 +255,12 @@ test.describe("Welcome Modal - Integration with App", () => {
   });
 
   test("should not block app functionality while modal is open", async ({ page }) => {
-    // Wait for modal to appear after beforeEach cleared localStorage
+    // Clear localStorage and reload to trigger modal
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // Wait for modal to appear
     const modal = page.locator(".welcome-modal");
     await expect(modal).toBeVisible({ timeout: 10000 });
 
