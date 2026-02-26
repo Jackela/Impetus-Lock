@@ -13,6 +13,14 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Keyboard Hint Footer", () => {
+  test.beforeEach(async ({ page }) => {
+    // Clear localStorage to ensure welcome modal appears
+    await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForLoadState("domcontentloaded");
+  });
+
   test("Footer displays keyboard hint", async ({ page }) => {
     await page.goto("/");
 

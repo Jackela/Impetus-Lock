@@ -228,11 +228,13 @@ test.describe("Welcome Modal - New User Experience", () => {
 
 test.describe("Welcome Modal - Integration with App", () => {
   test("should allow user to interact with app after dismissing modal", async ({ page }) => {
-    await page.goto("/");
+    // Modal should appear after beforeEach cleared localStorage
+    const modal = page.locator(".welcome-modal");
+    await expect(modal).toBeVisible({ timeout: 5000 });
 
     // Wait for and dismiss modal
     await page.locator(".welcome-button").click();
-    await expect(page.locator(".welcome-modal")).not.toBeVisible();
+    await expect(modal).not.toBeVisible();
 
     // Verify user can interact with mode selector
     const modeSelector = page.locator("#mode-selector");
@@ -248,10 +250,9 @@ test.describe("Welcome Modal - Integration with App", () => {
   });
 
   test("should not block app functionality while modal is open", async ({ page }) => {
-    await page.goto("/");
-
-    // Modal should be visible
-    await expect(page.locator(".welcome-modal")).toBeVisible();
+    // Modal should appear after beforeEach cleared localStorage
+    const modal = page.locator(".welcome-modal");
+    await expect(modal).toBeVisible({ timeout: 5000 });
 
     // But app elements should still be present in DOM (just behind overlay)
     await expect(page.locator("#mode-selector")).toBeInViewport({ ratio: 0 }); // May be covered
