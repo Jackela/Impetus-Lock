@@ -13,7 +13,7 @@ Expected Initial State: All tests FAIL (endpoint not implemented yet)
 from collections.abc import Generator
 from contextlib import ExitStack
 from datetime import UTC, datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -44,13 +44,15 @@ REQUIRED_HEADERS = {
 }
 
 
-@pytest.fixture(autouse=True)
-def mock_llm_provider() -> Generator[None, None, None]:
+@pytest.fixture
+def mock_llm_provider() -> Generator[MagicMock, None, None]:
     """Mock the LLM provider to avoid real API calls in tests.
 
     Returns a mock InterventionResponse for Muse mode requests.
-    Auto-used for all tests in this module.
+    Returns the mock provider object so tests can modify return_value.
     """
+    from unittest.mock import MagicMock
+    
     mock_response = InterventionResponse(
         action="provoke",
         content="他打开门，看到...",
@@ -61,22 +63,32 @@ def mock_llm_provider() -> Generator[None, None, None]:
         source="muse",
     )
 
+    # Create mock provider object
+    mock_provider = MagicMock()
+    mock_provider.generate_intervention.return_value = mock_response
+
     mock_paths = [
         "server.infrastructure.llm.instructor_provider.InstructorLLMProvider.generate_intervention",
         "server.infrastructure.llm.anthropic_provider.AnthropicLLMProvider.generate_intervention",
         "server.infrastructure.llm.gemini_provider.GeminiLLMProvider.generate_intervention",
+        "server.api.routes.intervention._provider_registry.get_provider",
     ]
 
     with ExitStack() as stack:
         for mock_path in mock_paths:
-            stack.enter_context(patch(mock_path, return_value=mock_response))
-        yield
+            if mock_path.endswith("get_provider"):
+                # Return mock provider object
+                stack.enter_context(patch(mock_path, return_value=mock_provider))
+            else:
+                # Return mock response directly
+                stack.enter_context(patch(mock_path, return_value=mock_response))
+        yield mock_provider
 
 
 class TestInterventionAPIContract:
     """Test suite for intervention API contract compliance."""
 
-    def test_muse_mode_returns_provoke_with_lock_id(self) -> None:
+    def test_muse_mode_returns_provoke_with_lock_id(self, mock_llm_provider: None) -> None:
         """Test that Muse mode request returns provoke action with lock_id.
 
         Muse mode should ONLY return provoke actions (no delete).
@@ -106,7 +118,7 @@ class TestInterventionAPIContract:
         assert "issued_at" in data
         assert data["source"] == "muse"
 
-    def test_loki_mode_returns_provoke_or_delete(self) -> None:
+    def test_loki_mode_returns_provoke_or_delete(self, mock_llm_provider: None) -> None:
         """Test that Loki mode request returns provoke/delete/rewrite action.
 
         Loki mode can return:
@@ -141,7 +153,7 @@ class TestInterventionAPIContract:
         assert "issued_at" in data
         assert data["source"] in ["muse", "loki"]
 
-    def test_idempotency_same_key_returns_cached_response(self) -> None:
+    def test_idempotency_same_key_returns_cached_response(self, mock_llm_provider: None) -> None:
         """Test that requests with same Idempotency-Key return cached response.
 
         Within 15s window, duplicate requests should return identical response.
@@ -174,7 +186,7 @@ class TestInterventionAPIContract:
         if data1["action"] == "provoke":
             assert data1["lock_id"] == data2["lock_id"]
 
-    def test_invalid_mode_returns_422(self) -> None:
+    def test_invalid_mode_returns_422(self, mock_llm_provider: None) -> None:
         """Test that invalid mode value returns 422 Unprocessable Entity.
 
         Mode must be 'muse' or 'loki' only.
@@ -194,7 +206,7 @@ class TestInterventionAPIContract:
         data = response.json()
         assert "error" in data or "detail" in data
 
-    def test_missing_idempotency_key_returns_422(self) -> None:
+    def test_missing_idempotency_key_returns_422(self, mock_llm_provider: None) -> None:
         """Test that missing Idempotency-Key header returns 422.
 
         Idempotency-Key is required per OpenAPI contract.
@@ -212,7 +224,7 @@ class TestInterventionAPIContract:
 
         assert response.status_code == 422
 
-    def test_rewrite_action_contract(self) -> None:
+    def test_rewrite_action_contract(self, mock_llm_provider: MagicMock) -> None:
         """Ensure rewrite responses include content + lock id."""
         rewrite_response = InterventionResponse(
             action="rewrite",
@@ -223,22 +235,20 @@ class TestInterventionAPIContract:
             issued_at=datetime.now(UTC),
             source="muse",
         )
-        mock_path = (
-            "server.infrastructure.llm.instructor_provider."
-            "InstructorLLMProvider.generate_intervention"
-        )
+
+        # Override mock provider's return value for this specific test
+        mock_llm_provider.generate_intervention.return_value = rewrite_response
 
         headers = {
             "Idempotency-Key": "rewrite-key-12345",
             "X-Contract-Version": "1.0.1",
         }
 
-        with patch(mock_path, return_value=rewrite_response):
-            response = client.post(
-                "/api/v1/impetus/generate-intervention",
-                json=VALID_MUSE_REQUEST,
-                headers=headers,
-            )
+        response = client.post(
+            "/api/v1/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -247,7 +257,7 @@ class TestInterventionAPIContract:
         assert data["lock_id"].startswith("lock")
         assert data["source"] == "muse"
 
-    def test_missing_contract_version_returns_422(self) -> None:
+    def test_missing_contract_version_returns_422(self, mock_llm_provider: None) -> None:
         """Test that missing X-Contract-Version header returns 422.
 
         X-Contract-Version is required per OpenAPI contract.
@@ -265,7 +275,7 @@ class TestInterventionAPIContract:
 
         assert response.status_code == 422
 
-    def test_empty_context_returns_422(self) -> None:
+    def test_empty_context_returns_422(self, mock_llm_provider: None) -> None:
         """Test that empty context returns 422.
 
         Context must be non-empty per schema validation.
@@ -308,7 +318,7 @@ class TestInterventionAPIContract:
         intervention_module._provider_registry.reload()
         intervention_module._intervention_service = None
 
-    def test_byok_override_invokes_endpoint(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_byok_override_invokes_endpoint(self, mock_llm_provider: None, monkeypatch: pytest.MonkeyPatch) -> None:
         """User supplied headers should enable Anthropic without server env."""
 
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
