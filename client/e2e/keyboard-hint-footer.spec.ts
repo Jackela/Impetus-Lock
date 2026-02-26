@@ -10,19 +10,17 @@
  * @see openspec/changes/chrome-audit-polish/design.md#5-welcome-modal-hierarchy
  */
 
-import { test, expect, type Page } from "@playwright/test";
-
-async function ensureWelcomeModalVisible(page: Page) {
-  const modal = page.locator(".welcome-modal");
-  if (await modal.isVisible()) {
-    return;
-  }
-
-  await page.keyboard.press("?");
-  await expect(modal).toBeVisible({ timeout: 5000 });
-}
+import { test, expect } from "@playwright/test";
 
 test.describe("Keyboard Hint Footer", () => {
+  test.beforeEach(async ({ page }) => {
+    // Clear localStorage to ensure welcome modal appears
+    await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.waitForLoadState("domcontentloaded");
+  });
+
   test("Footer displays keyboard hint", async ({ page }) => {
     await page.goto("/");
 
@@ -55,8 +53,11 @@ test.describe("Keyboard Hint Footer", () => {
   test("Clicking footer does not trigger modal", async ({ page }) => {
     await page.goto("/");
 
-    await ensureWelcomeModalVisible(page);
-    await page.locator(".welcome-button").click();
+    // Dismiss welcome modal if visible
+    const welcomeButton = page.locator(".welcome-button");
+    if (await welcomeButton.isVisible()) {
+      await welcomeButton.click();
+    }
 
     // Wait for modal to disappear
     await expect(page.locator(".welcome-modal")).not.toBeVisible();
@@ -71,7 +72,7 @@ test.describe("Keyboard Hint Footer", () => {
   test("Keyboard shortcut still works independently", async ({ page }) => {
     await page.goto("/");
 
-    await ensureWelcomeModalVisible(page);
+    // Dismiss welcome modal
     await page.locator(".welcome-button").click();
 
     // Wait for modal to disappear
@@ -95,14 +96,6 @@ test.describe("Keyboard Hint Footer", () => {
 
     // Wait for editor to be ready
     await page.waitForSelector('[data-testid="editor-ready"]', { timeout: 10000 });
-
-    // Hide task sidebar that may interfere with editor clicks
-    await page.evaluate(() => {
-      const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
-      if (sidebar) {
-        sidebar.style.setProperty('display', 'none', 'important');
-      }
-    });
 
     // Click on the editor area (which is above the footer)
     const editor = page.locator('.milkdown [contenteditable="true"]');

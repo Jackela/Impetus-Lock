@@ -66,13 +66,16 @@ export function TimerIndicator({ progress, visible, remainingTime }: TimerIndica
     <div
       className="timer-indicator"
       role="progressbar"
-      aria-live="polite"
       aria-label={`STUCK timer: ${remainingTime} seconds remaining`}
       aria-valuenow={Math.round(normalizedProgress)}
       aria-valuemin={0}
       aria-valuemax={100}
+      aria-live="polite"
     >
-      <div className="timer-indicator__fill" style={{ width: `${normalizedProgress}%` }} />
+      <div
+        className="timer-indicator__fill"
+        style={{ width: `${normalizedProgress}%` }}
+      />
       <span className="timer-indicator__count" aria-hidden="true">
         {remainingTime}s
       </span>

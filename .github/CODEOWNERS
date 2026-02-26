@@ -1,0 +1,16 @@
+# Code Owners for Impetus-Lock
+
+# All files require review from owner
+* @Jackela
+
+# Backend code
+/server/ @Jackela
+
+# Frontend code  
+/client/ @Jackela
+
+# Documentation
+/docs/ @Jackela
+
+# CI/CD configuration
+/.github/ @Jackela
