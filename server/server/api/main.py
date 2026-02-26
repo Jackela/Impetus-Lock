@@ -13,7 +13,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from server.api.routes import intervention, metrics, tasks
+from server.api.routes import intervention, metrics, style, tasks
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import ProviderRegistry
 from server.infrastructure.logging.json_formatter import setup_json_logging
@@ -80,6 +80,7 @@ app.add_middleware(
 app.include_router(intervention.router)
 app.include_router(tasks.router)
 app.include_router(metrics.router)
+app.include_router(style.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):
