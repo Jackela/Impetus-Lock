@@ -51,9 +51,7 @@ class StyleAnalysisRequest(BaseModel):
         """Validate that text has at least minimum word count."""
         word_count = len(v.split())
         if word_count < MIN_WORD_COUNT:
-            raise ValueError(
-                f"Text must contain at least {MIN_WORD_COUNT} words, got {word_count}"
-            )
+            raise ValueError(f"Text must contain at least {MIN_WORD_COUNT} words, got {word_count}")
         return v
 
 
@@ -104,9 +102,7 @@ class StyleApplyRequest(BaseModel):
 
     text: str = Field(..., min_length=1, description="Text to apply style to")
     user_id: str = Field(..., min_length=1, description="User identifier")
-    intensity: float = Field(
-        default=0.7, ge=0.0, le=1.0, description="Style intensity (0-1)"
-    )
+    intensity: float = Field(default=0.7, ge=0.0, le=1.0, description="Style intensity (0-1)")
 
 
 class StyleApplyResponse(BaseModel):
@@ -167,7 +163,7 @@ def analyze_text_style(text: str) -> StyleVector:
         StyleVector with extracted features and confidence score.
     """
     # Clean and prepare text
-    sentences = re.split(r'[.!?]+', text)
+    sentences = re.split(r"[.!?]+", text)
     sentences = [s.strip() for s in sentences if s.strip()]
 
     words = text.split()
@@ -177,16 +173,14 @@ def analyze_text_style(text: str) -> StyleVector:
     # Calculate sentence length metrics
     sentence_word_counts = [len(s.split()) for s in sentences]
     avg_sentence_length = (
-        sum(sentence_word_counts) / len(sentence_word_counts)
-        if sentence_word_counts
-        else 0
+        sum(sentence_word_counts) / len(sentence_word_counts) if sentence_word_counts else 0
     )
 
     # Calculate vocabulary richness (Type-Token Ratio)
     vocabulary_richness = len(unique_words) / word_count if word_count > 0 else 0
 
     # Calculate punctuation density
-    punctuation_count = sum(1 for char in text if char in ".,!?;:-\"")
+    punctuation_count = sum(1 for char in text if char in '.,!?;:-"')
     punctuation_density = (punctuation_count / word_count) * 100 if word_count > 0 else 0
 
     # Estimate formality based on features
@@ -250,7 +244,7 @@ def apply_style_to_text(text: str, style_vector: StyleVector, intensity: float) 
         return text
 
     # Split into sentences
-    sentences = re.split(r'([.!?]+)', text)
+    sentences = re.split(r"([.!?]+)", text)
     sentences = [s for s in sentences if s.strip()]
 
     styled_parts = []
@@ -263,8 +257,7 @@ def apply_style_to_text(text: str, style_vector: StyleVector, intensity: float) 
         words = part.split()
         if len(words) > 0 and style_vector.avg_sentence_length > 0:
             target_length = int(
-                style_vector.avg_sentence_length * intensity
-                + len(words) * (1 - intensity)
+                style_vector.avg_sentence_length * intensity + len(words) * (1 - intensity)
             )
             if len(words) > target_length:
                 # Shorten sentence
@@ -414,7 +407,7 @@ to the provided text.
             raise HTTPException(
                 status_code=404,
                 detail=f"No style profile found for user {request.user_id}. "
-                       "Analyze writing samples first using POST /style/analyze",
+                "Analyze writing samples first using POST /style/analyze",
             )
 
         style_version = style_record.version
@@ -441,9 +434,7 @@ to the provided text.
         style_version = 1
 
     # Apply style transformations
-    styled_text = apply_style_to_text(
-        request.text, style_vector, request.intensity
-    )
+    styled_text = apply_style_to_text(request.text, style_vector, request.intensity)
 
     return StyleApplyResponse(
         original_text=request.text,
@@ -481,9 +472,7 @@ async def get_style_profile(
             detail="Database not available. This endpoint requires database access.",
         )
 
-    result = await session.execute(
-        select(StyleModel).where(StyleModel.user_id == user_id)
-    )
+    result = await session.execute(select(StyleModel).where(StyleModel.user_id == user_id))
     style_record = result.scalar_one_or_none()
 
     if not style_record:
@@ -527,9 +516,7 @@ async def delete_style_profile(
             detail="Database not available. This endpoint requires database access.",
         )
 
-    result = await session.execute(
-        select(StyleModel).where(StyleModel.user_id == user_id)
-    )
+    result = await session.execute(select(StyleModel).where(StyleModel.user_id == user_id))
     style_record = result.scalar_one_or_none()
 
     if not style_record:
