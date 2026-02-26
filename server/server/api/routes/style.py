@@ -254,7 +254,7 @@ def apply_style_to_text(text: str, style_vector: StyleVector, intensity: float) 
     sentences = [s for s in sentences if s.strip()]
 
     styled_parts = []
-    for i, part in enumerate(sentences):
+    for part in sentences:
         if part in ".!?":
             styled_parts.append(part)
             continue
@@ -262,7 +262,10 @@ def apply_style_to_text(text: str, style_vector: StyleVector, intensity: float) 
         # Apply sentence length adjustment
         words = part.split()
         if len(words) > 0 and style_vector.avg_sentence_length > 0:
-            target_length = int(style_vector.avg_sentence_length * intensity + len(words) * (1 - intensity))
+            target_length = int(
+                style_vector.avg_sentence_length * intensity
+                + len(words) * (1 - intensity)
+            )
             if len(words) > target_length:
                 # Shorten sentence
                 words = words[:target_length]
