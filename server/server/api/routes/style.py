@@ -9,9 +9,9 @@ Stories Implemented:
 """
 
 import re
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -274,10 +274,14 @@ def apply_style_to_text(text: str, style_vector: StyleVector, intensity: float) 
         styled_sentence = " ".join(words)
 
         # Apply punctuation density adjustment
-        if style_vector.punctuation_density > 5 and intensity > 0.5:
-            # Add emphasis punctuation
-            if not styled_sentence.endswith(("!", "?")) and styled_sentence.strip():
-                styled_sentence = styled_sentence.rstrip(".") + "."
+        # Add emphasis punctuation for high punctuation density
+        if (
+            style_vector.punctuation_density > 5
+            and intensity > 0.5
+            and not styled_sentence.endswith(("!", "?"))
+            and styled_sentence.strip()
+        ):
+            styled_sentence = styled_sentence.rstrip(".") + "."
 
         styled_parts.append(styled_sentence)
 

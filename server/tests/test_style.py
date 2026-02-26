@@ -84,7 +84,6 @@ what matters to us rather than what we imagine others want to hear.
 def use_in_memory_session() -> Generator[None, None, None]:
     """Override session dependency to use in-memory mode for testing."""
     # Store original dependency
-    original_session = style_module.get_session_optional
 
     # Override with None (in-memory mode)
     app.dependency_overrides[style_module.get_session_optional] = lambda: None
