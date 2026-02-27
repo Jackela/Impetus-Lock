@@ -1,27 +1,23 @@
 import { useState } from "react";
-import type { StyleHistoryRecord } from "../../services/api/styleHistoryClient";
+import type { StyleHistoryRecord } from "../../hooks/useStyleHistory";
+import { useStyleHistory } from "../../hooks/useStyleHistory";
 import styles from "./StyleHistoryList.module.css";
 
 interface StyleHistoryListProps {
-  history: StyleHistoryRecord[];
-  total: number;
-  limit: number;
-  offset: number;
-  onPageChange: (newOffset: number) => void;
+  userId: string;
   onSelect: (record: StyleHistoryRecord) => void;
-  onDelete: (id: string) => void;
 }
 
-export function StyleHistoryList({
-  history,
-  total,
-  limit,
-  offset,
-  onPageChange,
-  onSelect,
-  onDelete,
-}: StyleHistoryListProps) {
+export function StyleHistoryList({ userId, onSelect }: StyleHistoryListProps) {
+  const { history, total, loading, error, fetchHistory, remove } = useStyleHistory();
+  const [offset, setOffset] = useState(0);
+  const limit = 10;
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Fetch history on mount
+  useState(() => {
+    fetchHistory(userId, limit, offset);
+  });
 
   const totalPages = Math.ceil(total / limit);
   const currentPage = Math.floor(offset / limit) + 1;
@@ -41,13 +37,20 @@ export function StyleHistoryList({
     return text.substring(0, maxLength) + "...";
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (deleteConfirm === id) {
-      onDelete(id);
-      setDeleteConfirm(null);
+      const success = await remove(id);
+      if (success) {
+        setDeleteConfirm(null);
+      }
     } else {
       setDeleteConfirm(id);
     }
+  };
+
+  const handlePageChange = (newOffset: number) => {
+    setOffset(newOffset);
+    fetchHistory(userId, limit, newOffset);
   };
 
   return (
@@ -57,7 +60,10 @@ export function StyleHistoryList({
         <span className={styles.total}>{total} records</span>
       </div>
 
-      {history.length === 0 ? (
+      {loading && <div className={styles.loading}>Loading...</div>}
+      {error && <div className={styles.error}>{error}</div>}
+
+      {!loading && !error && history.length === 0 ? (
         <div className={styles.empty}>
           <p>No style analysis history yet.</p>
           <p>Start writing to build your style profile!</p>
@@ -88,7 +94,7 @@ export function StyleHistoryList({
               <button
                 type="button"
                 disabled={currentPage === 1}
-                onClick={() => onPageChange(offset - limit)}
+                onClick={() => handlePageChange(offset - limit)}
                 className={styles.pageButton}
               >
                 ← Previous
@@ -99,7 +105,7 @@ export function StyleHistoryList({
               <button
                 type="button"
                 disabled={currentPage === totalPages}
-                onClick={() => onPageChange(offset + limit)}
+                onClick={() => handlePageChange(offset + limit)}
                 className={styles.pageButton}
               >
                 Next →
