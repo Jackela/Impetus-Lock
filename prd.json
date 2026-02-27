@@ -39,7 +39,7 @@
         "Delete with confirmation modal",
         "15+ tests passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": 3,
