@@ -38,7 +38,7 @@ def calculate_euclidean_distance(vec1: dict[str, Any], vec2: dict[str, Any]) -> 
         return 1.0
 
     sum_squared = sum((vec1[k] - vec2[k]) ** 2 for k in numeric_keys)
-    return float(sum_squared ** 0.5) / len(numeric_keys)
+    return float(sum_squared**0.5) / len(numeric_keys)
 
 
 def generate_radar_chart_data(vec1: dict[str, Any], vec2: dict[str, Any]) -> dict[str, list[float]]:
