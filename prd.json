@@ -1,0 +1,61 @@
+{
+  "branchName": "chore/tech-debt-cleanup",
+  "stories": [
+    {
+      "id": 1,
+      "title": "Add Pre-commit Hooks (husky + lint-staged)",
+      "description": "Configure husky and lint-staged to run prettier + eslint automatically on commit",
+      "priority": "high",
+      "tasks": [
+        "Install husky and lint-staged",
+        "Create pre-commit hook",
+        "Configure lint-staged for .ts/.tsx/.css files",
+        "Test by making a commit"
+      ],
+      "acceptanceCriteria": [
+        "husky installed and initialized",
+        "pre-commit hook runs lint-staged",
+        "lint-staged runs prettier --write and eslint --fix",
+        "Test commit automatically formats code"
+      ],
+      "passes": true
+    },
+    {
+      "id": 2,
+      "title": "Add Multi-Viewport E2E Tests",
+      "description": "Add Playwright tests for 375px (mobile), 1024px (tablet), 1920px (desktop) viewports",
+      "priority": "high",
+      "tasks": [
+        "Create multi-viewport test file",
+        "Test header layout at all viewports",
+        "Test editor layout at all viewports",
+        "Test Style Learning panel at all viewports",
+        "Ensure no horizontal overflow at all sizes"
+      ],
+      "acceptanceCriteria": [
+        "Test file: e2e/viewport-responsive.spec.ts",
+        "Tests pass at 375px, 1024px, 1920px",
+        "No horizontal scroll detected",
+        "All UI elements visible and usable"
+      ],
+      "passes": true
+    },
+    {
+      "id": 3,
+      "title": "Add Responsive Breakpoint Tests",
+      "description": "Test smooth transitions between breakpoints (768px, 1024px)",
+      "priority": "medium",
+      "tasks": [
+        "Test tablet to desktop transition",
+        "Test mobile to tablet transition",
+        "Verify no layout breaks during resize"
+      ],
+      "acceptanceCriteria": [
+        "Tests cover breakpoint transitions",
+        "No visual glitches detected",
+        "Layout remains stable"
+      ],
+      "passes": true
+    }
+  ]
+}
