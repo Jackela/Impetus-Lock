@@ -1,5 +1,9 @@
 import pytest
-from server.api.routes.style_comparison import calculate_euclidean_distance, generate_radar_chart_data
+
+from server.api.routes.style_comparison import (
+    calculate_euclidean_distance,
+    generate_radar_chart_data,
+)
 
 
 @pytest.mark.asyncio

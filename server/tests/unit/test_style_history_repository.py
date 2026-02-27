@@ -1,7 +1,6 @@
-from uuid import uuid4
-
 from collections.abc import AsyncGenerator
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -15,7 +14,6 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 @pytest.fixture
 async def engine() -> AsyncGenerator[Any, None]:
     """Create test database engine."""
-    from server.models.style_history import StyleHistoryModel
     from sqlalchemy import text
 
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
