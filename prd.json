@@ -77,7 +77,7 @@
         "Export to PNG working",
         "12+ tests passing"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
