@@ -41,10 +41,7 @@ export interface StyleLearningPanelProps {
  * />
  * ```
  */
-export function StyleLearningPanel({
-  userId,
-  onApplyStyle,
-}: StyleLearningPanelProps): JSX.Element {
+export function StyleLearningPanel({ userId, onApplyStyle }: StyleLearningPanelProps): JSX.Element {
   const { isLoading, result, error, analyze, clearError } = useStyleLearning();
 
   const handleSubmit = useCallback(
@@ -64,8 +61,8 @@ export function StyleLearningPanel({
     <div className="style-learning-panel" data-testid="style-learning-panel">
       <h2 className="panel-title">Style Learning</h2>
       <p className="panel-description">
-        Paste a writing sample (minimum 500 words) to analyze your unique writing style.
-        Once analyzed, you can apply your style to transform text.
+        Paste a writing sample (minimum 500 words) to analyze your unique writing style. Once
+        analyzed, you can apply your style to transform text.
       </p>
 
       <StyleInputForm

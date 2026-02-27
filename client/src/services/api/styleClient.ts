@@ -140,12 +140,9 @@ export async function analyzeStyle(
   try {
     data = await response.json();
   } catch (parseError) {
-    throw new StyleAPIError(
-      response.status,
-      "ParseError",
-      "Failed to parse response JSON",
-      { originalError: parseError instanceof Error ? parseError.message : String(parseError) }
-    );
+    throw new StyleAPIError(response.status, "ParseError", "Failed to parse response JSON", {
+      originalError: parseError instanceof Error ? parseError.message : String(parseError),
+    });
   }
 
   const parsedData = (data as Record<string, unknown>) || {};
@@ -209,12 +206,9 @@ export async function applyStyle(
   try {
     data = await response.json();
   } catch (parseError) {
-    throw new StyleAPIError(
-      response.status,
-      "ParseError",
-      "Failed to parse response JSON",
-      { originalError: parseError instanceof Error ? parseError.message : String(parseError) }
-    );
+    throw new StyleAPIError(response.status, "ParseError", "Failed to parse response JSON", {
+      originalError: parseError instanceof Error ? parseError.message : String(parseError),
+    });
   }
 
   const parsedData = (data as Record<string, unknown>) || {};

@@ -93,7 +93,9 @@ export function StyleInputForm({
       e.preventDefault();
 
       if (!isValid) {
-        setValidationError(`Please enter at least ${MIN_WORD_COUNT} words (${wordCount}/${MIN_WORD_COUNT})`);
+        setValidationError(
+          `Please enter at least ${MIN_WORD_COUNT} words (${wordCount}/${MIN_WORD_COUNT})`
+        );
         return;
       }
 
@@ -106,11 +108,7 @@ export function StyleInputForm({
   const descriptionId = "word-count-description";
 
   return (
-    <form
-      className="style-input-form"
-      onSubmit={handleSubmit}
-      data-testid="style-input-form"
-    >
+    <form className="style-input-form" onSubmit={handleSubmit} data-testid="style-input-form">
       <div className="form-group">
         <label htmlFor="writing-sample" className="form-label">
           Writing Sample
@@ -128,12 +126,8 @@ export function StyleInputForm({
           aria-invalid={isWordCountLow}
         />
         <div id={descriptionId} className="word-count-hint">
-          <span className={`word-count ${isWordCountLow ? "low" : ""}`}>
-            {wordCount} words
-          </span>
-          <span className="min-requirement">
-            (minimum {MIN_WORD_COUNT} words)
-          </span>
+          <span className={`word-count ${isWordCountLow ? "low" : ""}`}>{wordCount} words</span>
+          <span className="min-requirement">(minimum {MIN_WORD_COUNT} words)</span>
         </div>
       </div>
 

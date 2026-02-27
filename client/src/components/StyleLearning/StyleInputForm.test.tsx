@@ -134,10 +134,7 @@ describe("StyleInputForm", () => {
   describe("error handling", () => {
     it("should display error message when provided", () => {
       render(
-        <StyleInputForm
-          onSubmit={vi.fn()}
-          error="Failed to analyze style. Please try again."
-        />
+        <StyleInputForm onSubmit={vi.fn()} error="Failed to analyze style. Please try again." />
       );
 
       expect(screen.getByText(/failed to analyze style/i)).toBeInTheDocument();
@@ -191,12 +188,7 @@ describe("StyleInputForm", () => {
     });
 
     it("should announce errors to screen readers", () => {
-      render(
-        <StyleInputForm
-          onSubmit={vi.fn()}
-          error="Failed to analyze style."
-        />
-      );
+      render(<StyleInputForm onSubmit={vi.fn()} error="Failed to analyze style." />);
 
       const errorElement = screen.getByRole("alert");
       expect(errorElement).toHaveTextContent(/failed to analyze style/i);
@@ -211,17 +203,13 @@ describe("StyleInputForm", () => {
     });
 
     it("should match snapshot with error", () => {
-      const { container } = render(
-        <StyleInputForm onSubmit={vi.fn()} error="Test error" />
-      );
+      const { container } = render(<StyleInputForm onSubmit={vi.fn()} error="Test error" />);
 
       expect(container.firstChild).toMatchSnapshot();
     });
 
     it("should match snapshot when loading", () => {
-      const { container } = render(
-        <StyleInputForm onSubmit={vi.fn()} isLoading={true} />
-      );
+      const { container } = render(<StyleInputForm onSubmit={vi.fn()} isLoading={true} />);
 
       expect(container.firstChild).toMatchSnapshot();
     });
