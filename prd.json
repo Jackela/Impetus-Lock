@@ -1,61 +1,83 @@
 {
-  "branchName": "chore/tech-debt-cleanup",
+  "branchName": "feature/style-learning-enhancement",
   "stories": [
     {
       "id": 1,
-      "title": "Add Pre-commit Hooks (husky + lint-staged)",
-      "description": "Configure husky and lint-staged to run prettier + eslint automatically on commit",
+      "title": "Style History - Store analysis results",
+      "description": "Store all style analysis results in database with timestamps",
       "priority": "high",
       "tasks": [
-        "Install husky and lint-staged",
-        "Create pre-commit hook",
-        "Configure lint-staged for .ts/.tsx/.css files",
-        "Test by making a commit"
+        "Create StyleHistory model in backend",
+        "Add database migration",
+        "Create API endpoints: GET /style/history, DELETE /style/history/:id",
+        "Update styleClient.ts to support history operations",
+        "Add unit tests for history endpoints"
       ],
       "acceptanceCriteria": [
-        "husky installed and initialized",
-        "pre-commit hook runs lint-staged",
-        "lint-staged runs prettier --write and eslint --fix",
-        "Test commit automatically formats code"
+        "StyleHistory model with userId, text, vector, timestamp",
+        "GET /style/history returns paginated results",
+        "DELETE /style/history/:id works",
+        "10+ unit tests passing"
       ],
       "passes": true
     },
     {
       "id": 2,
-      "title": "Add Multi-Viewport E2E Tests",
-      "description": "Add Playwright tests for 375px (mobile), 1024px (tablet), 1920px (desktop) viewports",
+      "title": "Style History - UI display",
+      "description": "Display style analysis history in a timeline/list view",
       "priority": "high",
       "tasks": [
-        "Create multi-viewport test file",
-        "Test header layout at all viewports",
-        "Test editor layout at all viewports",
-        "Test Style Learning panel at all viewports",
-        "Ensure no horizontal overflow at all sizes"
+        "Create StyleHistoryList component",
+        "Add pagination (10 items per page)",
+        "Show date, text preview, style vector summary",
+        "Click to view full analysis",
+        "Add delete button with confirmation"
       ],
       "acceptanceCriteria": [
-        "Test file: e2e/viewport-responsive.spec.ts",
-        "Tests pass at 375px, 1024px, 1920px",
-        "No horizontal scroll detected",
-        "All UI elements visible and usable"
+        "StyleHistoryList component with responsive design",
+        "Pagination working",
+        "Delete with confirmation modal",
+        "15+ tests passing"
       ],
-      "passes": true
+      "passes": false
     },
     {
       "id": 3,
-      "title": "Add Responsive Breakpoint Tests",
-      "description": "Test smooth transitions between breakpoints (768px, 1024px)",
+      "title": "Style Comparison - Backend",
+      "description": "API to compare two style vectors and return differences",
       "priority": "medium",
       "tasks": [
-        "Test tablet to desktop transition",
-        "Test mobile to tablet transition",
-        "Verify no layout breaks during resize"
+        "Create /style/compare endpoint",
+        "Calculate Euclidean distance between vectors",
+        "Generate radar chart data structure",
+        "Add comparison insights text generation"
       ],
       "acceptanceCriteria": [
-        "Tests cover breakpoint transitions",
-        "No visual glitches detected",
-        "Layout remains stable"
+        "POST /style/compare accepts two styleVector",
+        "Returns difference metrics and radar chart data",
+        "8+ unit tests passing"
       ],
-      "passes": true
+      "passes": false
+    },
+    {
+      "id": 4,
+      "title": "Style Comparison - UI",
+      "description": "Visual comparison of two style analyses with radar chart",
+      "priority": "medium",
+      "tasks": [
+        "Integrate radar chart library (recharts)",
+        "Create StyleComparisonChart component",
+        "Add side-by-side text display",
+        "Show difference metrics",
+        "Export comparison as image"
+      ],
+      "acceptanceCriteria": [
+        "Interactive radar chart with hover tooltips",
+        "Side-by-side text comparison",
+        "Export to PNG working",
+        "12+ tests passing"
+      ],
+      "passes": false
     }
   ]
 }
