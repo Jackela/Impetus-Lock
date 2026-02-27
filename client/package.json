@@ -16,7 +16,8 @@
     "test:e2e:ci-like": "playwright test --workers=1 --retries=2 --reporter=list",
     "test:e2e:sequential": "playwright test --workers=1",
     "test:e2e:preview": "node ./scripts/run-preview-e2e.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "husky"
   },
   "dependencies": {
     "@milkdown/core": "^7.18.0",
@@ -53,7 +54,9 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "ffmpeg-static": "^5.3.0",
     "globals": "^16.4.0",
+    "husky": "^9.1.7",
     "jsdom": "^27.1.0",
+    "lint-staged": "^16.2.7",
     "playwright": "^1.56.1",
     "prettier": "^3.6.2",
     "typescript": "~5.9.3",

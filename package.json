@@ -1,0 +1,22 @@
+{
+  "name": "impetus-lock",
+  "private": true,
+  "version": "0.5.0",
+  "description": "Adversarial AI writing tool - turns lonely writing into an adversarial rogue-like game",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.8.1"
+  },
+  "lint-staged": {
+    "client/**/*.{ts,tsx,css,json}": [
+      "prettier --write"
+    ],
+    "*.{md,json}": [
+      "prettier --write"
+    ]
+  }
+}
