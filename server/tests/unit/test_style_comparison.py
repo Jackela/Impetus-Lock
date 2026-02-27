@@ -3,7 +3,7 @@ from server.api.routes.style_comparison import calculate_euclidean_distance, gen
 
 
 @pytest.mark.asyncio
-async def test_calculate_euclidean_distance_identical():
+async def test_calculate_euclidean_distance_identical() -> None:
     """Test distance between identical vectors."""
     vec1 = {"tone": 0.8, "formality": 0.6}
     vec2 = {"tone": 0.8, "formality": 0.6}
@@ -13,7 +13,7 @@ async def test_calculate_euclidean_distance_identical():
 
 
 @pytest.mark.asyncio
-async def test_calculate_euclidean_distance_different():
+async def test_calculate_euclidean_distance_different() -> None:
     """Test distance between different vectors."""
     vec1 = {"tone": 0.8, "formality": 0.6}
     vec2 = {"tone": 0.4, "formality": 0.2}
@@ -23,7 +23,7 @@ async def test_calculate_euclidean_distance_different():
 
 
 @pytest.mark.asyncio
-async def test_generate_radar_chart_data():
+async def test_generate_radar_chart_data() -> None:
     """Test radar chart data generation."""
     vec1 = {"tone": 0.8, "formality": 0.6}
     vec2 = {"tone": 0.4, "formality": 0.2}

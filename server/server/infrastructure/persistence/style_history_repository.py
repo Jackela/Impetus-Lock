@@ -1,13 +1,18 @@
 """Style History Repository - Database operations for style analysis history."""
 
+from __future__ import annotations
+
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import delete, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.infrastructure.persistence.database import get_db_manager
+
+if TYPE_CHECKING:
+    from server.models.style_history import StyleHistoryModel
 
 
 class StyleHistoryRepository:
@@ -23,17 +28,8 @@ class StyleHistoryRepository:
 
     async def create(
         self, user_id: str, text: str, style_vector: dict[str, Any]
-    ) -> "StyleHistoryModel":
-        """Create a new style history record.
-
-        Args:
-            user_id: User identifier
-            text: Original analyzed text
-            style_vector: Style analysis results
-
-        Returns:
-            Created StyleHistoryModel instance
-        """
+    ) -> StyleHistoryModel:
+        """Create a new style history record."""
         from server.models.style_history import StyleHistoryModel
 
         if self.session:
@@ -59,17 +55,8 @@ class StyleHistoryRepository:
 
     async def get_by_user(
         self, user_id: str, limit: int = 10, offset: int = 0
-    ) -> list["StyleHistoryModel"]:
-        """Get style history for a user with pagination.
-
-        Args:
-            user_id: User identifier
-            limit: Maximum number of records to return
-            offset: Number of records to skip
-
-        Returns:
-            List of StyleHistoryModel instances (newest first)
-        """
+    ) -> list[StyleHistoryModel]:
+        """Get style history for a user with pagination."""
         from server.models.style_history import StyleHistoryModel
 
         if self.session:
@@ -94,15 +81,8 @@ class StyleHistoryRepository:
                 result = await session.execute(query)
                 return list(result.scalars().all())
 
-    async def get_by_id(self, history_id: UUID) -> "StyleHistoryModel | None":
-        """Get a specific style history record by ID.
-
-        Args:
-            history_id: History record UUID
-
-        Returns:
-            StyleHistoryModel instance or None if not found
-        """
+    async def get_by_id(self, history_id: UUID) -> StyleHistoryModel | None:
+        """Get a specific style history record by ID."""
         from server.models.style_history import StyleHistoryModel
 
         if self.session:
@@ -116,45 +96,33 @@ class StyleHistoryRepository:
                 return result.scalar_one_or_none()
 
     async def delete(self, history_id: UUID) -> bool:
-        """Delete a style history record.
-
-        Args:
-            history_id: History record UUID to delete
-
-        Returns:
-            True if deleted, False if not found
-        """
+        """Delete a style history record."""
         from server.models.style_history import StyleHistoryModel
 
         if self.session:
             query = delete(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
             result = await self.session.execute(query)
             await self.session.commit()
-            return result.rowcount > 0
+            return True
         else:
             async with get_db_manager().session() as session:
                 query = delete(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
-                result = await session.execute(query)
+                await session.execute(query)
                 await session.commit()
-                return result.rowcount > 0
+                return True
 
     async def count_by_user(self, user_id: str) -> int:
-        """Count total style history records for a user.
-
-        Args:
-            user_id: User identifier
-
-        Returns:
-            Total count of records
-        """
+        """Count total style history records for a user."""
         from server.models.style_history import StyleHistoryModel
 
         if self.session:
             query = select(func.count()).where(StyleHistoryModel.user_id == user_id)
             result = await self.session.execute(query)
-            return result.scalar() or 0
+            count = result.scalar()
+            return count if count is not None else 0
         else:
             async with get_db_manager().session() as session:
                 query = select(func.count()).where(StyleHistoryModel.user_id == user_id)
                 result = await session.execute(query)
-                return result.scalar() or 0
+                count = result.scalar()
+                return count if count is not None else 0
