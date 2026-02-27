@@ -18,7 +18,7 @@
         "lint-staged runs prettier --write and eslint --fix",
         "Test commit automatically formats code"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": 2,
@@ -38,7 +38,7 @@
         "No horizontal scroll detected",
         "All UI elements visible and usable"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": 3,
@@ -55,7 +55,7 @@
         "No visual glitches detected",
         "Layout remains stable"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }
