@@ -1,0 +1,264 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StyleAnalysisResult > snapshot > should match snapshot 1`] = `
+<div
+  class="style-analysis-result"
+  data-testid="style-analysis-result"
+>
+  <h3
+    class="result-heading"
+  >
+    Style Analysis
+  </h3>
+  <div
+    class="metrics-grid"
+  >
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Average Sentence Length
+      </span>
+      <span
+        class="metric-value"
+      >
+        15.5
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Vocabulary Richness
+      </span>
+      <span
+        class="metric-value"
+      >
+        72%
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Punctuation Density
+      </span>
+      <span
+        class="metric-value"
+      >
+        5%
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Paragraph Length
+      </span>
+      <span
+        class="metric-value"
+      >
+        3.2
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Dialogue Ratio
+      </span>
+      <span
+        class="metric-value"
+      >
+        15%
+      </span>
+    </div>
+  </div>
+  <div
+    class="confidence-section"
+  >
+    <div
+      class="confidence-header"
+    >
+      <span
+        class="confidence-label"
+      >
+        Confidence
+      </span>
+      <span
+        class="confidence-value"
+      >
+        85%
+      </span>
+    </div>
+    <div
+      class="confidence-bar"
+    >
+      <div
+        aria-label="85% confidence"
+        class="confidence-bar-fill"
+        style="width: 85%;"
+      />
+    </div>
+  </div>
+  <div
+    class="metadata-section"
+  >
+    <span
+      class="analyzed-date"
+    >
+      Analyzed: 
+      Jan 15, 2024, 10:30 AM
+    </span>
+  </div>
+  <button
+    aria-disabled="false"
+    class="apply-button"
+    type="button"
+  >
+    Apply to Task
+  </button>
+</div>
+`;
+
+exports[`StyleAnalysisResult > snapshot > should match snapshot with disabled button 1`] = `
+<div
+  class="style-analysis-result"
+  data-testid="style-analysis-result"
+>
+  <h3
+    class="result-heading"
+  >
+    Style Analysis
+  </h3>
+  <div
+    class="metrics-grid"
+  >
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Average Sentence Length
+      </span>
+      <span
+        class="metric-value"
+      >
+        15.5
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Vocabulary Richness
+      </span>
+      <span
+        class="metric-value"
+      >
+        72%
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Punctuation Density
+      </span>
+      <span
+        class="metric-value"
+      >
+        5%
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Paragraph Length
+      </span>
+      <span
+        class="metric-value"
+      >
+        3.2
+      </span>
+    </div>
+    <div
+      class="metric-item"
+    >
+      <span
+        class="metric-label"
+      >
+        Dialogue Ratio
+      </span>
+      <span
+        class="metric-value"
+      >
+        15%
+      </span>
+    </div>
+  </div>
+  <div
+    class="confidence-section"
+  >
+    <div
+      class="confidence-header"
+    >
+      <span
+        class="confidence-label"
+      >
+        Confidence
+      </span>
+      <span
+        class="confidence-value"
+      >
+        85%
+      </span>
+    </div>
+    <div
+      class="confidence-bar"
+    >
+      <div
+        aria-label="85% confidence"
+        class="confidence-bar-fill"
+        style="width: 85%;"
+      />
+    </div>
+  </div>
+  <div
+    class="metadata-section"
+  >
+    <span
+      class="analyzed-date"
+    >
+      Analyzed: 
+      Jan 15, 2024, 10:30 AM
+    </span>
+  </div>
+  <button
+    aria-disabled="true"
+    class="apply-button"
+    disabled=""
+    type="button"
+  >
+    Apply to Task
+  </button>
+</div>
+`;

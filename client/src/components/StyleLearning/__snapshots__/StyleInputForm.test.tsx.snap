@@ -1,0 +1,168 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StyleInputForm > snapshot > should match snapshot 1`] = `
+<form
+  class="style-input-form"
+  data-testid="style-input-form"
+>
+  <div
+    class="form-group"
+  >
+    <label
+      class="form-label"
+      for="writing-sample"
+    >
+      Writing Sample
+    </label>
+    <textarea
+      aria-describedby="word-count-description"
+      aria-invalid="false"
+      aria-label="Writing sample input"
+      class="form-textarea "
+      id="writing-sample"
+      placeholder="Paste your writing sample here (minimum 500 words)..."
+      rows="12"
+    />
+    <div
+      class="word-count-hint"
+      id="word-count-description"
+    >
+      <span
+        class="word-count "
+      >
+        0
+         words
+      </span>
+      <span
+        class="min-requirement"
+      >
+        (minimum 
+        500
+         words)
+      </span>
+    </div>
+  </div>
+  <button
+    aria-disabled="true"
+    class="submit-button"
+    disabled=""
+    type="submit"
+  >
+    Analyze Style
+  </button>
+</form>
+`;
+
+exports[`StyleInputForm > snapshot > should match snapshot when loading 1`] = `
+<form
+  class="style-input-form"
+  data-testid="style-input-form"
+>
+  <div
+    class="form-group"
+  >
+    <label
+      class="form-label"
+      for="writing-sample"
+    >
+      Writing Sample
+    </label>
+    <textarea
+      aria-describedby="word-count-description"
+      aria-invalid="false"
+      aria-label="Writing sample input"
+      class="form-textarea "
+      disabled=""
+      id="writing-sample"
+      placeholder="Paste your writing sample here (minimum 500 words)..."
+      rows="12"
+    />
+    <div
+      class="word-count-hint"
+      id="word-count-description"
+    >
+      <span
+        class="word-count "
+      >
+        0
+         words
+      </span>
+      <span
+        class="min-requirement"
+      >
+        (minimum 
+        500
+         words)
+      </span>
+    </div>
+  </div>
+  <button
+    aria-disabled="true"
+    class="submit-button"
+    disabled=""
+    type="submit"
+  >
+    Analyzing...
+  </button>
+</form>
+`;
+
+exports[`StyleInputForm > snapshot > should match snapshot with error 1`] = `
+<form
+  class="style-input-form"
+  data-testid="style-input-form"
+>
+  <div
+    class="form-group"
+  >
+    <label
+      class="form-label"
+      for="writing-sample"
+    >
+      Writing Sample
+    </label>
+    <textarea
+      aria-describedby="word-count-description"
+      aria-invalid="false"
+      aria-label="Writing sample input"
+      class="form-textarea "
+      id="writing-sample"
+      placeholder="Paste your writing sample here (minimum 500 words)..."
+      rows="12"
+    />
+    <div
+      class="word-count-hint"
+      id="word-count-description"
+    >
+      <span
+        class="word-count "
+      >
+        0
+         words
+      </span>
+      <span
+        class="min-requirement"
+      >
+        (minimum 
+        500
+         words)
+      </span>
+    </div>
+  </div>
+  <div
+    class="form-error"
+    data-testid="form-error"
+    role="alert"
+  >
+    Test error
+  </div>
+  <button
+    aria-disabled="true"
+    class="submit-button"
+    disabled=""
+    type="submit"
+  >
+    Analyze Style
+  </button>
+</form>
+`;

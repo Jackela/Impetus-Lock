@@ -668,3 +668,83 @@ button:focus-visible {
   border-radius: 3px;
   font-family: monospace;
 }
+
+/* Style Learning Toggle Button */
+.style-learning-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  transition: all 0.2s ease;
+}
+
+.style-learning-toggle:hover {
+  background-color: var(--bg-hover, #f0f0f0);
+  color: var(--text-primary, #333);
+}
+
+.style-learning-toggle.active {
+  background-color: var(--primary-color, #4a90d9);
+  border-color: var(--primary-color, #4a90d9);
+  color: white;
+}
+
+.style-learning-toggle .toggle-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Style Learning Modal Overlay */
+.style-learning-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.style-learning-modal {
+  position: relative;
+  background-color: var(--bg-primary, #fff);
+  border-radius: 12px;
+  max-width: 900px;
+  width: 100%;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.style-learning-modal .close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.style-learning-modal .close-button:hover {
+  background-color: var(--bg-hover, #f0f0f0);
+  color: var(--text-primary, #333);
+}
