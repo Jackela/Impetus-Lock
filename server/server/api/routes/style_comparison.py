@@ -29,7 +29,11 @@ def calculate_euclidean_distance(vec1: dict[str, Any], vec2: dict[str, Any]) -> 
     if not common_keys:
         return 1.0
 
-    numeric_keys = [k for k in common_keys if isinstance(vec1[k], (int, float)) and isinstance(vec2[k], (int, float))]
+    numeric_keys = [
+        k
+        for k in common_keys
+        if isinstance(vec1[k], int | float) and isinstance(vec2[k], int | float)
+    ]
     if not numeric_keys:
         return 1.0
 
