@@ -8,7 +8,6 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import TIMESTAMP, Index, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
@@ -45,9 +44,7 @@ class StyleHistoryModel(Base):
         index=True,
     )
 
-    __table_args__ = (
-        Index("ix_style_history_user_created", "user_id", "created_at"),
-    )
+    __table_args__ = (Index("ix_style_history_user_created", "user_id", "created_at"),)
 
     def __repr__(self) -> str:
         """String representation for debugging."""
