@@ -1,0 +1,124 @@
+/**
+ * Style Analysis Result Styles
+ */
+
+.style-analysis-result {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 600px;
+  width: 100%;
+  padding: 1.5rem;
+  background-color: var(--bg-secondary, #f9f9f9);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.result-heading {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+}
+
+.metric-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.confidence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.confidence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.confidence-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary, #333);
+}
+
+.confidence-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-color, #4a90d9);
+}
+
+.confidence-bar {
+  height: 8px;
+  background-color: var(--bg-disabled, #e0e0e0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  background-color: var(--primary-color, #4a90d9);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.metadata-section {
+  font-size: 0.85rem;
+  color: var(--text-muted, #999);
+}
+
+.analyzed-date {
+  font-style: italic;
+}
+
+.apply-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background-color: var(--success-color, #28a745);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.apply-button:hover:not(:disabled) {
+  background-color: var(--success-hover, #218838);
+}
+
+.apply-button:disabled {
+  background-color: var(--bg-disabled, #ccc);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -25,6 +25,7 @@ import { NewTaskButton } from "./components/NewTaskButton";
 import { CreateTaskModal } from "./components/CreateTaskModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Skeleton } from "./components/Skeleton";
+import { StyleLearningPanel } from "./components/StyleLearning/StyleLearningPanel";
 
 /**
  * Impetus Lock Main Application
@@ -56,6 +57,9 @@ function App() {
   // UX-003: Task list integration
   const [showTaskList, setShowTaskList] = useState(true);
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null);
+
+  // Style Learning panel state
+  const [showStyleLearning, setShowStyleLearning] = useState(false);
 
   // UX-010: Create task modal state
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
@@ -224,6 +228,29 @@ function App() {
             </svg>
             <span className="toggle-label">Tasks</span>
           </button>
+          <button
+            type="button"
+            className={`style-learning-toggle ${showStyleLearning ? "active" : ""}`}
+            onClick={() => setShowStyleLearning((prev) => !prev)}
+            aria-pressed={showStyleLearning}
+            title="Toggle Style Learning"
+            data-testid="style-learning-toggle"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+            <span className="toggle-label">Style</span>
+          </button>
         </div>
         <div className="header-actions">
           <TelemetryToggle />
@@ -344,6 +371,29 @@ function App() {
           </div>
         </ErrorBoundary>
       </main>
+
+      {/* Style Learning Panel (modal overlay) */}
+      {showStyleLearning && (
+        <div className="style-learning-overlay" data-testid="style-learning-overlay">
+          <div className="style-learning-modal">
+            <button
+              type="button"
+              className="close-button"
+              onClick={() => setShowStyleLearning(false)}
+              aria-label="Close Style Learning"
+            >
+              ×
+            </button>
+            <StyleLearningPanel
+              userId={editingTaskId ?? "default-user"}
+              onApplyStyle={({ userId: styleUserId }) => {
+                // TODO: Implement style application to current task
+                console.log("Apply style:", styleUserId);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       <footer className="app-footer">
         Press <kbd>?</kbd> for help
