@@ -73,7 +73,7 @@ async def create_history(
             created_at=history.created_at.isoformat(),
         )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/user/{user_id}", response_model=StyleHistoryListResponse)

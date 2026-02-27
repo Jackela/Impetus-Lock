@@ -48,4 +48,7 @@ class StyleHistoryModel(Base):
 
     def __repr__(self) -> str:
         """String representation for debugging."""
-        return f"<StyleHistoryModel(id={self.id}, user_id={self.user_id}, created_at={self.created_at})>"
+        return (
+            f"<StyleHistoryModel(id={self.id}, "
+            f"user_id={self.user_id}, created_at={self.created_at})>"
+        )

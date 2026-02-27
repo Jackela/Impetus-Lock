@@ -101,7 +101,7 @@ class StyleHistoryRepository:
 
         if self.session:
             query = delete(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
-            result = await self.session.execute(query)
+            await self.session.execute(query)
             await self.session.commit()
             return True
         else:
