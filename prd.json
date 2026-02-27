@@ -57,7 +57,7 @@
         "Returns difference metrics and radar chart data",
         "8+ unit tests passing"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": 4,
