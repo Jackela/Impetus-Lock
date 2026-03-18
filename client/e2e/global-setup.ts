@@ -15,7 +15,11 @@
 
 import { execSync, spawn } from "child_process";
 import { existsSync } from "fs";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
+
+// ES Module compatible __dirname
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const BACKEND_HEALTH_URL = process.env.BACKEND_HEALTH_URL || "http://localhost:8000/health";
