@@ -44,6 +44,7 @@
 - ```typescript
 
   ```
+
 - import { test, expect } from "./fixtures";
 -
 - test("example", async ({ page, cleanup }) => {
@@ -54,11 +55,13 @@
 - ```
 
   ```
+
 -
 - 2.  Avoid waitForTimeout, use proper waiting:
 - ```typescript
 
   ```
+
 - // Bad:
 - await page.waitForTimeout(1000);
 -
@@ -68,11 +71,13 @@
 - ```
 
   ```
+
 -
 - 3.  Use database helpers for test data:
 - ```typescript
 
   ```
+
 - import { resetDatabase, seedTestData } from "./helpers/database";
 -
 - test.beforeEach(async ({ request }) => {
@@ -84,26 +89,31 @@
 - ```
 
   ```
+
 -
 - 4.  Clean up after tests:
 - ```typescript
 
   ```
+
 - test.afterEach(async ({ page }) => {
 -      await page.evaluate(() => localStorage.clear());
 - });
 - ```
 
   ```
+
 -
 - 5.  Add data-testid attributes for reliable selection:
 - ```tsx
 
   ```
+
 - <button data-testid="submit-button">Submit</button>
 - ```
 
   ```
+
 -
 - ENVIRONMENT VARIABLES:
 -
