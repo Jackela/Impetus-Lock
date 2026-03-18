@@ -1,0 +1,74 @@
+# Impetus Lock Frontend - Development Dockerfile
+# ==============================================
+# This Dockerfile is optimized for development with hot reload support.
+# For production builds, see Dockerfile.prod
+
+FROM node:20-alpine
+
+# Labels
+LABEL maintainer="Impetus Team <team@impetus-lock.dev>"
+LABEL description="Development image for Impetus Lock React frontend"
+LABEL version="1.0.0"
+
+# Set environment variables
+ENV NODE_ENV=development \
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_COLOR=false \
+    VITE_PORT=5173 \
+    VITE_HOST=0.0.0.0
+
+# Install system dependencies for better development experience
+RUN apk add --no-cache \
+    # Git for Husky hooks
+    git \
+    # curl for health checks
+    curl \
+    # wget for health checks
+    wget \
+    # For native module compilation (if needed)
+    python3 \
+    make \
+    g++
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files FIRST for better layer caching
+COPY package*.json ./
+
+# Install dependencies
+# Using npm ci would be better for production, but npm install is more flexible for development
+RUN npm install
+
+# Copy the entrypoint script
+COPY <<'EOF' /entrypoint.sh
+#!/bin/sh
+set -e
+
+# Colors for output (using echo escape codes for Alpine sh)
+echo "🚀 Starting Impetus Lock Frontend"
+
+# Ensure node_modules exists (in case volume mount is empty)
+if [ ! -d "node_modules" ] || [ -z "$(ls -A node_modules 2>/dev/null)" ]; then
+    echo "📦 Installing dependencies..."
+    npm install
+fi
+
+echo "🌟 Starting Vite development server"
+exec npm run dev -- --host 0.0.0.0 --port 5173
+EOF
+
+RUN chmod +x /entrypoint.sh
+
+# Create directory for the application
+RUN mkdir -p /app/src
+
+# Expose Vite default port
+EXPOSE 5173
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --spider -q http://localhost:5173 || exit 1
+
+# Default command
+ENTRYPOINT ["/entrypoint.sh"]

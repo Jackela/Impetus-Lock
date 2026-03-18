@@ -22,6 +22,9 @@ from server.infrastructure.persistence.database import (
     init_database,
     is_database_initialized,
 )
+from server.infrastructure.persistence.database import (
+    health_check as db_health_check,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,16 +32,12 @@ setup_json_logging(os.getenv("LOG_LEVEL", "INFO"))
 
 logger = logging.getLogger("server.api")
 
-# Conditionally import testing routes
-if os.getenv("TESTING"):
-    from server.api.routes import testing
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize shared resources and close them on shutdown."""
 
-    init_database()
+    await init_database()
     app.state.idempotency_cache = AsyncIdempotencyCache(ttl=15)
     app.state.provider_registry = ProviderRegistry()
     try:
@@ -86,6 +85,8 @@ app.include_router(style_comparison.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):
+    from server.api.routes import testing
+
     app.include_router(testing.router)
 
 
@@ -123,6 +124,19 @@ def health() -> HealthResponse:
         service="impetus-lock",
         version="0.1.0",
     )
+
+
+@app.get("/health/db")
+async def health_db() -> dict:
+    """Database health check endpoint with pool metrics.
+
+    Returns detailed database connectivity status and pool utilization.
+
+    Returns:
+        dict: Database health status with metrics.
+    """
+    health = await db_health_check()
+    return health.to_dict()
 
 
 @app.middleware("http")
