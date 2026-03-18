@@ -14,11 +14,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import signal
 import socket
 import sys
-from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
@@ -29,9 +27,9 @@ from dotenv import load_dotenv
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
-# Import after env load
-from server.config import AppConfig, get_config, init_config
-from server.infrastructure.logging.json_formatter import setup_json_logging
+# Import after env load  # noqa: E402
+from server.config import AppConfig, init_config  # noqa: E402
+from server.infrastructure.logging.json_formatter import setup_json_logging  # noqa: E402
 
 # Global state for shutdown handling
 _shutdown_event = asyncio.Event()
@@ -51,7 +49,7 @@ def set_process_title(title: str) -> None:
     """Set process title for better monitoring visibility."""
     logger = get_logger()
     try:
-        import setproctitle
+        import setproctitle  # type: ignore[import-not-found]
 
         setproctitle.setproctitle(title)
         logger.info("process_title_set", extra={"title": title})
@@ -88,7 +86,7 @@ def print_startup_banner(config: AppConfig) -> None:
 ║  Database:  {database_display:<48} ║
 ╚════════════════════════════════════════════════════════════════╝
     """
-    print(banner)
+    print(banner)  # noqa: T201
     get_logger().info(
         "startup_banner_displayed",
         extra={
@@ -362,15 +360,15 @@ async def run_server(config: AppConfig) -> int:
                 "error": "Port is already in use",
             },
         )
-        print(f"\n❌ Error: Port {config.server.port} is already in use on {config.server.host}")
-        print(f"   Please stop the existing server or choose a different port.\n")
+        print(f"\n❌ Error: Port {config.server.port} is already in use on {config.server.host}")  # noqa: T201
+        print("   Please stop the existing server or choose a different port.\n")  # noqa: T201
         return 1
 
     # Wait for database
     if not await wait_for_database(config):
         logger.error("database_not_ready")
-        print("\n❌ Error: Could not connect to database")
-        print("   Please ensure the database is running and accessible.\n")
+        print("\n❌ Error: Could not connect to database")  # noqa: T201
+        print("   Please ensure the database is running and accessible.\n")  # noqa: T201
         return 1
 
     # Register signal handlers
@@ -428,7 +426,7 @@ def main() -> int:
         # Run the async server
         return asyncio.run(run_server(config))
     except ValueError as e:
-        print(f"\n❌ Configuration error: {e}\n")
+        print(f"\n❌ Configuration error: {e}\n")  # noqa: T201
         return 1
     except KeyboardInterrupt:
         get_logger().info("keyboard_interrupt_received")

@@ -52,8 +52,8 @@ export default defineConfig({
   reporter: reporters,
 
   // Global setup and teardown
-  globalSetup: require.resolve("./e2e/global-setup"),
-  globalTeardown: require.resolve("./e2e/global-teardown"),
+  globalSetup: "./e2e/global-setup.ts",
+  globalTeardown: "./e2e/global-teardown.ts",
 
   // Shared settings for all projects
   use: {

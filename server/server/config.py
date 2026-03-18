@@ -32,7 +32,7 @@ class DatabaseConfig:
     echo: bool = False
 
     @classmethod
-    def from_env(cls) -> "DatabaseConfig":
+    def from_env(cls) -> DatabaseConfig:
         """Create database config from environment variables."""
         return cls(
             url=os.getenv("DATABASE_URL", ""),
@@ -56,7 +56,7 @@ class ServerConfig:
     timeout_graceful_shutdown: int = 30
 
     @classmethod
-    def from_env(cls) -> "ServerConfig":
+    def from_env(cls) -> ServerConfig:
         """Create server config from environment variables."""
         return cls(
             host=os.getenv("HOST", "127.0.0.1"),
@@ -87,7 +87,7 @@ class HealthCheckConfig:
     retry_backoff: bool = True
 
     @classmethod
-    def from_env(cls) -> "HealthCheckConfig":
+    def from_env(cls) -> HealthCheckConfig:
         """Create health check config from environment variables."""
         return cls(
             enabled=os.getenv("HEALTH_CHECK_ENABLED", "true").lower() in {"1", "true", "yes", "on"},
@@ -106,7 +106,7 @@ class PortConfig:
     check_delay: float = 1.0
 
     @classmethod
-    def from_env(cls) -> "PortConfig":
+    def from_env(cls) -> PortConfig:
         """Create port config from environment variables."""
         return cls(
             check_retries=int(os.getenv("PORT_CHECK_RETRIES", "5")),

@@ -6,7 +6,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Literal
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
@@ -127,7 +127,7 @@ def health() -> HealthResponse:
 
 
 @app.get("/health/db")
-async def health_db() -> dict:
+async def health_db() -> dict[str, Any]:
     """Database health check endpoint with pool metrics.
 
     Returns detailed database connectivity status and pool utilization.
