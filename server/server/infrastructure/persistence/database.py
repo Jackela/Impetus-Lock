@@ -237,6 +237,14 @@ class DatabaseManager:
             logger.warning(f"Database initialization failed: {error_msg}")
             return False
 
+        except (asyncpg.PostgresConnectionError, asyncpg.TooManyConnectionsError) as e:
+            logger.warning(f"PostgreSQL connection error during initialization: {e}")
+            return False
+
+        except (asyncio.TimeoutError, ConnectionError) as e:
+            logger.warning(f"Connection timeout or error during initialization: {e}")
+            return False
+
         except Exception:
             logger.exception("Unexpected error during database initialization")
             return False
@@ -280,10 +288,14 @@ class DatabaseManager:
             status.is_healthy = True
             status.pool_metrics = self._get_pool_metrics()
             logger.debug(f"Health check passed: {status.response_time_ms:.2f}ms")
-        except Exception as e:
-            status.error_message = (
-                self._parse_error_message(e) if isinstance(e, OperationalError) else str(e)
-            )
+        except OperationalError as e:
+            status.error_message = self._parse_error_message(e)
+            logger.warning(f"Health check failed: {status.error_message}")
+        except (asyncpg.PostgresConnectionError, asyncpg.TooManyConnectionsError) as e:
+            status.error_message = f"PostgreSQL connection error: {e}"
+            logger.warning(f"Health check failed: {status.error_message}")
+        except asyncio.TimeoutError:
+            status.error_message = "Health check timed out"
             logger.warning(f"Health check failed: {status.error_message}")
 
         self._health_status = status
@@ -308,7 +320,7 @@ class DatabaseManager:
             yield session
             if self._circuit_breaker:
                 await self._circuit_breaker.record_success()
-        except Exception:
+        except (OperationalError, RuntimeError, asyncpg.PostgresConnectionError) as e:
             if session:
                 await session.rollback()
             if self._circuit_breaker:
@@ -358,7 +370,7 @@ class DatabaseManager:
                     checked_out=checked_out,
                     overflow=overflow,
                 )
-        except Exception as e:
+        except (AttributeError, TypeError) as e:
             logger.debug(f"Failed to collect pool metrics: {e}")
         return None
 

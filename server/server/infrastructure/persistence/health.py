@@ -162,6 +162,10 @@ class DatabaseHealthChecker:
             status.error_message = f"Database connection failed: {e}"
             logger.warning(f"Health check failed: {status.error_message}")
 
+        except (AttributeError, TypeError) as e:
+            status.error_message = f"Database engine attribute error: {e}"
+            logger.warning(f"Health check failed: {status.error_message}")
+
         except Exception as e:
             status.error_message = f"Health check error: {e}"
             logger.exception("Unexpected health check error")
@@ -190,7 +194,7 @@ class DatabaseHealthChecker:
                     checked_out=checked_out,
                     overflow=overflow,
                 )
-        except Exception as e:
+        except (AttributeError, TypeError) as e:
             logger.debug(f"Failed to collect pool metrics: {e}")
 
         return None

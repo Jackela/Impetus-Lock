@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from server.infrastructure.persistence.style_history_repository import StyleHistoryRepository
 
@@ -59,7 +60,7 @@ async def create_history(
         Created history record
 
     Raises:
-        HTTPException: 400 if validation fails
+        HTTPException: 400 if validation fails, 409 if conflict, 503 if DB unavailable
     """
     try:
         history = await repo.create(
@@ -72,8 +73,20 @@ async def create_history(
             style_vector=history.style_vector,
             created_at=history.created_at.isoformat(),
         )
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+    except IntegrityError as e:
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "ConflictError", "message": "Duplicate entry or constraint violation"},
+        ) from e
+    except OperationalError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "ServiceUnavailable", "message": "Database temporarily unavailable"},
+        ) from e
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400, detail={"error": "ValidationError", "message": str(e)}
+        ) from e
 
 
 @router.get("/user/{user_id}", response_model=StyleHistoryListResponse)
