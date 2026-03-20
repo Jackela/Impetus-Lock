@@ -1,4 +1,4 @@
-"""Observability helpers for recording LLM call metrics."""
+"""Prometheus observability implementation."""
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ import os
 from typing import Any
 
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+
+from server.domain.observability import ObservabilityPort
 
 logger = logging.getLogger("server.observability")
 
@@ -19,19 +21,48 @@ ENABLE_PROM_METRICS = os.getenv("ENABLE_PROMETHEUS_METRICS", "0").strip().lower(
 
 LLM_REQUEST_COUNTER: Counter | None = None
 LLM_LATENCY_HIST: Histogram | None = None
+INTERVENTION_COUNTER: Counter | None = None
 
 if ENABLE_PROM_METRICS:
     LLM_REQUEST_COUNTER = Counter(
         "llm_requests_total",
         "Total number of LLM invocations",
-        labelnames=("provider", "mode", "success"),
+        labelnames=("provider", "model", "success"),
     )
     LLM_LATENCY_HIST = Histogram(
         "llm_request_latency_seconds",
         "Latency of LLM invocations (seconds)",
-        labelnames=("provider", "mode"),
+        labelnames=("provider", "model"),
         buckets=(0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0),
     )
+    INTERVENTION_COUNTER = Counter(
+        "interventions_total",
+        "Total number of interventions",
+        labelnames=("mode", "action_type"),
+    )
+
+
+class PrometheusObservability(ObservabilityPort):
+    """Prometheus-based observability implementation."""
+
+    def record_llm_request(
+        self, provider: str, model: str, success: bool, latency_ms: float, tokens_used: int
+    ) -> None:
+        """Record LLM request metrics."""
+        if ENABLE_PROM_METRICS and LLM_REQUEST_COUNTER and LLM_LATENCY_HIST:
+            LLM_REQUEST_COUNTER.labels(
+                provider=provider, model=model, success=str(success).lower()
+            ).inc()
+            LLM_LATENCY_HIST.labels(provider=provider, model=model).observe(latency_ms / 1000)
+
+    def record_intervention(self, mode: str, action_type: str) -> None:
+        """Record intervention metrics."""
+        if ENABLE_PROM_METRICS and INTERVENTION_COUNTER:
+            INTERVENTION_COUNTER.labels(mode=mode, action_type=action_type).inc()
+
+    def get_metrics(self) -> dict[str, Any]:
+        """Get current metrics in Prometheus format."""
+        return {"metrics": generate_latest(), "content_type": CONTENT_TYPE_LATEST}
 
 
 def log_llm_call(
@@ -64,10 +95,12 @@ def log_llm_call(
     if ENABLE_PROM_METRICS and LLM_REQUEST_COUNTER and LLM_LATENCY_HIST:
         LLM_REQUEST_COUNTER.labels(
             provider=provider_name,
-            mode=mode,
+            model=model or "unknown",
             success=str(success).lower(),
         ).inc()
-        LLM_LATENCY_HIST.labels(provider=provider_name, mode=mode).observe(duration_ms / 1000)
+        LLM_LATENCY_HIST.labels(provider=provider_name, model=model or "unknown").observe(
+            duration_ms / 1000
+        )
 
 
 def prometheus_latest() -> tuple[bytes, str]:

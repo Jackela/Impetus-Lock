@@ -8,9 +8,12 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Branch or commit to run CI on'
+        description: "Branch or commit to run CI on"
         required: false
-        default: 'main'
+        default: "main"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 # Concurrency: Cancel previous runs for the same PR or branch
 concurrency:
@@ -76,7 +79,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "24.x"
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
@@ -138,7 +141,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "24.x"
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
@@ -195,7 +198,7 @@ jobs:
     name: Frontend Tests
     runs-on: ubuntu-latest
     env:
-      TZ: UTC  # Force UTC timezone for consistent date formatting in snapshots
+      TZ: UTC # Force UTC timezone for consistent date formatting in snapshots
     steps:
       - name: Debug information
         run: |
@@ -209,7 +212,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "24.x"
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 

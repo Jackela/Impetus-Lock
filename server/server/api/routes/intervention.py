@@ -15,6 +15,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.dependencies import get_task_repository
@@ -198,9 +199,16 @@ async def generate_intervention(
         if session is not None:
             try:
                 await session.commit()
-            except Exception:
+            except (OperationalError, RuntimeError) as e:
                 await session.rollback()
-                raise
+                raise HTTPException(
+                    status_code=500,
+                    detail={
+                        "error": "DatabaseError",
+                        "message": "Failed to persist intervention",
+                        "details": {"db_error": str(e)},
+                    },
+                ) from e
 
         return intervention_response
 

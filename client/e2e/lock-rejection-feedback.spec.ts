@@ -82,7 +82,7 @@ test.describe("Lock Rejection Feedback", () => {
 
     // Wait for editor to be truly empty (important for state isolation)
     const editor = page.locator('.milkdown [contenteditable="true"]');
-    await expect(editor).toHaveText('', { timeout: 5000 });
+    await expect(editor).toHaveText("", { timeout: 5000 });
 
     await insertLockedContent(
       page,
@@ -122,8 +122,8 @@ test.describe("Lock Rejection Feedback", () => {
 
     // Assert: Locked content blockquote is still present (or content contains locked marker)
     // The blockquote might be re-rendered, so check if it exists or content has lock marker
-    const lockedContentStillExists = await lockedContent.count() > 0;
-    const contentHasLockMarker = (contentAfter ?? '').includes('lock:test_lock_reject_002');
+    const lockedContentStillExists = (await lockedContent.count()) > 0;
+    const contentHasLockMarker = (contentAfter ?? "").includes("lock:test_lock_reject_002");
     expect(lockedContentStillExists || contentHasLockMarker).toBe(true);
   });
 
@@ -134,12 +134,12 @@ test.describe("Lock Rejection Feedback", () => {
 
     // Verify empty state before test
     const editor = page.locator('.milkdown [contenteditable="true"]');
-    await expect(editor).toHaveText('', { timeout: 5000 });
+    await expect(editor).toHaveText("", { timeout: 5000 });
 
     await insertLockedContent(page, "> AI-locked content", "test_lock_reject_003");
 
-    // Wait for decorations
-    await page.waitForTimeout(500);
+    // Wait for decorations to be applied
+    await expect(page.locator("blockquote.locked-content")).toBeAttached({ timeout: 5000 });
 
     // Trigger lock rejection
     const prosemirror = page.locator('.milkdown [contenteditable="true"]');
@@ -152,14 +152,8 @@ test.describe("Lock Rejection Feedback", () => {
     await expect(sensoryFeedback).toBeAttached({ timeout: 2000 });
     await expect(sensoryFeedback).toHaveAttribute("data-animation", "shake");
 
-    // Wait for animation to complete (1 second animation duration + buffer)
-    await page.waitForTimeout(1500);
-
-    // CI containers sometimes keep the overlay mounted longer; if it is still present, ensure it
-    // is still showing the shake animation. Otherwise, consider the test satisfied.
-    if ((await sensoryFeedback.count()) > 0) {
-      await expect(sensoryFeedback).toHaveAttribute("data-animation", "shake");
-    }
+    // Wait for animation to complete - verify feedback disappears
+    await expect(sensoryFeedback).not.toBeAttached({ timeout: 5000 });
   });
 
   test("Web Audio API initialized for sound playback", async ({ page }) => {
@@ -169,7 +163,7 @@ test.describe("Lock Rejection Feedback", () => {
 
     // Verify empty state before test
     const editor = page.locator('.milkdown [contenteditable="true"]');
-    await expect(editor).toHaveText('', { timeout: 5000 });
+    await expect(editor).toHaveText("", { timeout: 5000 });
 
     // Check if AudioContext is available (browsers may require user interaction)
     const audioContextAvailable = await page.evaluate(() => {
@@ -190,8 +184,10 @@ test.describe("Lock Rejection Feedback", () => {
       await page.keyboard.press("Control+A");
       await page.keyboard.press("Backspace");
 
-      // Wait for feedback to trigger
-      await page.waitForTimeout(500);
+      // Wait for feedback to appear
+      await expect(page.locator('[data-testid="sensory-feedback"]')).toBeAttached({
+        timeout: 3000,
+      });
 
       // Note: We cannot directly test audio playback in Playwright due to browser restrictions.
       // Audio playback requires user interaction (autoplay policy).

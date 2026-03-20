@@ -6,14 +6,31 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Literal
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from server.api.routes import intervention, metrics, style, style_comparison, style_history, tasks
+from server.api.auth.middleware import AuthenticationMiddleware
+from server.api.errors import (
+    app_error_handler,
+    global_exception_handler,
+    llm_provider_error_handler,
+    validation_error_handler,
+)
+from server.api.middleware.rate_limit import RateLimitMiddleware
+from server.api.routes import (
+    intervention,
+    metrics,
+    style,
+    style_comparison,
+    style_history,
+    tasks,
+)
+from server.domain.errors import AppError, LLMProviderError
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import ProviderRegistry
 from server.infrastructure.logging.json_formatter import setup_json_logging
@@ -22,6 +39,9 @@ from server.infrastructure.persistence.database import (
     init_database,
     is_database_initialized,
 )
+from server.infrastructure.persistence.database import (
+    health_check as db_health_check,
+)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,16 +49,12 @@ setup_json_logging(os.getenv("LOG_LEVEL", "INFO"))
 
 logger = logging.getLogger("server.api")
 
-# Conditionally import testing routes
-if os.getenv("TESTING"):
-    from server.api.routes import testing
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize shared resources and close them on shutdown."""
 
-    init_database()
+    await init_database()
     app.state.idempotency_cache = AsyncIdempotencyCache(ttl=15)
     app.state.provider_registry = ProviderRegistry()
     try:
@@ -54,6 +70,15 @@ app = FastAPI(
     description="Un-deletable task pressure system API",
     lifespan=lifespan,
 )
+
+app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(LLMProviderError, llm_provider_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, global_exception_handler)
+
+# Add middleware (order matters - rate limit first, then auth, then CORS)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(AuthenticationMiddleware)
 
 
 # CORS middleware for local development
@@ -86,6 +111,8 @@ app.include_router(style_comparison.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):
+    from server.api.routes import testing
+
     app.include_router(testing.router)
 
 
@@ -123,6 +150,19 @@ def health() -> HealthResponse:
         service="impetus-lock",
         version="0.1.0",
     )
+
+
+@app.get("/health/db")
+async def health_db() -> dict[str, Any]:
+    """Database health check endpoint with pool metrics.
+
+    Returns detailed database connectivity status and pool utilization.
+
+    Returns:
+        dict: Database health status with metrics.
+    """
+    health = await db_health_check()
+    return health.to_dict()
 
 
 @app.middleware("http")
