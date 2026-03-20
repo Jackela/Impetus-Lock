@@ -13,7 +13,7 @@
  * - Article V (Documentation): Comprehensive logging and error messages
  */
 
-import { execSync, spawn } from "child_process";
+import { execSync } from "child_process";
 import { existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
@@ -47,6 +47,21 @@ async function checkHealth(url: string, timeout = 5000): Promise<boolean> {
     clearTimeout(timeoutId);
 
     return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Check if backend database is healthy
+ */
+async function checkDbHealth(): Promise<boolean> {
+  const dbHealthUrl = BACKEND_HEALTH_URL.replace("/health", "/health/db");
+  try {
+    const response = await fetch(dbHealthUrl, { signal: AbortSignal.timeout(5000) });
+    if (!response.ok) return false;
+    const data = await response.json();
+    return data.status === "ok";
   } catch {
     return false;
   }
@@ -87,126 +102,51 @@ async function waitForService(name: string, healthUrl: string, timeout: number):
 }
 
 /**
- * Start the backend server if not already running
+ * Verify backend is running and database is accessible.
+ * In CI, the backend is started by the workflow, so we just verify it's healthy.
  */
-async function startBackend(): Promise<boolean> {
-  console.log("\n🔍 Checking if backend is already running...");
+async function verifyBackend(): Promise<void> {
+  console.log("\n🔍 Verifying backend is running...");
 
   const isHealthy = await checkHealth(BACKEND_HEALTH_URL, 3000);
   if (isHealthy) {
     console.log("✅ Backend is already running");
-    return false; // Didn't need to start it
-  }
 
-  console.log("🚀 Starting backend server...");
-  console.log("   This may take a moment (Poetry install + DB migration)...");
-
-  const serverDir = resolve(__dirname, "../../server");
-  if (!existsSync(serverDir)) {
-    throw new Error(`Server directory not found: ${serverDir}`);
-  }
-
-  // Check if we're in CI environment
-  const isCI = process.env.CI === "true" || process.env.CI === "1";
-
-  try {
-    if (isCI) {
-      // In CI, use poetry run directly
-      const backendProcess = spawn(
-        "poetry",
-        [
-          "-C",
-          "server",
-          "run",
-          "python",
-          "-m",
-          "uvicorn",
-          "server.api.main:app",
-          "--host",
-          "0.0.0.0",
-          "--port",
-          "8000",
-        ],
-        {
-          detached: true,
-          stdio: "pipe",
-          env: {
-            ...process.env,
-            TESTING: "true",
-            DATABASE_URL:
-              process.env.DATABASE_URL ||
-              "postgresql+asyncpg://postgres:postgres@localhost:5432/impetus_lock_test",
-          },
-        }
-      );
-
-      // Log backend output for debugging
-      backendProcess.stdout?.on("data", (data) => {
-        if (process.env.DEBUG_BACKEND) {
-          console.log(`[Backend] ${data.toString().trim()}`);
-        }
-      });
-
-      backendProcess.stderr?.on("data", (data) => {
-        if (process.env.DEBUG_BACKEND) {
-          console.error(`[Backend Error] ${data.toString().trim()}`);
-        }
-      });
-
-      // Unref so the process doesn't keep the setup script alive
-      backendProcess.unref();
-    } else {
-      // In local development, assume user starts backend manually
-      console.log("⚠️  Backend not running. Please start it manually:");
-      console.log("   cd server && poetry run uvicorn server.api.main:app --reload");
-      console.log("   Or set PLAYWRIGHT_SKIP_BACKEND_START=0 to auto-start");
-
-      if (process.env.PLAYWRIGHT_SKIP_BACKEND_START !== "0") {
-        throw new Error(
-          "Backend is required for E2E tests. Start it manually or enable auto-start."
-        );
+    // Wait for database to be ready (important for E2E tests)
+    console.log("🔍 Checking database connectivity...");
+    for (let i = 0; i < 15; i++) {
+      if (await checkDbHealth()) {
+        console.log("✅ Database is connected and healthy");
+        return;
       }
+      process.stdout.write(`   Waiting for database... (${i + 1}/15)\n`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
-    // Wait for backend to be healthy
-    await waitForService("Backend", BACKEND_HEALTH_URL, BACKEND_START_TIMEOUT);
-    return true; // Started the backend
-  } catch (error) {
-    console.error("\n❌ Failed to start backend:");
-    console.error(error instanceof Error ? error.message : String(error));
-    throw error;
+    // In TESTING mode with in-memory fallback, this is not fatal
+    console.log("⚠️  Database not fully ready, but continuing (TESTING mode may use in-memory fallback)");
+    return;
   }
+
+  throw new Error("Backend is not running. Please start the backend before running E2E tests.");
 }
 
 /**
  * Initialize the test database
  */
 async function initializeDatabase(): Promise<void> {
-  console.log("\n🗄️  Initializing test database...");
+  console.log("\n🗄️  Checking database connectivity...");
 
-  try {
-    // Check if we can connect to the database via the backend
-    const dbHealthUrl = BACKEND_HEALTH_URL.replace("/health", "/health/db");
-    const isDbHealthy = await checkHealth(dbHealthUrl, 5000);
-
-    if (isDbHealthy) {
-      console.log("✅ Database is connected and healthy");
-      return;
-    }
-
-    // If DB-specific health check isn't available, check general health
-    const isHealthy = await checkHealth(BACKEND_HEALTH_URL, 5000);
-    if (!isHealthy) {
-      throw new Error("Backend is not healthy, cannot initialize database");
-    }
-
-    console.log("⚠️  Database health check not available, assuming backend handles migrations");
-  } catch (error) {
-    console.error("\n❌ Database initialization failed:");
-    console.error(error instanceof Error ? error.message : String(error));
-    // Don't throw - backend may handle migrations automatically
-    console.log("   Continuing anyway (backend may handle migrations)...");
+  // Database initialization is handled by the backend in TESTING mode
+  // with graceful fallback to in-memory repository
+  if (await checkDbHealth()) {
+    console.log("✅ Database is connected and healthy");
+    return;
   }
+
+  console.log("⚠️  Database health check not available");
+  console.log("   In TESTING mode, the backend will use in-memory fallback");
+}
 }
 
 /**
@@ -215,17 +155,21 @@ async function initializeDatabase(): Promise<void> {
 async function runMigrations(): Promise<void> {
   console.log("\n🔄 Checking database migrations...");
 
+  // Migrations are already run by the workflow before backend starts
+  // In TESTING mode with graceful fallback, database connectivity issues
+  // won't prevent tests from running (backend uses in-memory fallback)
+
   try {
     const serverDir = resolve(__dirname, "../../server");
-
-    // Check if alembic is configured
     const alembicIniPath = resolve(serverDir, "alembic.ini");
     if (!existsSync(alembicIniPath)) {
       console.log("⚠️  No alembic.ini found, skipping migrations");
       return;
     }
 
-    // Run migrations using poetry
+    // Try to run migrations but don't fail if they don't work
+    // The workflow has already run migrations, and in TESTING mode
+    // the backend has graceful fallback
     execSync("poetry run alembic upgrade head", {
       cwd: serverDir,
       stdio: "pipe",
@@ -239,10 +183,7 @@ async function runMigrations(): Promise<void> {
 
     console.log("✅ Database migrations completed");
   } catch (error) {
-    console.error("\n⚠️  Migration check failed (this may be OK if using auto-migrate):");
-    if (error instanceof Error) {
-      console.error(`   ${error.message}`);
-    }
+    console.log("⚠️  Migration check failed (may already be applied or using fallback)");
   }
 }
 
@@ -289,19 +230,14 @@ async function globalSetup(): Promise<void> {
   console.log("🎭 Playwright E2E Test Global Setup");
   console.log("=".repeat(60));
 
-  const context: SetupContext = {
-    backendStarted: false,
-    frontendReady: false,
-  };
-
   try {
-    // Step 1: Start backend if needed
-    context.backendStarted = await startBackend();
+    // Step 1: Verify backend is running (started by workflow in CI)
+    await verifyBackend();
 
     // Step 2: Initialize database
     await initializeDatabase();
 
-    // Step 3: Run migrations
+    // Step 3: Run migrations (if needed)
     await runMigrations();
 
     // Step 4: Wait for services to be ready

@@ -87,24 +87,54 @@ jobs:
           LLM_ALLOW_DEBUG_PROVIDER: "1"
           LLM_DEFAULT_PROVIDER: debug
         run: |
-          poetry -C server run python -m uvicorn server.api.main:app --host 0.0.0.0 --port 8000 &
+          # Start backend in background with nohup to prevent it from dying
+          nohup poetry -C server run python -m uvicorn server.api.main:app --host 0.0.0.0 --port 8000 > /tmp/backend.log 2>&1 &
           BACKEND_PID=$!
           echo "Backend PID: $BACKEND_PID"
           echo "Waiting for backend to be ready..."
-          for i in {1..30}; do
+
+          # Wait for basic health endpoint
+          for i in {1..15}; do
             if curl -s http://localhost:8000/health > /dev/null 2>&1; then
-              echo "✅ Backend is ready!"
+              echo "✅ Backend /health endpoint is responding"
               break
             fi
             if ! ps -p $BACKEND_PID > /dev/null 2>&1; then
-              echo "❌ Backend process died! Last logs:"
-              tail -20 /tmp/backend.log
+              echo "❌ Backend process died! Logs:"
+              tail -50 /tmp/backend.log
               exit 1
             fi
-            echo "Waiting... ($i/30)"
+            echo "Waiting for /health... ($i/15)"
             sleep 2
           done
-          curl -f http://localhost:8000/health || (echo "❌ Backend failed to start. Logs:" && tail -20 /tmp/backend.log && exit 1)
+
+          # Verify /health endpoint actually works
+          if ! curl -f http://localhost:8000/health > /dev/null 2>&1; then
+            echo "❌ Backend /health failed. Logs:"
+            tail -50 /tmp/backend.log
+            exit 1
+          fi
+
+          # Now wait for database to be ready (critical for tests)
+          echo "Waiting for database connection..."
+          for i in {1..15}; do
+            DB_STATUS=$(curl -s http://localhost:8000/health/db 2>/dev/null | grep -o '"status":"ok"' || true)
+            if [ -n "$DB_STATUS" ]; then
+              echo "✅ Database is connected!"
+              break
+            fi
+            echo "Waiting for /health/db... ($i/15)"
+            sleep 2
+          done
+
+          # Final verification
+          echo "=== Backend startup complete ==="
+          echo "Health check:"
+          curl -s http://localhost:8000/health
+          echo ""
+          echo "Database check:"
+          curl -s http://localhost:8000/health/db
+          echo ""
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

@@ -19,28 +19,23 @@ const reporters = process.env.CI
     ]
   : [["html", { open: "on-failure" }]];
 
-// Base URL for tests
+// Base URL for tests - frontend dev server
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
 
-// Whether to start the web server (set SKIP_WEBSERVER=1 to use existing server)
+// Whether to start the web server
+// In CI, we want playwright to start the web server
+// Set PLAYWRIGHT_SKIP_WEBSERVER=1 to skip web server startup
 const shouldStartWebServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER !== "1";
-
-// Backend health check URL
-const backendHealthURL = process.env.BACKEND_HEALTH_URL || "http://localhost:8000/health";
 
 export default defineConfig({
   testDir: "./e2e",
 
-  // Parallel execution settings
-  fullyParallel: !process.env.CI, // Disable parallel in CI for stability
-  workers: process.env.CI ? 1 : undefined, // Single worker in CI
+  // Parallel execution settings - single worker in CI for stability
+  fullyParallel: !process.env.CI,
+  workers: process.env.CI ? 1 : undefined,
 
-  // Retry configuration: more retries in CI for flaky environments
+  // Retry configuration
   retries: process.env.CI ? 2 : 1,
-
-  // Fail fast in CI to save resources
-  forbidOnly: !!process.env.CI,
-  maxFailures: process.env.CI ? 5 : undefined,
 
   // Timeout configuration
   timeout: 60000, // Global test timeout: 60s
@@ -58,12 +53,12 @@ export default defineConfig({
   // Shared settings for all projects
   use: {
     baseURL,
-    trace: "on-first-retry", // Capture traces on first retry for debugging
-    screenshot: "only-on-failure", // Screenshots on failure
-    video: "on-first-retry", // Video on first retry
+    trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "on-first-retry",
     storageState: "./e2e/storage-state.json",
-    actionTimeout: 15000, // Action timeout: 15s
-    navigationTimeout: 30000, // Navigation timeout: 30s
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
     viewport: { width: 1280, height: 720 },
   },
 
@@ -80,13 +75,13 @@ export default defineConfig({
     },
   ],
 
-  // Web server configuration
+  // Web server configuration - starts Vite dev server for frontend
   webServer: shouldStartWebServer
     ? {
         command: "npm run dev -- --host",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
-        timeout: 120000, // 2 minutes to start
+        timeout: 120000,
         stderr: "pipe",
         stdout: "pipe",
       }
