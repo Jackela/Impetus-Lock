@@ -6,6 +6,7 @@ import { Skeleton } from "./components/Skeleton";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { NewTaskButton } from "./components/NewTaskButton";
+import { StyleLearningPanel } from "./components/StyleLearning/StyleLearningPanel";
 import { useTasks } from "./hooks/useTasks";
 import type { TaskRecord } from "./types/task";
 import type { AgentMode } from "./hooks/useWritingState";
@@ -227,6 +228,22 @@ export function AppLayout({
       <footer className="app-footer">
         Press <kbd>?</kbd> for help
       </footer>
+
+      {showStyleLearning && (
+        <div className="style-learning-overlay" data-testid="style-learning-overlay">
+          <div className="style-learning-modal">
+            <StyleLearningPanel userId="default-user" />
+            <button
+              type="button"
+              className="close-button"
+              onClick={onShowStyleLearning}
+              aria-label="Close style learning panel"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <NewTaskButton onClick={onCreateTask} ariaLabel="Create new task" />
     </div>
