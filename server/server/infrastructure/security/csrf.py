@@ -7,7 +7,7 @@ from itsdangerous import URLSafeTimedSerializer
 
 
 class CSRFProtection:
-    def __init__(self):
+    def __init__(self) -> None:
         secret = os.getenv("SECRET_KEY")
         if not secret:
             raise ValueError("SECRET_KEY not set")

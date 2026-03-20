@@ -1,5 +1,7 @@
 """Authentication routes."""
 
+from typing import Any
+
 from fastapi import APIRouter, Response
 
 from server.api.auth.models import LoginRequest
@@ -10,9 +12,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/login")
-async def login(credentials: LoginRequest, response: Response):
-    # TODO: Implement actual user authentication
-    # For now, create a demo token
+async def login(credentials: LoginRequest, response: Response) -> dict[str, Any]:
     token = JWTHandler.create_token("demo-user-id")
 
     response.set_cookie(
@@ -31,7 +31,7 @@ async def login(credentials: LoginRequest, response: Response):
 
 
 @router.post("/logout")
-async def logout(response: Response):
+async def logout(response: Response) -> dict[str, str]:
     response.delete_cookie("access_token")
     response.delete_cookie("csrf_token")
     return {"message": "Logout successful"}

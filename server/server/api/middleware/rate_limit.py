@@ -1,7 +1,10 @@
 """Rate limiting middleware for FastAPI."""
 
+from collections.abc import Awaitable, Callable
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from server.infrastructure.rate_limiting import limiter
 
@@ -15,10 +18,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Skips rate limiting for health check endpoints.
     """
 
-    # Paths that should not be rate limited
     EXCLUDED_PATHS = {"/health", "/health/db", "/docs", "/openapi.json", "/redoc"}
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process request with rate limiting.
 
         Args:
@@ -30,11 +34,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """
         path = request.url.path
 
-        # Skip rate limiting for excluded paths
         if any(path.startswith(excluded) for excluded in self.EXCLUDED_PATHS):
             return await call_next(request)
 
-        # Check rate limit
         await limiter.check_rate_limit(request)
 
         return await call_next(request)

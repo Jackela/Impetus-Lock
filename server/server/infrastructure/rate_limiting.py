@@ -6,14 +6,15 @@ import os
 
 from fastapi import HTTPException, Request
 
-# Optional Redis import - rate limiting falls back to allowing all if Redis unavailable
 try:
-    import redis.asyncio as redis
+    import redis.asyncio as redis  # type: ignore[import-not-found]
+    from redis.asyncio import Redis as RedisClient  # type: ignore[import-not-found]
 
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    redis = None  # type: ignore
+    redis = None
+    RedisClient = None
 
 
 class RateLimiter:
@@ -41,7 +42,7 @@ class RateLimiter:
         Args:
             redis_url: Redis connection URL. If None, uses REDIS_URL env var.
         """
-        self._redis: redis.Redis | None = None  # type: ignore
+        self._redis: RedisClient | None = None
 
         if not REDIS_AVAILABLE:
             return
