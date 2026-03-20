@@ -1,10 +1,12 @@
 """Authentication middleware."""
 
 import os
+from collections.abc import Awaitable, Callable
 
 import jwt
 from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from server.infrastructure.security.jwt_handler import JWTHandler
 
@@ -12,7 +14,9 @@ from server.infrastructure.security.jwt_handler import JWTHandler
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     PUBLIC_PATHS = ["/health", "/auth/login", "/auth/register", "/docs", "/openapi.json"]
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         if os.getenv("TESTING"):
             return await call_next(request)
 
