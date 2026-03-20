@@ -124,7 +124,9 @@ async function verifyBackend(): Promise<void> {
     }
 
     // In TESTING mode with in-memory fallback, this is not fatal
-    console.log("⚠️  Database not fully ready, but continuing (TESTING mode may use in-memory fallback)");
+    console.log(
+      "⚠️  Database not fully ready, but continuing (TESTING mode may use in-memory fallback)"
+    );
     return;
   }
 
@@ -146,7 +148,6 @@ async function initializeDatabase(): Promise<void> {
 
   console.log("⚠️  Database health check not available");
   console.log("   In TESTING mode, the backend will use in-memory fallback");
-}
 }
 
 /**
