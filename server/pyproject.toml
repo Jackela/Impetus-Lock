@@ -151,7 +151,6 @@ forbidden_modules = [
 # Observability imports are temporarily allowed for practical logging needs
 # TODO: Refactor to use domain-layer observability abstractions (see domain/observability.py)
 ignore_imports = [
-    "server.application.services.intervention_service -> server.infrastructure.observability.metrics",
     "server.application.services.intervention_service -> server.infrastructure.observability.tracing",
 ]
 
