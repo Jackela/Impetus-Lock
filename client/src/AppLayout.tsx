@@ -237,7 +237,7 @@ export function AppLayout({
               type="button"
               className="close-button"
               onClick={onShowStyleLearning}
-              aria-label="Close style learning panel"
+              aria-label="Close Style Learning"
             >
               ×
             </button>
