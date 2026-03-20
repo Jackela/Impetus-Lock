@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 class LLMProviderError(RuntimeError):
@@ -47,9 +48,9 @@ class AppError(Exception):
     code: str
     message: str
     status_code: int
-    details: dict | None = field(default=None)
+    details: dict[str, Any] | None = field(default=None)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize error to dictionary for API responses."""
         return {
             "error": {
@@ -89,7 +90,7 @@ class RateLimitError(AppError):
 class ValidationError(AppError):
     """Validation error with field details."""
 
-    def __init__(self, message: str, details: dict | None = None):
+    def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__("VALIDATION_ERROR", message, 422, details)
 
 
@@ -103,7 +104,9 @@ class ServiceUnavailableError(AppError):
 class DatabaseError(AppError):
     """Database operation error."""
 
-    def __init__(self, message: str = "Database operation failed", details: dict | None = None):
+    def __init__(
+        self, message: str = "Database operation failed", details: dict[str, Any] | None = None
+    ):
         super().__init__("DATABASE_ERROR", message, 500, details)
 
 
