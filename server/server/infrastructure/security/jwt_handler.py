@@ -1,8 +1,9 @@
 """JWT token generation and validation."""
 
-import jwt
-from datetime import datetime, timedelta
 import os
+from datetime import datetime, timedelta
+
+import jwt
 
 
 class JWTHandler:

@@ -10,10 +10,17 @@ from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from server.api.auth.middleware import AuthenticationMiddleware
+from server.api.errors import (
+    app_error_handler,
+    global_exception_handler,
+    llm_provider_error_handler,
+    validation_error_handler,
+)
 from server.api.middleware.rate_limit import RateLimitMiddleware
 from server.api.routes import (
     intervention,
@@ -23,6 +30,7 @@ from server.api.routes import (
     style_history,
     tasks,
 )
+from server.domain.errors import AppError, LLMProviderError
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import ProviderRegistry
 from server.infrastructure.logging.json_formatter import setup_json_logging
@@ -62,16 +70,6 @@ app = FastAPI(
     description="Un-deletable task pressure system API",
     lifespan=lifespan,
 )
-
-# Register exception handlers
-from server.api.errors import (
-    app_error_handler,
-    llm_provider_error_handler,
-    validation_error_handler,
-    global_exception_handler,
-)
-from server.domain.errors import AppError, LLMProviderError
-from fastapi.exceptions import RequestValidationError
 
 app.add_exception_handler(AppError, app_error_handler)
 app.add_exception_handler(LLMProviderError, llm_provider_error_handler)

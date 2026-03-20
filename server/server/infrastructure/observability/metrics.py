@@ -8,7 +8,7 @@ from typing import Any
 
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
-from server.domain.observability import ObservabilityPort, LLMRequestMetrics
+from server.domain.observability import ObservabilityPort
 
 logger = logging.getLogger("server.observability")
 

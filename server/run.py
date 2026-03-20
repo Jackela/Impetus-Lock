@@ -194,6 +194,7 @@ async def wait_for_database(
     for attempt in range(config.health_check.max_retries):
         try:
             db_manager = DatabaseManager(config.database.url)
+            await db_manager.initialize()
             # Try to create a session to verify connectivity
             async with db_manager.session() as session:
                 # Execute a simple query to verify connection

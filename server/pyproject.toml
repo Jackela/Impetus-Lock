@@ -33,6 +33,7 @@ pytest = "^8.3.0"
 ruff = "^0.8.0"
 mypy = "^1.11.0"
 types-requests = "^2.32.0"
+types-passlib = "^1.7.4"
 import-linter = "^2.0"
 hypothesis = "^6.147.0"
 pydocstyle = "^6.3.0"
@@ -88,6 +89,18 @@ exclude = [
 
 [[tool.mypy.overrides]]
 module = ["instructor"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["opentelemetry.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["prometheus_client.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["jwt.*"]
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]

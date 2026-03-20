@@ -8,20 +8,23 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Branch or commit to run E2E tests on'
+        description: "Branch or commit to run E2E tests on"
         required: false
-        default: 'main'
+        default: "main"
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   e2e:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
-    
+
     defaults:
       run:
         shell: bash
         working-directory: ./
-    
+
     services:
       postgres:
         image: postgres:16
@@ -36,11 +39,11 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     container:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
       options: --user 1001
-    
+
     steps:
       - uses: actions/checkout@v6
         if: ${{ env.ACT != 'true' }}
@@ -106,7 +109,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts/*"
+          node-version: "24.x"
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
@@ -136,7 +139,7 @@ jobs:
 
       - name: Upload Playwright report
         if: ${{ env.ACT != 'true' && always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-report
           path: client/playwright-report/

@@ -1,9 +1,10 @@
 """Authentication routes."""
 
-from fastapi import APIRouter, Response, Request, HTTPException, Depends
+from fastapi import APIRouter, Response
+
 from server.api.auth.models import LoginRequest
-from server.infrastructure.security.jwt_handler import JWTHandler
 from server.infrastructure.security.csrf import CSRFProtection
+from server.infrastructure.security.jwt_handler import JWTHandler
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

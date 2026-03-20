@@ -158,9 +158,8 @@ class InterventionService:
                     selection_from=request.client_meta.selection_from,
                     selection_to=request.client_meta.selection_to,
                 )
-        except (LLMProviderError, RuntimeError, ValueError) as exc:  # noqa: BLE001 - re-raised after logging
+        except (LLMProviderError, RuntimeError, ValueError) as exc:  # noqa: BLE001, F841 - re-raised after logging
             duration_ms = (time.perf_counter() - started) * 1000
-            error_code = exc.code if isinstance(exc, LLMProviderError) else exc.__class__.__name__
 
             # Use observability port if available
             if self.observability:

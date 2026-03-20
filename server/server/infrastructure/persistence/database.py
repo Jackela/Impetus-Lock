@@ -241,7 +241,7 @@ class DatabaseManager:
             logger.warning(f"PostgreSQL connection error during initialization: {e}")
             return False
 
-        except (asyncio.TimeoutError, ConnectionError) as e:
+        except (TimeoutError, ConnectionError) as e:
             logger.warning(f"Connection timeout or error during initialization: {e}")
             return False
 
@@ -294,7 +294,7 @@ class DatabaseManager:
         except (asyncpg.PostgresConnectionError, asyncpg.TooManyConnectionsError) as e:
             status.error_message = f"PostgreSQL connection error: {e}"
             logger.warning(f"Health check failed: {status.error_message}")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             status.error_message = "Health check timed out"
             logger.warning(f"Health check failed: {status.error_message}")
 
@@ -315,20 +315,32 @@ class DatabaseManager:
             raise RuntimeError("Circuit breaker is OPEN - database requests rejected")
 
         session: AsyncSession | None = None
+        db_connection_error = False
         try:
             session = self._session_factory()
             yield session
             if self._circuit_breaker:
                 await self._circuit_breaker.record_success()
-        except (OperationalError, RuntimeError, asyncpg.PostgresConnectionError) as e:
+        except (
+            OperationalError,
+            asyncpg.PostgresConnectionError,
+            ConnectionError,
+            TimeoutError,
+            OSError,
+        ):
+            db_connection_error = True
             if session:
                 await session.rollback()
-            if self._circuit_breaker:
-                await self._circuit_breaker.record_failure()
+            raise
+        except Exception:
+            if session:
+                await session.rollback()
             raise
         finally:
             if session:
                 await session.close()
+            if self._circuit_breaker and db_connection_error:
+                await self._circuit_breaker.record_failure()
 
     async def create_tables(self) -> None:
         """Create all database tables."""

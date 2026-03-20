@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 class LLMProviderError(RuntimeError):
@@ -48,7 +47,7 @@ class AppError(Exception):
     code: str
     message: str
     status_code: int
-    details: Optional[dict] = field(default=None)
+    details: dict | None = field(default=None)
 
     def to_dict(self) -> dict:
         """Serialize error to dictionary for API responses."""

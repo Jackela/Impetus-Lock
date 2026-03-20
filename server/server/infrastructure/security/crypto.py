@@ -1,7 +1,8 @@
 """Cryptographic services for sensitive data protection."""
 
-from cryptography.fernet import Fernet
 import os
+
+from cryptography.fernet import Fernet
 
 
 class CryptoService:

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
-from typing import Optional
 
 from fastapi import HTTPException, Request
 
@@ -43,7 +41,7 @@ class RateLimiter:
         Args:
             redis_url: Redis connection URL. If None, uses REDIS_URL env var.
         """
-        self._redis: Optional["redis.Redis"] = None  # type: ignore
+        self._redis: redis.Redis | None = None  # type: ignore
 
         if not REDIS_AVAILABLE:
             return

@@ -1,8 +1,8 @@
 """Domain layer observability abstractions (Clean Architecture)."""
 
-from typing import Protocol, runtime_checkable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable

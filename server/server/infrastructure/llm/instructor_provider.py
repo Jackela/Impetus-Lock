@@ -51,7 +51,7 @@ class InstructorLLMProvider(BasePromptLLMProvider):
                 status_code=502,
                 provider=self.provider_name,
             ) from exc
-        except (IOError, ConnectionError) as exc:  # pragma: no cover - network errors
+        except (OSError, ConnectionError) as exc:  # pragma: no cover - network errors
             raise LLMProviderError(
                 code="llm_network_error",
                 message="Network error connecting to OpenAI API.",

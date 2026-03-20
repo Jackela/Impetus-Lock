@@ -1,8 +1,9 @@
 """CSRF token generation and validation."""
 
-import secrets
-from itsdangerous import URLSafeTimedSerializer
 import os
+import secrets
+
+from itsdangerous import URLSafeTimedSerializer
 
 
 class CSRFProtection:
@@ -19,5 +20,5 @@ class CSRFProtection:
         try:
             self._serializer.loads(token, max_age=max_age)
             return True
-        except:
+        except Exception:
             return False
