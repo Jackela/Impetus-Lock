@@ -72,7 +72,7 @@ class RateLimiter:
         count, window = self._parse_limit(limit)
 
         try:
-            current = await self._redis.incr(key)
+            current: int = await self._redis.incr(key)
 
             if current == 1:
                 await self._redis.expire(key, window)
