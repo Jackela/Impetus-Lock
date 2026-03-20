@@ -7,8 +7,8 @@ import os
 from fastapi import HTTPException, Request
 
 try:
-    import redis.asyncio as redis  # type: ignore[import-not-found]
-    from redis.asyncio import Redis as RedisClient  # type: ignore[import-not-found]
+    import redis.asyncio as redis
+    from redis.asyncio import Redis as RedisClient
 
     REDIS_AVAILABLE = True
 except ImportError:

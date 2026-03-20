@@ -6,7 +6,7 @@ from cryptography.fernet import Fernet
 
 
 class CryptoService:
-    def __init__(self):
+    def __init__(self) -> None:
         key = os.getenv("ENCRYPTION_KEY")
         if not key:
             raise ValueError("ENCRYPTION_KEY environment variable not set")

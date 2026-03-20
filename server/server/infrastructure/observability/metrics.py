@@ -60,7 +60,7 @@ class PrometheusObservability(ObservabilityPort):
         if ENABLE_PROM_METRICS and INTERVENTION_COUNTER:
             INTERVENTION_COUNTER.labels(mode=mode, action_type=action_type).inc()
 
-    def get_metrics(self) -> dict:
+    def get_metrics(self) -> dict[str, Any]:
         """Get current metrics in Prometheus format."""
         return {"metrics": generate_latest(), "content_type": CONTENT_TYPE_LATEST}
 
