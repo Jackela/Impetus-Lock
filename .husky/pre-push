@@ -1,0 +1,80 @@
+#!/bin/sh
+# Pre-push hook: Fast failure for lint + typecheck
+
+echo "🔍 Running pre-push checks (lint + typecheck)..."
+
+# Client checks
+if [ -d "client" ] && [ -f "client/package.json" ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📦 Checking Client (React/Vite/TypeScript)..."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Check Node.js version
+    if ! command -v node &> /dev/null; then
+        echo "❌ Node.js not found. Skipping client checks."
+    else
+        cd client || exit 1
+
+        # Install deps if needed
+        if [ ! -d "node_modules" ]; then
+            echo "📦 Installing client dependencies..."
+            npm ci --silent 2>/dev/null || npm install --silent 2>/dev/null
+        fi
+
+        echo "⚡ Running ESLint..."
+        npm run lint 2>&1
+        if [ $? -ne 0 ]; then
+            echo "❌ ESLint failed. Fix errors before pushing."
+            exit 1
+        fi
+
+        echo "⚡ Running TypeScript type check..."
+        npm run type-check 2>&1
+        if [ $? -ne 0 ]; then
+            echo "❌ TypeScript type check failed. Fix errors before pushing."
+            exit 1
+        fi
+
+        cd ..
+    fi
+fi
+
+# Server checks
+if [ -d "server" ] && [ -f "server/pyproject.toml" ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🐍 Checking Server (Python/FastAPI)..."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Check Python version
+    if ! command -v python3 &> /dev/null; then
+        echo "❌ Python not found. Skipping server checks."
+    else
+        cd server || exit 1
+
+        # Install Poetry deps if needed
+        if [ ! -d ".venv" ]; then
+            echo "📦 Installing server dependencies with Poetry..."
+            poetry install --no-interaction 2>/dev/null || true
+        fi
+
+        echo "⚡ Running Ruff check..."
+        poetry run ruff check . 2>&1
+        if [ $? -ne 0 ]; then
+            echo "❌ Ruff check failed. Fix errors before pushing."
+            exit 1
+        fi
+
+        echo "⚡ Running mypy type check..."
+        poetry run mypy . 2>&1
+        if [ $? -ne 0 ]; then
+            echo "❌ mypy type check failed. Fix errors before pushing."
+            exit 1
+        fi
+
+        cd ..
+    fi
+fi
+
+echo ""
+echo "✅ Pre-push checks passed! Ready to push."
+ENDOFFILE; __hermes_rc=$?; printf '__HERMES_FENCE_a9f7b3__'; exit $__hermes_rc
