@@ -9,13 +9,11 @@ on:
     paths: ["client/**", ".github/workflows/ci-client.yml"]
   workflow_dispatch:
 
-# Cancel previous runs for the same PR or branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Parallel lint job
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -41,7 +39,6 @@ jobs:
       - name: Run Prettier check
         run: npm run format
 
-  # Type check job
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
@@ -64,7 +61,6 @@ jobs:
       - name: Run TypeScript type check
         run: npm run type-check
 
-  # Test job
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -97,7 +93,6 @@ jobs:
           path: client/coverage/
           retention-days: 7
 
-  # Build job
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -127,4 +122,3 @@ jobs:
           name: dist-client
           path: client/dist/
           retention-days: 7
-ENDOFFILE; __hermes_rc=$?; printf '__HERMES_FENCE_a9f7b3__'; exit $__hermes_rc

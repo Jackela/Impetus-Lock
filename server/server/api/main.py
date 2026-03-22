@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from server.api.routes import intervention, metrics, style, style_comparison, style_history, tasks
+from server.api.middleware.rate_limit import create_rate_limit_middleware
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import ProviderRegistry
 from server.infrastructure.logging.json_formatter import setup_json_logging
@@ -75,6 +76,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate limiting middleware (from .env config)
+rate_limit_middleware = create_rate_limit_middleware(app)
+if rate_limit_middleware:
+    app.add_middleware(rate_limit_middleware)
 
 # Include API routes
 app.include_router(intervention.router)

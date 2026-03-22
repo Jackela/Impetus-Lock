@@ -181,4 +181,3 @@ jobs:
           name: dist-server
           path: server/dist/
           retention-days: 7
-ENDOFFILE; __hermes_rc=$?; printf '__HERMES_FENCE_a9f7b3__'; exit $__hermes_rc

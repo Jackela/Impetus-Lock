@@ -386,9 +386,8 @@ function App() {
             </button>
             <StyleLearningPanel
               userId={editingTaskId ?? "default-user"}
-              onApplyStyle={({ userId: styleUserId }) => {
+              onApplyStyle={() => {
                 // TODO: Implement style application to current task
-                console.log("Apply style:", styleUserId);
               }}
             />
           </div>

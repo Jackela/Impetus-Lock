@@ -113,8 +113,6 @@ export function injectLockedBlock(
 
   // Note: Sensory feedback (Glitch animation + Clank sound) is handled by
   // SensoryFeedback component in EditorCore, triggered by currentAction state
-
-  console.log(`[ContentInjector] Injected locked block at pos ${insertPos}:`, lockId);
 }
 
 /**
@@ -147,26 +145,11 @@ export function deleteContentAtAnchor(
   const { state, dispatch } = view;
   const { from, to } = anchor;
 
-  // DEBUG: Log detailed delete information
-  console.log("[ContentInjector] deleteContentAtAnchor called:", {
-    from,
-    to,
-    docSize: state.doc.content.size,
-    deleteLength: to - from,
-    throttleRemaining: Math.max(
-      0,
-      DELETE_THROTTLE_MS - (Date.now() - (lastDeleteTimestamp ?? 0))
-    ),
-  });
-
   // CRITICAL: Throttle to prevent rapid-fire deletions
   const now = Date.now();
   const lastDelete = lastDeleteTimestamp ?? 0;
 
   if (now - lastDelete < DELETE_THROTTLE_MS) {
-    console.log(
-      `[ContentInjector] THROTTLED - ${DELETE_THROTTLE_MS - (now - lastDelete)}ms remaining`
-    );
     return;
   }
 
@@ -192,12 +175,6 @@ export function deleteContentAtAnchor(
 
   // Dispatch transaction
   dispatch(tr);
-
-  console.log(`[ContentInjector] ✅ Deleted content successfully`, {
-    from,
-    to,
-    deletedLength: to - from,
-  });
 }
 
 /**
@@ -260,8 +237,6 @@ export function rewriteRangeWithLock({
   tr.setMeta("aiAction", true);
   tr.setMeta("actionType", "rewrite");
   dispatch(tr);
-
-  console.log(`[ContentInjector] ✏️ Rewrote locked span`, { ...anchor, lockId });
 }
 
 /**
@@ -296,6 +271,4 @@ export function rewriteLastSentenceWithLock(
   tr.setMeta("aiAction", true);
   tr.setMeta("actionType", "rewrite");
   dispatch(tr);
-
-  console.log(`[ContentInjector] ✏️ Rewrote locked span`, { ...range, lockId, fallback: true });
 }

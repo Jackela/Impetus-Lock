@@ -16,8 +16,43 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { generateIntervention } from "../../src/services/api/interventionClient";
 import { lockManager } from "../../src/services/LockManager";
 import type { components } from "../../src/types/api.generated";
+import type { Transaction } from "@milkdown/prose/state";
+import type { Node as ProsemirrorNode } from "@milkdown/prose/model";
 
 type InterventionResponse = components["schemas"]["InterventionResponse"];
+
+interface MockTransaction {
+  delete: ReturnType<typeof vi.fn>;
+  setMeta: ReturnType<typeof vi.fn>;
+  insert?: ReturnType<typeof vi.fn>;
+}
+
+interface MockEditorView {
+  state: {
+    doc: {
+      content: {
+        size: number;
+      };
+    };
+    tr: MockTransaction;
+    schema: {
+      text: (str: string) => ProsemirrorNode;
+    };
+    plugins: unknown[];
+  };
+  dispatch: (tr: Transaction) => void;
+}
+
+type AIEditorView = {
+  state: {
+    doc: {
+      content: {
+        size: number;
+      };
+    };
+    tr: MockTransaction;
+  };
+};
 
 describe("Integration: API → Lock Application → Enforcement", () => {
   beforeEach(() => {
@@ -346,13 +381,12 @@ describe("Integration: Undo Bypass for AI Actions", () => {
    * Verifies that transaction is marked with addToHistory: false.
    */
   it("should bypass undo stack for AI delete actions", () => {
-    // Mock EditorView and transaction
-    const mockTransactions: any[] = [];
-    const mockDispatch = vi.fn((tr: any) => {
+    const mockTransactions: Transaction[] = [];
+    const mockDispatch = vi.fn((tr: Transaction) => {
       mockTransactions.push(tr);
     });
 
-    const mockView = {
+    const mockView: MockEditorView = {
       state: {
         doc: {
           content: {
@@ -364,15 +398,14 @@ describe("Integration: Undo Bypass for AI Actions", () => {
           setMeta: vi.fn().mockReturnThis(),
         },
         schema: {
-          text: vi.fn((str: string) => str),
+          text: vi.fn((str: string) => str as unknown as ProsemirrorNode),
         },
         plugins: [],
       },
       dispatch: mockDispatch,
     };
 
-    // Import UndoBypass (inline for test)
-    const deleteWithoutUndo = (view: any, from: number, to: number): boolean => {
+    const deleteWithoutUndo = (view: MockEditorView, from: number, to: number): boolean => {
       const { state, dispatch } = view;
 
       if (from < 0 || to > state.doc.content.size || from >= to) {
@@ -427,7 +460,11 @@ describe("Integration: Undo Bypass for AI Actions", () => {
       dispatch: mockDispatch,
     };
 
-    const insertWithoutUndo = (view: any, pos: number, content: string | any): boolean => {
+    const insertWithoutUndo = (
+      view: MockEditorView,
+      pos: number,
+      content: string | ProsemirrorNode
+    ): boolean => {
       const { state, dispatch } = view;
 
       if (pos < 0 || pos > state.doc.content.size) {
@@ -435,7 +472,7 @@ describe("Integration: Undo Bypass for AI Actions", () => {
       }
 
       let node = typeof content === "string" ? state.schema.text(content) : content;
-      let tr = state.tr.insert(pos, node);
+      let tr = state.tr.insert!(pos, node);
       tr = tr.setMeta("addToHistory", false);
       tr = tr.setMeta("aiAction", true);
       tr = tr.setMeta("actionType", "provoke");
@@ -475,7 +512,7 @@ describe("Integration: Undo Bypass for AI Actions", () => {
       dispatch: vi.fn(),
     };
 
-    const deleteWithoutUndo = (view: any, from: number, to: number): boolean => {
+    const deleteWithoutUndo = (view: AIEditorView, from: number, to: number): boolean => {
       const { state } = view;
 
       if (from < 0 || to > state.doc.content.size || from >= to) {
