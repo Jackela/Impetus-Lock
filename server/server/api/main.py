@@ -79,7 +79,7 @@ rate_limit_result = create_rate_limit_middleware()
 if rate_limit_result:
     middleware_class, default_config, intervention_config = rate_limit_result
     app.add_middleware(
-        middleware_class,
+        middleware_class,  # type: ignore[arg-type]
         default_limit=default_config,
         intervention_limit=intervention_config,
     )

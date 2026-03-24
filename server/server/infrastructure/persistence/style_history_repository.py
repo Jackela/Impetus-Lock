@@ -88,12 +88,12 @@ class StyleHistoryRepository:
         if self.session:
             query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
             result = await self.session.execute(query)
-            return result.scalar_one_or_none()  # type: ignore[no-any-return]
+            return result.scalar_one_or_none()
         else:
             async with get_db_manager().session() as session:
                 query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
                 result = await session.execute(query)
-                return result.scalar_one_or_none()  # type: ignore[no-any-return]
+                return result.scalar_one_or_none()
 
     async def delete(self, history_id: UUID) -> bool:
         """Delete a style history record."""

@@ -98,4 +98,4 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             )
 
-        return LLMInterventionDraft.model_validate_json(text)  # type: ignore[no-any-return]
+        return LLMInterventionDraft.model_validate_json(text)
