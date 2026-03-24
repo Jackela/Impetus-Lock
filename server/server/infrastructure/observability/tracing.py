@@ -7,26 +7,13 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-trace: Any | None = None  # type: ignore[var-annotated]
-Status: Any | None = None  # type: ignore[var-annotated]
-StatusCode: Any | None = None  # type: ignore[var-annotated]
-OTLP_ENDPOINT: str | None = None
-OTLP_HEADERS: str | None = None
-SERVICE_NAME: str = "impetus-lock"
-_tracer: Any | None = None
-
 try:
-    from opentelemetry import trace as _trace  # type: ignore[no-redef]
+    from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.trace import Status as _StatusImport  # type: ignore[no-redef]
-    from opentelemetry.trace import StatusCode as _StatusCodeImport  # type: ignore[no-redef]
-
-    trace = _trace  # type: ignore[no-redef]
-    Status = _StatusImport  # type: ignore[no-redef]
-    StatusCode = _StatusCodeImport  # type: ignore[no-redef]
+    from opentelemetry.trace import Status, StatusCode
 
     OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
     OTLP_HEADERS = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
@@ -42,8 +29,16 @@ try:
         provider.add_span_processor(BatchSpanProcessor(exporter))
         trace.set_tracer_provider(provider)
         _tracer = trace.get_tracer(__name__)
+    else:
+        _tracer = None
 except ImportError:  # pragma: no cover - optional dependency
-    pass  # Variables remain None
+    trace = None  # type: ignore[misc]
+    Status = None  # type: ignore[misc]
+    StatusCode = None  # type: ignore[misc]
+    OTLP_ENDPOINT = None
+    OTLP_HEADERS = None
+    SERVICE_NAME = "impetus-lock"
+    _tracer = None
 
 
 def is_tracing_enabled() -> bool:
