@@ -5,17 +5,28 @@ from __future__ import annotations
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+trace: Any | None = None  # type: ignore[var-annotated]
+Status: Any | None = None  # type: ignore[var-annotated]
+StatusCode: Any | None = None  # type: ignore[var-annotated]
+OTLP_ENDPOINT: str | None = None
+OTLP_HEADERS: str | None = None
+SERVICE_NAME: str = "impetus-lock"
 _tracer: Any | None = None
 
 try:
-    from opentelemetry import trace
+    from opentelemetry import trace as _trace  # type: ignore[no-redef]
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.trace import Status, StatusCode
+    from opentelemetry.trace import Status as _StatusImport  # type: ignore[no-redef]
+    from opentelemetry.trace import StatusCode as _StatusCodeImport  # type: ignore[no-redef]
+
+    trace = _trace  # type: ignore[no-redef]
+    Status = _StatusImport  # type: ignore[no-redef]
+    StatusCode = _StatusCodeImport  # type: ignore[no-redef]
 
     OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
     OTLP_HEADERS = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
@@ -32,24 +43,7 @@ try:
         trace.set_tracer_provider(provider)
         _tracer = trace.get_tracer(__name__)
 except ImportError:  # pragma: no cover - optional dependency
-    trace = None
-    Status = None
-    StatusCode = None
-    OTLP_ENDPOINT = None
-    OTLP_HEADERS = None
-    SERVICE_NAME = None
-
-if TYPE_CHECKING:
-    from opentelemetry import trace as _trace
-    from opentelemetry.trace import Status as _Status, StatusCode as _StatusCode
-
-    TracerType = _trace.Tracer
-    StatusType = _Status
-    StatusCodeType = _StatusCode
-else:
-    TracerType = Any
-    StatusType = Any
-    StatusCodeType = Any
+    pass  # Variables remain None
 
 
 def is_tracing_enabled() -> bool:
