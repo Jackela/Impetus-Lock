@@ -13,8 +13,9 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from server.api.routes import intervention, metrics, style, style_comparison, style_history, tasks
 from server.api.middleware.rate_limit import create_rate_limit_middleware
+from server.api.routes import intervention, metrics, style, style_comparison, style_history, tasks
+from server.api.routes import testing as testing_module
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import ProviderRegistry
 from server.infrastructure.logging.json_formatter import setup_json_logging
@@ -29,10 +30,6 @@ load_dotenv()
 setup_json_logging(os.getenv("LOG_LEVEL", "INFO"))
 
 logger = logging.getLogger("server.api")
-
-# Conditionally import testing routes
-if os.getenv("TESTING"):
-    from server.api.routes import testing
 
 
 @asynccontextmanager
@@ -78,9 +75,14 @@ app.add_middleware(
 )
 
 # Rate limiting middleware (from .env config)
-rate_limit_middleware = create_rate_limit_middleware(app)
-if rate_limit_middleware:
-    app.add_middleware(rate_limit_middleware)
+rate_limit_result = create_rate_limit_middleware()
+if rate_limit_result:
+    middleware_class, default_config, intervention_config = rate_limit_result
+    app.add_middleware(
+        middleware_class,
+        default_limit=default_config,
+        intervention_limit=intervention_config,
+    )
 
 # Include API routes
 app.include_router(intervention.router)
@@ -92,7 +94,7 @@ app.include_router(style_comparison.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):
-    app.include_router(testing.router)
+    app.include_router(testing_module.router)
 
 
 class HealthResponse(BaseModel):

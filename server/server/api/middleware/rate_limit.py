@@ -9,13 +9,11 @@ For production with multiple instances, replace with Redis-based rate limiting.
 
 import logging
 import time
-from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from threading import Lock
-from typing import Awaitable
 
-from fastapi import Request, Response
+from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("server.api.middleware.rate_limit")
@@ -94,7 +92,7 @@ class InMemoryRateLimiter:
 
 def get_client_id(request: Request) -> str:
     """Extract client identifier from request."""
-    forwarded = request.headers.get("X-Forwarded-For")
+    forwarded: str | None = request.headers.get("X-Forwarded-For")
     if forwarded:
         return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
@@ -105,7 +103,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
+        app: FastAPI,
         default_limit: RateLimitConfig,
         intervention_limit: RateLimitConfig | None = None,
     ):
@@ -158,8 +156,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def create_rate_limit_middleware(app) -> RateLimitMiddleware | None:
-    """Create rate limit middleware from environment config."""
+def create_rate_limit_middleware() -> (
+    tuple[type[RateLimitMiddleware], RateLimitConfig, RateLimitConfig] | None
+):
+    """Create rate limit middleware config from environment.
+
+    Returns tuple of (middleware_class, default_config, intervention_config)
+    for use with app.add_middleware().
+    """
     import os
 
     default_str = os.getenv("RATE_LIMIT_DEFAULT", "100/minute")
@@ -173,4 +177,4 @@ def create_rate_limit_middleware(app) -> RateLimitMiddleware | None:
         return None
 
     logger.info(f"Rate limiting enabled: default={default_str}, intervention={intervention_str}")
-    return RateLimitMiddleware(app, default_config, intervention_config)
+    return RateLimitMiddleware, default_config, intervention_config

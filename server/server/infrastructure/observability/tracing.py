@@ -15,9 +15,9 @@ try:
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.trace import Status, StatusCode
 except ImportError:  # pragma: no cover - optional dependency
-    trace = None  # type: ignore
-    Status = None  # type: ignore
-    StatusCode = None  # type: ignore
+    trace = None
+    Status = None
+    StatusCode = None
 
 TracerType = Any
 StatusType = Any

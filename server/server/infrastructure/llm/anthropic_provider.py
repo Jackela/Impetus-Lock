@@ -87,4 +87,4 @@ class AnthropicLLMProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             )
 
-        return LLMInterventionDraft.model_validate_json(text_blocks[0])
+        return LLMInterventionDraft.model_validate_json(text_blocks[0])  # type: ignore[no-any-return]

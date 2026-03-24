@@ -13,6 +13,8 @@ Constitutional Compliance:
 import time
 from uuid import UUID, uuid4
 
+# Optional import (for type hints when repository is used)
+from server.domain.entities.intervention_action import InterventionAction
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
 from server.domain.models.anchor import AnchorPos, AnchorRange
@@ -20,17 +22,10 @@ from server.domain.models.intervention import (
     InterventionRequest,
     InterventionResponse,
 )
+from server.domain.repositories.task_repository import TaskRepository
 from server.domain.text_window import compute_last_sentence_anchor
 from server.infrastructure.observability.metrics import log_llm_call
 from server.infrastructure.observability.tracing import start_llm_span
-
-# Optional import (for type hints when repository is used)
-try:
-    from server.domain.entities.intervention_action import InterventionAction
-    from server.domain.repositories.task_repository import TaskRepository
-except ImportError:
-    TaskRepository = None  # type: ignore
-    InterventionAction = None  # type: ignore
 
 
 class InterventionService:
