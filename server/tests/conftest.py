@@ -5,13 +5,13 @@ Sets up test environment with mocked OpenAI API key.
 
 import os
 
-import pytest
-
 # Ensure defaults exist BEFORE any server module imports
 os.environ.setdefault("OPENAI_API_KEY", "test-key-for-unit-tests")
 os.environ.setdefault("LLM_DEFAULT_PROVIDER", "openai")
 os.environ.setdefault("LLM_ALLOW_DEBUG_PROVIDER", "0")
 os.environ.setdefault("TESTING", "1")
+
+import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)

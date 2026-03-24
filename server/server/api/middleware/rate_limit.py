@@ -163,8 +163,15 @@ def create_rate_limit_middleware() -> (
 
     Returns tuple of (middleware_class, default_config, intervention_config)
     for use with app.add_middleware().
+
+    Rate limiting is disabled when TESTING=1 to avoid interfering with tests.
     """
     import os
+
+    # Disable rate limiting during tests
+    if os.getenv("TESTING") == "1":
+        logger.info("Rate limiting disabled (TESTING=1)")
+        return None
 
     default_str = os.getenv("RATE_LIMIT_DEFAULT", "100/minute")
     intervention_str = os.getenv("RATE_LIMIT_INTERVENTION", "10/minute")

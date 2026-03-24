@@ -7,6 +7,12 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
+# Type declarations for optional opentelemetry imports
+trace: Any | None = None
+Status: Any | None = None
+StatusCode: Any | None = None
+_tracer: Any | None = None
+
 try:
     from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -14,6 +20,8 @@ try:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.trace import Status, StatusCode
+
+    assert trace is not None  # narrow type after import
 
     OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
     OTLP_HEADERS = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
@@ -32,9 +40,9 @@ try:
     else:
         _tracer = None
 except ImportError:  # pragma: no cover - optional dependency
-    trace = None  # type: ignore[misc]
-    Status = None  # type: ignore[misc]
-    StatusCode = None  # type: ignore[misc]
+    trace = None
+    Status = None
+    StatusCode = None
     OTLP_ENDPOINT = None
     OTLP_HEADERS = None
     SERVICE_NAME = "impetus-lock"
