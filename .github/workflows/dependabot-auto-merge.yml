@@ -1,0 +1,90 @@
+name: Dependabot Auto-Merge
+
+# Automatically merge Dependabot PRs that pass CI
+# Uses GitHub's built-in merge queue for safety
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    name: Auto-merge Dependabot PRs
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wait for required checks
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Backend Tests,Frontend Tests,Lint,Type Check"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 20
+          allowed-conclusions: success,skipped
+
+      - name: Approve and auto-merge patch/minor updates
+        if: |
+          steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.dependabot-metadata.outputs.update-type == 'version-update:semver-minor'
+        run: |
+          # Approve the PR
+          gh pr review "$PR_URL" --approve --body "Auto-approved: ${{ steps.dependabot-metadata.outputs.update-type }}"
+
+          # Enable auto-merge (squash)
+          gh pr merge "$PR_URL" --auto --squash --delete-branch
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on major updates
+        if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          gh pr comment "$PR_URL" --body "⚠️ **Major version update detected**
+
+          This PR contains a major version update that requires manual review.
+
+          Please:
+          1. Review the breaking changes in the release notes
+          2. Test thoroughly in a staging environment
+          3. Update documentation if needed
+
+          Do not auto-merge this PR."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Separate job for E2E tests (they take longer)
+  auto-merge-e2e:
+    name: Auto-merge after E2E tests
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    needs: auto-merge
+
+    steps:
+      - name: Wait for E2E tests
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: "Playwright E2E Tests"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success,skipped

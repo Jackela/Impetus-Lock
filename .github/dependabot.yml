@@ -1,71 +1,257 @@
 # Dependabot configuration for automatic dependency updates
 # https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Best Practices Applied:
+# 1. Grouped updates: Reduces PR noise by grouping related dependencies
+# 2. Version separation: Patch/minor auto-mergeable, major requires review
+# 3. Ecosystem-specific schedules: Different update frequencies for stability
+# 4. Production vs dev separation: Critical production deps get more scrutiny
 
 version: 2
+
 updates:
-  # Backend (Python/Poetry)
+  # ==========================================
+  # Backend (Python/Poetry) - Production Critical
+  # ==========================================
   - package-ecosystem: "pip"
     directory: "/server"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "09:00"
+      timezone: "Asia/Shanghai"
+
+    # Limit concurrent PRs to avoid overwhelming CI
     open-pull-requests-limit: 5
+
+    # Group related dependencies to reduce PR noise
+    groups:
+      # Security-critical: Review carefully
+      security:
+        patterns:
+          - "cryptography"
+          - "passlib"
+          - "python-jose"
+          - "bcrypt"
+          - "argon2-c*"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # LLM Providers: Keep synchronized
+      llm-providers:
+        patterns:
+          - "anthropic"
+          - "openai"
+          - "google-generativeai"
+          - "instructor"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # Database & ORM: Test thoroughly
+      database:
+        patterns:
+          - "sqlalchemy"
+          - "alembic"
+          - "asyncpg"
+          - "psycopg*"
+        update-types:
+          - "patch"
+
+      # Web Framework: Conservative updates
+      web-framework:
+        patterns:
+          - "fastapi"
+          - "starlette"
+          - "uvicorn"
+          - "pydantic"
+        update-types:
+          - "patch"
+
+      # Dev tools: Auto-mergeable
+      dev-tools:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "pytest*"
+          - "black"
+          - "pre-commit"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # All other patch/minor updates
+      minor-patch:
+        update-types:
+          - "patch"
+          - "minor"
+        exclude-patterns:
+          - "cryptography"
+          - "passlib"
+          - "fastapi"
+          - "pydantic"
+          - "sqlalchemy"
+          - "anthropic"
+          - "openai"
+
     labels:
       - "dependencies"
       - "backend"
+      - "automated"
+
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
 
-  # Frontend (npm)
+    # Never ignore security updates
+    ignore:
+      # Major versions: Manual review required
+      - dependency-name: "fastapi"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pydantic"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "sqlalchemy"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "cryptography"
+        update-types: ["version-update:semver-major"]
+
+  # ==========================================
+  # Frontend (npm) - User-facing
+  # ==========================================
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "weekly"
-      day: "monday"
+      day: "tuesday" # Offset from backend to spread CI load
       time: "09:00"
-    open-pull-requests-limit: 5
+      timezone: "Asia/Shanghai"
+
+    open-pull-requests-limit: 8
+
+    groups:
+      # React ecosystem: Keep synchronized
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+          - "@testing-library/react"
+        update-types:
+          - "patch"
+
+      # Editor (Milkdown): Keep synchronized
+      milkdown:
+        patterns:
+          - "@milkdown/*"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # Vite & build tools
+      build-tools:
+        patterns:
+          - "vite*"
+          - "@vitejs/*"
+          - "esbuild"
+          - "rollup"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # Testing libraries
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "playwright"
+          - "@playwright/*"
+          - "jsdom"
+          - "happy-dom"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # Dev dependencies (safe to auto-merge)
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "patch"
+          - "minor"
+
+      # All other patch/minor updates
+      minor-patch:
+        update-types:
+          - "patch"
+          - "minor"
+
     labels:
       - "dependencies"
       - "frontend"
+      - "automated"
+
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
+
     ignore:
-      # Ignore major version updates for stable dependencies during MVP
+      # React major versions: Manual migration required
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
         update-types: ["version-update:semver-major"]
+      # TypeScript: Careful updates
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
-  # GitHub Actions
+  # ==========================================
+  # GitHub Actions - CI/CD Infrastructure
+  # ==========================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly" # Less frequent - actions are stable
       day: "monday"
       time: "09:00"
+      timezone: "Asia/Shanghai"
+
     open-pull-requests-limit: 3
+
+    groups:
+      # All actions updates
+      actions:
+        update-types:
+          - "patch"
+          - "minor"
+
     labels:
       - "dependencies"
       - "ci"
+      - "automated"
+
     commit-message:
       prefix: "chore(ci)"
       include: "scope"
 
-  # Docker (for E2E Playwright container)
+  # ==========================================
+  # Docker - Infrastructure
+  # ==========================================
   - package-ecosystem: "docker"
     directory: "/.github/workflows"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "09:00"
+      timezone: "Asia/Shanghai"
+
     open-pull-requests-limit: 2
+
     labels:
       - "dependencies"
       - "docker"
       - "e2e"
+      - "automated"
+
     commit-message:
       prefix: "chore(docker)"
       include: "scope"
