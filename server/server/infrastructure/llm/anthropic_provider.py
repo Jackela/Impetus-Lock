@@ -70,7 +70,14 @@ class AnthropicLLMProvider(BasePromptLLMProvider):
                 status_code=502,
                 provider=self.provider_name,
             ) from exc
-        except Exception as exc:  # pragma: no cover
+        except (OSError, ConnectionError) as exc:  # pragma: no cover - network errors
+            raise LLMProviderError(
+                code="llm_network_error",
+                message="Network error connecting to Anthropic API.",
+                status_code=502,
+                provider=self.provider_name,
+            ) from exc
+        except Exception as exc:  # pragma: no cover - unexpected fallback
             raise LLMProviderError(
                 code="llm_api_error",
                 message="Anthropic request failed.",

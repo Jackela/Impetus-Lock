@@ -13,8 +13,6 @@ Constitutional Compliance:
 import time
 from uuid import UUID, uuid4
 
-# Optional import (for type hints when repository is used)
-from server.domain.entities.intervention_action import InterventionAction
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
 from server.domain.models.anchor import AnchorPos, AnchorRange
@@ -22,10 +20,17 @@ from server.domain.models.intervention import (
     InterventionRequest,
     InterventionResponse,
 )
-from server.domain.repositories.task_repository import TaskRepository
+from server.domain.observability import ObservabilityPort
 from server.domain.text_window import compute_last_sentence_anchor
-from server.infrastructure.observability.metrics import log_llm_call
 from server.infrastructure.observability.tracing import start_llm_span
+
+# Optional import (for type hints when repository is used)
+try:
+    from server.domain.entities.intervention_action import InterventionAction
+    from server.domain.repositories.task_repository import TaskRepository
+except ImportError:
+    TaskRepository = None  # type: ignore
+    InterventionAction = None  # type: ignore
 
 
 class InterventionService:
@@ -38,6 +43,7 @@ class InterventionService:
     Attributes:
         llm_provider: LLM provider implementation (dependency injection).
         task_repository: Optional repository for persistence (dependency injection).
+        observability: Optional observability port for metrics (dependency injection).
 
     Example (without persistence):
         ```python
@@ -80,15 +86,18 @@ class InterventionService:
         self,
         llm_provider: LLMProvider | None = None,
         task_repository: "TaskRepository | None" = None,
+        observability: ObservabilityPort | None = None,
     ):
         """Initialize service with LLM provider and optional repository.
 
         Args:
             llm_provider: LLM provider implementation (DIP).
             task_repository: Optional repository for persistence (DIP).
+            observability: Optional observability port for metrics (DIP).
         """
         self.llm_provider = llm_provider
         self.task_repository = task_repository
+        self.observability = observability
 
     def generate_intervention(
         self,
@@ -149,27 +158,34 @@ class InterventionService:
                     selection_from=request.client_meta.selection_from,
                     selection_to=request.client_meta.selection_to,
                 )
-        except Exception as exc:  # noqa: BLE001 - re-raised after logging
+        except (LLMProviderError, RuntimeError, ValueError) as exc:  # noqa: BLE001, F841 - re-raised after logging
             duration_ms = (time.perf_counter() - started) * 1000
-            error_code = exc.code if isinstance(exc, LLMProviderError) else exc.__class__.__name__
-            log_llm_call(
-                provider_name=provider_name,
-                model=provider_model,
-                mode=request.mode,
-                duration_ms=duration_ms,
-                success=False,
-                error_code=str(error_code),
-            )
+
+            # Use observability port if available
+            if self.observability:
+                self.observability.record_llm_request(
+                    provider=provider_name,
+                    model=provider_model or "unknown",
+                    success=False,
+                    latency_ms=duration_ms,
+                    tokens_used=0,
+                )
+
             raise
 
         duration_ms = (time.perf_counter() - started) * 1000
-        log_llm_call(
-            provider_name=provider_name,
-            model=provider_model,
-            mode=request.mode,
-            duration_ms=duration_ms,
-            success=True,
-        )
+
+        # Use observability port if available
+        if self.observability:
+            self.observability.record_llm_request(
+                provider=provider_name,
+                model=provider_model or "unknown",
+                success=True,
+                latency_ms=duration_ms,
+                tokens_used=0,
+            )
+            self.observability.record_intervention(mode=request.mode, action_type=response.action)
+
         response.source = request.mode
 
         # Muse mode should never delete – convert to provoke

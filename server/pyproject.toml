@@ -22,6 +22,11 @@ opentelemetry-sdk = "^1.27.0"
 opentelemetry-exporter-otlp-proto-http = "^1.27.0"
 prometheus-client = "^0.24.1"
 python-dotenv = "^1.0.1"
+tenacity = "^9.1.4"
+cryptography = "^42.0.0"
+pyjwt = "^2.8.0"
+itsdangerous = "^2.1.2"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
@@ -29,6 +34,7 @@ pytest-cov = "^5.0.0"
 ruff = "^0.8.0"
 mypy = "^1.11.0"
 types-requests = "^2.32.0"
+types-passlib = "^1.7.4"
 import-linter = "^2.0"
 hypothesis = "^6.147.0"
 pydocstyle = "^6.3.0"
@@ -86,6 +92,22 @@ exclude = [
 module = ["instructor"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = ["opentelemetry.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["prometheus_client.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["jwt.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["redis", "redis.asyncio", "redis.asyncio.*"]
+ignore_missing_imports = true
+
 [tool.pydantic-mypy]
 init_forbid_extra = true
 init_typed = true
@@ -134,7 +156,6 @@ forbidden_modules = [
 # Observability imports are temporarily allowed for practical logging needs
 # TODO: Refactor to use domain-layer observability abstractions (see domain/observability.py)
 ignore_imports = [
-    "server.application.services.intervention_service -> server.infrastructure.observability.metrics",
     "server.application.services.intervention_service -> server.infrastructure.observability.tracing",
 ]
 
