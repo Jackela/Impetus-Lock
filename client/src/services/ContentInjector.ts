@@ -18,6 +18,24 @@ import { getLastSentenceRange } from "../utils/textRange";
 
 type Anchor = components["schemas"]["Anchor"];
 
+/**
+ * Append lock marker comment to content.
+ *
+ * Sanitizes existing HTML comments and appends a new lock comment
+ * in the format `<!-- lock:lock_id [source:muse] -->`.
+ *
+ * @param content - Content to append lock marker to
+ * @param lockId - Lock identifier to embed
+ * @param source - Optional agent source for the lock
+ * @returns Content with lock comment appended
+ *
+ * @example
+ * ```typescript
+ * const content = '> Muse intervention';
+ * const withLock = appendLockMarker(content, 'lock_001', 'muse');
+ * // '> Muse intervention <!-- lock:lock_001 source:muse -->'
+ * ```
+ */
 function appendLockMarker(content: string, lockId: string, source?: AgentSource): string {
   const sanitized = content.replace(/<!--[\s\S]*?-->/g, "").trimEnd();
   const parts = [`lock:${lockId}`];
@@ -27,6 +45,21 @@ function appendLockMarker(content: string, lockId: string, source?: AgentSource)
   return `${sanitized} <!-- ${parts.join(" ")} -->`;
 }
 
+/**
+ * Build lock attributes object for ProseMirror nodes.
+ *
+ * Creates attribute object with lockId and optionally source for node metadata.
+ *
+ * @param lockId - Lock identifier
+ * @param source - Optional agent source
+ * @returns Attribute object for ProseMirror node
+ *
+ * @example
+ * ```typescript
+ * const attrs = buildLockAttributes('lock_001', 'muse');
+ * // { lockId: 'lock_001', source: 'muse' }
+ * ```
+ */
 function buildLockAttributes(lockId: string, source?: AgentSource) {
   return source ? { lockId, source } : { lockId };
 }
@@ -179,6 +212,17 @@ export function deleteContentAtAnchor(
 
 /**
  * Delete the sentence immediately before the cursor.
+ *
+ * Identifies the last sentence range using text analysis and removes it.
+ * Used as a fallback when server doesn't provide specific anchor range.
+ *
+ * @param view - Milkdown editor view
+ *
+ * @example
+ * ```typescript
+ * // User presses delete key near end of document
+ * deleteLastSentence(editorView);
+ * ```
  */
 export function deleteLastSentence(view: EditorView): void {
   const range = getLastSentenceRange(view.state);
@@ -191,6 +235,30 @@ export function deleteLastSentence(view: EditorView): void {
 
 /**
  * Rewrite a server-provided range with locked text.
+ *
+ * Replaces content within the specified anchor range with new locked content.
+ * Falls back to rewriting the last sentence if anchor is invalid or missing.
+ *
+ * @param view - Milkdown editor view
+ * @param content - New locked content to insert
+ * @param lockId - Lock identifier for the new content
+ * @param anchor - Optional anchor range specifying what to replace
+ * @param source - Optional agent source for styling
+ *
+ * @example
+ * ```typescript
+ * const response = await triggerLokiIntervention(...);
+ *
+ * if (response.action === 'rewrite' && response.anchor?.type === 'range') {
+ *   rewriteRangeWithLock({
+ *     view: editorView,
+ *     content: response.content,
+ *     lockId: response.lock_id,
+ *     anchor: response.anchor,
+ *     source: response.source
+ *   });
+ * }
+ * ```
  */
 export function rewriteRangeWithLock({
   view,
@@ -241,6 +309,25 @@ export function rewriteRangeWithLock({
 
 /**
  * Rewrite the last sentence before the cursor with locked text (fallback).
+ *
+ * Identifies the last sentence range and replaces it with locked content.
+ * Used when server response lacks a specific anchor or anchor is invalid.
+ *
+ * @param view - Milkdown editor view
+ * @param content - New locked content to insert
+ * @param lockId - Lock identifier for the new content
+ * @param source - Optional agent source for styling
+ *
+ * @example
+ * ```typescript
+ * // Fallback when no anchor provided
+ * rewriteLastSentenceWithLock(
+ *   editorView,
+ *   '门后传来呼吸声。',
+ *   'lock_01j4z3m8a6q3qz2x8j4z3m8a',
+ *   'muse'
+ * );
+ * ```
  */
 export function rewriteLastSentenceWithLock(
   view: EditorView,
