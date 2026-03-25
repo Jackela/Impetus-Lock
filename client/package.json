@@ -25,7 +25,7 @@
     "@milkdown/plugin-listener": "^7.19.2",
     "@milkdown/preset-commonmark": "^7.18.0",
     "@milkdown/prose": "^7.18.0",
-    "@milkdown/react": "^7.18.0",
+    "@milkdown/react": "^7.19.2",
     "@milkdown/theme-nord": "^7.18.0",
     "@tanstack/react-query": "^5.90.20",
     "framer-motion": "^12.33.0",
