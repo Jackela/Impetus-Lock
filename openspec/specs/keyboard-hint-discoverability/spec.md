@@ -1,8 +1,11 @@
 # keyboard-hint-discoverability Specification
 
 ## Purpose
-TBD - created by archiving change chrome-audit-polish. Update Purpose after archive.
+
+Enables users to discover keyboard shortcuts by displaying a subtle, persistent footer hint advertising the "?" key for accessing help across all application modes.
+
 ## Requirements
+
 ### Requirement: Keyboard Shortcut Footer Hint
 
 The application SHALL display a persistent footer hint advertising the "?" keyboard shortcut for help.
@@ -18,6 +21,7 @@ The application SHALL display a persistent footer hint advertising the "?" keybo
 **And** the footer SHALL display: "Press <kbd>?</kbd> for help"
 
 **Acceptance Criteria**:
+
 - [ ] Footer always visible (fixed position at bottom)
 - [ ] Footer contains `<kbd>?</kbd>` element for semantic key representation
 - [ ] Footer text: "Press ? for help" or "Press <kbd>?</kbd> for help"
@@ -37,6 +41,7 @@ The footer SHALL use subtle styling to provide information without demanding att
 **Given** the footer is visible
 **When** the user views the main interface
 **Then** the footer SHALL have:
+
 - **Opacity**: 0.5 (semi-transparent)
 - **Font size**: 0.875rem (14px, smaller than body text)
 - **Color**: #9ca3af (gray-400, low contrast)
@@ -44,6 +49,7 @@ The footer SHALL use subtle styling to provide information without demanding att
 - **Position**: Fixed bottom, center-aligned
 
 **Acceptance Criteria**:
+
 - [ ] Footer opacity: 0.5 (validated via computed style)
 - [ ] Footer does not have border or prominent background
 - [ ] E2E test validates footer does not overlap editor content
@@ -68,6 +74,7 @@ The footer SHALL remain visible when the user switches between Off/Muse/Loki mod
 **Then** the footer SHALL remain visible
 
 **Acceptance Criteria**:
+
 - [ ] E2E test validates footer visibility in all 3 modes (Off, Muse, Loki)
 - [ ] Footer does not hide/show during mode transitions
 - [ ] Footer persists across page interactions (typing, clicking)
@@ -88,9 +95,9 @@ Clicking the footer hint SHALL NOT trigger the keyboard shortcut (footer is info
 **And** no action SHALL be triggered
 
 **Acceptance Criteria**:
+
 - [ ] Footer has no click handler (not a button)
 - [ ] E2E test validates clicking footer does not open modal
 - [ ] Keyboard shortcut still works (independent of footer)
 
 ---
-

@@ -1,8 +1,11 @@
 # lock-rejection-feedback Specification
 
 ## Purpose
-TBD - created by archiving change chrome-audit-polish. Update Purpose after archive.
+
+Provides end-to-end test coverage for lock rejection sensory feedback, ensuring shake animations and audio cues correctly trigger when users attempt to delete locked content while the document remains unchanged.
+
 ## Requirements
+
 ### Requirement: Lock Rejection Feedback E2E Test
 
 The application SHALL provide E2E test coverage for lock rejection sensory feedback (shake animation + bonk sound).
@@ -20,6 +23,7 @@ The application SHALL provide E2E test coverage for lock rejection sensory feedb
 **And** the animation SHALL complete within 300ms
 
 **Acceptance Criteria**:
+
 - [ ] E2E test simulates Delete key press on locked content
 - [ ] Test validates CSS animation class applied (`.lock-rejection-shake`)
 - [ ] Animation duration matches spec (300ms)
@@ -42,6 +46,7 @@ The lock rejection SHALL trigger an audio cue (bonk sound effect) to reinforce v
 **And** the sound SHALL be audible at system volume level
 
 **Acceptance Criteria**:
+
 - [ ] E2E test validates audio element created (HTMLAudioElement)
 - [ ] Sound file loaded: `public/sounds/lock-bonk.mp3`
 - [ ] Audio plays once per rejection (no looping)
@@ -65,10 +70,10 @@ Attempting to delete locked content SHALL NOT modify the editor document state.
 **And** the editor state SHALL be identical to pre-deletion state
 
 **Acceptance Criteria**:
+
 - [ ] E2E test captures editor content before deletion attempt
 - [ ] Test captures editor content after deletion attempt
 - [ ] Test asserts content equality (no change)
 - [ ] Test validates lock ID still present in document
 
 ---
-

@@ -1,8 +1,11 @@
 # welcome-modal-hierarchy Specification
 
 ## Purpose
-TBD - created by archiving change chrome-audit-polish. Update Purpose after archive.
+
+Guide new users toward Muse Mode as the primary workflow by establishing clear visual hierarchy in the welcome modal through recommended badges and font sizing, while maintaining logical content order.
+
 ## Requirements
+
 ### Requirement: Muse Mode Recommended Badge
 
 The welcome modal SHALL display a "RECOMMENDED" badge on the Muse Mode section to guide new users toward the primary use case.
@@ -17,6 +20,7 @@ The welcome modal SHALL display a "RECOMMENDED" badge on the Muse Mode section t
 **And** the badge SHALL be visually distinct (e.g., purple background, white text)
 
 **Acceptance Criteria**:
+
 - [ ] Badge appears above or adjacent to "Muse Mode" heading
 - [ ] Badge styling: background #7c3aed (purple), text #ffffff (white), border-radius 4px, padding 4px 8px
 - [ ] Badge font size: 0.75rem (smaller than heading)
@@ -36,11 +40,13 @@ The welcome modal SHALL use font size hierarchy to emphasize Muse Mode over Loki
 **Given** the welcome modal is open
 **When** the user views the mode explanation headings
 **Then** font sizes SHALL be:
+
 - **Muse Mode heading**: 1.0em (base size)
 - **Loki Mode heading**: 1.0em (equal to Muse, both are AI modes)
 - **Lock Concept heading**: 0.9em (technical detail, de-emphasized)
 
 **Acceptance Criteria**:
+
 - [ ] Muse Mode heading font-size: 1.0em
 - [ ] Loki Mode heading font-size: 1.0em
 - [ ] Lock Concept heading font-size: 0.9em
@@ -60,13 +66,14 @@ The welcome modal SHALL maintain the current order (Muse → Loki → Lock Conce
 **Given** the welcome modal is open
 **When** the user reads the mode explanations
 **Then** sections SHALL appear in order:
+
 1. Muse Mode (with "RECOMMENDED" badge)
 2. Loki Mode
 3. Lock Concept
 
 **Acceptance Criteria**:
+
 - [ ] Order validated via E2E test (check DOM order of `.welcome-mode` elements)
 - [ ] No content reordering (only visual styling changes)
 
 ---
-

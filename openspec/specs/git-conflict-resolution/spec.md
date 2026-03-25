@@ -1,8 +1,11 @@
 # git-conflict-resolution Specification
 
 ## Purpose
-TBD - created by archiving change resolve-merge-conflicts. Update Purpose after archive.
+
+Establishes a deterministic strategy for resolving git merge conflicts that prioritizes code correctness, readability, and current project state, with automated validation to prevent introducing errors.
+
 ## Requirements
+
 ### Requirement: Merge Conflict Resolution Process
 
 The system SHALL resolve git merge conflicts using a deterministic strategy prioritizing code correctness, readability, and current project state.
@@ -15,34 +18,28 @@ The system SHALL resolve git merge conflicts using a deterministic strategy prio
 **And** the conflict involves HTML, CSS, or JavaScript code
 **When** the conflict is resolved
 **Then** the system SHALL:
+
 - Choose the version with better readability (multiline over single-line for long attributes)
 - Ensure the resolution complies with project's Prettier/ESLint configuration
 - Remove all conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`)
 - Validate the resolved file with linters and type checkers
 
 **Acceptance Criteria**:
+
 - No conflict markers remain in the file
 - `git diff --check` reports no issues
 - Linter passes on resolved file
 - Resolved content is functionally equivalent to both conflict sides
 
 **Example**:
-```html
-# BEFORE (conflict)
-<<<<<<< Updated upstream
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
-=======
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
->>>>>>> Stashed changes
 
-# AFTER (resolved - multiline for readability)
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0"
-    />
+```html
+# BEFORE (conflict) <<<<<<< Updated upstream
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+=======
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+>>>>>>> Stashed changes # AFTER (resolved - multiline for readability)
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 ```
 
 ---
@@ -53,18 +50,21 @@ The system SHALL resolve git merge conflicts using a deterministic strategy prio
 **And** the conflict involves function parameter formatting or variable declarations
 **When** the conflict is resolved
 **Then** the system SHALL:
+
 - Choose the version with better readability (multiline function parameters)
 - Ensure the resolution matches project's test code style conventions
 - Verify test syntax correctness with TypeScript compiler
 - Run affected tests to ensure no runtime errors
 
 **Acceptance Criteria**:
+
 - Test file syntax is valid (no TypeScript errors)
 - Tests execute without syntax errors
 - Resolved formatting matches project conventions (Prettier)
 - All conflict markers removed
 
 **Example**:
+
 ```typescript
 # BEFORE (conflict)
 <<<<<<< Updated upstream
@@ -90,28 +90,34 @@ The system SHALL resolve git merge conflicts using a deterministic strategy prio
 **And** the other side has current information (e.g., "tests executed and passed")
 **When** the conflict is resolved
 **Then** the system SHALL:
+
 - Choose the version with **current, accurate information**
 - Discard outdated status (e.g., references to resolved bugs)
 - Preserve detailed results over vague placeholders
 - Ensure documentation reflects current project state
 
 **Acceptance Criteria**:
+
 - Resolved documentation is factually accurate
 - No references to resolved issues remain (e.g., "rollup dependency issue")
 - Detailed test results preserved over generic status
 - Markdown syntax is valid
 
 **Example**:
+
 ```markdown
 # BEFORE (conflict)
+
 <<<<<<< Updated upstream
 ✅ 8/9 E2E tests PASSED
 ✅ 146/165 unit tests PASSED
 =======
 ⚠️ Tests deferred (rollup dependency issue)
->>>>>>> Stashed changes
+
+> > > > > > > Stashed changes
 
 # AFTER (resolved - keep current detailed results)
+
 ✅ 8/9 E2E tests PASSED
 ✅ 146/165 unit tests PASSED
 ```
@@ -129,6 +135,7 @@ The system SHALL validate all resolved merge conflicts using automated quality g
 **Given** all merge conflicts have been resolved
 **When** validation is performed
 **Then** the system SHALL run the following checks:
+
 - `git status` to confirm no "Unmerged paths" remain
 - `git diff --check` to detect whitespace issues or leftover conflict markers
 - ESLint on all modified files
@@ -137,12 +144,14 @@ The system SHALL validate all resolved merge conflicts using automated quality g
 - Application build test (`npm run dev` starts successfully)
 
 **Acceptance Criteria**:
+
 - All quality gates pass (exit code 0)
 - `git status` shows "All conflicts fixed" or no unmerged paths
 - Application runs without errors
 - No lint, type-check, or format errors
 
 **Example Validation Commands**:
+
 ```bash
 git status                        # Should show no unmerged paths
 git diff --check                  # Should report no issues
@@ -153,4 +162,3 @@ npm run dev                       # App starts successfully
 ```
 
 ---
-
