@@ -69,6 +69,7 @@ class TestProviderRegistry:
 
     def test_debug_provider_requires_flag(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("LLM_ALLOW_DEBUG_PROVIDER", raising=False)
+        monkeypatch.delenv("TESTING", raising=False)
         registry = ProviderRegistry()
         registry.reload()
 

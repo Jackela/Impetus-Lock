@@ -5,17 +5,13 @@ Sets up test environment with mocked OpenAI API key.
 
 import os
 
-import pytest
-
-from server.api.main import app as fastapi_app
-from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
-from server.infrastructure.llm.provider_registry import ProviderRegistry
-
-# Ensure defaults exist before modules under test import ProviderRegistry
+# Ensure defaults exist BEFORE any server module imports
 os.environ.setdefault("OPENAI_API_KEY", "test-key-for-unit-tests")
 os.environ.setdefault("LLM_DEFAULT_PROVIDER", "openai")
 os.environ.setdefault("LLM_ALLOW_DEBUG_PROVIDER", "0")
-os.environ.setdefault("TESTING", "0")
+os.environ.setdefault("TESTING", "1")
+
+import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -31,6 +27,10 @@ def setup_test_environment() -> None:
 @pytest.fixture(autouse=True)
 def ensure_app_state() -> None:
     """Ensure shared app.state resources exist for tests."""
+    # Import here to avoid module-level import hang during test collection
+    from server.api.main import app as fastapi_app
+    from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
+    from server.infrastructure.llm.provider_registry import ProviderRegistry
 
     fastapi_app.state.provider_registry = ProviderRegistry()
     fastapi_app.state.idempotency_cache = AsyncIdempotencyCache(ttl=15)

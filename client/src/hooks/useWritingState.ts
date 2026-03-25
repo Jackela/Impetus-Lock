@@ -135,19 +135,19 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
    */
   const onInput = useCallback(() => {
     if (mode !== "muse") {
-      // State machine disabled for non-Muse modes
       return;
     }
 
-    // Update last input timestamp
     lastInputTime.current = Date.now();
 
-    // Reset state to WRITING
-    if (state !== "WRITING") {
-      setState("WRITING");
-      stuckCallbackFired.current = false;
-    }
-  }, [mode, state]);
+    setState((prev) => {
+      if (prev !== "WRITING") {
+        stuckCallbackFired.current = false;
+        return "WRITING";
+      }
+      return prev;
+    });
+  }, [mode]);
 
   /**
    * Manual trigger for Demo mode.
@@ -167,52 +167,42 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
    * Checks idle time every 1 second and transitions states.
    */
   useEffect(() => {
-    // Disable state machine for non-Muse modes
     if (mode !== "muse") {
       setState("WRITING");
       return;
     }
 
-    // Setup interval to check idle time
     timerRef.current = setInterval(() => {
       const idleTime = Date.now() - lastInputTime.current;
 
-      // Calculate remaining time until STUCK (T004)
       const remainingMs = Math.max(0, STUCK_THRESHOLD - idleTime);
       const remainingSeconds = Math.ceil(remainingMs / 1000);
 
-      // Call timer update callback for visual indicator
       if (onTimerUpdate) {
         onTimerUpdate(remainingSeconds);
       }
 
-      if (idleTime >= STUCK_THRESHOLD) {
-        // Transition to STUCK after 60s idle
-        if (state !== "STUCK") {
-          setState("STUCK");
-
-          // Call onStuck callback (only once per transition)
+      setState((prev) => {
+        if (idleTime >= STUCK_THRESHOLD && prev !== "STUCK") {
           if (onStuck && !stuckCallbackFired.current) {
             stuckCallbackFired.current = true;
             onStuck();
           }
+          return "STUCK";
+        } else if (idleTime >= IDLE_THRESHOLD && prev !== "IDLE") {
+          return "IDLE";
         }
-      } else if (idleTime >= IDLE_THRESHOLD) {
-        // Transition to IDLE after 5s idle
-        if (state !== "IDLE") {
-          setState("IDLE");
-        }
-      }
-    }, 1000); // Check every second
+        return prev;
+      });
+    }, 1000);
 
-    // Cleanup on unmount or mode change
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [mode, state, onStuck, onTimerUpdate]);
+  }, [mode, onStuck, onTimerUpdate]);
 
   return {
     state,

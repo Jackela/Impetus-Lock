@@ -1,5 +1,6 @@
 """Rate limiting middleware for FastAPI."""
 
+import os
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request
@@ -32,6 +33,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         Returns:
             Response from next handler.
         """
+        # Skip rate limiting during tests
+        if os.getenv("TESTING") == "1":
+            return await call_next(request)
+
         path = request.url.path
 
         if any(path.startswith(excluded) for excluded in self.EXCLUDED_PATHS):

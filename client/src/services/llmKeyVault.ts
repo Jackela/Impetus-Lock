@@ -272,17 +272,28 @@ function resetSessionTimer(): void {
   }, SESSION_IDLE_MS);
 }
 
-// Set up session mode event listeners
-if (typeof document !== "undefined") {
-  document.addEventListener("visibilitychange", () => {
+const sessionEventHandlers = {
+  visibilityChange: () => {
     if (document.visibilityState === "hidden" && getVaultMode() === "session") {
       cache = null;
       notify();
     }
-  });
+  },
+  resetSessionTimer,
+};
 
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", sessionEventHandlers.visibilityChange);
   ["mousemove", "keydown", "mousedown", "touchstart"].forEach((event) => {
-    document.addEventListener(event, resetSessionTimer);
+    document.addEventListener(event, sessionEventHandlers.resetSessionTimer);
+  });
+}
+
+export function cleanupSessionListeners(): void {
+  if (typeof document === "undefined") return;
+  document.removeEventListener("visibilitychange", sessionEventHandlers.visibilityChange);
+  ["mousemove", "keydown", "mousedown", "touchstart"].forEach((event) => {
+    document.removeEventListener(event, sessionEventHandlers.resetSessionTimer);
   });
 }
 

@@ -7,6 +7,12 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
+# Type declarations for optional opentelemetry imports
+trace: Any | None = None
+Status: Any | None = None
+StatusCode: Any | None = None
+_tracer: Any | None = None
+
 try:
     from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -14,31 +20,33 @@ try:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.trace import Status, StatusCode
+
+    assert trace is not None  # narrow type after import
+
+    OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+    OTLP_HEADERS = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
+    SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "impetus-lock")
+
+    if OTLP_ENDPOINT:
+        resource = Resource.create({"service.name": SERVICE_NAME})
+        provider = TracerProvider(resource=resource)
+        headers = None
+        if OTLP_HEADERS:
+            headers = dict(item.split("=") for item in OTLP_HEADERS.split(",") if "=" in item)
+        exporter = OTLPSpanExporter(endpoint=OTLP_ENDPOINT, headers=headers)
+        provider.add_span_processor(BatchSpanProcessor(exporter))
+        trace.set_tracer_provider(provider)
+        _tracer = trace.get_tracer(__name__)
+    else:
+        _tracer = None
 except ImportError:  # pragma: no cover - optional dependency
-    trace = None  # type: ignore
-    Status = None  # type: ignore
-    StatusCode = None  # type: ignore
-
-TracerType = Any
-StatusType = Any
-StatusCodeType = Any
-
-_tracer: TracerType | None = None
-
-OTLP_ENDPOINT = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-OTLP_HEADERS = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
-SERVICE_NAME = os.getenv("OTEL_SERVICE_NAME", "impetus-lock")
-
-if trace and OTLP_ENDPOINT:
-    resource = Resource.create({"service.name": SERVICE_NAME})
-    provider = TracerProvider(resource=resource)
-    headers = None
-    if OTLP_HEADERS:
-        headers = dict(item.split("=") for item in OTLP_HEADERS.split(",") if "=" in item)
-    exporter = OTLPSpanExporter(endpoint=OTLP_ENDPOINT, headers=headers)
-    provider.add_span_processor(BatchSpanProcessor(exporter))
-    trace.set_tracer_provider(provider)
-    _tracer = trace.get_tracer(__name__)
+    trace = None
+    Status = None
+    StatusCode = None
+    OTLP_ENDPOINT = None
+    OTLP_HEADERS = None
+    SERVICE_NAME = "impetus-lock"
+    _tracer = None
 
 
 def is_tracing_enabled() -> bool:

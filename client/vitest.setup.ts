@@ -17,43 +17,39 @@ import { vi } from "vitest";
  * - Supports responsive breakpoint queries (max-width, min-width)
  * - Properly implements addEventListener/removeEventListener
  */
+interface MediaQueryListListener {
+  (event: MediaQueryListEvent): void;
+}
+
 Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => {
-    // Simple query parsing for common patterns
     let matches = false;
 
-    // Check for prefers-reduced-motion
     if (query.includes("prefers-reduced-motion: reduce")) {
-      matches = false; // Default: no reduced motion
-    }
-    // Check for max-width queries (mobile-first responsive design)
-    else if (query.includes("max-width")) {
+      matches = false;
+    } else if (query.includes("max-width")) {
       const maxWidth = parseInt(query.match(/max-width:\s*(\d+)px/)?.[1] || "0", 10);
-      // Default to desktop viewport (1024px) in tests
       matches = 1024 <= maxWidth;
-    }
-    // Check for min-width queries
-    else if (query.includes("min-width")) {
+    } else if (query.includes("min-width")) {
       const minWidth = parseInt(query.match(/min-width:\s*(\d+)px/)?.[1] || "0", 10);
-      // Default to desktop viewport (1024px) in tests
       matches = 1024 >= minWidth;
     }
 
-    const listeners: Array<(event: any) => void> = [];
+    const listeners: MediaQueryListListener[] = [];
 
     return {
       matches,
       media: query,
       onchange: null,
-      addListener: vi.fn(), // Deprecated
-      removeListener: vi.fn(), // Deprecated
-      addEventListener: vi.fn((event: string, listener: (event: any) => void) => {
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn((event: string, listener: MediaQueryListListener) => {
         if (event === "change") {
           listeners.push(listener);
         }
       }),
-      removeEventListener: vi.fn((event: string, listener: (event: any) => void) => {
+      removeEventListener: vi.fn((event: string, listener: MediaQueryListListener) => {
         if (event === "change") {
           const index = listeners.indexOf(listener);
           if (index > -1) {
@@ -107,9 +103,8 @@ class MockAudioContext {
   }
 }
 
-// Assign to both global and window for maximum compatibility
-global.AudioContext = MockAudioContext as any;
-(window as any).AudioContext = MockAudioContext;
+global.AudioContext = MockAudioContext as unknown as typeof AudioContext;
+(window as Window).AudioContext = MockAudioContext as unknown as typeof AudioContext;
 
 /**
  * Mock fetch for static audio assets so Vitest doesn't try to resolve real files.
@@ -137,5 +132,5 @@ const mockFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Pr
   return new Response(null, { status: 200 });
 });
 
-global.fetch = mockFetch as typeof fetch;
-(window as any).fetch = mockFetch;
+global.fetch = mockFetch;
+(window as Window).fetch = mockFetch;
