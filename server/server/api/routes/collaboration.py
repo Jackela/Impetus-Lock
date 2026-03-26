@@ -12,16 +12,13 @@ from typing import Any
 
 from fastapi import (
     APIRouter,
-    Depends,
     HTTPException,
     Query,
-    Request,
     WebSocket,
     WebSocketDisconnect,
 )
 from fastapi.responses import JSONResponse
 
-from server.api.auth.middleware import AuthenticationMiddleware
 from server.infrastructure.websocket.collaboration_service import (
     CollaborationService,
     CursorUpdate,

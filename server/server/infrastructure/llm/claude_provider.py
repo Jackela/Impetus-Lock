@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import instructor
 from anthropic import (
@@ -28,7 +28,7 @@ from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    pass
 
 
 @dataclass

@@ -7,12 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
-from uuid import uuid4
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 

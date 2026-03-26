@@ -19,7 +19,7 @@ from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.claude_provider import ClaudeProvider, TokenUsage
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    pass
 
 
 @pytest.fixture

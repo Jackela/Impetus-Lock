@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from server.infrastructure.websocket.connection_manager import ConnectionManager, Room
 from server.infrastructure.websocket.redis_pubsub import RedisPubSubManager
