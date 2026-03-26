@@ -11,21 +11,9 @@
  * @module services/api/styleComparisonClient
  */
 
-/**
- * Style vector representing analyzed writing style characteristics.
- */
-export interface StyleVector {
-  /** Average sentence length in words */
-  avg_sentence_length: number;
-  /** Vocabulary richness (unique words / total words) */
-  vocab_richness: number;
-  /** Punctuation density (punctuation marks / total characters) */
-  punctuation_density: number;
-  /** Average paragraph length in sentences */
-  paragraph_length_avg: number;
-  /** Ratio of dialogue to narrative text */
-  dialogue_ratio: number;
-}
+import type { StyleVector } from "./types";
+
+export type { StyleVector } from "./types";
 
 /**
  * Request body for style comparison endpoint.
@@ -79,6 +67,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
  * Includes HTTP status code, error code, and optional details.
  */
 export class StyleComparisonAPIError extends Error {
+  /** HTTP status code */
+  status: number;
+  /** Error code from API */
+  code: string;
+  /** Optional additional error details */
+  details?: unknown;
+
   /**
    * Creates a new StyleComparisonAPIError.
    *
@@ -87,14 +82,12 @@ export class StyleComparisonAPIError extends Error {
    * @param message - Human-readable error message
    * @param details - Optional additional error details
    */
-  constructor(
-    public status: number,
-    public code: string,
-    message: string,
-    public details?: unknown
-  ) {
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message);
     this.name = "StyleComparisonAPIError";
+    this.status = status;
+    this.code = code;
+    this.details = details;
   }
 }
 
@@ -155,14 +148,20 @@ export async function compareStyles(
     );
   }
 
-  const parsedData = (data as Record<string, unknown>) || {};
+  // Type guard to safely check parsed data
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+  }
+
+  const parsedData = isRecord(data) ? data : {};
 
   if (!response.ok) {
-    const code = (parsedData.code as string) || "UnknownError";
-    const message = (parsedData.message as string) || "Unknown error occurred";
+    const code = typeof parsedData.code === "string" ? parsedData.code : "UnknownError";
+    const message =
+      typeof parsedData.message === "string" ? parsedData.message : "Unknown error occurred";
 
     throw new StyleComparisonAPIError(response.status, code, message, parsedData.details);
   }
 
-  return parsedData as StyleComparisonResponse;
+  return parsedData as unknown as StyleComparisonResponse;
 }

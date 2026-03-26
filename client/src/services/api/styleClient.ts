@@ -11,49 +11,9 @@
  * @module services/api/styleClient
  */
 
-/**
- * Style vector representing analyzed writing style characteristics.
- */
-export interface StyleVector {
-  /** Average sentence length in words */
-  avg_sentence_length: number;
-  /** Vocabulary richness (unique words / total words) */
-  vocab_richness: number;
-  /** Punctuation density (punctuation marks / total characters) */
-  punctuation_density: number;
-  /** Average paragraph length in sentences */
-  paragraph_length_avg: number;
-  /** Ratio of dialogue to narrative text */
-  dialogue_ratio: number;
-}
+import type { StyleVector, StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
-/**
- * Response from style analysis endpoint.
- */
-export interface StyleAnalysisResponse {
-  /** User identifier for the analyzed style */
-  user_id: string;
-  /** Analyzed style vector */
-  style_vector: StyleVector;
-  /** Confidence score of the analysis (0-1) */
-  confidence: number;
-  /** ISO timestamp of analysis */
-  analyzed_at: string;
-}
-
-/**
- * Response from style application endpoint.
- */
-export interface StyleApplyResponse {
-  /** Text transformed with the user's style */
-  transformed_text: string;
-  /** User ID whose style was applied */
-  style_user_id: string;
-  /** Intensity of style application (0-1) */
-  intensity: number;
-  /** ISO timestamp of transformation */
-  applied_at: string;
-}
+export type { StyleVector, StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
 /**
  * Options for API calls.
@@ -74,6 +34,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
  * Includes HTTP status code, error code, and optional details.
  */
 export class StyleAPIError extends Error {
+  /** HTTP status code */
+  status: number;
+  /** Error code from API */
+  code: string;
+  /** Optional additional error details */
+  details?: unknown;
+
   /**
    * Creates a new StyleAPIError.
    *
@@ -82,14 +49,12 @@ export class StyleAPIError extends Error {
    * @param message - Human-readable error message
    * @param details - Optional additional error details
    */
-  constructor(
-    public status: number,
-    public code: string,
-    message: string,
-    public details?: unknown
-  ) {
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message);
     this.name = "StyleAPIError";
+    this.status = status;
+    this.code = code;
+    this.details = details;
   }
 }
 
@@ -145,16 +110,22 @@ export async function analyzeStyle(
     });
   }
 
-  const parsedData = (data as Record<string, unknown>) || {};
+  // Type guard to safely check parsed data
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+  }
+
+  const parsedData = isRecord(data) ? data : {};
 
   if (!response.ok) {
-    const code = (parsedData.code as string) || "UnknownError";
-    const message = (parsedData.message as string) || "Unknown error occurred";
+    const code = typeof parsedData.code === "string" ? parsedData.code : "UnknownError";
+    const message =
+      typeof parsedData.message === "string" ? parsedData.message : "Unknown error occurred";
 
     throw new StyleAPIError(response.status, code, message, parsedData.details);
   }
 
-  return parsedData as StyleAnalysisResponse;
+  return parsedData as unknown as StyleAnalysisResponse;
 }
 
 /**
@@ -211,14 +182,20 @@ export async function applyStyle(
     });
   }
 
-  const parsedData = (data as Record<string, unknown>) || {};
+  // Type guard to safely check parsed data
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null;
+  }
+
+  const parsedData = isRecord(data) ? data : {};
 
   if (!response.ok) {
-    const code = (parsedData.code as string) || "UnknownError";
-    const message = (parsedData.message as string) || "Unknown error occurred";
+    const code = typeof parsedData.code === "string" ? parsedData.code : "UnknownError";
+    const message =
+      typeof parsedData.message === "string" ? parsedData.message : "Unknown error occurred";
 
     throw new StyleAPIError(response.status, code, message, parsedData.details);
   }
 
-  return parsedData as StyleApplyResponse;
+  return parsedData as unknown as StyleApplyResponse;
 }

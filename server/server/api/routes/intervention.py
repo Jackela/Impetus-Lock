@@ -267,6 +267,6 @@ def _set_cooldown_header(response: Response, mode: str | None, idempotency_key: 
 def _compute_cooldown_seconds(idempotency_key: str) -> int:
     """Derive a stable cooldown (30-120s) from the idempotency key."""
 
-    digest = hashlib.md5(idempotency_key.encode("utf-8")).hexdigest()
+    digest = hashlib.md5(idempotency_key.encode("utf-8"), usedforsecurity=False).hexdigest()
     value = int(digest, 16) % 91  # 0-90
     return 30 + value  # 30-120 inclusive

@@ -10,13 +10,18 @@
 import { useState, useCallback } from "react";
 import type {
   StyleHistoryListResponse,
-  StyleHistoryRecord,
+  StyleHistoryRecord as StyleHistoryRecordInternal,
 } from "../services/api/styleHistoryClient";
 import {
   getStyleHistory,
   getStyleHistoryById,
   deleteStyleHistory,
 } from "../services/api/styleHistoryClient";
+
+/**
+ * Re-export StyleHistoryRecord for external consumers.
+ */
+export type StyleHistoryRecord = StyleHistoryRecordInternal;
 
 /**
  * Return type for useStyleHistory hook.
