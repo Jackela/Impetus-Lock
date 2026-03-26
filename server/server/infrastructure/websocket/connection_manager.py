@@ -5,6 +5,7 @@ Manages client connections, rooms, and presence tracking for real-time collabora
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -55,7 +56,7 @@ class Room:
         self.connections: dict[str, WebSocket] = {}
         self.presence: dict[str, UserPresence] = {}
         self.document_version: int = 0
-        self._lock: bool = False
+        self._lock = asyncio.Lock()
 
     async def add_connection(self, websocket: WebSocket, user_id: str) -> None:
         """Add a new connection to the room.
@@ -64,7 +65,8 @@ class Room:
             websocket: The WebSocket connection
             user_id: User identifier
         """
-        self.connections[user_id] = websocket
+        async with self._lock:
+            self.connections[user_id] = websocket
         logger.info(f"User {user_id} joined room {self.room_id}")
 
     async def remove_connection(self, user_id: str) -> None:
@@ -73,10 +75,11 @@ class Room:
         Args:
             user_id: User identifier
         """
-        if user_id in self.connections:
-            del self.connections[user_id]
-        if user_id in self.presence:
-            del self.presence[user_id]
+        async with self._lock:
+            if user_id in self.connections:
+                del self.connections[user_id]
+            if user_id in self.presence:
+                del self.presence[user_id]
         logger.info(f"User {user_id} left room {self.room_id}")
 
     async def broadcast(self, message: dict[str, Any], exclude_user: str | None = None) -> None:
@@ -93,34 +96,36 @@ class Room:
                 except Exception as e:
                     logger.error(f"Failed to send message to {user_id}: {e}")
 
-    def update_presence(self, user_id: str, updates: dict[str, Any]) -> None:
+    async def update_presence(self, user_id: str, updates: dict[str, Any]) -> None:
         """Update user presence information.
 
         Args:
             user_id: User identifier
             updates: Dictionary of fields to update
         """
-        if user_id in self.presence:
-            for key, value in updates.items():
-                setattr(self.presence[user_id], key, value)
+        async with self._lock:
+            if user_id in self.presence:
+                for key, value in updates.items():
+                    setattr(self.presence[user_id], key, value)
 
-    def get_all_presence(self) -> list[dict[str, Any]]:
+    async def get_all_presence(self) -> list[dict[str, Any]]:
         """Get presence info for all users in the room.
 
         Returns:
             List of presence dictionaries
         """
-        return [
-            {
-                "user_id": p.user_id,
-                "username": p.username,
-                "color": p.color,
-                "cursor_position": p.cursor_position,
-                "selection": p.selection,
-                "is_active": p.is_active,
-            }
-            for p in self.presence.values()
-        ]
+        async with self._lock:
+            return [
+                {
+                    "user_id": p.user_id,
+                    "username": p.username,
+                    "color": p.color,
+                    "cursor_position": p.cursor_position,
+                    "selection": p.selection,
+                    "is_active": p.is_active,
+                }
+                for p in self.presence.values()
+            ]
 
     @property
     def is_empty(self) -> bool:
@@ -286,7 +291,7 @@ class ConnectionManager:
         if room:
             await room.broadcast(message, exclude_user)
 
-    def get_room_presence(self, room_id: str) -> list[dict[str, Any]]:
+    async def get_room_presence(self, room_id: str) -> list[dict[str, Any]]:
         """Get presence information for all users in a room.
 
         Args:
@@ -296,7 +301,9 @@ class ConnectionManager:
             List of presence dictionaries
         """
         room = self._rooms.get(room_id)
-        return room.get_all_presence() if room else []
+        if room:
+            return await room.get_all_presence()
+        return []
 
     def get_active_rooms(self) -> list[str]:
         """Get list of all active room IDs.

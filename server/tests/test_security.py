@@ -97,7 +97,6 @@ class TestTaskInputValidation:
 
         Validates that the API properly handles malicious content in async context.
         """
-        from collections.abc import AsyncGenerator
         from fastapi.testclient import TestClient
 
         from server.api.main import app

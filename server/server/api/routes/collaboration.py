@@ -6,6 +6,7 @@ for room management and permissions.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -51,10 +52,10 @@ async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:
     Raises:
         HTTPException: If authentication fails
     """
-    # Skip auth in testing mode
+    # Skip auth only in explicit testing mode with proper test key
     import os
 
-    if os.getenv("TESTING"):
+    if os.getenv("TESTING") == "1" and os.getenv("WEBSOCKET_TEST_MODE") == "enabled":
         return {"user_id": "test_user", "username": "Test User"}
 
     # Try to get token from query params or cookies
@@ -136,9 +137,20 @@ async def collaboration_websocket(websocket: WebSocket, document_id: str) -> Non
         await websocket.send_json(join_response)
 
         # Main message loop
+        MAX_MESSAGE_SIZE = 1024 * 1024  # 1MB limit
         while True:
             try:
-                message = await websocket.receive_json()
+                # Receive text first to check size
+                text = await websocket.receive_text()
+                if len(text) > MAX_MESSAGE_SIZE:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "data": {"message": "Message too large"},
+                        }
+                    )
+                    continue
+                message = json.loads(text)
                 await _handle_message(websocket, room, user_id, message)
             except WebSocketDisconnect:
                 break
@@ -238,7 +250,7 @@ async def get_room_users(document_id: str) -> JSONResponse:
     if not room:
         return JSONResponse({"users": [], "count": 0})
 
-    presence = room.get_all_presence()
+    presence = await room.get_all_presence()
     return JSONResponse(
         {
             "users": presence,

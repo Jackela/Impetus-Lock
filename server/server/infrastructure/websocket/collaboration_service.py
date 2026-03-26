@@ -215,7 +215,7 @@ class CollaborationService:
                 "user_id": user_id,
                 "content": content,
                 "version": version,
-                "users": room.get_all_presence(),
+                "users": await room.get_all_presence(),
             },
         }
 
@@ -297,7 +297,7 @@ class CollaborationService:
             update: Cursor update
         """
         # Update presence
-        room.update_presence(
+        await room.update_presence(
             update.user_id,
             {
                 "cursor_position": {
@@ -326,7 +326,7 @@ class CollaborationService:
             update: Selection update
         """
         # Update presence
-        room.update_presence(update.user_id, {"selection": update.to_dict()})
+        await room.update_presence(update.user_id, {"selection": update.to_dict()})
 
         # Broadcast to others
         message = {
@@ -348,7 +348,7 @@ class CollaborationService:
             user_id: User identifier
             updates: Awareness updates
         """
-        room.update_presence(user_id, updates)
+        await room.update_presence(user_id, updates)
 
         message = {
             "type": "awareness_update",
