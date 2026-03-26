@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Literal, Protocol
+from typing import TYPE_CHECKING, Literal, TypeVar
 
 from pydantic import BaseModel
 
@@ -206,8 +206,10 @@ class RetryMixin:
             backoff_factor if backoff_factor is not None else self.DEFAULT_BACKOFF_FACTOR
         )
 
-        if should_retry is None:
-            should_retry = lambda e: isinstance(e, (OSError, ConnectionError))
+        def default_retry(e: Exception) -> bool:
+            return isinstance(e, (OSError, ConnectionError))
+
+        retry_checker = should_retry or default_retry
 
         last_error: Exception | None = None
 
@@ -217,7 +219,7 @@ class RetryMixin:
             except Exception as exc:
                 last_error = exc
 
-                if attempt < max_retries and should_retry(exc):
+                if attempt < max_retries and retry_checker(exc):
                     sleep_time = backoff_factor * (2**attempt)
                     time.sleep(sleep_time)
                     continue
@@ -229,8 +231,5 @@ class RetryMixin:
             raise last_error
         raise RuntimeError("Unexpected error in retry logic")
 
-
-# Type variable for generic return type
-from typing import TypeVar
 
 T = TypeVar("T")
