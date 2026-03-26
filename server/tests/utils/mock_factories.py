@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -437,10 +437,20 @@ class LLMProviderMocker:
     """
 
     PROVIDER_PATHS = {
-        "instructor": "server.infrastructure.llm.instructor_provider.InstructorLLMProvider.generate_intervention",
-        "anthropic": "server.infrastructure.llm.anthropic_provider.AnthropicLLMProvider.generate_intervention",
-        "gemini": "server.infrastructure.llm.gemini_provider.GeminiLLMProvider.generate_intervention",
-        "claude": "server.infrastructure.llm.claude_provider.ClaudeLLMProvider.generate_intervention",
+        "instructor": (
+            "server.infrastructure.llm.instructor_provider."
+            "InstructorLLMProvider.generate_intervention"
+        ),
+        "anthropic": (
+            "server.infrastructure.llm.anthropic_provider."
+            "AnathropicLLMProvider.generate_intervention"
+        ),
+        "gemini": (
+            "server.infrastructure.llm.gemini_provider.GeminiLLMProvider.generate_intervention"
+        ),
+        "claude": (
+            "server.infrastructure.llm.claude_provider.ClaudeLLMProvider.generate_intervention"
+        ),
     }
 
     def __init__(self) -> None:

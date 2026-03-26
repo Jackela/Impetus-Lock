@@ -204,7 +204,7 @@ class ProviderRegistry:
         """Instantiate OpenAI provider with deferred import."""
         try:
             module = importlib.import_module("server.infrastructure.llm.instructor_provider")
-            provider_class = getattr(module, "InstructorLLMProvider")
+            provider_class = module.InstructorLLMProvider
         except ImportError as e:
             logger.warning(f"OpenAI provider not available: {e}")
             raise LLMProviderError(
@@ -224,7 +224,7 @@ class ProviderRegistry:
         """Instantiate Anthropic provider with deferred import."""
         try:
             module = importlib.import_module("server.infrastructure.llm.anthropic_provider")
-            provider_class = getattr(module, "AnthropicLLMProvider")
+            provider_class = module.AnthropicLLMProvider
         except ImportError as e:
             logger.warning(f"Anthropic provider not available: {e}")
             raise LLMProviderError(
@@ -244,7 +244,7 @@ class ProviderRegistry:
         """Instantiate Claude provider with deferred import."""
         try:
             module = importlib.import_module("server.infrastructure.llm.claude_provider")
-            provider_class = getattr(module, "ClaudeProvider")
+            provider_class = module.ClaudeProvider
         except ImportError as e:
             logger.warning(f"Claude provider not available: {e}")
             raise LLMProviderError(
@@ -264,7 +264,7 @@ class ProviderRegistry:
         """Instantiate Gemini provider with deferred import."""
         try:
             module = importlib.import_module("server.infrastructure.llm.gemini_provider")
-            provider_class = getattr(module, "GeminiLLMProvider")
+            provider_class = module.GeminiLLMProvider
         except ImportError as e:
             logger.warning(f"Gemini provider not available: {e}")
             raise LLMProviderError(
@@ -284,7 +284,7 @@ class ProviderRegistry:
         """Instantiate Debug provider with deferred import."""
         try:
             module = importlib.import_module("server.infrastructure.llm.debug_provider")
-            provider_class = getattr(module, "DebugLLMProvider")
+            provider_class = module.DebugLLMProvider
         except ImportError as e:
             logger.warning(f"Debug provider not available: {e}")
             raise LLMProviderError(

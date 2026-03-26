@@ -57,7 +57,10 @@ class BasePromptLLMProvider(LLMProvider, ABC):
         if draft.action == "provoke":
             anchor: AnchorPos | AnchorRange = AnchorPos(from_=cursor_pos)
         else:
-            anchor = AnchorRange(from_=max(0, cursor_pos - 120), to=cursor_pos)
+            # Ensure to > 0 for AnchorRange validation
+            to_pos = max(1, cursor_pos)
+            from_pos = max(0, to_pos - 120)
+            anchor = AnchorRange(from_=from_pos, to=to_pos)
 
         lock_id = None
         content = draft.content

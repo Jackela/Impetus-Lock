@@ -20,7 +20,6 @@ from __future__ import annotations
 import asyncio
 import functools
 import gc
-import sys
 import warnings
 from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
 from contextlib import asynccontextmanager, contextmanager
@@ -314,7 +313,7 @@ def _cleanup_current_loop() -> None:
                         timeout=1.0,
                     )
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
         # Shutdown async generators

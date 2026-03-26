@@ -359,6 +359,9 @@ class ClaudeProvider(BasePromptLLMProvider):
                     status_code=502,
                     provider=self.provider_name,
                 ) from exc
+            except LLMProviderError:
+                # Re-raise LLMProviderError directly without wrapping
+                raise
             except Exception as exc:
                 raise LLMProviderError(
                     code="llm_api_error",

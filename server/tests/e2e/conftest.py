@@ -12,7 +12,7 @@ Constitutional Compliance:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import pytest
 

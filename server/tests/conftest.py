@@ -32,7 +32,7 @@ os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/1")
 
 if TYPE_CHECKING:
-    from unittest.mock import MagicMock
+    pass
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -263,7 +263,6 @@ async def app_lifespan() -> AsyncGenerator[None, None]:
     Yields:
         None when app is ready for testing.
     """
-    from server.api.main import app
 
     # App lifespan is managed by test clients
     yield
@@ -315,7 +314,7 @@ class ImportGuard:
         """
         self.module_name = module_name
 
-    def __enter__(self) -> "ImportGuard":
+    def __enter__(self) -> ImportGuard:
         """Enter context - nothing to do."""
         return self
 

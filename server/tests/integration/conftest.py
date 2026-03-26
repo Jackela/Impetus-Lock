@@ -23,7 +23,7 @@ from sqlalchemy.orm import sessionmaker
 
 if TYPE_CHECKING:
     from httpx import AsyncClient
-    from server.api.main import FastAPI
+
 
 
 @pytest_asyncio.fixture(scope="session")
@@ -36,7 +36,6 @@ async def db_engine() -> AsyncGenerator[Any, None]:
     Yields:
         AsyncEngine instance.
     """
-    from sqlalchemy.ext.asyncio import AsyncEngine
 
     # Use aiosqlite for async SQLite support
     engine = create_async_engine(
@@ -122,7 +121,7 @@ async def db_session_with_cleanup(db_engine: Any) -> AsyncGenerator[AsyncSession
 
 
 @pytest_asyncio.fixture
-async def api_client(db_session: AsyncSession) -> AsyncGenerator["AsyncClient", None]:
+async def api_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Create async HTTP client with overridden dependencies.
 
     Injects the test database session into the FastAPI app.
@@ -134,6 +133,7 @@ async def api_client(db_session: AsyncSession) -> AsyncGenerator["AsyncClient", 
         AsyncClient configured for testing.
     """
     from httpx import ASGITransport, AsyncClient
+
     from server.api.dependencies import get_task_repository
     from server.api.main import app
     from server.infrastructure.persistence.postgresql_task_repository import (
@@ -163,7 +163,7 @@ async def api_client(db_session: AsyncSession) -> AsyncGenerator["AsyncClient", 
 
 
 @pytest_asyncio.fixture
-async def api_client_no_db() -> AsyncGenerator["AsyncClient", None]:
+async def api_client_no_db() -> AsyncGenerator[AsyncClient, None]:
     """Create async HTTP client without database dependency.
 
     Uses in-memory repository for tests that don't need database.
@@ -172,6 +172,7 @@ async def api_client_no_db() -> AsyncGenerator["AsyncClient", None]:
         AsyncClient configured for testing.
     """
     from httpx import ASGITransport, AsyncClient
+
     from server.api.dependencies import get_task_repository
     from server.api.main import app
     from server.infrastructure.persistence.in_memory_task_repository import (
