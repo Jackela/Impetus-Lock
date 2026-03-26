@@ -111,8 +111,8 @@ test.describe("Loki Mode - Provoke Action Flow", () => {
     // Step 4: Check for glitch animation class
     await page.waitForTimeout(100); // Wait for animation to start
 
-    const hasGlitchAnimation = await lockedBlock.evaluate(
-      (el = el.classList.contains("glitch-animation"))
+    const hasGlitchAnimation = await lockedBlock.evaluate((el) =>
+      el.classList.contains("glitch-animation")
     );
     expect(hasGlitchAnimation).toBe(true);
 
@@ -376,16 +376,19 @@ test.describe("Loki Mode - Mode Switching", () => {
   });
 
   test("should not trigger Loki intervention when mode is off", async ({ page }) => {
-    // Step 1: Switch to off mode
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Switch to off mode
     const modeSelector = page.getByTestId("mode-selector");
     await modeSelector.selectOption("off");
 
-    // Step 2: Type content
+    // Step 3: Type content
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Content in off mode.");
 
-    // Step 3: Wait longer than max Loki timer
+    // Step 4: Track API calls and fast-forward past max Loki timer
     let apiCalled = false;
     page.on("request", (request) => {
       if (request.url().includes("/impetus/generate-intervention")) {
@@ -396,23 +399,29 @@ test.describe("Loki Mode - Mode Switching", () => {
       }
     });
 
-    await page.waitForTimeout(130000); // Wait 130 seconds
+    // Fast-forward 130 seconds without actually waiting
+    await page.clock.fastForward(130000);
+    // Allow any pending async operations to complete
+    await page.waitForTimeout(100);
 
-    // Step 4: Verify no Loki intervention
+    // Step 5: Verify no Loki intervention
     expect(apiCalled).toBe(false);
   });
 
   test("should not trigger Loki intervention when mode is muse", async ({ page }) => {
-    // Step 1: Switch to Muse mode
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Switch to Muse mode
     const modeSelector = page.getByTestId("mode-selector");
     await modeSelector.selectOption("muse");
 
-    // Step 2: Type content
+    // Step 3: Type content
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Content in Muse mode.");
 
-    // Step 3: Wait
+    // Step 4: Track API calls and fast-forward past max Loki timer
     let lokiCalled = false;
     page.on("request", (request) => {
       if (request.url().includes("/impetus/generate-intervention")) {
@@ -423,9 +432,12 @@ test.describe("Loki Mode - Mode Switching", () => {
       }
     });
 
-    await page.waitForTimeout(130000);
+    // Fast-forward 130 seconds without actually waiting
+    await page.clock.fastForward(130000);
+    // Allow any pending async operations to complete
+    await page.waitForTimeout(100);
 
-    // Step 4: Verify no Loki intervention
+    // Step 5: Verify no Loki intervention
     expect(lokiCalled).toBe(false);
   });
 });

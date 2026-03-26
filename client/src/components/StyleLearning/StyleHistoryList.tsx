@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { StyleHistoryRecord } from "../../hooks/useStyleHistory";
 import { useStyleHistory } from "../../hooks/useStyleHistory";
 import styles from "./StyleHistoryList.module.css";
@@ -14,10 +14,10 @@ export function StyleHistoryList({ userId, onSelect }: StyleHistoryListProps) {
   const limit = 10;
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Fetch history on mount
-  useState(() => {
+  // Fetch history on mount and when dependencies change
+  useEffect(() => {
     fetchHistory(userId, limit, offset);
-  });
+  }, [userId, limit, offset, fetchHistory]);
 
   const totalPages = Math.ceil(total / limit);
   const currentPage = Math.floor(offset / limit) + 1;

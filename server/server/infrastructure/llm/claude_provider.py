@@ -12,8 +12,6 @@ Constitutional Compliance:
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
 
 import instructor
 from anthropic import (
@@ -25,23 +23,11 @@ from anthropic import (
 from anthropic.types import Message, MessageParam, TextBlock
 
 from server.domain.errors import LLMProviderError
-from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
-
-if TYPE_CHECKING:
-    pass
-
-
-@dataclass
-class TokenUsage:
-    """Track token usage for a single request."""
-
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = field(init=False)
-
-    def __post_init__(self) -> None:
-        """Calculate total tokens after initialization."""
-        self.total_tokens = self.input_tokens + self.output_tokens
+from server.infrastructure.llm.base_provider import (
+    BasePromptLLMProvider,
+    LLMInterventionDraft,
+    TokenUsage,
+)
 
 
 class ClaudeProvider(BasePromptLLMProvider):
@@ -273,7 +259,32 @@ class ClaudeProvider(BasePromptLLMProvider):
         Returns:
             Validated LLMInterventionDraft.
         """
-        payload: list[MessageParam] = [
+        payload = self._build_api_payload(user_message)
+        attempt = 0
+        last_error: Exception | None = None
+
+        while attempt <= self.max_retries:
+            try:
+                message = self._call_anthropic_api(system_prompt, payload)
+                return self._parse_anthropic_response(message)
+            except Exception as exc:
+                should_retry, last_error = self._handle_api_error(exc, attempt)
+                if not should_retry:
+                    raise
+                attempt += 1
+
+        return self._handle_retry_exhausted(last_error)
+
+    def _build_api_payload(self, user_message: str) -> list[MessageParam]:
+        """Build the API payload for Anthropic request.
+
+        Args:
+            user_message: User message content.
+
+        Returns:
+            List of message parameters for the API call.
+        """
+        return [
             {
                 "role": "user",
                 "content": [
@@ -285,92 +296,214 @@ class ClaudeProvider(BasePromptLLMProvider):
             }
         ]
 
-        attempt = 0
-        last_error: Exception | None = None
+    def _call_anthropic_api(
+        self,
+        system_prompt: str,
+        payload: list[MessageParam],
+    ) -> Message:
+        """Make the actual API call to Anthropic.
 
-        while attempt <= self.max_retries:
-            try:
-                message: Message = self._anthropic_client.messages.create(
-                    model=self.model,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    system=system_prompt,
-                    messages=payload,
-                )
+        Args:
+            system_prompt: System instructions.
+            payload: Message payload.
 
-                # Track token usage
-                if message.usage:
-                    self._last_token_usage = TokenUsage(
-                        input_tokens=message.usage.input_tokens,
-                        output_tokens=message.usage.output_tokens,
-                    )
+        Returns:
+            Raw message response from Anthropic.
+        """
+        return self._anthropic_client.messages.create(
+            model=self.model,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens,
+            system=system_prompt,
+            messages=payload,
+        )
 
-                # Extract text blocks
-                text_blocks = [
-                    block.text for block in message.content if isinstance(block, TextBlock)
-                ]
-                if not text_blocks:
-                    raise LLMProviderError(
-                        code="invalid_response",
-                        message="Claude returned no text blocks",
-                        status_code=502,
-                        provider=self.provider_name,
-                    )
+    def _parse_anthropic_response(self, message: Message) -> LLMInterventionDraft:
+        """Parse and validate the API response.
 
-                return LLMInterventionDraft.model_validate_json(text_blocks[0])
+        Args:
+            message: Raw message from Anthropic API.
 
-            except RateLimitError as exc:
-                if attempt < self.max_retries:
-                    attempt += 1
-                    last_error = exc
-                    continue
-                raise LLMProviderError(
-                    code="quota_exceeded",
-                    message="Claude quota exceeded. Provide another key or try later.",
-                    status_code=402,
-                    provider=self.provider_name,
-                ) from exc
-            except AuthenticationError as exc:
-                raise LLMProviderError(
-                    code="invalid_api_key",
-                    message="Claude API key rejected.",
-                    status_code=401,
-                    provider=self.provider_name,
-                ) from exc
-            except APIError as exc:
-                if attempt < self.max_retries:
-                    attempt += 1
-                    last_error = exc
-                    continue
-                raise LLMProviderError(
-                    code="llm_api_error",
-                    message=f"Claude API error: {exc.__class__.__name__}",
-                    status_code=502,
-                    provider=self.provider_name,
-                ) from exc
-            except (OSError, ConnectionError) as exc:
-                if attempt < self.max_retries:
-                    attempt += 1
-                    last_error = exc
-                    continue
-                raise LLMProviderError(
-                    code="llm_network_error",
-                    message="Network error connecting to Claude API.",
-                    status_code=502,
-                    provider=self.provider_name,
-                ) from exc
-            except LLMProviderError:
-                # Re-raise LLMProviderError directly without wrapping
-                raise
-            except Exception as exc:
-                raise LLMProviderError(
-                    code="llm_api_error",
-                    message=f"Claude request failed: {exc}",
-                    status_code=502,
-                    provider=self.provider_name,
-                ) from exc
+        Returns:
+            Validated LLMInterventionDraft.
 
-        # Should not reach here, but just in case
+        Raises:
+            LLMProviderError: If response parsing fails.
+        """
+        # Track token usage
+        if message.usage:
+            self._last_token_usage = TokenUsage(
+                input_tokens=message.usage.input_tokens,
+                output_tokens=message.usage.output_tokens,
+            )
+
+        # Extract text blocks
+        text_blocks = [block.text for block in message.content if isinstance(block, TextBlock)]
+        if not text_blocks:
+            raise LLMProviderError(
+                code="invalid_response",
+                message="Claude returned no text blocks",
+                status_code=502,
+                provider=self.provider_name,
+            )
+
+        return LLMInterventionDraft.model_validate_json(text_blocks[0])
+
+    def _handle_api_error(
+        self,
+        exc: Exception,
+        attempt: int,
+    ) -> tuple[bool, Exception | None]:
+        """Handle API errors and determine if retry is needed.
+
+        Args:
+            exc: The exception that occurred.
+            attempt: Current attempt number.
+
+        Returns:
+            Tuple of (should_retry, last_error).
+
+        Raises:
+            LLMProviderError: For non-retryable errors.
+        """
+        # Check specific error types
+        if isinstance(exc, RateLimitError):
+            return self._handle_rate_limit_error(exc, attempt)
+        if isinstance(exc, AuthenticationError):
+            return self._handle_auth_error(exc, attempt)
+        if isinstance(exc, APIError):
+            return self._handle_api_error_response(exc, attempt)
+        if isinstance(exc, (OSError, ConnectionError)):
+            return self._handle_network_error(exc, attempt)
+        if isinstance(exc, LLMProviderError):
+            return self._handle_provider_error(exc, attempt)
+
+        # Unknown error - don't retry
+        raise LLMProviderError(
+            code="llm_api_error",
+            message=f"Claude request failed: {exc}",
+            status_code=502,
+            provider=self.provider_name,
+        ) from exc
+
+    def _handle_rate_limit_error(
+        self,
+        exc: Exception,
+        attempt: int,
+    ) -> tuple[bool, Exception | None]:
+        """Handle rate limit errors.
+
+        Args:
+            exc: The rate limit exception.
+            attempt: Current attempt number.
+
+        Returns:
+            Tuple of (should_retry, last_error) or raises LLMProviderError.
+        """
+        if attempt < self.max_retries:
+            return True, exc
+        raise LLMProviderError(
+            code="quota_exceeded",
+            message="Claude quota exceeded. Provide another key or try later.",
+            status_code=402,
+            provider=self.provider_name,
+        ) from exc
+
+    def _handle_auth_error(
+        self,
+        exc: Exception,
+        attempt: int,
+    ) -> tuple[bool, Exception | None]:
+        """Handle authentication errors.
+
+        Args:
+            exc: The authentication exception.
+            attempt: Current attempt number (unused).
+
+        Raises:
+            LLMProviderError: Always raises for auth errors.
+        """
+        raise LLMProviderError(
+            code="invalid_api_key",
+            message="Claude API key rejected.",
+            status_code=401,
+            provider=self.provider_name,
+        ) from exc
+
+    def _handle_api_error_response(
+        self,
+        exc: Exception,
+        attempt: int,
+    ) -> tuple[bool, Exception | None]:
+        """Handle general API errors.
+
+        Args:
+            exc: The API error exception.
+            attempt: Current attempt number.
+
+        Returns:
+            Tuple of (should_retry, last_error) or raises LLMProviderError.
+        """
+        if attempt < self.max_retries:
+            return True, exc
+        raise LLMProviderError(
+            code="llm_api_error",
+            message=f"Claude API error: {exc.__class__.__name__}",
+            status_code=502,
+            provider=self.provider_name,
+        ) from exc
+
+    def _handle_network_error(
+        self,
+        exc: Exception,
+        attempt: int,
+    ) -> tuple[bool, Exception | None]:
+        """Handle network errors.
+
+        Args:
+            exc: The network error exception.
+            attempt: Current attempt number.
+
+        Returns:
+            Tuple of (should_retry, last_error) or raises LLMProviderError.
+        """
+        if attempt < self.max_retries:
+            return True, exc
+        raise LLMProviderError(
+            code="llm_network_error",
+            message="Network error connecting to Claude API.",
+            status_code=502,
+            provider=self.provider_name,
+        ) from exc
+
+    def _handle_provider_error(
+        self,
+        exc: Exception,
+        attempt: int,
+    ) -> tuple[bool, Exception | None]:
+        """Handle provider errors.
+
+        Args:
+            exc: The provider error exception.
+            attempt: Current attempt number (unused).
+
+        Raises:
+            LLMProviderError: Re-raises the original error.
+        """
+        raise exc
+
+    def _handle_retry_exhausted(
+        self,
+        last_error: Exception | None,
+    ) -> LLMInterventionDraft:
+        """Handle the case when all retries are exhausted.
+
+        Args:
+            last_error: The last error that occurred.
+
+        Raises:
+            LLMProviderError: Always raises when retries are exhausted.
+        """
         if last_error:
             raise LLMProviderError(
                 code="llm_api_error",

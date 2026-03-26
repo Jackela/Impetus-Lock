@@ -330,7 +330,3 @@ class ConnectionManager:
             "document_version": room.document_version,
             "users": list(room.connections.keys()),
         }
-
-
-# Global connection manager instance
-connection_manager = ConnectionManager()

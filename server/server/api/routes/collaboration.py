@@ -8,10 +8,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
+import os
+from typing import Any, Awaitable, Callable
 
 from fastapi import (
     APIRouter,
+    Depends,
     HTTPException,
     Query,
     WebSocket,
@@ -19,13 +21,14 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
+from server.infrastructure.security.jwt_handler import JWTHandler
 from server.infrastructure.websocket.collaboration_service import (
     CollaborationService,
     CursorUpdate,
     SelectionUpdate,
     TextOperation,
 )
-from server.infrastructure.websocket.connection_manager import connection_manager
+from server.infrastructure.websocket.connection_manager import ConnectionManager
 from server.infrastructure.websocket.redis_pubsub import RedisPubSubManager
 
 logger = logging.getLogger(__name__)
@@ -34,7 +37,18 @@ router = APIRouter(prefix="/collaboration", tags=["collaboration"])
 
 # Initialize Redis pub/sub and collaboration service
 redis_pubsub = RedisPubSubManager()
-collab_service = CollaborationService(connection_manager, redis_pubsub)
+
+
+def get_connection_manager() -> ConnectionManager:
+    """Dependency factory for ConnectionManager.
+
+    Returns:
+        ConnectionManager instance.
+    """
+    return ConnectionManager()
+
+
+collab_service: CollaborationService | None = None
 
 
 async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:
@@ -50,8 +64,6 @@ async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:
         HTTPException: If authentication fails
     """
     # Skip auth only in explicit testing mode with proper test key
-    import os
-
     if os.getenv("TESTING") == "1" and os.getenv("WEBSOCKET_TEST_MODE") == "enabled":
         return {"user_id": "test_user", "username": "Test User"}
 
@@ -64,8 +76,6 @@ async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:
         raise HTTPException(status_code=401, detail="Authentication required")
 
     try:
-        from server.infrastructure.security.jwt_handler import JWTHandler
-
         payload = JWTHandler.verify_token(token)
         return {
             "user_id": payload["sub"],
@@ -77,7 +87,7 @@ async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:
 
 
 async def check_document_access(user_id: str, document_id: str) -> bool:
-    """Check if user has access to a document.
+    """Check if user has access to a document using JWT and database permissions.
 
     Args:
         user_id: User identifier
@@ -86,13 +96,44 @@ async def check_document_access(user_id: str, document_id: str) -> bool:
     Returns:
         True if user has access, False otherwise
     """
-    # TODO: Implement proper permission checking against database
-    # For now, allow access to all documents
-    return True
+    try:
+        from server.infrastructure.persistence.database import get_db_session
+
+        async with get_db_session() as session:
+            from sqlalchemy import text
+
+            query = text("""
+                SELECT permission FROM document_permissions
+                WHERE user_id = :user_id AND document_id = :document_id
+            """)
+            result = await session.execute(query, {"user_id": user_id, "document_id": document_id})
+            row = result.fetchone()
+
+            if row:
+                return row[0] in ("read", "write", "admin")
+
+            # Check if user owns the document
+            query = text("""
+                SELECT owner_id FROM documents WHERE id = :document_id
+            """)
+            result = await session.execute(query, {"document_id": document_id})
+            row = result.fetchone()
+
+            if row and row[0] == user_id:
+                return True
+
+            return False
+    except Exception as e:
+        logger.error(f"Error checking document access: {e}")
+        return False
 
 
 @router.websocket("/ws/{document_id}")
-async def collaboration_websocket(websocket: WebSocket, document_id: str) -> None:
+async def collaboration_websocket(
+    websocket: WebSocket,
+    document_id: str,
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> None:
     """WebSocket endpoint for real-time collaboration.
 
     Handles:
@@ -105,6 +146,7 @@ async def collaboration_websocket(websocket: WebSocket, document_id: str) -> Non
     Args:
         websocket: WebSocket connection
         document_id: Document/room identifier
+        connection_manager: Connection manager dependency
     """
     # Authenticate
     try:
@@ -120,6 +162,9 @@ async def collaboration_websocket(websocket: WebSocket, document_id: str) -> Non
     if not await check_document_access(user_id, document_id):
         await websocket.close(code=4003, reason="Access denied")
         return
+
+    # Initialize collaboration service
+    collab_service = CollaborationService(connection_manager, redis_pubsub)
 
     # Join room
     room = await connection_manager.connect(websocket, document_id, user_id, username)
@@ -138,8 +183,8 @@ async def collaboration_websocket(websocket: WebSocket, document_id: str) -> Non
         while True:
             try:
                 # Receive text first to check size
-                text = await websocket.receive_text()
-                if len(text) > MAX_MESSAGE_SIZE:
+                text_data = await websocket.receive_text()
+                if len(text_data) > MAX_MESSAGE_SIZE:
                     await websocket.send_json(
                         {
                             "type": "error",
@@ -147,8 +192,8 @@ async def collaboration_websocket(websocket: WebSocket, document_id: str) -> Non
                         }
                     )
                     continue
-                message = json.loads(text)
-                await _handle_message(websocket, room, user_id, message)
+                message = json.loads(text_data)
+                await _handle_message(websocket, room, user_id, message, collab_service)
             except WebSocketDisconnect:
                 break
             except Exception as e:
@@ -170,75 +215,233 @@ async def collaboration_websocket(websocket: WebSocket, document_id: str) -> Non
         await connection_manager.disconnect(document_id, user_id)
 
 
-async def _handle_message(
+# Type alias for message handler functions
+MessageHandler = Callable[
+    [WebSocket, Any, str, dict[str, Any], CollaborationService], Awaitable[None]
+]
+
+
+class MessageHandlerRegistry:
+    """Registry for WebSocket message handlers using Strategy pattern.
+
+    This registry allows registering and dispatching message handlers
+    based on message type, eliminating long if-elif chains.
+    """
+
+    def __init__(self) -> None:
+        self._handlers: dict[str, MessageHandler] = {}
+
+    def register(self, msg_type: str) -> Callable[[MessageHandler], MessageHandler]:
+        """Decorator to register a message handler.
+
+        Args:
+            msg_type: The message type to handle.
+
+        Returns:
+            Decorator function that registers the handler.
+        """
+
+        def decorator(handler: MessageHandler) -> MessageHandler:
+            self._handlers[msg_type] = handler
+            return handler
+
+        return decorator
+
+    async def dispatch(
+        self,
+        msg_type: str,
+        websocket: WebSocket,
+        room: Any,
+        user_id: str,
+        message: dict[str, Any],
+        collab_service: CollaborationService,
+    ) -> bool:
+        """Dispatch message to the appropriate handler.
+
+        Args:
+            msg_type: The message type.
+            websocket: WebSocket connection.
+            room: Room instance.
+            user_id: User identifier.
+            message: Message data.
+            collab_service: Collaboration service instance.
+
+        Returns:
+            True if handler was found and executed, False otherwise.
+        """
+        handler = self._handlers.get(msg_type)
+        if handler:
+            await handler(websocket, room, user_id, message, collab_service)
+            return True
+        return False
+
+
+# Global registry instance
+_message_handlers = MessageHandlerRegistry()
+
+
+@_message_handlers.register("operation")
+async def _handle_operation(
     websocket: WebSocket,
     room: Any,
     user_id: str,
     message: dict[str, Any],
+    collab_service: CollaborationService,
 ) -> None:
-    """Handle incoming WebSocket messages.
+    """Handle text editing operation.
+
+    Args:
+        websocket: WebSocket connection
+        room: Room instance
+        user_id: User identifier
+        message: Message data containing operation details
+        collab_service: Collaboration service instance
+    """
+    data = message.get("data", {})
+    op_data = data.get("operation", {})
+    operation = TextOperation(
+        type=op_data.get("type", "insert"),
+        position=op_data.get("position", 0),
+        text=op_data.get("text", ""),
+        length=op_data.get("length", 0),
+        user_id=user_id,
+    )
+    content = data.get("content", "")
+    await collab_service.handle_operation(room, operation, content)
+
+
+@_message_handlers.register("cursor_update")
+async def _handle_cursor_update(
+    websocket: WebSocket,
+    room: Any,
+    user_id: str,
+    message: dict[str, Any],
+    collab_service: CollaborationService,
+) -> None:
+    """Handle cursor position update.
+
+    Args:
+        websocket: WebSocket connection
+        room: Room instance
+        user_id: User identifier
+        message: Message data containing cursor position
+        collab_service: Collaboration service instance
+    """
+    data = message.get("data", {})
+    update = CursorUpdate(
+        user_id=user_id,
+        line=data.get("line", 0),
+        character=data.get("character", 0),
+        color=room.presence[user_id].color if user_id in room.presence else "#3b82f6",
+    )
+    await collab_service.handle_cursor_update(room, update)
+
+
+@_message_handlers.register("selection_update")
+async def _handle_selection_update(
+    websocket: WebSocket,
+    room: Any,
+    user_id: str,
+    message: dict[str, Any],
+    collab_service: CollaborationService,
+) -> None:
+    """Handle selection highlight update.
+
+    Args:
+        websocket: WebSocket connection
+        room: Room instance
+        user_id: User identifier
+        message: Message data containing selection info
+        collab_service: Collaboration service instance
+    """
+    data = message.get("data", {})
+    update = SelectionUpdate(
+        user_id=user_id,
+        anchor=data.get("anchor", {"line": 0, "ch": 0}),
+        head=data.get("head", {"line": 0, "ch": 0}),
+        color=room.presence[user_id].color if user_id in room.presence else "#3b82f6",
+    )
+    await collab_service.handle_selection_update(room, update)
+
+
+@_message_handlers.register("awareness")
+async def _handle_awareness(
+    websocket: WebSocket,
+    room: Any,
+    user_id: str,
+    message: dict[str, Any],
+    collab_service: CollaborationService,
+) -> None:
+    """Handle generic awareness updates.
+
+    Args:
+        websocket: WebSocket connection
+        room: Room instance
+        user_id: User identifier
+        message: Message data containing awareness info
+        collab_service: Collaboration service instance
+    """
+    data = message.get("data", {})
+    await collab_service.handle_awareness_update(room, user_id, data)
+
+
+@_message_handlers.register("ping")
+async def _handle_ping(
+    websocket: WebSocket,
+    room: Any,
+    user_id: str,
+    message: dict[str, Any],
+    collab_service: CollaborationService,
+) -> None:
+    """Handle keep-alive ping.
 
     Args:
         websocket: WebSocket connection
         room: Room instance
         user_id: User identifier
         message: Message data
+        collab_service: Collaboration service instance
+    """
+    await websocket.send_json({"type": "pong"})
+
+
+async def _handle_message(
+    websocket: WebSocket,
+    room: Any,
+    user_id: str,
+    message: dict[str, Any],
+    collab_service: CollaborationService,
+) -> None:
+    """Handle incoming WebSocket messages using Strategy pattern.
+
+    Args:
+        websocket: WebSocket connection
+        room: Room instance
+        user_id: User identifier
+        message: Message data
+        collab_service: Collaboration service instance
     """
     msg_type = message.get("type")
-    data = message.get("data", {})
 
-    if msg_type == "operation":
-        # Handle text editing operation
-        op_data = data.get("operation", {})
-        operation = TextOperation(
-            type=op_data.get("type", "insert"),
-            position=op_data.get("position", 0),
-            text=op_data.get("text", ""),
-            length=op_data.get("length", 0),
-            user_id=user_id,
-        )
-        # Get current content (should be stored in room or passed)
-        content = data.get("content", "")
-        await collab_service.handle_operation(room, operation, content)
+    # Dispatch to registered handler
+    handled = await _message_handlers.dispatch(
+        msg_type, websocket, room, user_id, message, collab_service
+    )
 
-    elif msg_type == "cursor_update":
-        # Handle cursor position update
-        update = CursorUpdate(
-            user_id=user_id,
-            line=data.get("line", 0),
-            character=data.get("character", 0),
-            color=room.presence[user_id].color if user_id in room.presence else "#3b82f6",
-        )
-        await collab_service.handle_cursor_update(room, update)
-
-    elif msg_type == "selection_update":
-        # Handle selection highlight update
-        update = SelectionUpdate(
-            user_id=user_id,
-            anchor=data.get("anchor", {"line": 0, "ch": 0}),
-            head=data.get("head", {"line": 0, "ch": 0}),
-            color=room.presence[user_id].color if user_id in room.presence else "#3b82f6",
-        )
-        await collab_service.handle_selection_update(room, update)
-
-    elif msg_type == "awareness":
-        # Handle generic awareness updates
-        await collab_service.handle_awareness_update(room, user_id, data)
-
-    elif msg_type == "ping":
-        # Keep-alive ping
-        await websocket.send_json({"type": "pong"})
-
-    else:
+    if not handled:
         logger.warning(f"Unknown message type: {msg_type}")
 
 
 @router.get("/rooms/{document_id}/users")
-async def get_room_users(document_id: str) -> JSONResponse:
+async def get_room_users(
+    document_id: str,
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
     """Get list of users currently in a collaboration room.
 
     Args:
         document_id: Document/room identifier
+        connection_manager: Connection manager dependency
 
     Returns:
         JSON response with user list
@@ -257,11 +460,15 @@ async def get_room_users(document_id: str) -> JSONResponse:
 
 
 @router.get("/rooms/{document_id}/stats")
-async def get_room_stats(document_id: str) -> JSONResponse:
+async def get_room_stats(
+    document_id: str,
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
     """Get statistics for a collaboration room.
 
     Args:
         document_id: Document/room identifier
+        connection_manager: Connection manager dependency
 
     Returns:
         JSON response with room statistics
@@ -280,8 +487,13 @@ async def get_room_stats(document_id: str) -> JSONResponse:
 
 
 @router.get("/rooms/active")
-async def get_active_rooms() -> JSONResponse:
+async def get_active_rooms(
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
     """Get list of all active collaboration rooms.
+
+    Args:
+        connection_manager: Connection manager dependency
 
     Returns:
         JSON response with list of active room IDs
@@ -326,8 +538,13 @@ async def update_room_permission(
 
 
 @router.get("/health")
-async def collaboration_health() -> JSONResponse:
+async def collaboration_health(
+    connection_manager: ConnectionManager = Depends(get_connection_manager),
+) -> JSONResponse:
     """Health check for collaboration service.
+
+    Args:
+        connection_manager: Connection manager dependency
 
     Returns:
         JSON response with service status

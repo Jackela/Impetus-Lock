@@ -19,21 +19,9 @@ class TestTaskInputValidation:
 
     def test_task_title_empty_raises_error(self) -> None:
         """Task with empty title should raise ValueError."""
-        # Re-define Task entity here to avoid import issues
-        from dataclasses import dataclass
         from datetime import datetime
 
-        @dataclass
-        class Task:
-            id: object
-            title: str
-            content: str
-            lock_id: object | None = None
-            created_at: datetime = datetime.now(UTC)
-
-            def __post_init__(self) -> None:
-                if not self.title or len(self.title) > 200:
-                    raise ValueError("Title must be 1-200 characters")
+        from tests.fixtures.factories.task_factory import Task
 
         with pytest.raises(ValueError, match="Title must be"):
             Task(
@@ -45,20 +33,9 @@ class TestTaskInputValidation:
 
     def test_task_title_too_long_raises_error(self) -> None:
         """Task with title >200 characters should raise ValueError."""
-        from dataclasses import dataclass
         from datetime import datetime
 
-        @dataclass
-        class Task:
-            id: object
-            title: str
-            content: str
-            lock_id: object | None = None
-            created_at: datetime = datetime.now(UTC)
-
-            def __post_init__(self) -> None:
-                if not self.title or len(self.title) > 200:
-                    raise ValueError("Title must be 1-200 characters")
+        from tests.fixtures.factories.task_factory import Task
 
         with pytest.raises(ValueError, match="Title must be"):
             Task(
@@ -70,16 +47,9 @@ class TestTaskInputValidation:
 
     def test_html_injection_in_title(self) -> None:
         """HTML in title should be escaped or rejected."""
-        from dataclasses import dataclass
         from datetime import datetime
 
-        @dataclass
-        class Task:
-            id: object
-            title: str
-            content: str
-            lock_id: object | None = None
-            created_at: datetime = datetime.now(UTC)
+        from tests.fixtures.factories.task_factory import Task
 
         # Accept as literal string (no sanitization at domain layer)
         task = Task(

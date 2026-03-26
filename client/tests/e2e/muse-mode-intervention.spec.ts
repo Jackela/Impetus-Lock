@@ -31,17 +31,10 @@ test.describe("Muse Mode - Intervention Flow", () => {
   });
 
   test("should enable Muse mode and trigger intervention after idle time", async ({ page }) => {
-    // Step 1: Type some content to establish context
-    const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
-    await prosemirrorEditor.click();
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
 
-    const testContext =
-      "He opened the door, hesitating whether to enter. The room was dark and mysterious.";
-    await page.keyboard.type(testContext);
-
-    // Step 2: Wait for STUCK detection (60 seconds of idle)
-    // In a real test environment, this might be accelerated
-    // For this test, we'll mock the API response
+    // Step 2: Setup API mock before any actions
     await page.route("**/impetus/generate-intervention", async (route) => {
       await route.fulfill({
         status: 200,
@@ -59,17 +52,26 @@ test.describe("Muse Mode - Intervention Flow", () => {
       });
     });
 
-    // Step 3: Wait for the intervention API call (simulated)
+    // Step 3: Type some content to establish context
+    const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
+    await prosemirrorEditor.click();
+
+    const testContext =
+      "He opened the door, hesitating whether to enter. The room was dark and mysterious.";
+    await page.keyboard.type(testContext);
+
+    // Step 4: Wait for the intervention API call
     const interventionPromise = page.waitForRequest(
       (request) =>
-        request.url().includes("/impetus/generate-intervention") && request.method() === "POST"
+        request.url().includes("/impetus/generate-intervention") && request.method() === "POST",
+      { timeout: 5000 }
     );
 
-    // Simulate the idle time trigger
-    // In production, this would happen after 60s of idle
-    await page.waitForTimeout(61000); // Wait for STUCK threshold
+    // Step 5: Fast-forward time to trigger STUCK detection (60 seconds of idle)
+    // This accelerates the timer without actually waiting 61 seconds
+    await page.clock.fastForward(61000);
 
-    // Step 4: Verify API was called
+    // Step 6: Verify API was called
     const request = await interventionPromise.catch(() => null);
 
     if (request) {
@@ -77,7 +79,7 @@ test.describe("Muse Mode - Intervention Flow", () => {
       expect(requestBody.mode).toBe("muse");
       expect(requestBody.context).toBeDefined();
 
-      // Step 5: Verify the locked block appears
+      // Step 7: Verify the locked block appears
       const lockedBlock = page.locator('[data-lock-id="lock_muse_test_001"]');
       await expect(lockedBlock).toBeVisible({ timeout: 5000 });
 
@@ -94,7 +96,10 @@ test.describe("Muse Mode - Intervention Flow", () => {
   });
 
   test("should prevent deletion of locked Muse content", async ({ page }) => {
-    // Step 1: Setup mock intervention response
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Setup mock intervention response
     await page.route("**/impetus/generate-intervention", async (route) => {
       await route.fulfill({
         status: 200,
@@ -109,34 +114,42 @@ test.describe("Muse Mode - Intervention Flow", () => {
       });
     });
 
-    // Step 2: Type content and wait for intervention
+    // Step 3: Type content and trigger intervention via clock
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Some text before the intervention.");
 
-    // Wait for idle trigger
-    await page.waitForTimeout(61000);
+    // Wait for intervention with accelerated time
+    const interventionPromise = page.waitForRequest(
+      (request) => request.url().includes("/impetus/generate-intervention"),
+      { timeout: 5000 }
+    );
+    await page.clock.fastForward(61000);
+    await interventionPromise;
 
-    // Step 3: Verify locked block exists
+    // Step 4: Verify locked block exists
     const lockedBlock = page.locator('[data-lock-id="lock_muse_delete_test"]');
     await expect(lockedBlock).toBeVisible({ timeout: 5000 });
 
     const initialContent = await lockedBlock.textContent();
 
-    // Step 4: Attempt to delete the locked block
+    // Step 5: Attempt to delete the locked block
     await lockedBlock.click();
     await page.keyboard.press("Backspace");
     await page.keyboard.press("Backspace");
     await page.keyboard.press("Backspace");
 
-    // Step 5: Verify the locked block still exists
+    // Step 6: Verify the locked block still exists
     await expect(lockedBlock).toBeVisible();
     const finalContent = await lockedBlock.textContent();
     expect(finalContent).toBe(initialContent);
   });
 
   test("should display lock with correct visual styling", async ({ page }) => {
-    // Step 1: Setup mock intervention
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Setup mock intervention
     await page.route("**/impetus/generate-intervention", async (route) => {
       await route.fulfill({
         status: 200,
@@ -151,13 +164,19 @@ test.describe("Muse Mode - Intervention Flow", () => {
       });
     });
 
-    // Step 2: Trigger intervention
+    // Step 3: Trigger intervention with accelerated time
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Content for visual test.");
-    await page.waitForTimeout(61000);
 
-    // Step 3: Verify locked block has proper styling
+    const interventionPromise = page.waitForRequest(
+      (request) => request.url().includes("/impetus/generate-intervention"),
+      { timeout: 5000 }
+    );
+    await page.clock.fastForward(61000);
+    await interventionPromise;
+
+    // Step 4: Verify locked block has proper styling
     const lockedBlock = page.locator('[data-lock-id="lock_muse_style_test"]');
     await expect(lockedBlock).toBeVisible({ timeout: 5000 });
 
@@ -178,7 +197,10 @@ test.describe("Muse Mode - Intervention Flow", () => {
   });
 
   test("should trigger animation on intervention injection", async ({ page }) => {
-    // Step 1: Setup mock with provoke action
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Setup mock with provoke action
     await page.route("**/impetus/generate-intervention", async (route) => {
       await route.fulfill({
         status: 200,
@@ -193,17 +215,23 @@ test.describe("Muse Mode - Intervention Flow", () => {
       });
     });
 
-    // Step 2: Trigger intervention
+    // Step 3: Trigger intervention with accelerated time
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Content for animation test.");
-    await page.waitForTimeout(61000);
 
-    // Step 3: Verify locked block with animation
+    const interventionPromise = page.waitForRequest(
+      (request) => request.url().includes("/impetus/generate-intervention"),
+      { timeout: 5000 }
+    );
+    await page.clock.fastForward(61000);
+    await interventionPromise;
+
+    // Step 4: Verify locked block with animation
     const lockedBlock = page.locator('[data-lock-id="lock_muse_anim_test"]');
     await expect(lockedBlock).toBeVisible({ timeout: 5000 });
 
-    // Step 4: Check for glitch animation class
+    // Step 5: Check for glitch animation class
     const hasGlitchAnimation = await lockedBlock.evaluate((el) =>
       el.classList.contains("glitch-animation")
     );
@@ -215,16 +243,19 @@ test.describe("Muse Mode - Intervention Flow", () => {
   });
 
   test("should not trigger intervention when mode is off", async ({ page }) => {
-    // Step 1: Switch to off mode
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Switch to off mode
     const modeSelector = page.getByTestId("mode-selector");
     await modeSelector.selectOption("off");
 
-    // Step 2: Type content
+    // Step 3: Type content
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Content in off mode.");
 
-    // Step 3: Wait longer than STUCK threshold
+    // Step 4: Track API calls and fast-forward time
     let apiCalled = false;
     page.on("request", (request) => {
       if (request.url().includes("/impetus/generate-intervention")) {
@@ -232,19 +263,25 @@ test.describe("Muse Mode - Intervention Flow", () => {
       }
     });
 
-    await page.waitForTimeout(65000); // Wait 65 seconds
+    // Fast-forward past STUCK threshold without actually waiting
+    await page.clock.fastForward(65000);
+    // Allow any pending async operations to complete
+    await page.waitForTimeout(100);
 
-    // Step 4: Verify no intervention was triggered
+    // Step 5: Verify no intervention was triggered
     expect(apiCalled).toBe(false);
 
-    // Step 5: Verify no locked blocks exist
+    // Step 6: Verify no locked blocks exist
     const lockedBlocks = page.locator("[data-lock-id]");
     const count = await lockedBlocks.count();
     expect(count).toBe(0);
   });
 
   test("should resume typing after intervention and not trigger immediately", async ({ page }) => {
-    // Step 1: Setup first intervention
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Setup first intervention
     let interventionCount = 0;
     await page.route("**/impetus/generate-intervention", async (route) => {
       interventionCount++;
@@ -261,25 +298,32 @@ test.describe("Muse Mode - Intervention Flow", () => {
       });
     });
 
-    // Step 2: Trigger first intervention
+    // Step 3: Trigger first intervention with accelerated time
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Initial content.");
-    await page.waitForTimeout(61000);
 
-    // Step 3: Verify first intervention appeared
+    const firstInterventionPromise = page.waitForRequest(
+      (request) => request.url().includes("/impetus/generate-intervention"),
+      { timeout: 5000 }
+    );
+    await page.clock.fastForward(61000);
+    await firstInterventionPromise;
+
+    // Step 4: Verify first intervention appeared
     await expect(page.locator("[data-lock-id]")).toBeVisible({ timeout: 5000 });
 
-    // Step 4: Type more content (resets idle timer)
+    // Step 5: Type more content (resets idle timer)
     await page.keyboard.type(" More content after first intervention.");
 
     // Reset counter
     const countAfterFirst = interventionCount;
 
-    // Step 5: Wait a short time (less than 60s)
-    await page.waitForTimeout(10000); // Only 10 seconds
+    // Step 6: Fast-forward a short time (less than 60s) and verify no second intervention
+    await page.clock.fastForward(10000); // Only 10 seconds
+    await page.waitForTimeout(100);
 
-    // Step 6: Verify no second intervention triggered
+    // Step 7: Verify no second intervention triggered
     expect(interventionCount).toBe(countAfterFirst);
   });
 });
@@ -291,7 +335,10 @@ test.describe("Muse Mode - Error Handling", () => {
   });
 
   test("should handle API error gracefully during intervention", async ({ page }) => {
-    // Step 1: Mock API to return error
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Mock API to return error
     await page.route("**/impetus/generate-intervention", async (route) => {
       await route.fulfill({
         status: 500,
@@ -303,42 +350,55 @@ test.describe("Muse Mode - Error Handling", () => {
       });
     });
 
-    // Step 2: Type content and wait
+    // Step 3: Type content and trigger with accelerated time
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Content to trigger intervention.");
-    await page.waitForTimeout(61000);
 
-    // Step 3: Verify error notification appears
+    const interventionPromise = page.waitForRequest(
+      (request) => request.url().includes("/impetus/generate-intervention"),
+      { timeout: 5000 }
+    );
+    await page.clock.fastForward(61000);
+    await interventionPromise.catch(() => null); // Expect this to fail with 500
+
+    // Step 4: Verify error notification appears
     const errorNotification = page.locator('[role="alert"]');
     await expect(errorNotification).toBeVisible({ timeout: 5000 });
 
     const errorText = await errorNotification.textContent();
     expect(errorText).toMatch(/(unavailable|error|failed)/i);
 
-    // Step 4: Verify no locked block was injected
+    // Step 5: Verify no locked block was injected
     const lockedBlocks = page.locator("[data-lock-id]");
     const count = await lockedBlocks.count();
     expect(count).toBe(0);
   });
 
   test("should handle network timeout gracefully", async ({ page }) => {
-    // Step 1: Mock API to timeout
+    // Step 1: Install clock for time manipulation
+    await page.clock.install();
+
+    // Step 2: Mock API to timeout
     await page.route("**/impetus/generate-intervention", async (route) => {
       // Don't respond, simulating a timeout
       await new Promise(() => {}); // Never resolves
     });
 
-    // Step 2: Type content
+    // Step 3: Type content and trigger with accelerated time
     const prosemirrorEditor = page.locator('.milkdown .ProseMirror[contenteditable="true"]');
     await prosemirrorEditor.click();
     await page.keyboard.type("Content for timeout test.");
 
-    // Step 3: Wait for STUCK trigger
-    await page.waitForTimeout(61000);
+    const interventionPromise = page.waitForRequest(
+      (request) => request.url().includes("/impetus/generate-intervention"),
+      { timeout: 5000 }
+    );
+    await page.clock.fastForward(61000);
+    await interventionPromise.catch(() => null); // Expect this to timeout
 
     // Step 4: Wait a bit for timeout handling
-    await page.waitForTimeout(10000);
+    await page.waitForTimeout(100);
 
     // Step 5: Verify app is still functional (no crash)
     await expect(prosemirrorEditor).toBeVisible();

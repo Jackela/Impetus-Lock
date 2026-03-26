@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import logging
 import os
 from dataclasses import dataclass
@@ -72,6 +73,117 @@ class ProviderOverride:
     provider: str | None = None
     model: str | None = None
     api_key: str | None = None
+
+
+class ProviderFactory:
+    """Factory for creating provider instances with deferred imports.
+
+    Uses a registry pattern to reduce duplication in provider instantiation.
+    """
+
+    @dataclass
+    class ProviderSpec:
+        """Specification for a provider."""
+
+        module: str
+        class_name: str
+        install_msg: str
+        no_args: bool = False
+
+    # Registry of provider configurations
+    _REGISTRY: dict[ProviderName, ProviderSpec] = {
+        "openai": ProviderSpec(
+            module="server.infrastructure.llm.instructor_provider",
+            class_name="InstructorLLMProvider",
+            install_msg="OpenAI provider is not available. Install with: pip install openai instructor",
+        ),
+        "anthropic": ProviderSpec(
+            module="server.infrastructure.llm.anthropic_provider",
+            class_name="AnthropicLLMProvider",
+            install_msg="Anthropic provider is not available. Install with: pip install anthropic",
+        ),
+        "claude": ProviderSpec(
+            module="server.infrastructure.llm.claude_provider",
+            class_name="ClaudeProvider",
+            install_msg="Claude provider is not available. Install with: pip install anthropic",
+        ),
+        "gemini": ProviderSpec(
+            module="server.infrastructure.llm.gemini_provider",
+            class_name="GeminiLLMProvider",
+            install_msg="Gemini provider is not available. Install with: pip install google-generativeai",
+        ),
+        "debug": ProviderSpec(
+            module="server.infrastructure.llm.debug_provider",
+            class_name="DebugLLMProvider",
+            install_msg="Debug provider is not available.",
+            no_args=True,
+        ),
+    }
+
+    @classmethod
+    def create(cls, provider_name: ProviderName, config: ProviderConfig) -> LLMProvider:
+        """Create a provider instance using the registry.
+
+        Args:
+            provider_name: Name of the provider.
+            config: Provider configuration.
+
+        Returns:
+            Instantiated provider.
+
+        Raises:
+            LLMProviderError: If provider cannot be instantiated.
+        """
+        spec = cls._REGISTRY.get(provider_name)
+        if not spec:
+            raise LLMProviderError(
+                code="unsupported_provider",
+                message=f"Unsupported provider: {provider_name}",
+                status_code=422,
+                provider=provider_name,
+            )
+
+        try:
+            module = importlib.import_module(spec.module)
+            provider_class = getattr(module, spec.class_name)
+        except ImportError as e:
+            logger.warning(f"{provider_name} provider not available: {e}")
+            raise LLMProviderError(
+                code="provider_unavailable",
+                message=spec.install_msg,
+                status_code=503,
+                provider=provider_name,
+            ) from e
+
+        # Instantiate with appropriate arguments
+        if spec.no_args:
+            return provider_class()
+
+        return provider_class(
+            api_key=config.api_key,
+            model=config.model,
+            temperature=config.temperature,
+        )
+
+    @classmethod
+    def is_available(cls, provider_name: ProviderName) -> bool:
+        """Check if a provider module is available without importing.
+
+        Args:
+            provider_name: Name of the provider.
+
+        Returns:
+            True if the module exists, False otherwise.
+        """
+        spec = cls._REGISTRY.get(provider_name)
+        if not spec:
+            return False
+
+        try:
+            found_spec = importlib.util.find_spec(spec.module)
+            return found_spec is not None
+        except Exception:
+            return False
 
 
 class ProviderRegistry:
@@ -182,124 +294,8 @@ class ProviderRegistry:
         return provider
 
     def _instantiate(self, config: ProviderConfig) -> LLMProvider:
-        """Instantiate provider with deferred imports to avoid import hangs."""
-        if config.provider == "openai":
-            return self._instantiate_openai(config)
-        if config.provider == "anthropic":
-            return self._instantiate_anthropic(config)
-        if config.provider == "claude":
-            return self._instantiate_claude(config)
-        if config.provider == "gemini":
-            return self._instantiate_gemini(config)
-        if config.provider == "debug":
-            return self._instantiate_debug()
-        raise LLMProviderError(
-            code="unsupported_provider",
-            message=f"Unsupported provider: {config.provider}",
-            status_code=422,
-            provider=config.provider,
-        )
-
-    def _instantiate_openai(self, config: ProviderConfig) -> LLMProvider:
-        """Instantiate OpenAI provider with deferred import."""
-        try:
-            module = importlib.import_module("server.infrastructure.llm.instructor_provider")
-            provider_class = module.InstructorLLMProvider
-        except ImportError as e:
-            logger.warning(f"OpenAI provider not available: {e}")
-            raise LLMProviderError(
-                code="provider_unavailable",
-                message=(
-                    "OpenAI provider is not available. Install with: pip install openai instructor"
-                ),
-                status_code=503,
-                provider=config.provider,
-            ) from e
-
-        return provider_class(
-            api_key=config.api_key,
-            model=config.model,
-            temperature=config.temperature,
-        )
-
-    def _instantiate_anthropic(self, config: ProviderConfig) -> LLMProvider:
-        """Instantiate Anthropic provider with deferred import."""
-        try:
-            module = importlib.import_module("server.infrastructure.llm.anthropic_provider")
-            provider_class = module.AnthropicLLMProvider
-        except ImportError as e:
-            logger.warning(f"Anthropic provider not available: {e}")
-            raise LLMProviderError(
-                code="provider_unavailable",
-                message="Anthropic provider is not available. Install with: pip install anthropic",
-                status_code=503,
-                provider=config.provider,
-            ) from e
-
-        return provider_class(
-            api_key=config.api_key,
-            model=config.model,
-            temperature=config.temperature,
-        )
-
-    def _instantiate_claude(self, config: ProviderConfig) -> LLMProvider:
-        """Instantiate Claude provider with deferred import."""
-        try:
-            module = importlib.import_module("server.infrastructure.llm.claude_provider")
-            provider_class = module.ClaudeProvider
-        except ImportError as e:
-            logger.warning(f"Claude provider not available: {e}")
-            raise LLMProviderError(
-                code="provider_unavailable",
-                message="Claude provider is not available. Install with: pip install anthropic",
-                status_code=503,
-                provider=config.provider,
-            ) from e
-
-        return provider_class(
-            api_key=config.api_key,
-            model=config.model,
-            temperature=config.temperature,
-        )
-
-    def _instantiate_gemini(self, config: ProviderConfig) -> LLMProvider:
-        """Instantiate Gemini provider with deferred import."""
-        try:
-            module = importlib.import_module("server.infrastructure.llm.gemini_provider")
-            provider_class = module.GeminiLLMProvider
-        except ImportError as e:
-            logger.warning(f"Gemini provider not available: {e}")
-            raise LLMProviderError(
-                code="provider_unavailable",
-                message=(
-                    "Gemini provider is not available. "
-                    "Install with: pip install google-generativeai"
-                ),
-                status_code=503,
-                provider=config.provider,
-            ) from e
-
-        return provider_class(
-            api_key=config.api_key,
-            model=config.model,
-            temperature=config.temperature,
-        )
-
-    def _instantiate_debug(self) -> LLMProvider:
-        """Instantiate Debug provider with deferred import."""
-        try:
-            module = importlib.import_module("server.infrastructure.llm.debug_provider")
-            provider_class = module.DebugLLMProvider
-        except ImportError as e:
-            logger.warning(f"Debug provider not available: {e}")
-            raise LLMProviderError(
-                code="provider_unavailable",
-                message="Debug provider is not available.",
-                status_code=503,
-                provider="debug",
-            ) from e
-
-        return provider_class()
+        """Instantiate provider using the factory pattern."""
+        return ProviderFactory.create(config.provider, config)
 
     def _load_default_configs(self) -> dict[ProviderName, ProviderConfig]:
         configs: dict[ProviderName, ProviderConfig] = {}
@@ -339,24 +335,7 @@ class ProviderRegistry:
 
     def _is_provider_available(self, provider_name: ProviderName) -> bool:
         """Check if a provider module can be imported without hanging."""
-        module_map = {
-            "openai": "server.infrastructure.llm.instructor_provider",
-            "anthropic": "server.infrastructure.llm.anthropic_provider",
-            "claude": "server.infrastructure.llm.claude_provider",
-            "gemini": "server.infrastructure.llm.gemini_provider",
-            "debug": "server.infrastructure.llm.debug_provider",
-        }
-
-        module_name = module_map.get(provider_name)
-        if not module_name:
-            return False
-
-        try:
-            # Use find_spec to check if module exists without importing it
-            spec = importlib.util.find_spec(module_name)
-            return spec is not None
-        except Exception:
-            return False
+        return ProviderFactory.is_available(provider_name)
 
     def _coerce_provider(self, name: str | None) -> ProviderName:
         normalized = (name or "openai").strip().lower()

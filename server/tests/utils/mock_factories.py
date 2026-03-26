@@ -443,7 +443,7 @@ class LLMProviderMocker:
         ),
         "anthropic": (
             "server.infrastructure.llm.anthropic_provider."
-            "AnathropicLLMProvider.generate_intervention"
+            "AnthropicLLMProvider.generate_intervention"
         ),
         "gemini": (
             "server.infrastructure.llm.gemini_provider.GeminiLLMProvider.generate_intervention"

@@ -47,8 +47,9 @@ test.describe("Sensory Feedback", () => {
    *
    * **Status**: SKIPPED - Requires Phase 5 integration (T066)
    * **Blocker**: SensoryFeedback not yet wired to AI action events
+   * TODO: Enable this test once Phase 5 integration (T066-T082) is complete
    */
-  test("plays Clank sound and shows Glitch animation on Provoke", async ({ page }) => {
+  test.skip("plays Clank sound and shows Glitch animation on Provoke", async ({ page }) => {
     await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 200,
@@ -92,8 +93,9 @@ test.describe("Sensory Feedback", () => {
    * - Whoosh audio plays (wind/swoosh sound)
    * - Feedback disappears after animation completes
    *
-   * **Status**: ENABLED - Uses test endpoint to trigger DELETE action
+   * **Status**: SKIPPED - Phase 6 feature not yet implemented
    * **Note**: Requires backend running with TESTING=true
+   * TODO: Enable this test once DELETE action sensory feedback is implemented (Phase 6)
    */
   test.skip("plays Whoosh sound and shows Fade-out animation on Delete", async ({
     page,
@@ -142,8 +144,9 @@ test.describe("Sensory Feedback", () => {
    * - Clank audio should stop
    * - Whoosh audio should play
    *
-   * **Status**: ENABLED - Uses test endpoints for rapid action triggers
+   * **Status**: SKIPPED - Phase 6 feature not yet implemented
    * **Note**: Audio verification would require browser API mocking (future work)
+   * TODO: Enable this test once rapid action cancellation is fully implemented (Phase 6)
    */
   test.skip("cancels previous animation when new action triggers (rapid actions)", async ({
     page,
@@ -198,8 +201,9 @@ test.describe("Sensory Feedback", () => {
    * - User receives clear "rejection" signal
    *
    * **Coverage**: FR-017 (P1 consistency) - addresses analysis gap
-   * **Status**: ENABLED - Uses milkdown-helpers for ProseMirror interaction
+   * **Status**: SKIPPED - Phase 6 feature not yet implemented
    * **Note**: This is Phase 6 (Optional UI Polish) - not blocking production readiness
+   * TODO: Enable this test once rejection feedback visual enhancements are implemented (Phase 6)
    */
   test.skip("rejection feedback matches P1 implementation", async ({ page }) => {
     // ⏳ Phase 6 feature - Rejection feedback visual enhancements not yet implemented

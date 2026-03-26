@@ -160,19 +160,55 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             >>> draft.content
             '门后传来低沉的呼吸声。'
         """
-        # Combine system prompt and user message
-        # Gemini doesn't have native system message support in the same way as
-        # OpenAI/Anthropic, so we prepend system instructions
-        full_prompt = f"{system_prompt}\n\n{user_message}"
+        full_prompt = self._build_prompt(system_prompt, user_message)
+        generation_config = self._create_generation_config()
+        response = self._generate_content(full_prompt, generation_config)
+        return self._parse_gemini_response(response)
 
-        generation_config = GenerationConfig(
+    def _build_prompt(self, system_prompt: str, user_message: str) -> str:
+        """Build the full prompt from system and user messages.
+
+        Gemini doesn't have native system message support in the same way as
+        OpenAI/Anthropic, so we prepend system instructions.
+
+        Args:
+            system_prompt: System instructions defining the LLM's role.
+            user_message: User context and instructions.
+
+        Returns:
+            Combined full prompt string.
+        """
+        return f"{system_prompt}\n\n{user_message}"
+
+    def _create_generation_config(self) -> GenerationConfig:
+        """Create the generation configuration for Gemini.
+
+        Returns:
+            GenerationConfig with temperature, max_output_tokens, and response_mime_type.
+        """
+        return GenerationConfig(
             temperature=self.temperature,
             max_output_tokens=512,
             response_mime_type="application/json",
         )
 
+    def _generate_content(
+        self, full_prompt: str, generation_config: GenerationConfig
+    ) -> genai.types.GenerateContentResponse:
+        """Generate content using the Gemini API.
+
+        Args:
+            full_prompt: The full prompt to send to the API.
+            generation_config: Configuration for generation.
+
+        Returns:
+            Response from the Gemini API.
+
+        Raises:
+            LLMProviderError: If the API call fails.
+        """
         try:
-            response = self._model.generate_content(
+            return self._model.generate_content(
                 contents=full_prompt,
                 generation_config=generation_config,
             )
@@ -233,6 +269,20 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             ) from exc
 
+    def _parse_gemini_response(
+        self, response: genai.types.GenerateContentResponse
+    ) -> LLMInterventionDraft:
+        """Parse and validate the Gemini API response.
+
+        Args:
+            response: Response from the Gemini API.
+
+        Returns:
+            Validated LLMInterventionDraft.
+
+        Raises:
+            LLMProviderError: If the response is invalid.
+        """
         # Extract text from response
         if not response.candidates:
             raise LLMProviderError(
