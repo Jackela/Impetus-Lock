@@ -22,7 +22,7 @@ import functools
 import gc
 import warnings
 from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager, contextmanager, suppress
 from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 import pytest
@@ -125,10 +125,8 @@ class AsyncTestCase:
                 self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
 
             # Close the loop
-            try:
+            with suppress(Exception):
                 self.loop.run_until_complete(self.loop.shutdown_asyncgens())
-            except Exception:
-                pass
 
             self.loop.close()
             asyncio.set_event_loop(None)
@@ -306,21 +304,17 @@ def _cleanup_current_loop() -> None:
             for task in pending:
                 task.cancel()
             # Wait briefly for cancellation
-            try:
+            with suppress(TimeoutError):
                 loop.run_until_complete(
                     asyncio.wait_for(
                         asyncio.gather(*pending, return_exceptions=True),
                         timeout=1.0,
                     )
                 )
-            except TimeoutError:
-                pass
 
         # Shutdown async generators
-        try:
+        with suppress(Exception):
             loop.run_until_complete(loop.shutdown_asyncgens())
-        except Exception:
-            pass
     except RuntimeError:
         # No event loop running
         pass
