@@ -9,15 +9,17 @@ from typing import Literal, cast
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
 from server.infrastructure.llm.anthropic_provider import AnthropicLLMProvider
+from server.infrastructure.llm.claude_provider import ClaudeProvider
 from server.infrastructure.llm.debug_provider import DebugLLMProvider
 from server.infrastructure.llm.gemini_provider import GeminiLLMProvider
 from server.infrastructure.llm.instructor_provider import InstructorLLMProvider
 
-ProviderName = Literal["openai", "anthropic", "gemini", "debug"]
+ProviderName = Literal["openai", "anthropic", "claude", "gemini", "debug"]
 
 _API_KEY_ENV: dict[ProviderName, str] = {
     "openai": "OPENAI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
+    "claude": "ANTHROPIC_API_KEY",
     "gemini": "GEMINI_API_KEY",
     "debug": "DEBUG_API_KEY",
 }
@@ -25,6 +27,7 @@ _API_KEY_ENV: dict[ProviderName, str] = {
 _MODEL_ENV_VARS: dict[ProviderName, str] = {
     "openai": "OPENAI_MODEL",
     "anthropic": "ANTHROPIC_MODEL",
+    "claude": "CLAUDE_MODEL",
     "gemini": "GEMINI_MODEL",
     "debug": "DEBUG_MODEL",
 }
@@ -32,6 +35,7 @@ _MODEL_ENV_VARS: dict[ProviderName, str] = {
 _MODEL_FALLBACKS: dict[ProviderName, str] = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-3-5-haiku-latest",
+    "claude": "claude-3-5-sonnet-20241022",
     "gemini": "gemini-2.0-flash-lite",
     "debug": "debug-model",
 }
@@ -39,6 +43,7 @@ _MODEL_FALLBACKS: dict[ProviderName, str] = {
 _TEMP_ENV_VARS: dict[ProviderName, str] = {
     "openai": "OPENAI_TEMPERATURE",
     "anthropic": "ANTHROPIC_TEMPERATURE",
+    "claude": "CLAUDE_TEMPERATURE",
     "gemini": "GEMINI_TEMPERATURE",
     "debug": "DEBUG_TEMPERATURE",
 }
@@ -46,6 +51,7 @@ _TEMP_ENV_VARS: dict[ProviderName, str] = {
 _TEMP_FALLBACKS: dict[ProviderName, float] = {
     "openai": 0.9,
     "anthropic": 0.8,
+    "claude": 0.8,
     "gemini": 0.7,
     "debug": 0.0,
 }
@@ -186,6 +192,12 @@ class ProviderRegistry:
                 model=config.model,
                 temperature=config.temperature,
             )
+        if config.provider == "claude":
+            return ClaudeProvider(
+                api_key=config.api_key,
+                model=config.model,
+                temperature=config.temperature,
+            )
         if config.provider == "gemini":
             return GeminiLLMProvider(
                 api_key=config.api_key,
@@ -229,7 +241,7 @@ class ProviderRegistry:
 
     def _coerce_provider(self, name: str | None) -> ProviderName:
         normalized = (name or "openai").strip().lower()
-        allowed = {"openai", "anthropic", "gemini"}
+        allowed = {"openai", "anthropic", "claude", "gemini"}
         if self._allow_debug:
             allowed.add("debug")
         if normalized not in allowed:
