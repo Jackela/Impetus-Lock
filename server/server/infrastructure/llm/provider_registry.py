@@ -354,11 +354,7 @@ class ProviderRegistry:
         try:
             # Use find_spec to check if module exists without importing it
             spec = importlib.util.find_spec(module_name)
-            if spec is None:
-                return False
-            # For providers with external deps, we can't know if deps are installed
-            # without importing, so we'll check at instantiation time
-            return True
+            return spec is not None
         except Exception:
             return False
 

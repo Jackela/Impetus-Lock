@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from httpx import AsyncClient
 
 
-
 @pytest_asyncio.fixture(scope="session")
 async def db_engine() -> AsyncGenerator[Any, None]:
     """Create async database engine for integration tests.
@@ -77,12 +76,10 @@ async def db_session(db_engine: Any) -> AsyncGenerator[AsyncSession, None]:
         autoflush=False,
     )
 
-    async with async_session_factory() as session:
-        # Start nested transaction
-        async with session.begin():
-            yield session
-            # Rollback happens automatically on context exit
-            await session.rollback()
+    async with async_session_factory() as session, session.begin():
+        yield session
+        # Rollback happens automatically on context exit
+        await session.rollback()
 
 
 @pytest_asyncio.fixture

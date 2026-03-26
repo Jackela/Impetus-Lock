@@ -17,7 +17,6 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.gemini_provider import GeminiLLMProvider
 
 if TYPE_CHECKING:
