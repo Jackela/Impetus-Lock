@@ -295,17 +295,19 @@ class TestClaudeProviderErrorHandling:
         claude_provider: ClaudeProvider,
     ) -> None:
         """Test handling of rate limit errors."""
-        with patch.object(
-            claude_provider._anthropic_client.messages,
-            "create",
-            side_effect=RateLimitError(
-                message="Rate limit exceeded",
-                response=MagicMock(status_code=429),
-                body={"error": {"message": "Rate limit exceeded"}},
+        with (
+            patch.object(
+                claude_provider._anthropic_client.messages,
+                "create",
+                side_effect=RateLimitError(
+                    message="Rate limit exceeded",
+                    response=MagicMock(status_code=429),
+                    body={"error": {"message": "Rate limit exceeded"}},
+                ),
             ),
+            pytest.raises(LLMProviderError) as exc_info,
         ):
-            with pytest.raises(LLMProviderError) as exc_info:
-                claude_provider._complete_with_raw_api("system", "user")
+            claude_provider._complete_with_raw_api("system", "user")
 
         assert exc_info.value.code == "quota_exceeded"
         assert exc_info.value.status_code == 402
@@ -315,17 +317,19 @@ class TestClaudeProviderErrorHandling:
         claude_provider: ClaudeProvider,
     ) -> None:
         """Test handling of authentication errors."""
-        with patch.object(
-            claude_provider._anthropic_client.messages,
-            "create",
-            side_effect=AuthenticationError(
-                message="Invalid API key",
-                response=MagicMock(status_code=401),
-                body={"error": {"message": "Invalid API key"}},
+        with (
+            patch.object(
+                claude_provider._anthropic_client.messages,
+                "create",
+                side_effect=AuthenticationError(
+                    message="Invalid API key",
+                    response=MagicMock(status_code=401),
+                    body={"error": {"message": "Invalid API key"}},
+                ),
             ),
+            pytest.raises(LLMProviderError) as exc_info,
         ):
-            with pytest.raises(LLMProviderError) as exc_info:
-                claude_provider._complete_with_raw_api("system", "user")
+            claude_provider._complete_with_raw_api("system", "user")
 
         assert exc_info.value.code == "invalid_api_key"
         assert exc_info.value.status_code == 401
@@ -335,17 +339,19 @@ class TestClaudeProviderErrorHandling:
         claude_provider: ClaudeProvider,
     ) -> None:
         """Test handling of general API errors."""
-        with patch.object(
-            claude_provider._anthropic_client.messages,
-            "create",
-            side_effect=APIError(
-                message="Internal server error",
-                response=MagicMock(status_code=500),
-                body={"error": {"message": "Internal server error"}},
+        with (
+            patch.object(
+                claude_provider._anthropic_client.messages,
+                "create",
+                side_effect=APIError(
+                    message="Internal server error",
+                    response=MagicMock(status_code=500),
+                    body={"error": {"message": "Internal server error"}},
+                ),
             ),
+            pytest.raises(LLMProviderError) as exc_info,
         ):
-            with pytest.raises(LLMProviderError) as exc_info:
-                claude_provider._complete_with_raw_api("system", "user")
+            claude_provider._complete_with_raw_api("system", "user")
 
         assert exc_info.value.code == "llm_api_error"
         assert exc_info.value.status_code == 502
@@ -355,13 +361,15 @@ class TestClaudeProviderErrorHandling:
         claude_provider: ClaudeProvider,
     ) -> None:
         """Test handling of network errors."""
-        with patch.object(
-            claude_provider._anthropic_client.messages,
-            "create",
-            side_effect=ConnectionError("Network unreachable"),
+        with (
+            patch.object(
+                claude_provider._anthropic_client.messages,
+                "create",
+                side_effect=ConnectionError("Network unreachable"),
+            ),
+            pytest.raises(LLMProviderError) as exc_info,
         ):
-            with pytest.raises(LLMProviderError) as exc_info:
-                claude_provider._complete_with_raw_api("system", "user")
+            claude_provider._complete_with_raw_api("system", "user")
 
         assert exc_info.value.code == "llm_network_error"
         assert exc_info.value.status_code == 502
@@ -375,13 +383,15 @@ class TestClaudeProviderErrorHandling:
         mock_response.content = []
         mock_response.usage = Usage(input_tokens=50, output_tokens=0)
 
-        with patch.object(
-            claude_provider._anthropic_client.messages,
-            "create",
-            return_value=mock_response,
+        with (
+            patch.object(
+                claude_provider._anthropic_client.messages,
+                "create",
+                return_value=mock_response,
+            ),
+            pytest.raises(LLMProviderError) as exc_info,
         ):
-            with pytest.raises(LLMProviderError) as exc_info:
-                claude_provider._complete_with_raw_api("system", "user")
+            claude_provider._complete_with_raw_api("system", "user")
 
         assert exc_info.value.code == "invalid_response"
         assert "no text blocks" in exc_info.value.message
@@ -428,17 +438,19 @@ class TestClaudeProviderRetryLogic:
         """Test that error is raised after retries are exhausted."""
         claude_provider.max_retries = 1
 
-        with patch.object(
-            claude_provider._anthropic_client.messages,
-            "create",
-            side_effect=APIError(
-                message="Service unavailable",
-                response=MagicMock(status_code=503),
-                body={"error": {"message": "Service unavailable"}},
+        with (
+            patch.object(
+                claude_provider._anthropic_client.messages,
+                "create",
+                side_effect=APIError(
+                    message="Service unavailable",
+                    response=MagicMock(status_code=503),
+                    body={"error": {"message": "Service unavailable"}},
+                ),
             ),
+            pytest.raises(LLMProviderError) as exc_info,
         ):
-            with pytest.raises(LLMProviderError) as exc_info:
-                claude_provider._complete_with_raw_api("system", "user")
+            claude_provider._complete_with_raw_api("system", "user")
 
         assert exc_info.value.code == "llm_api_error"
 

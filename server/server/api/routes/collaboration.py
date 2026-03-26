@@ -73,7 +73,7 @@ async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:
         }
     except Exception as e:
         logger.error(f"WebSocket authentication failed: {e}")
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token") from e
 
 
 async def check_document_access(user_id: str, document_id: str) -> bool:

@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 from collections.abc import Callable
+from contextlib import suppress
 from typing import Any
 
 import redis.asyncio as redis
@@ -63,10 +64,8 @@ class RedisPubSubManager:
 
         if self._listener_task:
             self._listener_task.cancel()
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._listener_task
-            except asyncio.CancelledError:
-                pass
 
         if self._pubsub:
             await self._pubsub.close()
