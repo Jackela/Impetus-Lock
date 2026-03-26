@@ -1,0 +1,92 @@
+name: Test Matrix
+
+on:
+  push:
+    branches: ["main"]
+    paths: ["server/**", ".github/workflows/test-matrix.yml"]
+  pull_request:
+    branches: ["main"]
+    paths: ["server/**", ".github/workflows/test-matrix.yml"]
+  workflow_dispatch:
+
+# Cancel previous runs for the same PR or branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Matrix testing across Python versions and dependency configurations
+  test-matrix:
+    name: Test Matrix (Python ${{ matrix.python-version }}${{ matrix.optional-deps && ', with optional deps' || '' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+        optional-deps: [true, false]
+    defaults:
+      run:
+        working-directory: server
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install Poetry
+        run: |
+          pipx install poetry
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.local/share/pypoetry
+          key: ${{ runner.os }}-poetry-py${{ matrix.python-version }}-${{ hashFiles('server/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-py${{ matrix.python-version }}-
+
+      - name: Install dependencies (with optional)
+        if: matrix.optional-deps
+        run: poetry install --with dev --all-extras
+
+      - name: Install dependencies (without optional)
+        if: ${{ !matrix.optional-deps }}
+        run: poetry install --with dev
+
+      - name: Run tests
+        run: poetry run pytest tests/ -v --tb=short -n auto -m "not e2e" --cov=server --cov-report=xml --junitxml=junit-matrix.xml
+        env:
+          REDIS_URL: redis://localhost:6379/0
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-py${{ matrix.python-version }}${{ matrix.optional-deps && '-opt' || '-noopt' }}
+          path: server/junit-matrix.xml
+          retention-days: 7
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py${{ matrix.python-version }}${{ matrix.optional-deps && '-opt' || '-noopt' }}
+          path: server/coverage.xml
+          retention-days: 7
