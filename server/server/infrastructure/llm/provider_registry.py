@@ -209,7 +209,9 @@ class ProviderRegistry:
             logger.warning(f"OpenAI provider not available: {e}")
             raise LLMProviderError(
                 code="provider_unavailable",
-                message="OpenAI provider is not available. Install with: pip install openai instructor",
+                message=(
+                    "OpenAI provider is not available. Install with: pip install openai instructor"
+                ),
                 status_code=503,
                 provider=config.provider,
             ) from e
@@ -269,7 +271,10 @@ class ProviderRegistry:
             logger.warning(f"Gemini provider not available: {e}")
             raise LLMProviderError(
                 code="provider_unavailable",
-                message="Gemini provider is not available. Install with: pip install google-generativeai",
+                message=(
+                    "Gemini provider is not available. "
+                    "Install with: pip install google-generativeai"
+                ),
                 status_code=503,
                 provider=config.provider,
             ) from e

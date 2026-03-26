@@ -409,7 +409,8 @@ def run_sync(coro: Coroutine[Any, Any, T]) -> T:
         ...     return result
     """
     try:
-        loop = asyncio.get_running_loop()
+        # Check if we're in an async context
+        asyncio.get_running_loop()
         # We're already in an async context, need to use a thread
         import concurrent.futures
 
