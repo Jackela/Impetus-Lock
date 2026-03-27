@@ -216,3 +216,23 @@ forbidden_modules = [
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.mypy.overrides]]
+module = ["pydantic", "pydantic.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["sqlalchemy", "sqlalchemy.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["cryptography", "cryptography.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["passlib", "passlib.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["fastapi", "fastapi.*"]
+ignore_missing_imports = true

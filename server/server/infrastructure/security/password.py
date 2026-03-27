@@ -1,6 +1,6 @@
 """Password hashing and verification."""
 
-from passlib.context import CryptContext  # type: ignore[import-untyped]
+from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

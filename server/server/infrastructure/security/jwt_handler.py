@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Any
 
-import jwt  # type: ignore[import-untyped]
+import jwt
 
 
 class JWTHandler:
