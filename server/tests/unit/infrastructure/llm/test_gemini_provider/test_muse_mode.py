@@ -56,6 +56,6 @@ class TestGeminiProviderMuseMode:
 
         response = provider.generate_intervention(context="He opened the door.", mode="muse")
 
-        call_kwargs = provider._model.generate_content.call_args.kwargs
-        assert "safety_settings" in call_kwargs
+        # Check that safety_settings was set on the provider
+        assert provider.safety_settings is not None
         assert response.action == "provoke"

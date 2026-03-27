@@ -28,6 +28,7 @@ Example:
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any, cast
 
 from server.domain.errors import LLMProviderError
@@ -105,7 +106,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
 
     def __init__(
         self,
-        api_key: str,
+        api_key: str | None = None,
         model: str = "gemini-1.5-flash",
         temperature: float = 0.7,
         safety_settings: dict[HarmCategory, HarmBlockThreshold] | None = None,
@@ -113,13 +114,15 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         """Initialize the Gemini provider.
 
         Args:
-            api_key: Google Generative AI API key.
+            api_key: Google Generative AI API key. If not provided, will read
+                from GEMINI_API_KEY environment variable.
             model: Gemini model name. Defaults to "gemini-1.5-flash".
             temperature: Sampling temperature (0.0 to 1.0). Defaults to 0.7.
             safety_settings: Optional custom safety settings.
 
         Raises:
-            ValueError: If the model is not supported.
+            ValueError: If the API key is not provided and not in environment,
+                or if the model is not supported.
 
         Example:
             >>> provider = GeminiLLMProvider(
@@ -128,11 +131,24 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             ...     temperature=0.8
             ... )
         """
+        # Resolve API key from parameter or environment variable first
+        # (before importing google.generativeai to avoid import overhead if invalid)
+        resolved_api_key = api_key or os.environ.get("GEMINI_API_KEY")
+        if not resolved_api_key:
+            raise ValueError("API key is required")
+
         import google.generativeai as genai
         from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
         super().__init__(model=model, temperature=temperature)
-        self.api_key = api_key
+
+        # Resolve API key from parameter or environment variable
+        resolved_api_key = api_key or os.environ.get("GEMINI_API_KEY")
+        if not resolved_api_key:
+            raise ValueError("API key is required")
+
+        super().__init__(model=model, temperature=temperature)
+        self.api_key = resolved_api_key
 
         # Get default safety settings if none provided
         if safety_settings is None:
@@ -150,7 +166,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             self.safety_settings = safety_settings
 
         # Configure the SDK with the API key
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=self.api_key)
 
         # Validate model
         if model not in self.SUPPORTED_MODELS:
@@ -238,6 +254,8 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             LLMProviderError: If the API call fails.
         """
         import google.generativeai as genai
+        from google.api_core.exceptions import DeadlineExceeded, InvalidArgument, ResourceExhausted
+        from google.generativeai.types import InvalidArgument as GenAIInvalidArgument
 
         try:
             return self._model.generate_content(
@@ -258,7 +276,11 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 status_code=502,
                 provider=self.provider_name,
             ) from exc
-        except genai.api_key.api_errors.InvalidAPIKeyError as exc:
+        except (
+            genai.api_key.api_errors.InvalidAPIKeyError,
+            InvalidArgument,
+            GenAIInvalidArgument,
+        ) as exc:
             raise LLMProviderError(
                 code="invalid_api_key",
                 message="Gemini API key rejected.",
@@ -272,11 +294,21 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 status_code=401,
                 provider=self.provider_name,
             ) from exc
-        except genai.api_key.api_errors.ResourceExhaustedError as exc:
+        except (
+            genai.api_key.api_errors.ResourceExhaustedError,
+            ResourceExhausted,
+        ) as exc:
             raise LLMProviderError(
                 code="quota_exceeded",
                 message="Gemini quota exceeded. Provide another key or try later.",
-                status_code=402,
+                status_code=429,
+                provider=self.provider_name,
+            ) from exc
+        except DeadlineExceeded as exc:
+            raise LLMProviderError(
+                code="timeout",
+                message="Gemini request timed out.",
+                status_code=504,
                 provider=self.provider_name,
             ) from exc
         except genai.api_key.api_errors.InternalServerError as exc:
@@ -423,6 +455,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
 
         full_prompt = f"{system_prompt}\n\n{user_message}"
 
+        from google.api_core.exceptions import DeadlineExceeded
         from google.generativeai.types import GenerationConfig
 
         generation_config = GenerationConfig(
@@ -440,6 +473,13 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             for chunk in response:
                 if chunk.text:
                     yield chunk.text
+        except DeadlineExceeded as exc:
+            raise LLMProviderError(
+                code="timeout",
+                message="Gemini streaming request timed out.",
+                status_code=504,
+                provider=self.provider_name,
+            ) from exc
         except Exception as exc:
             raise LLMProviderError(
                 code="llm_api_error",

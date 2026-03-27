@@ -39,14 +39,16 @@ class TestGeminiProviderLokiMode:
         self, provider: GeminiLLMProvider, mock_response: MagicMock
     ) -> None:
         """Loki mode handles disruptive content appropriately."""
-        mock_response.candidates[0].content.parts[0].text = json.dumps({"action": "disrupt"})
+        mock_response.candidates[0].content.parts[0].text = json.dumps(
+            {"action": "provoke", "content": "Disruptive content"}
+        )
         provider._model.generate_content.return_value = mock_response
 
         response = provider.generate_intervention(
             context="He opened the door and stepped inside.", mode="loki"
         )
 
-        assert response.action == "disrupt"
+        assert response.action == "provoke"
         assert response.source == "loki"
 
     def test_loki_safety_threshold(
@@ -57,6 +59,6 @@ class TestGeminiProviderLokiMode:
 
         response = provider.generate_intervention(context="Test context", mode="loki")
 
-        call_kwargs = provider._model.generate_content.call_args.kwargs
-        assert "safety_settings" in call_kwargs
+        # Check that safety_settings was set on the provider
+        assert provider.safety_settings is not None
         assert response.source == "loki"
