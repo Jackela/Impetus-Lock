@@ -76,8 +76,10 @@ class TestRedisPubSubManagerConnection:
         """Test connection failure raises exception."""
         manager = RedisPubSubManager()
 
-        with patch("redis.asyncio.from_url", side_effect=ConnectionError("Redis down")), \
-             pytest.raises(ConnectionError, match="Redis down"):
+        with (
+            patch("redis.asyncio.from_url", side_effect=ConnectionError("Redis down")),
+            pytest.raises(ConnectionError, match="Redis down"),
+        ):
             await manager.connect()
             with pytest.raises(ConnectionError, match="Redis down"):
                 await manager.connect()

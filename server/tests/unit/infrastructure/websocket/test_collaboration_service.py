@@ -7,6 +7,7 @@ and collaboration features with proper isolation.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import Any
 from unittest.mock import Mock, patch
 
@@ -715,11 +716,12 @@ class TestCollaborationServiceEdgeCases:
         )
 
         # Should handle gracefully (may raise or clamp position)
-        try:
+        with contextlib.suppress(ValueError, IndexError):
             content, _ = await service.handle_operation(room, op, "hello")
-            # If no error, check behavior
-        except (ValueError, IndexError):
-            pass  # Expected for negative position
+        with contextlib.suppress(ValueError, IndexError):
+            content, _ = await service.handle_operation(room, op, "hello")
+        with contextlib.suppress(ValueError, IndexError):
+            content, _ = await service.handle_operation(room, op, "hello")
 
     @pytest.mark.asyncio
     async def test_position_beyond_content(self) -> None:

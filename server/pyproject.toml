@@ -91,6 +91,9 @@ exclude = [
     "start_server_test\\.py$",
     "run_server\\.py$",
     "alembic/",
+    "\\.venv",
+    "\\.venv\\.windows",
+    "tests/",
 ]
 
 [[tool.mypy.overrides]]

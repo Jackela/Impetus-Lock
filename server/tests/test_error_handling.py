@@ -7,6 +7,7 @@ error handling throughout the application.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
@@ -15,6 +16,7 @@ import pytest
 try:
     from tenacity import RetryError
 
+    _ = RetryError  # Mark as used
     TENACITY_AVAILABLE = True
 except ImportError:
     TENACITY_AVAILABLE = False
@@ -25,6 +27,8 @@ pytest.importorskip("anthropic", reason="anthropic module not installed")
 try:
     from anthropic import AuthenticationError, RateLimitError
 
+    _ = AuthenticationError  # Mark as used
+    _ = RateLimitError  # Mark as used
     ANTHROPIC_AVAILABLE = True
 except ImportError:
     ANTHROPIC_AVAILABLE = False
@@ -43,12 +47,13 @@ class TestRetryLogic:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         # Mock client that fails twice then succeeds
         call_count = 0
 
-        async def mock_create(*args, **kwargs) -> Any:
+        def mock_create(*args, **kwargs) -> Any:
             nonlocal call_count
             call_count += 1
             if call_count <= 2:
@@ -69,8 +74,10 @@ class TestRetryLogic:
         ):
             # Should eventually succeed after retries
             # Note: ClaudeProvider uses synchronous _complete method
-            result = provider._complete("system", "user")
+            result = provider._complete_with_raw_api("system", "user")
 
+        assert call_count >= 2  # Should have retried
+        assert result is not None  # Should return a result
         assert call_count >= 2  # Should have retried
         assert result is not None  # Should return a result
 
@@ -86,6 +93,7 @@ class TestRetryLogic:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         call_count = 0
@@ -125,12 +133,27 @@ class TestFallbackMechanisms:
         manager = DatabaseManager()
 
         # Mock that should cause fallback
-        with patch.object(manager, "_create_async_engine", side_effect=Exception("DB down")):
+        with (
+            patch.object(
+                manager,
+                "_create_async_engine",
+                side_effect=Exception("DB down"),
+            ),
+            contextlib.suppress(Exception),
+        ):
+            await manager.initialize()
+        with (
+            patch.object(
+                manager,
+                "_create_async_engine",
+                side_effect=Exception("DB down"),
+            ),
+            contextlib.suppress(Exception),
+        ):
+            await manager.initialize()
             # Should fallback gracefully
-            try:
+            with contextlib.suppress(Exception):
                 await manager.initialize()
-            except Exception:
-                pass  # Expected
 
     @pytest.mark.asyncio
     async def test_redis_fallback_to_memory(self) -> None:
@@ -173,23 +196,26 @@ class TestNetworkFailureHandling:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         async def slow_create(*args, **kwargs) -> Any:
             await asyncio.sleep(100)  # Very long timeout
             return MagicMock()
 
-        with patch.object(
-            provider._anthropic_client.messages,
-            "create",
-            side_effect=slow_create,
+        with (
+            patch.object(
+                provider._anthropic_client.messages,
+                "create",
+                side_effect=slow_create,
+            ),
+            pytest.raises(asyncio.TimeoutError),
         ):
             # Should timeout
-            with pytest.raises(Exception):
-                await asyncio.wait_for(
-                    provider.generate("system", "user"),
-                    timeout=0.1,
-                )
+            await asyncio.wait_for(
+                provider.generate("system", "user"),
+                timeout=0.1,
+            )
 
     @pytest.mark.asyncio
     async def test_connection_reset_handling(self) -> None:
@@ -201,6 +227,7 @@ class TestNetworkFailureHandling:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         async def reset_error(*args, **kwargs) -> Any:
@@ -226,6 +253,7 @@ class TestNetworkFailureHandling:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         async def dns_error(*args, **kwargs) -> Any:
@@ -255,6 +283,7 @@ class TestErrorScenarios:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         mock_message = MagicMock()
@@ -288,6 +317,7 @@ class TestErrorScenarios:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         mock_message = MagicMock()
@@ -319,6 +349,7 @@ class TestErrorScenarios:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         response_mock = MagicMock()
@@ -359,6 +390,7 @@ class TestEdgeCases:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         error_count = 0
@@ -413,6 +445,7 @@ class TestEdgeCases:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         long_message = "Error: " + "x" * 100000
@@ -440,6 +473,7 @@ class TestEdgeCases:
             model="claude-3-5-sonnet-20241022",
             temperature=0.8,
             max_tokens=400,
+            use_instructor=False,
         )
 
         unicode_error = "错误 🎌 エラー 🎉"

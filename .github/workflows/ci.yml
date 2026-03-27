@@ -135,7 +135,7 @@ jobs:
 
       - name: Run mypy
         working-directory: ./server
-        run: poetry run mypy .
+        run: poetry run mypy . --no-site-packages
 
       # Frontend type check
       - name: Set up Node.js

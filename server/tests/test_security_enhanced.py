@@ -553,7 +553,6 @@ class TestSecurityEdgeCases:
         """Test JWT creation and verification performance."""
         monkeypatch.setenv("JWT_SECRET", "test-secret")
 
-
         start = time.time()
         for _ in range(100):
             token = JWTHandler.create_token("user_123")
