@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import type { StyleHistoryRecord } from "../../services/api/styleHistoryClient";
+import type { StyleHistoryRecord } from "../../hooks/useStyleHistory";
 import { StyleComparisonChart } from "./StyleComparisonChart";
 import { useStyleComparison } from "../../hooks/useStyleComparison";
 import styles from "./ComparisonView.module.css";
