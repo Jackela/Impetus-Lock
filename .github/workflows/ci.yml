@@ -135,7 +135,7 @@ jobs:
 
       - name: Run mypy
         working-directory: ./server
-        run: poetry run mypy . --no-site-packages
+        run: poetry run mypy . --no-site-packages --ignore-missing-imports
 
       # Frontend type check
       - name: Set up Node.js

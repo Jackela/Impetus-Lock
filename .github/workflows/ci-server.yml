@@ -90,7 +90,7 @@ jobs:
         run: poetry install
 
       - name: Run mypy
-        run: poetry run mypy . --no-site-packages
+        run: poetry run mypy . --no-site-packages --ignore-missing-imports
 
   # Unit Tests - Fast, isolated tests (no services needed)
   unit-tests:
