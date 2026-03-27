@@ -28,7 +28,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
@@ -73,10 +73,10 @@ class GeminiLLMProvider(BasePromptLLMProvider):
     # some content. For creative writing interventions, we use medium thresholds
     # to balance safety with creative freedom.
     # Note: These are initialized lazily in __init__ to avoid import overhead
-    _DEFAULT_SAFETY_SETTINGS: dict | None = None
+    _DEFAULT_SAFETY_SETTINGS: dict[Any, Any] | None = None
 
     @classmethod
-    def _get_default_safety_settings(cls) -> dict:
+    def _get_default_safety_settings(cls) -> dict[Any, Any]:
         """Get default safety settings (lazily loaded)."""
         if cls._DEFAULT_SAFETY_SETTINGS is None:
             from google.generativeai.types import HarmBlockThreshold, HarmCategory
@@ -210,7 +210,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         """
         return f"{system_prompt}\n\n{user_message}"
 
-    def _create_generation_config(self):
+    def _create_generation_config(self) -> Any:
         """Create the generation configuration for Gemini.
 
         Returns:
@@ -224,7 +224,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             response_mime_type="application/json",
         )
 
-    def _generate_content(self, full_prompt: str, generation_config):
+    def _generate_content(self, full_prompt: str, generation_config: Any) -> Any:
         """Generate content using the Gemini API.
 
         Args:
@@ -301,7 +301,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             ) from exc
 
-    def _parse_gemini_response(self, response) -> LLMInterventionDraft:
+    def _parse_gemini_response(self, response: Any) -> LLMInterventionDraft:
         """Parse and validate the Gemini API response.
 
         Args:
@@ -344,6 +344,8 @@ class GeminiLLMProvider(BasePromptLLMProvider):
 
         text = text_parts[0]
         return LLMInterventionDraft.model_validate_json(text)
+        return cast(LLMInterventionDraft, LLMInterventionDraft.model_validate_json(text))
+        return LLMInterventionDraft.model_validate_json(text)
 
     def count_tokens(self, text: str) -> int:
         """Count tokens in the given text.
@@ -362,6 +364,16 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             4
         """
         try:
+            result = self._model.count_tokens(contents=text)
+            return result.total_tokens
+        except Exception:
+            # Fallback: rough estimate (1 token ≈ 4 characters for most languages)
+            return len(text) // 4
+            result = self._model.count_tokens(contents=text)
+            return cast(int, result.total_tokens)
+        except Exception:
+            # Fallback: rough estimate (1 token ≈ 4 characters for most languages)
+            return len(text) // 4
             result = self._model.count_tokens(contents=text)
             return result.total_tokens
         except Exception:

@@ -161,6 +161,14 @@ class ProviderFactory:
 
         # Instantiate with appropriate arguments
         if spec.no_args:
+            return cast(LLMProvider, provider_class())
+
+        return cast(LLMProvider, provider_class(
+            api_key=config.api_key,
+            model=config.model,
+            temperature=config.temperature,
+        ))
+        if spec.no_args:
             return provider_class()
 
         return provider_class(
