@@ -165,4 +165,4 @@ class TestClaudeProviderLokiMode:
         assert response.anchor.to == 100
         assert response.anchor.from_ == 0
         assert response.content == "重写的内容"
-        assert response.anchor.from_ == 100
+        assert response.anchor.from_ == 0
