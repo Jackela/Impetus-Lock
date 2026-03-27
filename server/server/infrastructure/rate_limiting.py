@@ -133,6 +133,15 @@ class RateLimiter:
         real_ip = request.headers.get("X-Real-IP")
         if real_ip:
             return str(real_ip)
+
+        return request.client.host if request.client else "unknown"
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return str(forwarded.split(",")[0].strip())
+
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip:
+            return str(real_ip)
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
             return forwarded.split(",")[0].strip()

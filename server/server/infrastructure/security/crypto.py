@@ -2,7 +2,7 @@
 
 import os
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet  # type: ignore[import-untyped]
 
 
 class CryptoService:

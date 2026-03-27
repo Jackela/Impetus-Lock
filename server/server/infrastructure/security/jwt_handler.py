@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Any
 
-import jwt
+import jwt  # type: ignore[import-untyped]
 
 
 class JWTHandler:
@@ -22,11 +22,11 @@ class JWTHandler:
         secret = os.getenv("JWT_SECRET")
         if not secret:
             raise ValueError("JWT_SECRET not set")
-        return jwt.encode(payload, secret, algorithm=cls.ALGORITHM)
+        return str(jwt.encode(payload, secret, algorithm=cls.ALGORITHM))
 
     @classmethod
     def verify_token(cls, token: str) -> dict[str, Any]:
         secret = os.getenv("JWT_SECRET")
         if not secret:
             raise ValueError("JWT_SECRET not set")
-        return jwt.decode(token, secret, algorithms=[cls.ALGORITHM])
+        return dict(jwt.decode(token, secret, algorithms=[cls.ALGORITHM]))
