@@ -13,6 +13,10 @@ class CryptoService:
         self._fernet = Fernet(key.encode())
 
     def encrypt(self, data: str) -> str:
+        return str(self._fernet.encrypt(data.encode()).decode())
+
+    def decrypt(self, token: str) -> str:
+        return str(self._fernet.decrypt(token.encode()).decode())
         return self._fernet.encrypt(data.encode()).decode()
 
     def decrypt(self, token: str) -> str:

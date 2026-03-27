@@ -36,7 +36,7 @@ class RedisPubSubManager:
         self._pubsub: redis.client.PubSub | None = None
         self._message_handlers: dict[str, list[Callable[[dict[str, Any]], Any]]] = {}
         self._running: bool = False
-        self._listener_task: asyncio.Task | None = None
+        self._listener_task: asyncio.Task[None] | None = None
 
     def _get_redis_url(self) -> str:
         """Get Redis URL from environment or use default."""
@@ -246,6 +246,8 @@ class RedisPubSubManager:
             return {}
 
         key = f"room_users:{room_id}"
+        data = await self._redis.hgetall(key)
+        return dict(data)
         data = await self._redis.hgetall(key)
         return data
 
