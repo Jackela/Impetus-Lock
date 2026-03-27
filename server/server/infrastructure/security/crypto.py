@@ -17,7 +17,3 @@ class CryptoService:
 
     def decrypt(self, token: str) -> str:
         return str(self._fernet.decrypt(token.encode()).decode())
-        return self._fernet.encrypt(data.encode()).decode()
-
-    def decrypt(self, token: str) -> str:
-        return self._fernet.decrypt(token.encode()).decode()
