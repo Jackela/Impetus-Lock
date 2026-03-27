@@ -95,7 +95,9 @@ class ProviderFactory:
         "openai": ProviderSpec(
             module="server.infrastructure.llm.instructor_provider",
             class_name="InstructorLLMProvider",
-            install_msg="OpenAI provider is not available. Install with: pip install openai instructor",
+            install_msg=(
+                "OpenAI provider is not available. Install with: pip install openai instructor"
+            ),
         ),
         "anthropic": ProviderSpec(
             module="server.infrastructure.llm.anthropic_provider",
@@ -110,7 +112,9 @@ class ProviderFactory:
         "gemini": ProviderSpec(
             module="server.infrastructure.llm.gemini_provider",
             class_name="GeminiLLMProvider",
-            install_msg="Gemini provider is not available. Install with: pip install google-generativeai",
+            install_msg=(
+                "Gemini provider is not available. Install with: pip install google-generativeai"
+            ),
         ),
         "debug": ProviderSpec(
             module="server.infrastructure.llm.debug_provider",

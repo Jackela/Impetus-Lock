@@ -96,23 +96,23 @@ async def generate_intervention(
     service: InterventionService = Depends(get_intervention_service),
 ) -> InterventionResponse | JSONResponse:
     """Generate AI intervention action based on context and mode.
-    
+
     Implements idempotency via Idempotency-Key header (15s cache).
     Validates contract version for API compatibility.
-    
+
     Args:
         request: Intervention request payload (context, mode, client_meta).
         idempotency_key: UUID v4 for deduplication (required header).
         contract_version: API contract version (must be "2.0.0").
         service: InterventionService instance (dependency injection).
-    
+
     Returns:
         InterventionResponse: Generated intervention action.
-    
+
     Raises:
         HTTPException 422: If contract_version mismatch or validation fails.
         HTTPException 500: If LLM provider fails.
-    
+
     Example:
         ```bash
         curl -X POST http://localhost:8000/impetus/generate-intervention \

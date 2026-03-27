@@ -8,7 +8,7 @@ interface ComparisonViewProps {
   historyItems: StyleHistoryRecord[];
 }
 
-export function ComparisonView({ historyItems }: ComparisonViewProps) {
+export function ComparisonView({ historyItems }: ComparisonViewProps): JSX.Element {
   const {
     firstStyle,
     secondStyle,
@@ -22,7 +22,7 @@ export function ComparisonView({ historyItems }: ComparisonViewProps) {
   const chartRef = useRef<HTMLDivElement>(null);
 
   const handleSelect = useCallback(
-    (record: StyleHistoryRecord) => {
+    (record: StyleHistoryRecord): void => {
       if (firstStyle?.id === record.id) {
         selectFirstStyle({ ...record, id: "" } as StyleHistoryRecord);
       } else if (secondStyle?.id === record.id) {
@@ -38,11 +38,11 @@ export function ComparisonView({ historyItems }: ComparisonViewProps) {
     [firstStyle, secondStyle, selectFirstStyle, selectSecondStyle]
   );
 
-  const handleCompare = useCallback(async () => {
+  const handleCompare = useCallback(async (): Promise<void> => {
     await performComparison();
   }, [performComparison]);
 
-  const handleExport = useCallback(() => {
+  const handleExport = useCallback((): void => {
     if (!chartRef.current) return;
 
     const canvas = document.createElement("canvas");
@@ -84,7 +84,7 @@ export function ComparisonView({ historyItems }: ComparisonViewProps) {
     }
   }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString("zh-CN", {
       year: "numeric",
       month: "long",
@@ -94,13 +94,17 @@ export function ComparisonView({ historyItems }: ComparisonViewProps) {
     });
   };
 
-  const isItemSelected = (id: string) => firstStyle?.id === id || secondStyle?.id === id;
+  const isItemSelected = (id: string): boolean => firstStyle?.id === id || secondStyle?.id === id;
 
   const selectedCount = [firstStyle, secondStyle].filter((s) => s && s.id).length;
 
   const canCompare = firstStyle?.id && secondStyle?.id && !loading;
 
-  const hasResult = firstStyle?.id && secondStyle?.id;
+  const hasResult = Boolean(firstStyle?.id && secondStyle?.id);
+
+  // Type guard to ensure styles are non-null when hasResult is true
+  const firstStyleData = firstStyle;
+  const secondStyleData = secondStyle;
 
   return (
     <div className={styles.container}>
@@ -150,18 +154,18 @@ export function ComparisonView({ historyItems }: ComparisonViewProps) {
 
       {error && <div className={styles.error}>{error}</div>}
 
-      {hasResult && (
+      {hasResult && firstStyleData && secondStyleData && (
         <div className={styles.comparisonResult}>
           <div className={styles.textComparison}>
             <div className={styles.textColumn}>
               <h4>Item 1</h4>
-              <div className={styles.dateLabel}>{formatDate(firstStyle!.created_at)}</div>
-              <div className={styles.textContent}>{firstStyle!.text}</div>
+              <div className={styles.dateLabel}>{formatDate(firstStyleData.created_at)}</div>
+              <div className={styles.textContent}>{firstStyleData.text}</div>
             </div>
             <div className={styles.textColumn}>
               <h4>Item 2</h4>
-              <div className={styles.dateLabel}>{formatDate(secondStyle!.created_at)}</div>
-              <div className={styles.textContent}>{secondStyle!.text}</div>
+              <div className={styles.dateLabel}>{formatDate(secondStyleData.created_at)}</div>
+              <div className={styles.textContent}>{secondStyleData.text}</div>
             </div>
           </div>
 
@@ -173,10 +177,10 @@ export function ComparisonView({ historyItems }: ComparisonViewProps) {
               </button>
             </div>
             <StyleComparisonChart
-              vector1={firstStyle!.style_vector}
-              vector2={secondStyle!.style_vector}
-              label1={`Item 1 (${formatDate(firstStyle!.created_at)})`}
-              label2={`Item 2 (${formatDate(secondStyle!.created_at)})`}
+              vector1={firstStyleData.style_vector}
+              vector2={secondStyleData.style_vector}
+              label1={`Item 1 (${formatDate(firstStyleData.created_at)})`}
+              label2={`Item 2 (${formatDate(secondStyleData.created_at)})`}
             />
           </div>
 

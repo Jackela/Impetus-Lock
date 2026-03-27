@@ -291,10 +291,17 @@ class TestLockSecurity:
         assert "outer" in lock_ids
         assert "inner" in lock_ids
 
-    # TODO: Add auth tests when implemented
-    # @pytest.mark.asyncio
-    # async def test_cannot_delete_lock_without_permission(self, client: AsyncClient):
-    #     ...
+    @pytest.mark.skip(reason="Authentication system not yet implemented - tracked as Issue #XXX")
+    @pytest.mark.asyncio
+    async def test_cannot_delete_lock_without_permission(self) -> None:
+        """Placeholder: Lock deletion should require proper authorization.
+
+        This test validates that users cannot delete locks belonging to others.
+        Requires: Authentication system implementation.
+        Tracked as Issue #XXX: Authorization for lock management.
+        """
+        # Implementation pending authentication system
+        pass
 
 
 class TestContentSanitization:

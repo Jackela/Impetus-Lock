@@ -30,9 +30,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig, HarmBlockThreshold, HarmCategory
-
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
 from server.infrastructure.llm.prompts.loki_prompt import get_loki_prompts
@@ -40,6 +37,8 @@ from server.infrastructure.llm.prompts.muse_prompt import get_muse_prompts
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+    from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
 
 class GeminiLLMProvider(BasePromptLLMProvider):
@@ -73,12 +72,26 @@ class GeminiLLMProvider(BasePromptLLMProvider):
     # Safety settings: Gemini models have default safety filters that may block
     # some content. For creative writing interventions, we use medium thresholds
     # to balance safety with creative freedom.
-    DEFAULT_SAFETY_SETTINGS: dict[HarmCategory, HarmBlockThreshold] = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-    }
+    # Note: These are initialized lazily in __init__ to avoid import overhead
+    _DEFAULT_SAFETY_SETTINGS: dict | None = None
+
+    @classmethod
+    def _get_default_safety_settings(cls) -> dict:
+        """Get default safety settings (lazily loaded)."""
+        if cls._DEFAULT_SAFETY_SETTINGS is None:
+            from google.generativeai.types import HarmBlockThreshold, HarmCategory
+
+            cls._DEFAULT_SAFETY_SETTINGS = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: (
+                    HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+                ),
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: (
+                    HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+                ),
+            }
+        return cls._DEFAULT_SAFETY_SETTINGS
 
     # Supported Gemini models
     SUPPORTED_MODELS: set[str] = {
@@ -115,9 +128,26 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             ...     temperature=0.8
             ... )
         """
+        import google.generativeai as genai
+        from google.generativeai.types import HarmBlockThreshold, HarmCategory
+
         super().__init__(model=model, temperature=temperature)
         self.api_key = api_key
-        self.safety_settings = safety_settings or self.DEFAULT_SAFETY_SETTINGS
+
+        # Get default safety settings if none provided
+        if safety_settings is None:
+            self.safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: (HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE),
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: (HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE),
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: (
+                    HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+                ),
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: (
+                    HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+                ),
+            }
+        else:
+            self.safety_settings = safety_settings
 
         # Configure the SDK with the API key
         genai.configure(api_key=api_key)
@@ -180,21 +210,21 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         """
         return f"{system_prompt}\n\n{user_message}"
 
-    def _create_generation_config(self) -> GenerationConfig:
+    def _create_generation_config(self):
         """Create the generation configuration for Gemini.
 
         Returns:
             GenerationConfig with temperature, max_output_tokens, and response_mime_type.
         """
+        from google.generativeai.types import GenerationConfig
+
         return GenerationConfig(
             temperature=self.temperature,
             max_output_tokens=512,
             response_mime_type="application/json",
         )
 
-    def _generate_content(
-        self, full_prompt: str, generation_config: GenerationConfig
-    ) -> genai.types.GenerateContentResponse:
+    def _generate_content(self, full_prompt: str, generation_config):
         """Generate content using the Gemini API.
 
         Args:
@@ -207,6 +237,8 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         Raises:
             LLMProviderError: If the API call fails.
         """
+        import google.generativeai as genai
+
         try:
             return self._model.generate_content(
                 contents=full_prompt,
@@ -269,9 +301,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             ) from exc
 
-    def _parse_gemini_response(
-        self, response: genai.types.GenerateContentResponse
-    ) -> LLMInterventionDraft:
+    def _parse_gemini_response(self, response) -> LLMInterventionDraft:
         """Parse and validate the Gemini API response.
 
         Args:
@@ -392,6 +422,8 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             system_prompt, user_message = get_loki_prompts(context)
 
         full_prompt = f"{system_prompt}\n\n{user_message}"
+
+        from google.generativeai.types import GenerationConfig
 
         generation_config = GenerationConfig(
             temperature=self.temperature,

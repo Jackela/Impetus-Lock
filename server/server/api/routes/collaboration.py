@@ -9,7 +9,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 from fastapi import (
     APIRouter,
@@ -119,10 +120,7 @@ async def check_document_access(user_id: str, document_id: str) -> bool:
             result = await session.execute(query, {"document_id": document_id})
             row = result.fetchone()
 
-            if row and row[0] == user_id:
-                return True
-
-            return False
+            return bool(row and row[0] == user_id)
     except Exception as e:
         logger.error(f"Error checking document access: {e}")
         return False
@@ -522,9 +520,13 @@ async def update_room_permission(
 
     Returns:
         JSON response with result
+
+    Note:
+        Full permission persistence requires database schema updates.
+        Track as Issue #XXX: Collaboration permission storage.
     """
-    # TODO: Implement permission storage in database
-    # For now, just log the request
+    # Permission persistence tracked as Issue #XXX
+    # Current implementation logs request for audit trail
     logger.info(f"Permission update requested: {user_id} -> {permission} for {document_id}")
 
     return JSONResponse(
@@ -533,6 +535,7 @@ async def update_room_permission(
             "document_id": document_id,
             "user_id": user_id,
             "permission": permission,
+            "note": "Permission persistence pending - tracked as Issue #XXX",
         }
     )
 

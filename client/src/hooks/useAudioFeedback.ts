@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AIActionType } from "../types/ai-actions";
 import { FEEDBACK_CONFIG } from "../config/sensory-feedback";
+import { createLogger } from "../utils/logger";
+
+const logger = createLogger("useAudioFeedback");
 
 /**
  * Hook for audio feedback using Web Audio API.
@@ -48,7 +51,7 @@ export function useAudioFeedback() {
           globalThis.AudioContext ||
           (window as unknown as { AudioContext?: typeof AudioContext }).AudioContext;
         if (!AudioContextConstructor) {
-          console.warn("Web Audio API not supported in this browser");
+          logger.warn("Web Audio API not supported in this browser");
           setIsReady(false);
           return;
         }
@@ -67,7 +70,7 @@ export function useAudioFeedback() {
               audioBuffersRef.current.set(actionType as AIActionType, audioBuffer);
             }
           } catch (error) {
-            console.error(`Failed to load audio: ${config.audioFile}`, error);
+            logger.error(`Failed to load audio: ${config.audioFile}`, error);
           }
         });
 
@@ -77,7 +80,7 @@ export function useAudioFeedback() {
           setIsReady(true);
         }
       } catch (error) {
-        console.error("Failed to initialize audio context:", error);
+        logger.error("Failed to initialize audio context", error);
         if (isMounted) {
           setIsReady(false);
         }
@@ -125,7 +128,7 @@ export function useAudioFeedback() {
 
         const buffer = audioBuffersRef.current.get(actionType);
         if (!buffer) {
-          console.warn(`No audio buffer found for action type: ${actionType}`);
+          logger.warn(`No audio buffer found for action type: ${actionType}`);
           return;
         }
 
@@ -147,7 +150,7 @@ export function useAudioFeedback() {
           }
         };
       } catch (error) {
-        console.error("Failed to play audio:", error);
+        logger.error("Failed to play audio", error);
       }
     },
     [isReady]

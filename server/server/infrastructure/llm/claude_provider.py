@@ -12,15 +12,7 @@ Constitutional Compliance:
 from __future__ import annotations
 
 import os
-
-import instructor
-from anthropic import (
-    Anthropic,
-    APIError,
-    AuthenticationError,
-    RateLimitError,
-)
-from anthropic.types import Message, MessageParam, TextBlock
+from typing import TYPE_CHECKING
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import (
@@ -28,6 +20,10 @@ from server.infrastructure.llm.base_provider import (
     LLMInterventionDraft,
     TokenUsage,
 )
+
+if TYPE_CHECKING:
+    from anthropic import Anthropic
+    from anthropic.types import Message, MessageParam, TextBlock
 
 
 class ClaudeProvider(BasePromptLLMProvider):
@@ -118,7 +114,10 @@ class ClaudeProvider(BasePromptLLMProvider):
         self.use_instructor = use_instructor
         self._last_token_usage: TokenUsage | None = None
 
-        # Initialize clients
+        # Import and initialize clients
+        from anthropic import Anthropic
+        import instructor
+
         self._anthropic_client = Anthropic(api_key=self._api_key)
 
         # Initialize Instructor client if requested
@@ -186,6 +185,12 @@ class ClaudeProvider(BasePromptLLMProvider):
         Returns:
             Validated LLMInterventionDraft.
         """
+        from anthropic import (
+            APIError,
+            AuthenticationError,
+            RateLimitError,
+        )
+
         try:
             # Instructor handles retries internally
             completion, raw_response = (
@@ -275,7 +280,7 @@ class ClaudeProvider(BasePromptLLMProvider):
 
         return self._handle_retry_exhausted(last_error)
 
-    def _build_api_payload(self, user_message: str) -> list[MessageParam]:
+    def _build_api_payload(self, user_message: str) -> list:
         """Build the API payload for Anthropic request.
 
         Args:
@@ -299,8 +304,8 @@ class ClaudeProvider(BasePromptLLMProvider):
     def _call_anthropic_api(
         self,
         system_prompt: str,
-        payload: list[MessageParam],
-    ) -> Message:
+        payload: list,
+    ):
         """Make the actual API call to Anthropic.
 
         Args:
@@ -318,7 +323,7 @@ class ClaudeProvider(BasePromptLLMProvider):
             messages=payload,
         )
 
-    def _parse_anthropic_response(self, message: Message) -> LLMInterventionDraft:
+    def _parse_anthropic_response(self, message) -> LLMInterventionDraft:
         """Parse and validate the API response.
 
         Args:
@@ -330,6 +335,8 @@ class ClaudeProvider(BasePromptLLMProvider):
         Raises:
             LLMProviderError: If response parsing fails.
         """
+        from anthropic.types import TextBlock
+
         # Track token usage
         if message.usage:
             self._last_token_usage = TokenUsage(
@@ -366,6 +373,12 @@ class ClaudeProvider(BasePromptLLMProvider):
         Raises:
             LLMProviderError: For non-retryable errors.
         """
+        from anthropic import (
+            APIError,
+            AuthenticationError,
+            RateLimitError,
+        )
+
         # Check specific error types
         if isinstance(exc, RateLimitError):
             return self._handle_rate_limit_error(exc, attempt)
@@ -373,7 +386,7 @@ class ClaudeProvider(BasePromptLLMProvider):
             return self._handle_auth_error(exc, attempt)
         if isinstance(exc, APIError):
             return self._handle_api_error_response(exc, attempt)
-        if isinstance(exc, (OSError, ConnectionError)):
+        if isinstance(exc, OSError | ConnectionError):
             return self._handle_network_error(exc, attempt)
         if isinstance(exc, LLMProviderError):
             return self._handle_provider_error(exc, attempt)

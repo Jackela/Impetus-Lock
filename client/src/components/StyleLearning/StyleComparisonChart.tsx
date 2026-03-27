@@ -11,6 +11,9 @@ import {
 } from "recharts";
 import { useRef, useCallback } from "react";
 import html2canvas from "html2canvas";
+import { createLogger } from "../../utils/logger";
+
+const logger = createLogger("StyleComparisonChart");
 
 interface StyleComparisonChartProps {
   vector1: StyleVector;
@@ -66,7 +69,7 @@ export function StyleComparisonChart({
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (error) {
-      console.error("Failed to export chart:", error);
+      logger.error("Failed to export chart", error);
     }
   }, []);
 

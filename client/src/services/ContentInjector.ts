@@ -15,6 +15,9 @@ import type { EditorView } from "@milkdown/prose/view";
 import type { components } from "../types/api.generated";
 import type { AgentSource } from "../types/mode";
 import { getLastSentenceRange } from "../utils/textRange";
+import { createLogger } from "../utils/logger";
+
+const logger = createLogger("ContentInjector");
 
 type Anchor = components["schemas"]["Anchor"];
 
@@ -118,7 +121,7 @@ export function injectLockedBlock(
 
   // Validate position is within document bounds
   if (insertPos < 0 || insertPos > state.doc.content.size) {
-    console.error("Invalid insertion position:", insertPos);
+    logger.error("Invalid insertion position", { insertPos });
     insertPos = state.selection.$head.pos;
   }
 
@@ -190,7 +193,7 @@ export function deleteContentAtAnchor(
 
   // Validate range
   if (from < 0 || to > state.doc.content.size || from >= to) {
-    console.error("[ContentInjector] Invalid delete range:", {
+    logger.error("Invalid delete range", {
       from,
       to,
       docSize: state.doc.content.size,
@@ -276,16 +279,14 @@ export function rewriteRangeWithLock({
   const { state, dispatch } = view;
 
   if (!anchor || anchor.type !== "range") {
-    console.warn(
-      "[ContentInjector] Rewrite skipped: anchor missing, falling back to sentence heuristic"
-    );
+    logger.warn("Rewrite skipped: anchor missing, falling back to sentence heuristic");
     rewriteLastSentenceWithLock(view, content, lockId, source);
     return;
   }
 
   const { from, to } = anchor;
   if (from < 0 || to > state.doc.content.size || from >= to) {
-    console.warn("[ContentInjector] Rewrite skipped: invalid anchor range", anchor);
+    logger.warn("Rewrite skipped: invalid anchor range", { anchor });
     return;
   }
 
@@ -338,7 +339,7 @@ export function rewriteLastSentenceWithLock(
   const { state, dispatch } = view;
   const range = getLastSentenceRange(state);
   if (range.to <= range.from) {
-    console.warn("[ContentInjector] Rewrite skipped: invalid heuristic range", range);
+    logger.warn("Rewrite skipped: invalid heuristic range", { range });
     return;
   }
 

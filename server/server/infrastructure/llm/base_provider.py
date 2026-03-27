@@ -157,7 +157,7 @@ class LLMErrorHandlerMixin:
             message = f"{provider_name} API key rejected."
 
         # Check for network errors
-        elif isinstance(exc, (OSError, ConnectionError)):
+        elif isinstance(exc, OSError | ConnectionError):
             error_code = "llm_network_error"
             message = f"Network error connecting to {provider_name} API."
 
@@ -207,7 +207,7 @@ class RetryMixin:
         )
 
         def default_retry(e: Exception) -> bool:
-            return isinstance(e, (OSError, ConnectionError))
+            return isinstance(e, OSError | ConnectionError)
 
         retry_checker = should_retry or default_retry
 
