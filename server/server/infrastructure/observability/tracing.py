@@ -20,12 +20,6 @@ try:
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.trace import Status as _Status, StatusCode as _StatusCode  # noqa: F811, I001
-    from opentelemetry import trace as _trace_module  # noqa: F811
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-    from opentelemetry.sdk.resources import Resource
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.trace import Status as _Status, StatusCode as _StatusCode  # noqa: F811
 
     trace = _trace_module
     Status = _Status

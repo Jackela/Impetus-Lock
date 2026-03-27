@@ -343,9 +343,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             )
 
         text = text_parts[0]
-        return LLMInterventionDraft.model_validate_json(text)
         return cast(LLMInterventionDraft, LLMInterventionDraft.model_validate_json(text))
-        return LLMInterventionDraft.model_validate_json(text)
 
     def count_tokens(self, text: str) -> int:
         """Count tokens in the given text.
@@ -365,17 +363,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         """
         try:
             result = self._model.count_tokens(contents=text)
-            return result.total_tokens
-        except Exception:
-            # Fallback: rough estimate (1 token ≈ 4 characters for most languages)
-            return len(text) // 4
-            result = self._model.count_tokens(contents=text)
             return cast(int, result.total_tokens)
-        except Exception:
-            # Fallback: rough estimate (1 token ≈ 4 characters for most languages)
-            return len(text) // 4
-            result = self._model.count_tokens(contents=text)
-            return result.total_tokens
         except Exception:
             # Fallback: rough estimate (1 token ≈ 4 characters for most languages)
             return len(text) // 4

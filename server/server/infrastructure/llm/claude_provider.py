@@ -12,7 +12,9 @@ Constitutional Compliance:
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
+
+from anthropic.types import Message
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import (
@@ -212,7 +214,7 @@ class ClaudeProvider(BasePromptLLMProvider):
                     output_tokens=getattr(raw_response.usage, "output_tokens", 0),
                 )
 
-            return completion
+            return cast(LLMInterventionDraft, completion)
         except RateLimitError as exc:
             raise LLMProviderError(
                 code="quota_exceeded",
@@ -279,7 +281,7 @@ class ClaudeProvider(BasePromptLLMProvider):
 
         return self._handle_retry_exhausted(last_error)
 
-    def _build_api_payload(self, user_message: str) -> list:
+    def _build_api_payload(self, user_message: str) -> list[dict[str, Any]]:
         """Build the API payload for Anthropic request.
 
         Args:
@@ -303,8 +305,8 @@ class ClaudeProvider(BasePromptLLMProvider):
     def _call_anthropic_api(
         self,
         system_prompt: str,
-        payload: list,
-    ):
+        payload: list[dict[str, Any]],
+    ) -> Message:
         """Make the actual API call to Anthropic.
 
         Args:
@@ -322,7 +324,7 @@ class ClaudeProvider(BasePromptLLMProvider):
             messages=payload,
         )
 
-    def _parse_anthropic_response(self, message) -> LLMInterventionDraft:
+    def _parse_anthropic_response(self, message: Message) -> LLMInterventionDraft:
         """Parse and validate the API response.
 
         Args:
@@ -353,7 +355,7 @@ class ClaudeProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             )
 
-        return LLMInterventionDraft.model_validate_json(text_blocks[0])
+        return cast(LLMInterventionDraft, LLMInterventionDraft.model_validate_json(text_blocks[0]))
 
     def _handle_api_error(
         self,

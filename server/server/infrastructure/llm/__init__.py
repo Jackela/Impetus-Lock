@@ -21,11 +21,11 @@ from server.infrastructure.llm.debug_provider import DebugLLMProvider
 
 # Provider classes with optional dependencies are not auto-imported.
 # They will be None until explicitly imported from their respective modules.
-InstructorLLMProvider = None  # type: ignore[misc, assignment]
-AnthropicLLMProvider = None  # type: ignore[misc, assignment]
-ClaudeProvider = None  # type: ignore[misc, assignment]
-ClaudeLLMProvider = None  # type: ignore[misc, assignment]
-GeminiLLMProvider = None  # type: ignore[misc, assignment]
+InstructorLLMProvider = None  
+AnthropicLLMProvider = None  
+ClaudeProvider = None  
+ClaudeLLMProvider = None  
+GeminiLLMProvider = None  
 
 __all__ = [
     "BasePromptLLMProvider",

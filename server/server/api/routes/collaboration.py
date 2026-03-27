@@ -97,9 +97,13 @@ async def check_document_access(user_id: str, document_id: str) -> bool:
         True if user has access, False otherwise
     """
     try:
-        from server.infrastructure.persistence.database import get_db_session
+        from server.infrastructure.persistence.database import get_db_manager
 
-        async with get_db_session() as session:
+        db_manager = get_db_manager()
+        if db_manager is None:
+            return False
+
+        async with db_manager.session() as session:
             from sqlalchemy import text
 
             query = text("""
@@ -416,6 +420,10 @@ async def _handle_message(
         collab_service: Collaboration service instance
     """
     msg_type = message.get("type")
+
+    # Ensure msg_type is a string
+    if not isinstance(msg_type, str):
+        msg_type = "unknown"
 
     # Dispatch to registered handler
     handled = await _message_handlers.dispatch(

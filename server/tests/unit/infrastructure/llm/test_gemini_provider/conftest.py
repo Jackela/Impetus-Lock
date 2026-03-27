@@ -14,11 +14,24 @@ import pytest
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+# Check if google.generativeai is available
+try:
+    import google.generativeai as _genai  # noqa: F401
+
+    _GENAI_AVAILABLE = True
+except ImportError:
+    _GENAI_AVAILABLE = False
+
+from server.infrastructure.llm.gemini_provider import GeminiLLMProvider
+
 
 @pytest.fixture
 def mock_genai() -> Generator[Mock, None, None]:
     """Mock the google.generativeai module."""
-    with patch("server.infrastructure.llm.gemini_provider.genai") as mock:
+    if not _GENAI_AVAILABLE:
+        pytest.skip("google.generativeai not installed")
+
+    with patch("google.generativeai") as mock:
         yield mock
 
 
@@ -32,3 +45,12 @@ def mock_response() -> MagicMock:
         {"action": "provoke", "content": "Test intervention content"}
     )
     return response
+
+
+@pytest.fixture
+def provider(mock_genai: Mock) -> GeminiLLMProvider:
+    """Create a GeminiLLMProvider instance with mocked genai."""
+    return GeminiLLMProvider(
+        api_key="test-api-key",
+        model="gemini-pro",
+    )

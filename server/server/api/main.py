@@ -81,9 +81,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(LLMProviderError, llm_provider_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(LLMProviderError, llm_provider_error_handler)
+app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(Exception, global_exception_handler)
 
 # Add middleware (order matters - rate limit first, then auth, then CORS)
