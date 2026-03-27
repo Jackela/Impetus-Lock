@@ -11,7 +11,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
-import pytest_asyncio
 
 try:
     from tenacity import RetryError
@@ -79,6 +78,7 @@ class TestRetryLogic:
     async def test_no_retry_on_auth_error(self) -> None:
         """Test no retry on authentication errors."""
         from anthropic import AuthenticationError
+
         from server.infrastructure.llm.claude_provider import ClaudeProvider
 
         provider = ClaudeProvider(
@@ -311,6 +311,7 @@ class TestErrorScenarios:
     async def test_rate_limit_with_retry_after(self) -> None:
         """Test rate limit handling with Retry-After header."""
         from anthropic import RateLimitError
+
         from server.infrastructure.llm.claude_provider import ClaudeProvider
 
         provider = ClaudeProvider(

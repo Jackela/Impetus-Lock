@@ -22,8 +22,7 @@ from server.infrastructure.llm.base_provider import (
 )
 
 if TYPE_CHECKING:
-    from anthropic import Anthropic
-    from anthropic.types import Message, MessageParam, TextBlock
+    pass
 
 
 class ClaudeProvider(BasePromptLLMProvider):
@@ -115,8 +114,8 @@ class ClaudeProvider(BasePromptLLMProvider):
         self._last_token_usage: TokenUsage | None = None
 
         # Import and initialize clients
-        from anthropic import Anthropic
         import instructor
+        from anthropic import Anthropic
 
         self._anthropic_client = Anthropic(api_key=self._api_key)
 

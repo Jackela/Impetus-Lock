@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 import pytest_asyncio
@@ -571,9 +571,8 @@ class TestCollaborationServiceRedisIntegration:
     @pytest.mark.asyncio
     async def test_handle_redis_message(self, mock_redis_client: Mock) -> None:
         """Test handling messages from Redis."""
-        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
-
         from server.infrastructure.websocket.redis_pubsub import RedisPubSubManager
+        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
 
         cm = ConnectionManager()
         pubsub = RedisPubSubManager()
@@ -584,7 +583,7 @@ class TestCollaborationServiceRedisIntegration:
         )
 
         ws = MockWebSocket()
-        room = await cm.connect(ws, "test_room", "user_1", "Test User")
+        await cm.connect(ws, "test_room", "user_1", "Test User")
 
         with patch("redis.asyncio.from_url", return_value=mock_redis_client):
             await service.initialize()

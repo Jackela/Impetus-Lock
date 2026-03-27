@@ -8,19 +8,17 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import UTC, datetime, timedelta
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock, Mock
 
 import jwt
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from server.api.auth.middleware import AuthenticationMiddleware
 from server.api.middleware.rate_limit import RateLimitMiddleware
-from server.infrastructure.rate_limiting import RateLimiter, limiter
+from server.infrastructure.rate_limiting import RateLimiter
 from server.infrastructure.security.jwt_handler import JWTHandler
 
 
@@ -63,7 +61,7 @@ class TestJWTHandler:
         """Test token includes expiration time."""
         before_create = datetime.utcnow()
         token = JWTHandler.create_token("user_123")
-        after_create = datetime.utcnow()
+        datetime.utcnow()
 
         payload = JWTHandler.verify_token(token)
         exp_timestamp = payload["exp"]
@@ -555,7 +553,6 @@ class TestSecurityEdgeCases:
         """Test JWT creation and verification performance."""
         monkeypatch.setenv("JWT_SECRET", "test-secret")
 
-        import time
 
         start = time.time()
         for _ in range(100):

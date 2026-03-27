@@ -7,9 +7,10 @@ for testing WebSocket infrastructure without actual network connections.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
@@ -137,10 +138,8 @@ async def connected_room(
     yield room, mock_websocket
 
     # Cleanup
-    try:
+    with contextlib.suppress(Exception):
         await connection_manager.disconnect("test_room", "user_1")
-    except Exception:
-        pass
 
 
 @pytest_asyncio.fixture
@@ -173,10 +172,8 @@ async def multi_user_room(
 
     # Cleanup
     for i in range(3):
-        try:
+        with contextlib.suppress(Exception):
             await connection_manager.disconnect("multi_room", f"user_{i}")
-        except Exception:
-            pass
 
 
 @pytest.fixture

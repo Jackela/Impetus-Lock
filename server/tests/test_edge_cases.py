@@ -7,14 +7,14 @@ concurrent requests, and property-based invariants.
 from __future__ import annotations
 
 import asyncio
-import string
 from typing import Any
 
 import pytest
 
 # Try to import hypothesis for property-based testing
 try:
-    from hypothesis import HealthCheck, given, settings, strategies as st
+    from hypothesis import HealthCheck, given, settings
+    from hypothesis import strategies as st
 
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
@@ -40,6 +40,7 @@ class TestEmptyInputs:
     async def test_empty_task_content(self) -> None:
         """Test creating task with empty content."""
         from fastapi.testclient import TestClient
+
         from server.api.main import app
         from server.api.routes import tasks as tasks_module
         from server.infrastructure.persistence.in_memory_task_repository import (
@@ -71,6 +72,7 @@ class TestEmptyInputs:
     async def test_empty_context_intervention(self) -> None:
         """Test intervention with empty context."""
         from fastapi.testclient import TestClient
+
         from server.api.main import app
 
         client = TestClient(app)
@@ -92,7 +94,6 @@ class TestEmptyInputs:
     def test_empty_string_in_presence_update(self) -> None:
         """Test presence update with empty string values."""
         from server.infrastructure.websocket.connection_manager import (
-            ConnectionManager,
             UserPresence,
         )
 
@@ -126,6 +127,7 @@ class TestVeryLongInputs:
     async def test_long_context_intervention(self) -> None:
         """Test intervention with very long context."""
         from fastapi.testclient import TestClient
+
         from server.api.main import app
 
         long_context = "测试内容。" * 1000  # ~5000 characters
@@ -151,6 +153,7 @@ class TestVeryLongInputs:
     async def test_long_task_content(self) -> None:
         """Test creating task with very long content."""
         from fastapi.testclient import TestClient
+
         from server.api.main import app
         from server.api.routes import tasks as tasks_module
         from server.infrastructure.persistence.in_memory_task_repository import (
@@ -211,6 +214,7 @@ class TestUnicodeAndEmoji:
     async def test_unicode_in_task_content(self) -> None:
         """Test unicode content in tasks."""
         from fastapi.testclient import TestClient
+
         from server.api.main import app
         from server.api.routes import tasks as tasks_module
         from server.infrastructure.persistence.in_memory_task_repository import (
@@ -244,11 +248,11 @@ class TestUnicodeAndEmoji:
     @pytest.mark.asyncio
     async def test_unicode_in_username(self) -> None:
         """Test unicode in WebSocket usernames."""
-        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
         from server.infrastructure.websocket.connection_manager import ConnectionManager
+        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
 
         cm = ConnectionManager()
-        ws = MockWebSocket()
+        MockWebSocket()
 
         unicode_names = [
             "用户一",
@@ -283,6 +287,7 @@ class TestConcurrentRequests:
     async def test_concurrent_task_creation(self) -> None:
         """Test creating multiple tasks concurrently."""
         from fastapi.testclient import TestClient
+
         from server.api.main import app
         from server.api.routes import tasks as tasks_module
         from server.infrastructure.persistence.in_memory_task_repository import (
@@ -320,8 +325,8 @@ class TestConcurrentRequests:
     @pytest.mark.asyncio
     async def test_concurrent_websocket_connections(self) -> None:
         """Test multiple concurrent WebSocket connections."""
-        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
         from server.infrastructure.websocket.connection_manager import ConnectionManager
+        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
 
         cm = ConnectionManager()
 
@@ -339,8 +344,8 @@ class TestConcurrentRequests:
     @pytest.mark.asyncio
     async def test_concurrent_broadcast(self) -> None:
         """Test concurrent broadcasts to room."""
-        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
         from server.infrastructure.websocket.connection_manager import ConnectionManager
+        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
 
         cm = ConnectionManager()
 
@@ -368,8 +373,8 @@ class TestConcurrentRequests:
     @pytest.mark.asyncio
     async def test_concurrent_room_operations(self) -> None:
         """Test concurrent room operations."""
-        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
         from server.infrastructure.websocket.connection_manager import ConnectionManager
+        from tests.unit.infrastructure.websocket.conftest import MockWebSocket
 
         cm = ConnectionManager()
 

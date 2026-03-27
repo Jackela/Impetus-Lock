@@ -7,9 +7,10 @@ and cross-server synchronization capabilities.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import pytest_asyncio
@@ -75,7 +76,9 @@ class TestRedisPubSubManagerConnection:
         """Test connection failure raises exception."""
         manager = RedisPubSubManager()
 
-        with patch("redis.asyncio.from_url", side_effect=ConnectionError("Redis down")):
+        with patch("redis.asyncio.from_url", side_effect=ConnectionError("Redis down")), \
+             pytest.raises(ConnectionError, match="Redis down"):
+            await manager.connect()
             with pytest.raises(ConnectionError, match="Redis down"):
                 await manager.connect()
 
@@ -296,7 +299,7 @@ class TestRedisPubSubManagerListening:
                 await asyncio.wait_for(manager._listen(), timeout=1.0)
             except asyncio.CancelledError:
                 pass
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
 
     @pytest.mark.asyncio
@@ -330,10 +333,8 @@ class TestRedisPubSubManagerListening:
             await manager.subscribe("test_channel", handler)
 
             manager._running = True
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(manager._listen(), timeout=1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
     @pytest.mark.asyncio
     async def test_listen_handler_error(
@@ -364,10 +365,8 @@ class TestRedisPubSubManagerListening:
             await manager.subscribe("test_channel", handler)
 
             manager._running = True
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(manager._listen(), timeout=1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
             # Should not raise - error is logged
 
 
@@ -566,10 +565,8 @@ class TestRedisPubSubManagerEdgeCases:
             await manager.subscribe("test_channel", handler)
 
             manager._running = True
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(manager._listen(), timeout=1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
     @pytest.mark.asyncio
     async def test_unicode_in_messages(
@@ -604,10 +601,8 @@ class TestRedisPubSubManagerEdgeCases:
             await manager.subscribe("test_channel", handler)
 
             manager._running = True
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(manager._listen(), timeout=1.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
     @pytest.mark.asyncio
     async def test_very_large_message(
@@ -641,10 +636,8 @@ class TestRedisPubSubManagerEdgeCases:
             await manager.subscribe("test_channel", handler)
 
             manager._running = True
-            try:
+            with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(manager._listen(), timeout=2.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
 
     @pytest.mark.asyncio
     async def test_concurrent_subscriptions(
@@ -672,7 +665,7 @@ class TestRedisPubSubManagerEdgeCases:
         mock_redis_client: Mock,
     ) -> None:
         """Test rapid connect/disconnect cycles."""
-        for i in range(5):
+        for _i in range(5):
             manager = RedisPubSubManager()
 
             with patch("redis.asyncio.from_url", return_value=mock_redis_client):
