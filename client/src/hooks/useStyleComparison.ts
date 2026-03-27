@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback } from "react";
-import type { StyleVector, StyleComparisonResponse } from "../services/api/styleComparisonClient";
+import type { StyleComparisonResponse } from "../services/api/styleComparisonClient";
 import { compareStyles } from "../services/api/styleComparisonClient";
 import type { StyleHistoryRecord } from "../services/api/styleHistoryClient";
 

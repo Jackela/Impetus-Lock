@@ -11,7 +11,9 @@
  * @module services/api/styleClient
  */
 
-import type { StyleVector, StyleAnalysisResponse, StyleApplyResponse } from "./types";
+import type { StyleAnalysisResponse, StyleApplyResponse } from "./types";
+
+export type { StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
 export type { StyleVector, StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
