@@ -38,6 +38,8 @@ router = APIRouter(prefix="/collaboration", tags=["collaboration"])
 
 # Initialize Redis pub/sub and collaboration service
 redis_pubsub = RedisPubSubManager()
+connection_manager = ConnectionManager()
+collab_service = CollaborationService(connection_manager, redis_pubsub)
 
 
 def get_connection_manager() -> ConnectionManager:
@@ -47,9 +49,6 @@ def get_connection_manager() -> ConnectionManager:
         ConnectionManager instance.
     """
     return ConnectionManager()
-
-
-collab_service: CollaborationService | None = None
 
 
 async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:
@@ -160,9 +159,6 @@ async def collaboration_websocket(
     if not await check_document_access(user_id, document_id):
         await websocket.close(code=4003, reason="Access denied")
         return
-
-    # Initialize collaboration service
-    collab_service = CollaborationService(connection_manager, redis_pubsub)
 
     # Join room
     room = await connection_manager.connect(websocket, document_id, user_id, username)
