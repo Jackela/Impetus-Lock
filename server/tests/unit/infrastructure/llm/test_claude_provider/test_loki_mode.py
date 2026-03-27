@@ -155,4 +155,9 @@ class TestClaudeProviderLokiMode:
 
         assert response.action == "rewrite"
         assert response.content == "重写的内容"
+        # Anchor is calculated as AnchorRange(from_=max(0, cursor_pos-120), to=cursor_pos)
+        # With selection_to=100: from_=max(0, 100-120)=0, to=100
+        assert response.anchor.to_ == 100
+        assert response.anchor.from_ == 0
+        assert response.content == "重写的内容"
         assert response.anchor.from_ == 100
