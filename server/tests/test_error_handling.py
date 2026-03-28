@@ -62,7 +62,7 @@ class TestRetryLogic:
 
             # Return success on third try
             mock_message = MagicMock()
-            text_block = TextBlock(text='{"action": "provoke", "content": "test"}', type='text')
+            text_block = TextBlock(text='{"action": "provoke", "content": "test"}', type="text")
             mock_message.content = [text_block]
             mock_message.stop_reason = "end_turn"
             mock_message.usage.input_tokens = 100
