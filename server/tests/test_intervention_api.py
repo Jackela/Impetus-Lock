@@ -225,9 +225,10 @@ class TestInterventionAPIContract:
             issued_at=datetime.now(UTC),
             source="muse",
         )
+        # Patch debug provider since LLM_DEFAULT_PROVIDER=debug in conftest
         mock_path = (
-            "server.infrastructure.llm.instructor_provider."
-            "InstructorLLMProvider.generate_intervention"
+            "server.infrastructure.llm.debug_provider."
+            "DebugLLMProvider.generate_intervention"
         )
 
         headers = {
@@ -300,6 +301,8 @@ class TestInterventionAPIContract:
         """API should raise 503 when no server key and no BYOK override."""
 
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("LLM_DEFAULT_PROVIDER", raising=False)
+        monkeypatch.delenv("LLM_ALLOW_DEBUG_PROVIDER", raising=False)
         app.state.provider_registry = ProviderRegistry()
 
         headers = {
