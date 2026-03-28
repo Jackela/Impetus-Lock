@@ -79,7 +79,7 @@ jobs:
           cache-dependency-path: client/package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run Vitest unit tests
         run: npm run test -- --run --coverage

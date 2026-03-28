@@ -142,12 +142,6 @@ class GeminiLLMProvider(BasePromptLLMProvider):
 
         super().__init__(model=model, temperature=temperature)
 
-        # Resolve API key from parameter or environment variable
-        resolved_api_key = api_key or os.environ.get("GEMINI_API_KEY")
-        if not resolved_api_key:
-            raise ValueError("API key is required")
-
-        super().__init__(model=model, temperature=temperature)
         self.api_key = resolved_api_key
 
         # Get default safety settings if none provided

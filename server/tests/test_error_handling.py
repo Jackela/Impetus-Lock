@@ -26,6 +26,7 @@ pytest.importorskip("anthropic", reason="anthropic module not installed")
 
 try:
     from anthropic import AuthenticationError, RateLimitError
+    from anthropic.types import TextBlock
 
     _ = AuthenticationError  # Mark as used
     _ = RateLimitError  # Mark as used
@@ -61,7 +62,8 @@ class TestRetryLogic:
 
             # Return success on third try
             mock_message = MagicMock()
-            mock_message.content = [MagicMock(text='{"action": "provoke", "content": "test"}')]
+            text_block = TextBlock(text='{"action": "provoke", "content": "test"}', type='text')
+            mock_message.content = [text_block]
             mock_message.stop_reason = "end_turn"
             mock_message.usage.input_tokens = 100
             mock_message.usage.output_tokens = 50

@@ -218,7 +218,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./client
-        run: npm install
+        run: npm ci
 
       - name: Run Vitest unit tests
         working-directory: ./client
