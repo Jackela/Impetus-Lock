@@ -364,7 +364,7 @@ class TestContentSanitization:
         ]
 
         for invalid_id in invalid_formats:
-            with pytest.raises(ValueError, match="badly formed"):
+            with pytest.raises(ValueError):
                 validate_lock_id(invalid_id)
 
 

@@ -63,6 +63,7 @@ def mock_llm_provider() -> Generator[None, None, None]:
     )
 
     mock_paths = [
+        "server.infrastructure.llm.debug_provider.DebugLLMProvider.generate_intervention",
         "server.infrastructure.llm.instructor_provider.InstructorLLMProvider.generate_intervention",
         "server.infrastructure.llm.anthropic_provider.AnthropicLLMProvider.generate_intervention",
         "server.infrastructure.llm.gemini_provider.GeminiLLMProvider.generate_intervention",

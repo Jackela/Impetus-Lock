@@ -22,17 +22,30 @@ class TestProviderRegistry:
         self,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        """Test that get_provider returns None when no API keys and debug disabled."""
+        # Note: conftest.py sets LLM_ALLOW_DEBUG_PROVIDER=1 and LLM_DEFAULT_PROVIDER=debug
+        # so we must explicitly remove these to test the no-keys scenario
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        monkeypatch.delenv("LLM_ALLOW_DEBUG_PROVIDER", raising=False)
+        monkeypatch.delenv("LLM_DEFAULT_PROVIDER", raising=False)
 
         registry = ProviderRegistry()
         registry.reload()
 
+        # Without API keys AND without debug provider enabled, should return None
         assert registry.get_provider(allow_blank=True) is None
 
     def test_missing_config_raises_when_no_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that get_provider raises when no API keys, no debug, and allow_blank=False."""
+        # Remove API keys and disable debug provider
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        monkeypatch.delenv("LLM_ALLOW_DEBUG_PROVIDER", raising=False)
+        monkeypatch.delenv("LLM_DEFAULT_PROVIDER", raising=False)
+
         registry = ProviderRegistry()
         registry.reload()
 
@@ -45,6 +58,7 @@ class TestProviderRegistry:
         self,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        """Test that override can build provider with custom API key."""
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         registry = ProviderRegistry()
         registry.reload()
@@ -57,6 +71,7 @@ class TestProviderRegistry:
         assert isinstance(provider, AnthropicLLMProvider)
 
     def test_default_provider_cached(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that default provider is cached."""
         monkeypatch.setenv("OPENAI_API_KEY", "sk-default")
         registry = ProviderRegistry()
         registry.reload()
@@ -68,11 +83,16 @@ class TestProviderRegistry:
         assert os.getenv("OPENAI_API_KEY") == "sk-default"
 
     def test_debug_provider_requires_flag(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that debug provider requires explicit flag to be enabled."""
+        # Disable debug provider and testing mode
         monkeypatch.delenv("LLM_ALLOW_DEBUG_PROVIDER", raising=False)
         monkeypatch.delenv("TESTING", raising=False)
+        monkeypatch.delenv("LLM_DEFAULT_PROVIDER", raising=False)
+
         registry = ProviderRegistry()
         registry.reload()
 
+        # Without the flag, requesting debug provider should raise
         with pytest.raises(LLMProviderError):
             registry.get_provider(
                 overrides=ProviderOverride(provider="debug"),
@@ -80,8 +100,11 @@ class TestProviderRegistry:
             )
 
     def test_debug_provider_available_when_enabled(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that debug provider works when explicitly enabled."""
         monkeypatch.setenv("LLM_ALLOW_DEBUG_PROVIDER", "1")
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("LLM_DEFAULT_PROVIDER", raising=False)
+
         registry = ProviderRegistry()
         registry.reload()
 

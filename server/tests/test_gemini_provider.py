@@ -51,28 +51,43 @@ def mock_genai() -> Generator[Mock, None, None]:
     mock_types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE = "BLOCK_MEDIUM_AND_ABOVE"
     mock_types.HarmBlockThreshold.BLOCK_ONLY_HIGH = "BLOCK_ONLY_HIGH"
 
-    mock_types.GenerationConfig = Mock()
-    mock_types.BlockedPromptException = Exception
-    mock_types.StopCandidateException = Exception
-    mock_types.InvalidArgument = Exception
-    mock_genai.types = mock_types
-    mock_types = Mock()
-    mock_types.HarmBlockThreshold = Mock()
-    mock_types.HarmCategory = Mock()
-    mock_types.GenerationConfig = Mock()
-    mock_types.BlockedPromptException = Exception
-    mock_types.StopCandidateException = Exception
-    mock_types.InvalidArgument = Exception
+    # Create proper exception classes that inherit from Exception
+    class BlockedPromptException(Exception):
+        """Mock BlockedPromptException."""
+        pass
+
+    class StopCandidateException(Exception):
+        """Mock StopCandidateException."""
+        pass
+
+    class InvalidArgument(Exception):
+        """Mock InvalidArgument."""
+        pass
+
+    mock_types.BlockedPromptException = BlockedPromptException
+    mock_types.StopCandidateException = StopCandidateException
+    mock_types.InvalidArgument = InvalidArgument
     mock_genai.types = mock_types
 
     # Create mock api_key submodule with error classes
+    class InvalidAPIKeyError(Exception):
+        pass
+    class PermissionDeniedError(Exception):
+        pass
+    class ResourceExhaustedError(Exception):
+        pass
+    class InternalServerError(Exception):
+        pass
+    class UnavailableError(Exception):
+        pass
+
     mock_api_key = Mock()
     mock_api_errors = Mock()
-    mock_api_errors.InvalidAPIKeyError = Exception
-    mock_api_errors.PermissionDeniedError = Exception
-    mock_api_errors.ResourceExhaustedError = Exception
-    mock_api_errors.InternalServerError = Exception
-    mock_api_errors.UnavailableError = Exception
+    mock_api_errors.InvalidAPIKeyError = InvalidAPIKeyError
+    mock_api_errors.PermissionDeniedError = PermissionDeniedError
+    mock_api_errors.ResourceExhaustedError = ResourceExhaustedError
+    mock_api_errors.InternalServerError = InternalServerError
+    mock_api_errors.UnavailableError = UnavailableError
     mock_api_key.api_errors = mock_api_errors
     mock_genai.api_key = mock_api_key
 
@@ -246,8 +261,7 @@ class TestGeminiProviderErrors:
         with pytest.raises(LLMProviderError) as exc_info:
             provider._complete(system_prompt="System prompt", user_message="User message")
 
-        # The generic exception handler catches this
-        assert exc_info.value.code == "llm_api_error"
+        assert exc_info.value.code == "quota_exceeded"
         assert exc_info.value.provider == "gemini"
 
     def test_empty_candidates_error(self, provider: GeminiLLMProvider) -> None:
