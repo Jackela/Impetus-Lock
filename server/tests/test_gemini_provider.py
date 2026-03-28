@@ -436,7 +436,10 @@ class TestGeminiProviderDefaultSafetySettings:
         settings = provider._get_default_safety_settings()
 
         assert HarmCategory.HARM_CATEGORY_HARASSMENT in settings
-        assert settings[HarmCategory.HARM_CATEGORY_HARASSMENT] == HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+        assert (
+            settings[HarmCategory.HARM_CATEGORY_HARASSMENT]
+            == HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE
+        )
 
 
 class TestGeminiProviderPromptConstruction:
