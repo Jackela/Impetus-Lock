@@ -100,7 +100,7 @@ class TestRetryLogic:
 
         call_count = 0
 
-        async def mock_create(*args, **kwargs) -> Any:
+        def mock_create(*args, **kwargs) -> Any:
             nonlocal call_count
             call_count += 1
             raise AuthenticationError(
@@ -117,7 +117,10 @@ class TestRetryLogic:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError) as exc_info:
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
             assert exc_info.value.code == "invalid_api_key"
             assert call_count == 1  # Should not retry
@@ -138,19 +141,17 @@ class TestFallbackMechanisms:
         with (
             patch.object(
                 manager,
-                "_create_async_engine",
+                "_create_engine",
                 side_effect=Exception("DB down"),
             ),
-            contextlib.suppress(Exception),
         ):
             await manager.initialize()
         with (
             patch.object(
                 manager,
-                "_create_async_engine",
+                "_create_engine",
                 side_effect=Exception("DB down"),
             ),
-            contextlib.suppress(Exception),
         ):
             await manager.initialize()
             # Should fallback gracefully
@@ -169,6 +170,7 @@ class TestFallbackMechanisms:
         allowed = await limiter.is_allowed("test_key", "10/minute")
         assert allowed is True
 
+
     @pytest.mark.asyncio
     async def test_llm_provider_fallback(self) -> None:
         """Test LLM provider fallback mechanism."""
@@ -176,13 +178,12 @@ class TestFallbackMechanisms:
 
         registry = ProviderRegistry()
 
-        # When primary fails, should try fallback
-        with patch.dict("os.environ", {}, clear=True):
-            # No API keys set
-            providers = registry.get_available_providers()
+        # When no API keys set but debug provider allowed in test mode
+        provider = registry.get_provider(allow_blank=True)
 
-            # Should have debug provider available
-            assert any(p.provider_name == "debug" for p in providers)
+        # Should return debug provider in test mode
+        assert provider is not None
+        assert provider.provider_name == "debug"
 
 
 class TestNetworkFailureHandling:
@@ -201,8 +202,9 @@ class TestNetworkFailureHandling:
             use_instructor=False,
         )
 
-        async def slow_create(*args, **kwargs) -> Any:
-            await asyncio.sleep(100)  # Very long timeout
+        def slow_create(*args, **kwargs) -> Any:
+            import time
+            time.sleep(1)  # Very long timeout
             return MagicMock()
 
         with (
@@ -214,8 +216,13 @@ class TestNetworkFailureHandling:
             pytest.raises(asyncio.TimeoutError),
         ):
             # Should timeout
+            # Should timeout - wrap sync method in to_thread for asyncio.wait_for
             await asyncio.wait_for(
-                provider.generate("system", "user"),
+                asyncio.to_thread(
+                    provider.generate_intervention,
+                    context="Test context for writing intervention",
+                    mode="muse",
+                ),
                 timeout=0.1,
             )
 
@@ -232,7 +239,7 @@ class TestNetworkFailureHandling:
             use_instructor=False,
         )
 
-        async def reset_error(*args, **kwargs) -> Any:
+        def reset_error(*args, **kwargs) -> Any:
             raise ConnectionResetError("Connection reset by peer")
 
         with patch.object(
@@ -243,7 +250,10 @@ class TestNetworkFailureHandling:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError):
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
     @pytest.mark.asyncio
     async def test_dns_failure_handling(self) -> None:
@@ -258,7 +268,7 @@ class TestNetworkFailureHandling:
             use_instructor=False,
         )
 
-        async def dns_error(*args, **kwargs) -> Any:
+        def dns_error(*args, **kwargs) -> Any:
             raise OSError("Name or service not known")
 
         with patch.object(
@@ -269,7 +279,10 @@ class TestNetworkFailureHandling:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError):
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
 
 class TestErrorScenarios:
@@ -289,6 +302,8 @@ class TestErrorScenarios:
         )
 
         mock_message = MagicMock()
+        text_block = TextBlock(text="not valid json", type="text")
+        mock_message.content = [text_block]
         mock_message.content = [MagicMock(text="not valid json")]
         mock_message.stop_reason = "end_turn"
         mock_message.usage.input_tokens = 100
@@ -302,7 +317,10 @@ class TestErrorScenarios:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError) as exc_info:
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
             assert (
                 "parse" in exc_info.value.message.lower()
@@ -335,7 +353,10 @@ class TestErrorScenarios:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError) as exc_info:
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
             assert exc_info.value.code == "invalid_response"
 
@@ -358,7 +379,7 @@ class TestErrorScenarios:
         response_mock.status_code = 429
         response_mock.headers = {"Retry-After": "60"}
 
-        async def rate_limit_error(*args, **kwargs) -> Any:
+        def rate_limit_error(*args, **kwargs) -> Any:
             raise RateLimitError(
                 message="Rate limit exceeded",
                 response=response_mock,
@@ -373,7 +394,10 @@ class TestErrorScenarios:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError) as exc_info:
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
             assert exc_info.value.code == "quota_exceeded"
             assert exc_info.value.status_code == 402
@@ -397,7 +421,7 @@ class TestEdgeCases:
 
         error_count = 0
 
-        async def sometimes_fail(*args, **kwargs) -> Any:
+        def sometimes_fail(*args, **kwargs) -> Any:
             nonlocal error_count
             error_count += 1
             if error_count % 2 == 0:
@@ -415,8 +439,15 @@ class TestEdgeCases:
             "create",
             side_effect=sometimes_fail,
         ):
-            # Run concurrent requests
-            tasks = [provider.generate("system", "user") for _ in range(4)]
+            # Run concurrent requests using to_thread for sync method
+            tasks = [
+                asyncio.to_thread(
+                    provider.generate_intervention,
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
+                for _ in range(4)
+            ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Should have mix of successes and errors
@@ -452,7 +483,7 @@ class TestEdgeCases:
 
         long_message = "Error: " + "x" * 100000
 
-        async def error_with_long_message(*args, **kwargs) -> Any:
+        def error_with_long_message(*args, **kwargs) -> Any:
             raise ConnectionError(long_message)
 
         with patch.object(
@@ -463,7 +494,10 @@ class TestEdgeCases:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError):
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
     @pytest.mark.asyncio
     async def test_unicode_in_error_messages(self) -> None:
@@ -480,7 +514,7 @@ class TestEdgeCases:
 
         unicode_error = "错误 🎌 エラー 🎉"
 
-        async def error_with_unicode(*args, **kwargs) -> Any:
+        def error_with_unicode(*args, **kwargs) -> Any:
             raise ConnectionError(unicode_error)
 
         with patch.object(
@@ -491,7 +525,10 @@ class TestEdgeCases:
             from server.domain.errors import LLMProviderError
 
             with pytest.raises(LLMProviderError):
-                await provider.generate("system", "user")
+                provider.generate_intervention(
+                    context="Test context for writing intervention",
+                    mode="muse",
+                )
 
 
 class TestGracefulDegradation:

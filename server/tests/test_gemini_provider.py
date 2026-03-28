@@ -31,8 +31,44 @@ if TYPE_CHECKING:
 @pytest.fixture
 def mock_genai() -> Generator[Mock, None, None]:
     """Mock the google.generativeai module."""
-    with patch("server.infrastructure.llm.gemini_provider.genai") as mock:
-        yield mock
+    # Create the main mock module
+    mock_genai = Mock()
+    mock_genai.configure = Mock()
+    mock_genai.GenerativeModel = Mock()
+
+    # Create mock types submodule
+    mock_types = Mock()
+    mock_types.HarmBlockThreshold = Mock()
+    mock_types.HarmCategory = Mock()
+    mock_types.GenerationConfig = Mock()
+    mock_types.BlockedPromptException = Exception
+    mock_types.StopCandidateException = Exception
+    mock_types.InvalidArgument = Exception
+    mock_genai.types = mock_types
+
+    # Create mock api_key submodule with error classes
+    mock_api_key = Mock()
+    mock_api_errors = Mock()
+    mock_api_errors.InvalidAPIKeyError = Exception
+    mock_api_errors.PermissionDeniedError = Exception
+    mock_api_errors.ResourceExhaustedError = Exception
+    mock_api_errors.InternalServerError = Exception
+    mock_api_errors.UnavailableError = Exception
+    mock_api_key.api_errors = mock_api_errors
+    mock_genai.api_key = mock_api_key
+
+    # Patch sys.modules so local imports find our mock
+    # Need to include submodules so 'from google.generativeai.types import X' works
+    with patch.dict(
+        "sys.modules",
+        {
+            "google.generativeai": mock_genai,
+            "google.generativeai.types": mock_types,
+            "google.generativeai.api_key": mock_api_key,
+            "google.generativeai.api_key.api_errors": mock_api_errors,
+        },
+    ):
+        yield mock_genai
 
 
 @pytest.fixture
