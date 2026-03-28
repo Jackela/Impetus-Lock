@@ -8,6 +8,22 @@ on:
     paths: ["server/**", ".github/workflows/ci-server.yml"]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# Cancel previous runs for the same PR or branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    paths: ["server/**", ".github/workflows/ci-server.yml"]
+  pull_request:
+    branches: ["main"]
+    paths: ["server/**", ".github/workflows/ci-server.yml"]
+  workflow_dispatch:
+
 # Cancel previous runs for the same PR or branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
