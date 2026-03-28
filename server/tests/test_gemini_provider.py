@@ -38,19 +38,19 @@ def mock_genai() -> Generator[Mock, None, None]:
 
     # Create mock types submodule with proper enum values
     mock_types = Mock()
-    
+
     # Create mock enum classes for HarmCategory
     mock_types.HarmCategory = Mock()
     mock_types.HarmCategory.HARM_CATEGORY_HARASSMENT = "HARM_CATEGORY_HARASSMENT"
     mock_types.HarmCategory.HARM_CATEGORY_HATE_SPEECH = "HARM_CATEGORY_HATE_SPEECH"
     mock_types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT = "HARM_CATEGORY_SEXUALLY_EXPLICIT"
     mock_types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT = "HARM_CATEGORY_DANGEROUS_CONTENT"
-    
+
     # Create mock enum classes for HarmBlockThreshold
     mock_types.HarmBlockThreshold = Mock()
     mock_types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE = "BLOCK_MEDIUM_AND_ABOVE"
     mock_types.HarmBlockThreshold.BLOCK_ONLY_HIGH = "BLOCK_ONLY_HIGH"
-    
+
     mock_types.GenerationConfig = Mock()
     mock_types.BlockedPromptException = Exception
     mock_types.StopCandidateException = Exception

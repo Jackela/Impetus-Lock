@@ -170,7 +170,6 @@ class TestFallbackMechanisms:
         allowed = await limiter.is_allowed("test_key", "10/minute")
         assert allowed is True
 
-
     @pytest.mark.asyncio
     async def test_llm_provider_fallback(self) -> None:
         """Test LLM provider fallback mechanism."""
@@ -204,6 +203,7 @@ class TestNetworkFailureHandling:
 
         def slow_create(*args, **kwargs) -> Any:
             import time
+
             time.sleep(1)  # Very long timeout
             return MagicMock()
 
@@ -304,7 +304,6 @@ class TestErrorScenarios:
         mock_message = MagicMock()
         text_block = TextBlock(text="not valid json", type="text")
         mock_message.content = [text_block]
-        mock_message.content = [MagicMock(text="not valid json")]
         mock_message.stop_reason = "end_turn"
         mock_message.usage.input_tokens = 100
         mock_message.usage.output_tokens = 50
