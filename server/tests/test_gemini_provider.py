@@ -54,14 +54,17 @@ def mock_genai() -> Generator[Mock, None, None]:
     # Create proper exception classes that inherit from Exception
     class BlockedPromptException(Exception):
         """Mock BlockedPromptException."""
+
         pass
 
     class StopCandidateException(Exception):
         """Mock StopCandidateException."""
+
         pass
 
     class InvalidArgument(Exception):
         """Mock InvalidArgument."""
+
         pass
 
     mock_types.BlockedPromptException = BlockedPromptException
@@ -72,12 +75,16 @@ def mock_genai() -> Generator[Mock, None, None]:
     # Create mock api_key submodule with error classes
     class InvalidAPIKeyError(Exception):
         pass
+
     class PermissionDeniedError(Exception):
         pass
+
     class ResourceExhaustedError(Exception):
         pass
+
     class InternalServerError(Exception):
         pass
+
     class UnavailableError(Exception):
         pass
 
