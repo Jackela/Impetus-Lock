@@ -435,7 +435,7 @@ class TestGeminiProviderSupportedModels:
 class TestGeminiProviderDefaultSafetySettings:
     """Test default safety settings configuration."""
 
-    def test_default_safety_settings(self) -> None:
+    def test_default_safety_settings(self, mock_genai: Mock) -> None:
         """Default safety settings use medium thresholds."""
         from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
