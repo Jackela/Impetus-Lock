@@ -32,10 +32,62 @@ if TYPE_CHECKING:
 @pytest.fixture(autouse=True)
 def mock_genai() -> Generator[Mock, None, None]:
     """Mock the google.generativeai module for all tests in this file."""
-    with patch("google.generativeai") as mock:
-        mock.configure = Mock()
-        mock.GenerativeModel = Mock()
-        yield mock
+    import sys
+    from types import ModuleType
+    from unittest.mock import MagicMock
+
+    # Create a proper module structure for google.generativeai
+    mock_genai_module = ModuleType("google.generativeai")
+    mock_genai_module.configure = Mock()
+    mock_genai_module.GenerativeModel = Mock()
+
+    # Create types submodule
+    mock_types = ModuleType("google.generativeai.types")
+    mock_types.BlockedPromptException = type("BlockedPromptException", (Exception,), {})
+    mock_types.StopCandidateException = type("StopCandidateException", (Exception,), {})
+    mock_types.GenerationConfig = Mock
+    mock_types.HarmBlockThreshold = MagicMock()
+    mock_types.HarmCategory = MagicMock()
+    mock_types.InvalidArgument = type("InvalidArgument", (Exception,), {})
+    mock_genai_module.types = mock_types
+
+    # Create api_key submodule with exception classes
+    mock_api_key = ModuleType("google.generativeai.api_key")
+    mock_api_errors = ModuleType("google.generativeai.api_key.api_errors")
+    mock_api_errors.InvalidAPIKeyError = type("InvalidAPIKeyError", (Exception,), {})
+    mock_api_errors.PermissionDeniedError = type("PermissionDeniedError", (Exception,), {})
+    mock_api_errors.ResourceExhaustedError = type("ResourceExhaustedError", (Exception,), {})
+    mock_api_errors.InternalServerError = type("InternalServerError", (Exception,), {})
+    mock_api_errors.UnavailableError = type("UnavailableError", (Exception,), {})
+    mock_api_key.api_errors = mock_api_errors
+    mock_genai_module.api_key = mock_api_key
+
+    # Create google.api_core.exceptions
+    mock_api_core = ModuleType("google.api_core")
+    mock_exceptions = ModuleType("google.api_core.exceptions")
+    mock_exceptions.InvalidArgument = type("InvalidArgument", (Exception,), {})
+    mock_exceptions.ResourceExhausted = type("ResourceExhausted", (Exception,), {})
+    mock_exceptions.DeadlineExceeded = type("DeadlineExceeded", (Exception,), {})
+    mock_api_core.exceptions = mock_exceptions
+
+    # Create parent google module
+    mock_google = ModuleType("google")
+    mock_google.generativeai = mock_genai_module
+    mock_google.api_core = mock_api_core
+
+    # Patch sys.modules
+    with patch.dict(
+        sys.modules,
+        {
+            "google": mock_google,
+            "google.generativeai": mock_genai_module,
+            "google.generativeai.types": mock_types,
+            "google.generativeai.api_key": mock_api_key,
+            "google.api_core": mock_api_core,
+            "google.api_core.exceptions": mock_exceptions,
+        },
+    ):
+        yield mock_genai_module
 
 
 @pytest.fixture
@@ -161,9 +213,9 @@ class TestGeminiProviderErrors:
 
     def test_blocked_prompt_error(self, provider: GeminiLLMProvider) -> None:
         """BlockedPromptException maps to content_blocked error."""
-        from google.generativeai.types import BlockedPromptException
+        import google.generativeai as genai
 
-        provider._model.generate_content.side_effect = BlockedPromptException("Blocked")
+        provider._model.generate_content.side_effect = genai.types.BlockedPromptException("Blocked")
 
         with pytest.raises(LLMProviderError) as exc_info:
             provider._complete(system_prompt="System prompt", user_message="User message")
@@ -174,15 +226,13 @@ class TestGeminiProviderErrors:
 
     def test_invalid_api_key_error(self, provider: GeminiLLMProvider) -> None:
         """InvalidAPIKeyException maps to invalid_api_key error."""
-        from google.generativeai.types import InvalidArgument
+        from google.api_core.exceptions import InvalidArgument
 
-        # The SDK raises InvalidArgument for bad API keys
         provider._model.generate_content.side_effect = InvalidArgument("Invalid API key")
 
         with pytest.raises(LLMProviderError) as exc_info:
             provider._complete(system_prompt="System prompt", user_message="User message")
 
-        # The generic exception handler catches this
         assert exc_info.value.provider == "gemini"
 
     def test_quota_exceeded_error(self, provider: GeminiLLMProvider) -> None:
@@ -275,7 +325,6 @@ class TestGeminiProviderUtilities:
         text = "Hello, world! This is a test."
         count = provider.count_tokens(text)
 
-        # Should use fallback: len(text) // 4
         expected = len(text) // 4
         assert count == expected
 
@@ -306,7 +355,6 @@ class TestGeminiProviderStreaming:
 
     def test_stream_intervention_muse_mode(self, provider: GeminiLLMProvider) -> None:
         """Streaming works in Muse mode."""
-        # Create mock chunks
         chunks = [
             MagicMock(text='{"action": "'),
             MagicMock(text='provoke", "'),
@@ -399,7 +447,6 @@ class TestGeminiProviderPromptConstruction:
 
         provider._complete(system_prompt, user_message)
 
-        # Verify the call was made with combined prompt
         call_args = provider._model.generate_content.call_args
         full_prompt = call_args.kwargs.get("contents") or call_args[0][0]
 
@@ -421,6 +468,4 @@ class TestGeminiProviderPromptConstruction:
         gen_config = call_args.kwargs.get("generation_config")
 
         assert gen_config is not None
-        # Verify gen_config was called with expected parameters
-        # Since gen_config is a mock, we check it was passed as argument
         assert call_args.kwargs.get("generation_config") is not None
