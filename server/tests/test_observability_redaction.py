@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
 import pytest
-
-if TYPE_CHECKING:
-    from _pytest.logging import LogCaptureFixture
-    from _pytest.monkeypatch import MonkeyPatch
+from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 
 
 # Skip these tests in CI environment - they require full app initialization
@@ -18,7 +15,7 @@ if TYPE_CHECKING:
     os.getenv("CI") == "true",
     reason="Test requires full app initialization with database - skipped in CI",
 )
-def test_byok_headers_never_logged(monkeypatch: "MonkeyPatch", caplog: "LogCaptureFixture") -> None:
+def test_byok_headers_never_logged(monkeypatch: MonkeyPatch, caplog: LogCaptureFixture) -> None:
     """Test that sensitive API keys don't appear in logs."""
     from fastapi.testclient import TestClient
 
