@@ -14,12 +14,86 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 import warnings
 from collections.abc import AsyncGenerator, Generator
 from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock
 
 import pytest
 import pytest_asyncio
+
+# Setup mock for google.generativeai BEFORE any imports
+_mock_genai = Mock()
+_mock_genai.configure = Mock()
+_mock_genai.GenerativeModel = Mock()
+_mock_genai.__spec__ = None
+
+_mock_types = Mock()
+_mock_types.HarmCategory = Mock()
+_mock_types.HarmCategory.HARM_CATEGORY_HARASSMENT = "HARM_CATEGORY_HARASSMENT"
+_mock_types.HarmCategory.HARM_CATEGORY_HATE_SPEECH = "HARM_CATEGORY_HATE_SPEECH"
+_mock_types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT = "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+_mock_types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT = "HARM_CATEGORY_DANGEROUS_CONTENT"
+_mock_types.HarmBlockThreshold = Mock()
+_mock_types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE = "BLOCK_MEDIUM_AND_ABOVE"
+_mock_types.HarmBlockThreshold.BLOCK_ONLY_HIGH = "BLOCK_ONLY_HIGH"
+
+
+class _BlockedPromptException(Exception):
+    pass
+
+
+class _StopCandidateException(Exception):
+    pass
+
+
+class _InvalidArgument(Exception):
+    pass
+
+
+_mock_types.BlockedPromptException = _BlockedPromptException
+_mock_types.StopCandidateException = _StopCandidateException
+_mock_types.InvalidArgument = _InvalidArgument
+_mock_genai.types = _mock_types
+
+_mock_api_key = Mock()
+_mock_api_errors = Mock()
+
+
+class _InvalidAPIKeyError(Exception):
+    pass
+
+
+class _PermissionDeniedError(Exception):
+    pass
+
+
+class _ResourceExhaustedError(Exception):
+    pass
+
+
+class _InternalServerError(Exception):
+    pass
+
+
+class _UnavailableError(Exception):
+    pass
+
+
+_mock_api_errors.InvalidAPIKeyError = _InvalidAPIKeyError
+_mock_api_errors.PermissionDeniedError = _PermissionDeniedError
+_mock_api_errors.ResourceExhaustedError = _ResourceExhaustedError
+_mock_api_errors.InternalServerError = _InternalServerError
+_mock_api_errors.UnavailableError = _UnavailableError
+_mock_api_key.api_errors = _mock_api_errors
+_mock_genai.api_key = _mock_api_key
+
+sys.modules["google"] = Mock()
+sys.modules["google.generativeai"] = _mock_genai
+sys.modules["google.generativeai.types"] = _mock_types
+sys.modules["google.generativeai.api_key"] = _mock_api_key
+sys.modules["google.generativeai.api_key.api_errors"] = _mock_api_errors
 
 # Force TESTING mode BEFORE any server imports
 os.environ["TESTING"] = "1"
