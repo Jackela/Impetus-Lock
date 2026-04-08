@@ -27,7 +27,6 @@ import pytest_asyncio
 _mock_genai = Mock()
 _mock_genai.configure = Mock()
 _mock_genai.GenerativeModel = Mock()
-_mock_genai.__spec__ = None
 
 _mock_types = Mock()
 _mock_types.HarmCategory = Mock()
@@ -89,11 +88,17 @@ _mock_api_errors.UnavailableError = _UnavailableError
 _mock_api_key.api_errors = _mock_api_errors
 _mock_genai.api_key = _mock_api_key
 
-sys.modules["google"] = Mock()
-sys.modules["google.generativeai"] = _mock_genai
-sys.modules["google.generativeai.types"] = _mock_types
-sys.modules["google.generativeai.api_key"] = _mock_api_key
-sys.modules["google.generativeai.api_key.api_errors"] = _mock_api_errors
+# Inject mock into sys.modules (only if not already present)
+if "google" not in sys.modules:
+    sys.modules["google"] = Mock()
+if "google.generativeai" not in sys.modules:
+    sys.modules["google.generativeai"] = _mock_genai
+if "google.generativeai.types" not in sys.modules:
+    sys.modules["google.generativeai.types"] = _mock_types
+if "google.generativeai.api_key" not in sys.modules:
+    sys.modules["google.generativeai.api_key"] = _mock_api_key
+if "google.generativeai.api_key.api_errors" not in sys.modules:
+    sys.modules["google.generativeai.api_key.api_errors"] = _mock_api_errors
 
 # Force TESTING mode BEFORE any server imports
 os.environ["TESTING"] = "1"
