@@ -32,47 +32,40 @@ if TYPE_CHECKING:
 def mock_genai() -> Generator[Mock, None, None]:
     """Mock the google.generativeai module."""
     # Create the main mock module
-    mock_genai = Mock()
-    mock_genai.configure = Mock()
-    mock_genai.GenerativeModel = Mock()
+    mock_genai_module = Mock()
+    mock_genai_module.configure = Mock()
+    mock_genai_module.GenerativeModel = Mock()
 
-    # Create mock types submodule with proper enum values
+    # Create mock types submodule
     mock_types = Mock()
 
-    # Create mock enum classes for HarmCategory
+    # Create mock enum classes
     mock_types.HarmCategory = Mock()
     mock_types.HarmCategory.HARM_CATEGORY_HARASSMENT = "HARM_CATEGORY_HARASSMENT"
     mock_types.HarmCategory.HARM_CATEGORY_HATE_SPEECH = "HARM_CATEGORY_HATE_SPEECH"
     mock_types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT = "HARM_CATEGORY_SEXUALLY_EXPLICIT"
     mock_types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT = "HARM_CATEGORY_DANGEROUS_CONTENT"
 
-    # Create mock enum classes for HarmBlockThreshold
     mock_types.HarmBlockThreshold = Mock()
     mock_types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE = "BLOCK_MEDIUM_AND_ABOVE"
     mock_types.HarmBlockThreshold.BLOCK_ONLY_HIGH = "BLOCK_ONLY_HIGH"
 
-    # Create proper exception classes that inherit from Exception
+    # Create exception classes
     class BlockedPromptException(Exception):
-        """Mock BlockedPromptException."""
-
         pass
 
     class StopCandidateException(Exception):
-        """Mock StopCandidateException."""
-
         pass
 
     class InvalidArgument(Exception):
-        """Mock InvalidArgument."""
-
         pass
 
     mock_types.BlockedPromptException = BlockedPromptException
     mock_types.StopCandidateException = StopCandidateException
     mock_types.InvalidArgument = InvalidArgument
-    mock_genai.types = mock_types
+    mock_genai_module.types = mock_types
 
-    # Create mock api_key submodule with error classes
+    # Create api_key submodule
     class InvalidAPIKeyError(Exception):
         pass
 
@@ -96,20 +89,14 @@ def mock_genai() -> Generator[Mock, None, None]:
     mock_api_errors.InternalServerError = InternalServerError
     mock_api_errors.UnavailableError = UnavailableError
     mock_api_key.api_errors = mock_api_errors
-    mock_genai.api_key = mock_api_key
+    mock_genai_module.api_key = mock_api_key
 
-    # Patch sys.modules so local imports find our mock
-    # Need to include submodules so 'from google.generativeai.types import X' works
-    with patch.dict(
-        "sys.modules",
-        {
-            "google.generativeai": mock_genai,
-            "google.generativeai.types": mock_types,
-            "google.generativeai.api_key": mock_api_key,
-            "google.generativeai.api_key.api_errors": mock_api_errors,
-        },
-    ):
-        yield mock_genai
+    # Use patch to intercept the import
+    with patch("server.infrastructure.llm.gemini_provider.google.generativeai", mock_genai_module):
+        with patch(
+            "server.infrastructure.llm.gemini_provider.google.generativeai.types", mock_types
+        ):
+            yield mock_genai_module
 
 
 @pytest.fixture
