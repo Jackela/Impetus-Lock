@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from fastapi import HTTPException, Request
 
@@ -13,8 +14,8 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    redis = None
-    RedisClient = None
+    redis = None  # type: ignore
+    RedisClient = None  # type: ignore
 
 
 class RateLimiter:
@@ -42,13 +43,13 @@ class RateLimiter:
         Args:
             redis_url: Redis connection URL. If None, uses REDIS_URL env var.
         """
-        self._redis: RedisClient | None = None
+        self._redis: Any | None = None
 
         if not REDIS_AVAILABLE:
             return
 
         url = redis_url or os.getenv("REDIS_URL")
-        if url:
+        if url and redis is not None:
             try:
                 self._redis = redis.from_url(url)
             except Exception:
