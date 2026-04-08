@@ -22,11 +22,13 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+# ruff: noqa: E402
 # Setup mock BEFORE importing GeminiLLMProvider
 # This ensures the mock is in place when the provider imports google.generativeai
 _mock_genai = Mock()
 _mock_genai.configure = Mock()
 _mock_genai.GenerativeModel = Mock()
+_mock_genai.__spec__ = None  # Required for Python 3.11+ module loading
 
 _mock_types = Mock()
 _mock_types.HarmCategory = Mock()
@@ -88,7 +90,7 @@ _mock_api_errors.UnavailableError = _UnavailableError
 _mock_api_key.api_errors = _mock_api_errors
 _mock_genai.api_key = _mock_api_key
 
-# Inject mock into sys.modules
+# Inject mock into sys.modules before importing Provider
 sys.modules["google"] = Mock()
 sys.modules["google.generativeai"] = _mock_genai
 sys.modules["google.generativeai.types"] = _mock_types
