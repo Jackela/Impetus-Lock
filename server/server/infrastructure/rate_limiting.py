@@ -135,22 +135,6 @@ class RateLimiter:
             return str(real_ip)
 
         return request.client.host if request.client else "unknown"
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            return str(forwarded.split(",")[0].strip())
-
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return str(real_ip)
-        forwarded = request.headers.get("X-Forwarded-For")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
-
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip
-
-        return request.client.host if request.client else "unknown"
 
     async def check_rate_limit(self, request: Request) -> None:
         """Check rate limit for request and raise if exceeded.
