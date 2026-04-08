@@ -16,7 +16,6 @@ Test Strategy:
 from __future__ import annotations
 
 import json
-import sys
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
