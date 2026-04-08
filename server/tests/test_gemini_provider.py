@@ -16,10 +16,84 @@ Test Strategy:
 from __future__ import annotations
 
 import json
+import sys
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
+# Setup mock BEFORE importing GeminiLLMProvider
+# This ensures the mock is in place when the provider imports google.generativeai
+_mock_genai = Mock()
+_mock_genai.configure = Mock()
+_mock_genai.GenerativeModel = Mock()
+
+_mock_types = Mock()
+_mock_types.HarmCategory = Mock()
+_mock_types.HarmCategory.HARM_CATEGORY_HARASSMENT = "HARM_CATEGORY_HARASSMENT"
+_mock_types.HarmCategory.HARM_CATEGORY_HATE_SPEECH = "HARM_CATEGORY_HATE_SPEECH"
+_mock_types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT = "HARM_CATEGORY_SEXUALLY_EXPLICIT"
+_mock_types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT = "HARM_CATEGORY_DANGEROUS_CONTENT"
+_mock_types.HarmBlockThreshold = Mock()
+_mock_types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE = "BLOCK_MEDIUM_AND_ABOVE"
+_mock_types.HarmBlockThreshold.BLOCK_ONLY_HIGH = "BLOCK_ONLY_HIGH"
+
+
+class _BlockedPromptException(Exception):
+    pass
+
+
+class _StopCandidateException(Exception):
+    pass
+
+
+class _InvalidArgument(Exception):
+    pass
+
+
+_mock_types.BlockedPromptException = _BlockedPromptException
+_mock_types.StopCandidateException = _StopCandidateException
+_mock_types.InvalidArgument = _InvalidArgument
+_mock_genai.types = _mock_types
+
+_mock_api_key = Mock()
+_mock_api_errors = Mock()
+
+
+class _InvalidAPIKeyError(Exception):
+    pass
+
+
+class _PermissionDeniedError(Exception):
+    pass
+
+
+class _ResourceExhaustedError(Exception):
+    pass
+
+
+class _InternalServerError(Exception):
+    pass
+
+
+class _UnavailableError(Exception):
+    pass
+
+
+_mock_api_errors.InvalidAPIKeyError = _InvalidAPIKeyError
+_mock_api_errors.PermissionDeniedError = _PermissionDeniedError
+_mock_api_errors.ResourceExhaustedError = _ResourceExhaustedError
+_mock_api_errors.InternalServerError = _InternalServerError
+_mock_api_errors.UnavailableError = _UnavailableError
+_mock_api_key.api_errors = _mock_api_errors
+_mock_genai.api_key = _mock_api_key
+
+# Inject mock into sys.modules
+sys.modules["google"] = Mock()
+sys.modules["google.generativeai"] = _mock_genai
+sys.modules["google.generativeai.types"] = _mock_types
+sys.modules["google.generativeai.api_key"] = _mock_api_key
+sys.modules["google.generativeai.api_key.api_errors"] = _mock_api_errors
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.gemini_provider import GeminiLLMProvider
@@ -30,73 +104,11 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def mock_genai() -> Generator[Mock, None, None]:
-    """Mock the google.generativeai module."""
-    # Create the main mock module
-    mock_genai_module = Mock()
-    mock_genai_module.configure = Mock()
-    mock_genai_module.GenerativeModel = Mock()
-
-    # Create mock types submodule
-    mock_types = Mock()
-
-    # Create mock enum classes
-    mock_types.HarmCategory = Mock()
-    mock_types.HarmCategory.HARM_CATEGORY_HARASSMENT = "HARM_CATEGORY_HARASSMENT"
-    mock_types.HarmCategory.HARM_CATEGORY_HATE_SPEECH = "HARM_CATEGORY_HATE_SPEECH"
-    mock_types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT = "HARM_CATEGORY_SEXUALLY_EXPLICIT"
-    mock_types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT = "HARM_CATEGORY_DANGEROUS_CONTENT"
-
-    mock_types.HarmBlockThreshold = Mock()
-    mock_types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE = "BLOCK_MEDIUM_AND_ABOVE"
-    mock_types.HarmBlockThreshold.BLOCK_ONLY_HIGH = "BLOCK_ONLY_HIGH"
-
-    # Create exception classes
-    class BlockedPromptException(Exception):
-        pass
-
-    class StopCandidateException(Exception):
-        pass
-
-    class InvalidArgument(Exception):
-        pass
-
-    mock_types.BlockedPromptException = BlockedPromptException
-    mock_types.StopCandidateException = StopCandidateException
-    mock_types.InvalidArgument = InvalidArgument
-    mock_genai_module.types = mock_types
-
-    # Create api_key submodule
-    class InvalidAPIKeyError(Exception):
-        pass
-
-    class PermissionDeniedError(Exception):
-        pass
-
-    class ResourceExhaustedError(Exception):
-        pass
-
-    class InternalServerError(Exception):
-        pass
-
-    class UnavailableError(Exception):
-        pass
-
-    mock_api_key = Mock()
-    mock_api_errors = Mock()
-    mock_api_errors.InvalidAPIKeyError = InvalidAPIKeyError
-    mock_api_errors.PermissionDeniedError = PermissionDeniedError
-    mock_api_errors.ResourceExhaustedError = ResourceExhaustedError
-    mock_api_errors.InternalServerError = InternalServerError
-    mock_api_errors.UnavailableError = UnavailableError
-    mock_api_key.api_errors = mock_api_errors
-    mock_genai_module.api_key = mock_api_key
-
-    # Patch the google.generativeai module directly
-    # This is where GeminiLLMProvider imports from
-    with patch.dict("sys.modules", {"google.generativeai": mock_genai_module}):
-        with patch.dict("sys.modules", {"google.generativeai.types": mock_types}):
-            with patch.dict("sys.modules", {"google.generativeai.api_key": mock_api_key}):
-                yield mock_genai_module
+    """Provide the mock google.generativeai module."""
+    # Reset mock state before each test
+    _mock_genai.configure.reset_mock()
+    _mock_genai.GenerativeModel.reset_mock()
+    yield _mock_genai
 
 
 @pytest.fixture
