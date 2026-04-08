@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, Mock
 
 import jwt
@@ -59,13 +59,12 @@ class TestJWTHandler:
 
     def test_create_token_expiration(self) -> None:
         """Test token includes expiration time."""
-        before_create = datetime.utcnow()
+        before_create = datetime.now(UTC)
         token = JWTHandler.create_token("user_123")
-        datetime.utcnow()
 
         payload = JWTHandler.verify_token(token)
         exp_timestamp = payload["exp"]
-        exp_time = datetime.fromtimestamp(exp_timestamp)
+        exp_time = datetime.fromtimestamp(exp_timestamp, tz=UTC)
 
         # Should expire in ~24 hours
         expected_exp = before_create + JWTHandler.ACCESS_TOKEN_EXPIRE
@@ -73,16 +72,16 @@ class TestJWTHandler:
 
     def test_create_token_issued_at(self) -> None:
         """Test token includes issued at time."""
-        before_create = datetime.utcnow()
+        before_create = datetime.now(UTC)
         token = JWTHandler.create_token("user_123")
 
         payload = JWTHandler.verify_token(token)
         iat_timestamp = payload["iat"]
-        iat_time = datetime.fromtimestamp(iat_timestamp)
+        iat_time = datetime.fromtimestamp(iat_timestamp, tz=UTC)
 
-        # Should be issued recently
-        assert iat_time >= before_create
-        assert iat_time <= datetime.utcnow()
+        # Should be issued recently (allow 1 second tolerance for seconds truncation)
+        assert abs((iat_time - before_create).total_seconds()) < 1
+        assert iat_time <= datetime.now(UTC)
 
     def test_verify_token_success(self) -> None:
         """Test verifying a valid token."""
@@ -98,8 +97,8 @@ class TestJWTHandler:
         # Create a token that expired
         expired_payload = {
             "sub": "user_123",
-            "exp": datetime.utcnow() - timedelta(hours=1),
-            "iat": datetime.utcnow() - timedelta(hours=25),
+            "exp": datetime.now(UTC) - timedelta(hours=1),
+            "iat": datetime.now(UTC) - timedelta(hours=25),
         }
         expired_token = jwt.encode(
             expired_payload, "test-secret-key-for-jwt-tokens", algorithm="HS256"
@@ -113,8 +112,8 @@ class TestJWTHandler:
         # Create token with different secret
         payload = {
             "sub": "user_123",
-            "exp": datetime.utcnow() + timedelta(hours=24),
-            "iat": datetime.utcnow(),
+            "exp": datetime.now(UTC) + timedelta(hours=24),
+            "iat": datetime.now(UTC),
         }
         wrong_token = jwt.encode(payload, "wrong-secret", algorithm="HS256")
 
@@ -172,8 +171,10 @@ class TestAuthenticationMiddleware:
         monkeypatch.setenv("JWT_SECRET", "test-secret-key")
 
     @pytest.fixture
-    def app_with_auth(self) -> FastAPI:
+    def app_with_auth(self, monkeypatch: pytest.MonkeyPatch) -> FastAPI:
         """Create FastAPI app with auth middleware."""
+        monkeypatch.setenv("TESTING", "")
+
         app = FastAPI()
         app.add_middleware(AuthenticationMiddleware)
 
@@ -181,7 +182,11 @@ class TestAuthenticationMiddleware:
         def protected_route(request: Request) -> dict:
             return {"user_id": getattr(request.state, "user_id", None)}
 
-        @app.get("/public")
+        @app.post("/protected")
+        def protected_post_route(request: Request) -> dict:
+            return {"user_id": getattr(request.state, "user_id", None)}
+
+        @app.get("/health")
         def public_route() -> dict:
             return {"message": "public"}
 
@@ -194,7 +199,7 @@ class TestAuthenticationMiddleware:
 
     def test_public_path_accessible(self, client: TestClient) -> None:
         """Test public paths are accessible without auth."""
-        response = client.get("/public")
+        response = client.get("/health")
 
         assert response.status_code == 200
         assert response.json()["message"] == "public"
@@ -219,8 +224,8 @@ class TestAuthenticationMiddleware:
 
         response = client.get(
             "/protected",
-            cookies={"access_token": token},
-            headers={"X-CSRF-Token": "csrf_token", "Cookie": "csrf_token=csrf_token"},
+            cookies={"access_token": token, "csrf_token": "csrf_token"},
+            headers={"X-CSRF-Token": "csrf_token"},
         )
 
         # Should pass auth, may fail CSRF but that's expected without proper setup
@@ -247,8 +252,8 @@ class TestAuthenticationMiddleware:
         # Create expired token
         expired_payload = {
             "sub": "user_123",
-            "exp": datetime.utcnow() - timedelta(hours=1),
-            "iat": datetime.utcnow() - timedelta(hours=25),
+            "exp": datetime.now(UTC) - timedelta(hours=1),
+            "iat": datetime.now(UTC) - timedelta(hours=25),
         }
         expired_token = jwt.encode(expired_payload, "test-secret-key", algorithm="HS256")
 
@@ -307,8 +312,9 @@ class TestRateLimiter:
         """Create a rate limiter without Redis."""
         return RateLimiter(redis_url=None)
 
-    def test_initialization_no_redis(self) -> None:
+    def test_initialization_no_redis(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization without Redis."""
+        monkeypatch.delenv("REDIS_URL", raising=False)
         limiter = RateLimiter(redis_url=None)
 
         assert limiter._redis is None
