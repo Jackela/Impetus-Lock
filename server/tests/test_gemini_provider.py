@@ -29,13 +29,13 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_genai() -> Generator[Mock, None, None]:
-    """Provide the mock google.generativeai module."""
-    # Reset mock state before each test
-    pass  # Mock reset disabled
-    pass  # Mock reset disabled
-    yield Mock()  # Return mock
+    """Mock the google.generativeai module for all tests in this file."""
+    with patch("server.infrastructure.llm.gemini_provider.google.generativeai") as mock:
+        mock.configure = Mock()
+        mock.GenerativeModel = Mock()
+        yield mock
 
 
 @pytest.fixture
