@@ -156,7 +156,7 @@ jobs:
   backend-tests:
     name: Backend Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Debug information
         run: |
@@ -195,7 +195,7 @@ jobs:
 
       - name: Run pytest
         working-directory: ./server
-        run: poetry run pytest tests/ -v -n auto --tb=short -x
+        run: poetry run pytest tests/ -v -n auto --tb=short --timeout=120
 
   frontend-tests:
     name: Frontend Tests
