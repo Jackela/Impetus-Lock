@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 @pytest.fixture(autouse=True)
 def mock_genai() -> Generator[Mock, None, None]:
     """Mock the google.generativeai module for all tests in this file."""
-    with patch("server.infrastructure.llm.gemini_provider.google.generativeai") as mock:
+    with patch("google.generativeai") as mock:
         mock.configure = Mock()
         mock.GenerativeModel = Mock()
         yield mock
