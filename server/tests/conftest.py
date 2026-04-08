@@ -14,12 +14,9 @@ from __future__ import annotations
 
 import asyncio
 import os
-import warnings
-from collections.abc import AsyncGenerator, Generator
 from typing import TYPE_CHECKING, Any
 
 import pytest
-import pytest_asyncio
 
 # Force TESTING mode BEFORE any server imports
 os.environ["TESTING"] = "1"
