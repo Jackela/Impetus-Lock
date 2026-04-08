@@ -91,12 +91,12 @@ def mock_genai() -> Generator[Mock, None, None]:
     mock_api_key.api_errors = mock_api_errors
     mock_genai_module.api_key = mock_api_key
 
-    # Use patch to intercept the import
-    with patch("server.infrastructure.llm.gemini_provider.google.generativeai", mock_genai_module):
-        with patch(
-            "server.infrastructure.llm.gemini_provider.google.generativeai.types", mock_types
-        ):
-            yield mock_genai_module
+    # Patch the google.generativeai module directly
+    # This is where GeminiLLMProvider imports from
+    with patch.dict("sys.modules", {"google.generativeai": mock_genai_module}):
+        with patch.dict("sys.modules", {"google.generativeai.types": mock_types}):
+            with patch.dict("sys.modules", {"google.generativeai.api_key": mock_api_key}):
+                yield mock_genai_module
 
 
 @pytest.fixture
