@@ -189,7 +189,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./server
-        run: poetry install
+        run: |
+          pip install google-generativeai
+          poetry install
 
       - name: Run pytest
         working-directory: ./server
