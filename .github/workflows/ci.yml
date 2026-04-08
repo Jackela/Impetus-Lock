@@ -193,7 +193,7 @@ jobs:
 
       - name: Run pytest
         working-directory: ./server
-        run: poetry run pytest -v
+        run: poetry run pytest tests/ -v -n auto --tb=short -x
 
   frontend-tests:
     name: Frontend Tests
