@@ -464,6 +464,7 @@ class TestRateLimiter:
 
         assert exc_info.value.status_code == 429
         assert "Rate limit exceeded" in exc_info.value.detail
+        assert exc_info.value.headers is not None
         assert "Retry-After" in exc_info.value.headers
 
 
