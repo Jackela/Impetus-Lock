@@ -13,6 +13,7 @@ import pytest
 def client():
     """Create TestClient for the FastAPI app."""
     from fastapi.testclient import TestClient
+
     from server.api.main import app
 
     return TestClient(app)
