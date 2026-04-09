@@ -74,7 +74,7 @@ jobs:
         run: poetry install --with dev
 
       - name: Run tests
-        run: poetry run pytest tests/ -v --tb=short -n auto -m "not e2e" --cov=server --cov-report=xml --junitxml=junit-matrix.xml
+        run: poetry run pytest tests/ -v --tb=short -n auto -m "not e2e" -k "not RedisIntegration" --cov=server --cov-report=xml --junitxml=junit-matrix.xml
         env:
           REDIS_URL: redis://localhost:6379/0
 

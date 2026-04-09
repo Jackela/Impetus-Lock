@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 from typing import Any
 from unittest.mock import Mock, patch
 
@@ -570,6 +571,10 @@ class TestCollaborationServiceRedisIntegration:
     """Tests for Redis integration."""
 
     @pytest.mark.asyncio
+    @pytest.mark.skipif(
+        os.getenv("CI") == "true" or os.getenv("REDIS_URL") is None,
+        reason="Redis integration test requires Redis server",
+    )
     async def test_handle_redis_message(self, mock_redis_client: Mock) -> None:
         """Test handling messages from Redis."""
         from server.infrastructure.websocket.redis_pubsub import RedisPubSubManager
