@@ -17,20 +17,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-on:
-  push:
-    branches: ["main"]
-    paths: ["server/**", ".github/workflows/test-matrix.yml"]
-  pull_request:
-    branches: ["main"]
-    paths: ["server/**", ".github/workflows/test-matrix.yml"]
-  workflow_dispatch:
-
-# Cancel previous runs for the same PR or branch
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   # Matrix testing across Python versions and dependency configurations
   test-matrix:
