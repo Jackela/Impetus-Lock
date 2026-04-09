@@ -202,7 +202,7 @@ jobs:
           poetry install --with dev
 
       - name: Run integration tests
-        run: poetry run pytest tests/integration -v --tb=short -n auto --integration --cov=server --cov-report=xml --cov-report=html --junitxml=junit-integration.xml
+        run: poetry run pytest tests/integration -v --tb=short -n auto -m "integration" --cov=server --cov-report=xml --cov-report=html --junitxml=junit-integration.xml
         env:
           REDIS_URL: redis://localhost:6379/0
 
@@ -273,7 +273,7 @@ jobs:
           poetry install --with dev
 
       - name: Run E2E tests
-        run: poetry run pytest tests/e2e -v --tb=short -n auto --e2e --cov=server --cov-report=xml --cov-report=html --junitxml=junit-e2e.xml || true
+        run: poetry run pytest tests/e2e -v --tb=short -n auto -m "e2e" --cov=server --cov-report=xml --cov-report=html --junitxml=junit-e2e.xml || true
         env:
           REDIS_URL: redis://localhost:6379/0
 
