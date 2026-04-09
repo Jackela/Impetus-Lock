@@ -33,6 +33,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { MUSE_IDLE_TIMEOUT_MS, MUSE_STUCK_TIMEOUT_MS } from "../config/animation";
+import { useInterval } from "./useInterval";
 
 /**
  * Writing state values.

@@ -10,6 +10,8 @@ from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.anthropic_provider import AnthropicLLMProvider
 from server.infrastructure.llm.debug_provider import DebugLLMProvider
 from server.infrastructure.llm.provider_registry import (
+    ProviderConfig,
+    ProviderFactory,
     ProviderOverride,
     ProviderRegistry,
 )
@@ -114,3 +116,39 @@ class TestProviderRegistry:
         )
 
         assert isinstance(provider, DebugLLMProvider)
+
+    def test_provider_factory_create_with_no_args(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that ProviderFactory.create correctly handles no_args providers.
+
+        This test verifies the fix for unreachable code in provider_registry.py
+        where duplicate code blocks existed after the return statement.
+        """
+        monkeypatch.setenv("LLM_ALLOW_DEBUG_PROVIDER", "1")
+
+        config = ProviderConfig(
+            provider="debug",
+            api_key="",
+            model="debug-model",
+            temperature=0.0,
+        )
+
+        # Should create debug provider without errors
+        provider = ProviderFactory.create("debug", config)
+
+        assert isinstance(provider, DebugLLMProvider)
+
+    def test_provider_factory_create_with_args(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that ProviderFactory.create correctly handles providers with args."""
+        monkeypatch.setenv("LLM_ALLOW_DEBUG_PROVIDER", "1")
+
+        config = ProviderConfig(
+            provider="anthropic",
+            api_key="sk-ant-test123",
+            model="claude-3-5-haiku-latest",
+            temperature=0.8,
+        )
+
+        # Should create anthropic provider without errors
+        provider = ProviderFactory.create("anthropic", config)
+
+        assert isinstance(provider, AnthropicLLMProvider)

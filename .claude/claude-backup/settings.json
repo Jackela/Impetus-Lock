@@ -1,0 +1,72 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd server && poetry run ruff check:*)",
+      "Bash(cd server && poetry run ruff format:*)",
+      "Bash(cd server && poetry run mypy:*)",
+      "Bash(cd server && poetry run pytest:*)",
+      "Bash(cd server && poetry run uvicorn:*)",
+      "Bash(cd client && npm run lint:*)",
+      "Bash(cd client && npm run format:*)",
+      "Bash(cd client && npm run type-check:*)",
+      "Bash(cd client && npm run test:*)",
+      "Bash(cd client && npm run test:e2e:*)",
+      "Bash(cd client && npx vitest:*)",
+      "Bash(cd client && npx playwright:*)",
+      "Bash(act -j lint:*)",
+      "Bash(act -j type-check:*)",
+      "Bash(act -j backend-tests:*)",
+      "Bash(act -j frontend-tests:*)",
+      "Bash(act -j e2e:*)",
+      "Bash(act -l)",
+      "Bash(act -n)",
+      "Bash(poetry run ruff check .)",
+      "Bash(poetry run ruff format .)",
+      "Bash(poetry run mypy .)",
+      "Bash(poetry run pytest)",
+      "Bash(poetry run pytest -v)",
+      "Bash(poetry run pytest --cov)",
+      "Bash(npm run lint)",
+      "Bash(npm run format)",
+      "Bash(npm run type-check)",
+      "Bash(npm run test)",
+      "Bash(npm run test:watch)",
+      "Bash(npm run test:e2e)",
+      "Skill(*:commit)",
+      "Skill(*:review-pr)",
+      "Skill(*:simplify)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f client/package.json ] && echo '{{file}}' | grep -q '^client/.*\\.(ts|tsx|js|jsx|json|css)$'; then cd client && npx prettier --write '{{file}}' 2>/dev/null || true; elif [ -f server/pyproject.toml ] && echo '{{file}}' | grep -q '^server/.*\\.py$'; then cd server && poetry run ruff format '{{file}}' 2>/dev/null || true; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔍 Running Impetus Lock quality checks...'; if [ -f server/pyproject.toml ]; then cd server && poetry run ruff check . 2>/dev/null && echo '✅ Backend lint passed' || echo '⚠️ Backend lint issues found'; poetry run mypy . 2>/dev/null && echo '✅ Backend type check passed' || echo '⚠️ Backend type issues found'; fi; if [ -f client/package.json ]; then cd client && npm run lint 2>/dev/null && echo '✅ Frontend lint passed' || echo '⚠️ Frontend lint issues found'; npm run type-check 2>/dev/null && echo '✅ Frontend type check passed' || echo '⚠️ Frontend type issues found'; fi; echo '✨ Quality checks complete'"
+          }
+        ]
+      }
+    ]
+  },
+  "project": {
+    "name": "Impetus Lock",
+    "type": "monorepo",
+    "stack": ["fastapi", "react", "typescript", "python"],
+    "qualityGates": {
+      "backend": ["ruff", "mypy", "pytest"],
+      "frontend": ["eslint", "tsc", "vitest"]
+    }
+  }
+}

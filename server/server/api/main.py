@@ -91,23 +91,36 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(AuthenticationMiddleware)
 
 
-# CORS middleware for local development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# P2 Security Fix: Environment-specific CORS configuration
+# Production: Only allow configured origins
+# Development: Allow localhost on standard Vite ports
+env = os.getenv("ENV", "development")
+if env == "production":
+    # Production: Use configured origins only
+    allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+    allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+    if not allowed_origins:
+        # Fallback to empty list if not configured (blocks all cross-origin)
+        allowed_origins = []
+    logger.info(f"CORS configured for production with {len(allowed_origins)} origins")
+else:
+    # Development: Allow standard Vite dev server ports only
+    allowed_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
-        "http://localhost:5176",
-        "http://127.0.0.1:5176",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-    ],
+    ]
+    logger.debug(f"CORS configured for development: {allowed_origins}")
+
+# P2 Security Fix: Explicit method specification
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=allowed_methods,
     allow_headers=["*"],
 )
 

@@ -159,19 +159,35 @@ class DatabaseManager:
     def __init__(
         self,
         database_url: str | None = None,
-        pool_size: int = 5,
-        max_overflow: int = 10,
+        pool_size: int | None = None,
+        max_overflow: int | None = None,
         enable_circuit_breaker: bool = True,
     ):
-        """Initialize database manager with connection URL."""
+        """Initialize database manager with connection URL.
+
+        Args:
+            database_url: PostgreSQL connection URL. Defaults to DATABASE_URL env var.
+            pool_size: Connection pool size. Defaults to POOL_SIZE env var or 5.
+            max_overflow: Max overflow connections. Defaults to MAX_OVERFLOW env var or 10.
+            enable_circuit_breaker: Enable circuit breaker pattern. Defaults to True.
+
+        Raises:
+            ValueError: If database_url not provided and DATABASE_URL env var not set.
+        """
         url = database_url or os.getenv("DATABASE_URL")
         if not url:
             raise ValueError("DATABASE_URL environment variable not set")
 
         self._database_url: str = url
-        self._pool_size = pool_size
-        self._max_overflow = max_overflow
+        # P1 Fix: Read pool configuration from environment variables with defaults
+        self._pool_size = pool_size if pool_size is not None else int(os.getenv("POOL_SIZE", "5"))
+        self._max_overflow = max_overflow if max_overflow is not None else int(os.getenv("MAX_OVERFLOW", "10"))
         self._enable_circuit_breaker = enable_circuit_breaker
+
+        logger.debug(
+            f"DatabaseManager initialized with pool_size={self._pool_size}, "
+            f"max_overflow={self._max_overflow}"
+        )
 
         self._engine: AsyncEngine | None = None
         self._session_factory: async_sessionmaker[AsyncSession] | None = None
