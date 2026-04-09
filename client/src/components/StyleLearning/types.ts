@@ -12,15 +12,27 @@
  */
 export interface StyleVector {
   /** Average sentence length in words */
-  avg_sentence_length: number;
+  avg_sentence_length?: number;
   /** Vocabulary richness (unique words / total words) */
-  vocab_richness: number;
+  vocab_richness?: number;
   /** Punctuation density (punctuation marks / total characters) */
-  punctuation_density: number;
+  punctuation_density?: number;
   /** Average paragraph length in sentences */
-  paragraph_length_avg: number;
+  paragraph_length_avg?: number;
   /** Ratio of dialogue to narrative text */
-  dialogue_ratio: number;
+  dialogue_ratio?: number;
+  /** Text complexity level (0-1) */
+  complexity?: number;
+  /** Emotional intensity (0-1) */
+  emotion?: number;
+  /** Formality level (0-1) */
+  formality?: number;
+  /** Descriptiveness level (0-1) */
+  descriptiveness?: number;
+  /** Writing rhythm score (0-1) */
+  rhythm?: number;
+  /** Allow additional numeric properties */
+  [key: string]: number | undefined;
 }
 
 /**

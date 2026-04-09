@@ -4,9 +4,9 @@ import os
 from collections.abc import Awaitable, Callable
 
 import jwt
-from fastapi import HTTPException, Request
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from server.infrastructure.security.jwt_handler import JWTHandler
 
@@ -17,7 +17,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if os.getenv("TESTING"):
+        if os.getenv("TESTING") == "1":
             return await call_next(request)
 
         if any(request.url.path.startswith(path) for path in self.PUBLIC_PATHS):
@@ -25,18 +25,18 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
         token = request.cookies.get("access_token")
         if not token:
-            raise HTTPException(status_code=401, detail="Authentication required")
+            return JSONResponse(status_code=401, content={"detail": "Authentication required"})
 
         try:
             payload = JWTHandler.verify_token(token)
             request.state.user_id = payload["sub"]
-        except jwt.InvalidTokenError as err:
-            raise HTTPException(status_code=401, detail="Invalid token") from err
+        except jwt.InvalidTokenError:
+            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
 
         if request.method != "GET":
             csrf_header = request.headers.get("X-CSRF-Token")
             csrf_cookie = request.cookies.get("csrf_token")
-            if csrf_header != csrf_cookie:
-                raise HTTPException(status_code=403, detail="CSRF validation failed")
+            if not csrf_header or not csrf_cookie or csrf_header != csrf_cookie:
+                return JSONResponse(status_code=403, content={"detail": "CSRF validation failed"})
 
         return await call_next(request)

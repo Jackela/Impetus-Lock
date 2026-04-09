@@ -2,22 +2,27 @@
 
 from __future__ import annotations
 
+import importlib
+import importlib.util
+import logging
 import os
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
-from server.infrastructure.llm.anthropic_provider import AnthropicLLMProvider
-from server.infrastructure.llm.debug_provider import DebugLLMProvider
-from server.infrastructure.llm.gemini_provider import GeminiLLMProvider
-from server.infrastructure.llm.instructor_provider import InstructorLLMProvider
 
-ProviderName = Literal["openai", "anthropic", "gemini", "debug"]
+if TYPE_CHECKING:
+    pass
+
+logger = logging.getLogger(__name__)
+
+ProviderName = Literal["openai", "anthropic", "claude", "gemini", "debug"]
 
 _API_KEY_ENV: dict[ProviderName, str] = {
     "openai": "OPENAI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
+    "claude": "ANTHROPIC_API_KEY",
     "gemini": "GEMINI_API_KEY",
     "debug": "DEBUG_API_KEY",
 }
@@ -25,6 +30,7 @@ _API_KEY_ENV: dict[ProviderName, str] = {
 _MODEL_ENV_VARS: dict[ProviderName, str] = {
     "openai": "OPENAI_MODEL",
     "anthropic": "ANTHROPIC_MODEL",
+    "claude": "CLAUDE_MODEL",
     "gemini": "GEMINI_MODEL",
     "debug": "DEBUG_MODEL",
 }
@@ -32,6 +38,7 @@ _MODEL_ENV_VARS: dict[ProviderName, str] = {
 _MODEL_FALLBACKS: dict[ProviderName, str] = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-3-5-haiku-latest",
+    "claude": "claude-3-5-sonnet-20241022",
     "gemini": "gemini-2.0-flash-lite",
     "debug": "debug-model",
 }
@@ -39,6 +46,7 @@ _MODEL_FALLBACKS: dict[ProviderName, str] = {
 _TEMP_ENV_VARS: dict[ProviderName, str] = {
     "openai": "OPENAI_TEMPERATURE",
     "anthropic": "ANTHROPIC_TEMPERATURE",
+    "claude": "CLAUDE_TEMPERATURE",
     "gemini": "GEMINI_TEMPERATURE",
     "debug": "DEBUG_TEMPERATURE",
 }
@@ -46,6 +54,7 @@ _TEMP_ENV_VARS: dict[ProviderName, str] = {
 _TEMP_FALLBACKS: dict[ProviderName, float] = {
     "openai": 0.9,
     "anthropic": 0.8,
+    "claude": 0.8,
     "gemini": 0.7,
     "debug": 0.0,
 }
@@ -64,6 +73,132 @@ class ProviderOverride:
     provider: str | None = None
     model: str | None = None
     api_key: str | None = None
+
+
+class ProviderFactory:
+    """Factory for creating provider instances with deferred imports.
+
+    Uses a registry pattern to reduce duplication in provider instantiation.
+    """
+
+    @dataclass
+    class ProviderSpec:
+        """Specification for a provider."""
+
+        module: str
+        class_name: str
+        install_msg: str
+        no_args: bool = False
+
+    # Registry of provider configurations
+    _REGISTRY: dict[ProviderName, ProviderSpec] = {
+        "openai": ProviderSpec(
+            module="server.infrastructure.llm.instructor_provider",
+            class_name="InstructorLLMProvider",
+            install_msg=(
+                "OpenAI provider is not available. Install with: pip install openai instructor"
+            ),
+        ),
+        "anthropic": ProviderSpec(
+            module="server.infrastructure.llm.anthropic_provider",
+            class_name="AnthropicLLMProvider",
+            install_msg="Anthropic provider is not available. Install with: pip install anthropic",
+        ),
+        "claude": ProviderSpec(
+            module="server.infrastructure.llm.claude_provider",
+            class_name="ClaudeProvider",
+            install_msg="Claude provider is not available. Install with: pip install anthropic",
+        ),
+        "gemini": ProviderSpec(
+            module="server.infrastructure.llm.gemini_provider",
+            class_name="GeminiLLMProvider",
+            install_msg=(
+                "Gemini provider is not available. Install with: pip install google-generativeai"
+            ),
+        ),
+        "debug": ProviderSpec(
+            module="server.infrastructure.llm.debug_provider",
+            class_name="DebugLLMProvider",
+            install_msg="Debug provider is not available.",
+            no_args=True,
+        ),
+    }
+
+    @classmethod
+    def create(cls, provider_name: ProviderName, config: ProviderConfig) -> LLMProvider:
+        """Create a provider instance using the registry.
+
+        Args:
+            provider_name: Name of the provider.
+            config: Provider configuration.
+
+        Returns:
+            Instantiated provider.
+
+        Raises:
+            LLMProviderError: If provider cannot be instantiated.
+        """
+        spec = cls._REGISTRY.get(provider_name)
+        if not spec:
+            raise LLMProviderError(
+                code="unsupported_provider",
+                message=f"Unsupported provider: {provider_name}",
+                status_code=422,
+                provider=provider_name,
+            )
+
+        try:
+            module = importlib.import_module(spec.module)
+            provider_class = getattr(module, spec.class_name)
+        except ImportError as e:
+            logger.warning(f"{provider_name} provider not available: {e}")
+            raise LLMProviderError(
+                code="provider_unavailable",
+                message=spec.install_msg,
+                status_code=503,
+                provider=provider_name,
+            ) from e
+
+        # Instantiate with appropriate arguments
+        if spec.no_args:
+            return cast(LLMProvider, provider_class())
+
+        return cast(
+            LLMProvider,
+            provider_class(
+                api_key=config.api_key,
+                model=config.model,
+                temperature=config.temperature,
+            ),
+        )
+        if spec.no_args:
+            return provider_class()
+
+        return provider_class(
+            api_key=config.api_key,
+            model=config.model,
+            temperature=config.temperature,
+        )
+
+    @classmethod
+    def is_available(cls, provider_name: ProviderName) -> bool:
+        """Check if a provider module is available without importing.
+
+        Args:
+            provider_name: Name of the provider.
+
+        Returns:
+            True if the module exists, False otherwise.
+        """
+        spec = cls._REGISTRY.get(provider_name)
+        if not spec:
+            return False
+
+        try:
+            found_spec = importlib.util.find_spec(spec.module)
+            return found_spec is not None
+        except Exception:
+            return False
 
 
 class ProviderRegistry:
@@ -174,32 +309,8 @@ class ProviderRegistry:
         return provider
 
     def _instantiate(self, config: ProviderConfig) -> LLMProvider:
-        if config.provider == "openai":
-            return InstructorLLMProvider(
-                api_key=config.api_key,
-                model=config.model,
-                temperature=config.temperature,
-            )
-        if config.provider == "anthropic":
-            return AnthropicLLMProvider(
-                api_key=config.api_key,
-                model=config.model,
-                temperature=config.temperature,
-            )
-        if config.provider == "gemini":
-            return GeminiLLMProvider(
-                api_key=config.api_key,
-                model=config.model,
-                temperature=config.temperature,
-            )
-        if config.provider == "debug":
-            return DebugLLMProvider()
-        raise LLMProviderError(
-            code="unsupported_provider",
-            message=f"Unsupported provider: {config.provider}",
-            status_code=422,
-            provider=config.provider,
-        )
+        """Instantiate provider using the factory pattern."""
+        return ProviderFactory.create(config.provider, config)
 
     def _load_default_configs(self) -> dict[ProviderName, ProviderConfig]:
         configs: dict[ProviderName, ProviderConfig] = {}
@@ -208,6 +319,10 @@ class ProviderRegistry:
             api_key = _normalize(os.getenv(env_key))
             if provider_name == "debug":
                 if not self._allow_debug:
+                    continue
+                # Check if debug provider is available
+                if not self._is_provider_available("debug"):
+                    logger.debug("Debug provider not available, skipping registration")
                     continue
                 configs[provider_name] = ProviderConfig(
                     provider=provider_name,
@@ -218,6 +333,12 @@ class ProviderRegistry:
                 continue
             if not api_key:
                 continue
+
+            # Check if provider is available before registering
+            if not self._is_provider_available(provider_name):
+                logger.debug(f"{provider_name} provider not available, skipping registration")
+                continue
+
             configs[provider_name] = ProviderConfig(
                 provider=provider_name,
                 api_key=api_key,
@@ -227,9 +348,13 @@ class ProviderRegistry:
 
         return configs
 
+    def _is_provider_available(self, provider_name: ProviderName) -> bool:
+        """Check if a provider module can be imported without hanging."""
+        return ProviderFactory.is_available(provider_name)
+
     def _coerce_provider(self, name: str | None) -> ProviderName:
         normalized = (name or "openai").strip().lower()
-        allowed = {"openai", "anthropic", "gemini"}
+        allowed = {"openai", "anthropic", "claude", "gemini"}
         if self._allow_debug:
             allowed.add("debug")
         if normalized not in allowed:

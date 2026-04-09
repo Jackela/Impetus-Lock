@@ -1,7 +1,7 @@
 """JWT token generation and validation."""
 
 import os
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import jwt
@@ -13,20 +13,21 @@ class JWTHandler:
 
     @classmethod
     def create_token(cls, user_id: str, **claims: Any) -> str:
+        now = datetime.now(UTC)
         payload = {
             "sub": user_id,
-            "exp": datetime.utcnow() + cls.ACCESS_TOKEN_EXPIRE,
-            "iat": datetime.utcnow(),
+            "exp": now + cls.ACCESS_TOKEN_EXPIRE,
+            "iat": now,
             **claims,
         }
         secret = os.getenv("JWT_SECRET")
         if not secret:
             raise ValueError("JWT_SECRET not set")
-        return jwt.encode(payload, secret, algorithm=cls.ALGORITHM)
+        return str(jwt.encode(payload, secret, algorithm=cls.ALGORITHM))
 
     @classmethod
     def verify_token(cls, token: str) -> dict[str, Any]:
         secret = os.getenv("JWT_SECRET")
         if not secret:
             raise ValueError("JWT_SECRET not set")
-        return jwt.decode(token, secret, algorithms=[cls.ALGORITHM])
+        return dict(jwt.decode(token, secret, algorithms=[cls.ALGORITHM]))

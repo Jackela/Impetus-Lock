@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from fastapi import HTTPException, Request
 
@@ -42,13 +43,13 @@ class RateLimiter:
         Args:
             redis_url: Redis connection URL. If None, uses REDIS_URL env var.
         """
-        self._redis: RedisClient | None = None
+        self._redis: Any | None = None
 
         if not REDIS_AVAILABLE:
             return
 
         url = redis_url or os.getenv("REDIS_URL")
-        if url:
+        if url and redis is not None:
             try:
                 self._redis = redis.from_url(url)
             except Exception:
@@ -128,11 +129,11 @@ class RateLimiter:
         # Fall back to IP address
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            return forwarded.split(",")[0].strip()
+            return str(forwarded.split(",")[0].strip())
 
         real_ip = request.headers.get("X-Real-IP")
         if real_ip:
-            return real_ip
+            return str(real_ip)
 
         return request.client.host if request.client else "unknown"
 

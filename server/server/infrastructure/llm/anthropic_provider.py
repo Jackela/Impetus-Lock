@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from anthropic import (
     Anthropic,
     APIError,
@@ -94,4 +96,4 @@ class AnthropicLLMProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             )
 
-        return LLMInterventionDraft.model_validate_json(text_blocks[0])
+        return cast(LLMInterventionDraft, LLMInterventionDraft.model_validate_json(text_blocks[0]))

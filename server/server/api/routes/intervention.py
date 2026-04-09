@@ -96,23 +96,23 @@ async def generate_intervention(
     service: InterventionService = Depends(get_intervention_service),
 ) -> InterventionResponse | JSONResponse:
     """Generate AI intervention action based on context and mode.
-    
+
     Implements idempotency via Idempotency-Key header (15s cache).
     Validates contract version for API compatibility.
-    
+
     Args:
         request: Intervention request payload (context, mode, client_meta).
         idempotency_key: UUID v4 for deduplication (required header).
         contract_version: API contract version (must be "2.0.0").
         service: InterventionService instance (dependency injection).
-    
+
     Returns:
         InterventionResponse: Generated intervention action.
-    
+
     Raises:
         HTTPException 422: If contract_version mismatch or validation fails.
         HTTPException 500: If LLM provider fails.
-    
+
     Example:
         ```bash
         curl -X POST http://localhost:8000/impetus/generate-intervention \
@@ -267,6 +267,6 @@ def _set_cooldown_header(response: Response, mode: str | None, idempotency_key: 
 def _compute_cooldown_seconds(idempotency_key: str) -> int:
     """Derive a stable cooldown (30-120s) from the idempotency key."""
 
-    digest = hashlib.md5(idempotency_key.encode("utf-8")).hexdigest()
+    digest = hashlib.md5(idempotency_key.encode("utf-8"), usedforsecurity=False).hexdigest()
     value = int(digest, 16) % 91  # 0-90
     return 30 + value  # 30-120 inclusive

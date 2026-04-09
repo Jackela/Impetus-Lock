@@ -62,6 +62,9 @@ export default defineConfig([
       // JSDoc enforcement for Article V (Documentation) compliance
       // Currently set to "off" - enable incrementally as documentation is added
       // Full enforcement would require ~120 JSDoc additions
+      // JSDoc enforcement for Article V (Documentation) compliance
+      // Currently set to "off" - enable incrementally as documentation is added
+      // Full enforcement would require ~120 JSDoc additions
       "jsdoc/require-jsdoc": [
         "off", // TODO: Enable after adding missing JSDoc comments
         {

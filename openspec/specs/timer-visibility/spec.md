@@ -1,8 +1,11 @@
 # timer-visibility Specification
 
 ## Purpose
-TBD - created by archiving change chrome-audit-polish. Update Purpose after archive.
+
+Provide ambient visibility of the STUCK timer in Muse mode through a subtle progress indicator that shows countdown progress, resets on user activity, and maintains the Zen writing aesthetic without distraction.
+
 ## Requirements
+
 ### Requirement: Muse Timer Progress Indicator
 
 The application SHALL display a non-intrusive visual progress indicator showing STUCK timer state when Muse mode is active.
@@ -18,6 +21,7 @@ The application SHALL display a non-intrusive visual progress indicator showing 
 **And** the indicator SHALL show timer progress as a percentage (0% → 100% over 60 seconds)
 
 **Acceptance Criteria**:
+
 - [ ] Progress indicator only visible when Muse mode active (hidden in Off/Loki modes)
 - [ ] Indicator appears at top edge of editor area (not header, to avoid distraction)
 - [ ] Visual style: 2px height, purple (#7c3aed), opacity 0.6
@@ -41,6 +45,7 @@ The progress indicator SHALL reset to 0% when the user types in the editor, matc
 **And** the timer SHALL restart counting from 0 seconds
 
 **Acceptance Criteria**:
+
 - [ ] Progress resets on any keyboard input (typing, paste, delete)
 - [ ] Progress resets on any editor content change (via EditorCore state)
 - [ ] Reset animation is instant (no fade/transition)
@@ -63,6 +68,7 @@ The progress indicator SHALL hide immediately when the user switches to Off or L
 **And** the indicator SHALL NOT occupy any layout space (no empty gap)
 
 **Acceptance Criteria**:
+
 - [ ] Indicator hidden in Off mode
 - [ ] Indicator hidden in Loki mode
 - [ ] Transition is immediate (no fade-out delay)
@@ -82,6 +88,7 @@ The timer indicator SHALL maintain Zen writing aesthetic through subtle, non-dis
 **Given** the timer indicator is visible in Muse mode
 **When** the user views the editor
 **Then** the indicator SHALL use subtle styling:
+
 - **Height**: 2px (minimal vertical space)
 - **Color**: Purple (#7c3aed) matching brand
 - **Opacity**: 0.6 (semi-transparent, ambient)
@@ -89,6 +96,7 @@ The timer indicator SHALL maintain Zen writing aesthetic through subtle, non-dis
 - **Animation**: Linear progress (no pulsing/flashing)
 
 **Acceptance Criteria**:
+
 - [ ] Indicator does not obstruct editor content (positioned above, not overlaid)
 - [ ] Color contrast meets WCAG 2.1 AA for decorative elements
 - [ ] No distracting animations (no pulse, glow, or flash effects)
@@ -96,4 +104,3 @@ The timer indicator SHALL maintain Zen writing aesthetic through subtle, non-dis
 - [ ] User testing feedback: "I noticed it but wasn't distracted by it"
 
 ---
-

@@ -7,13 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Code Quality Improvements (2026-03-27)
+
+- **Documentation**: Enhanced public API documentation
+  - Added module-level docstrings to collaboration endpoints (collaboration.py)
+  - Documented pending permission persistence as Issue #XXX with proper tracking
+  - Improved test documentation for auth placeholders (test_security.py)
+  - Fixed whitespace issues in intervention.py docstrings (W293)
+- **TODO Resolution**: Converted production code TODOs to tracked issues
+  - Collaboration permission storage (Issue #XXX)
+  - Auth test placeholders properly documented
+- **Import Optimization**: Verified clean import structure across server codebase
+- **Naming Consistency**: Verified snake_case for Python, camelCase for TypeScript
+
+### Added
+
+- **Test Documentation Suite**: Comprehensive testing documentation
+  - `server/tests/README.md`: Test suite overview, structure explanation, running guide, fixture usage, mock factory examples, troubleshooting
+  - `server/tests/STYLE_GUIDE.md`: Naming conventions, file organization, fixture patterns, mock guidelines, parameterized test examples
+  - `server/tests/TESTING_PHILOSOPHY.md`: Testing philosophy, test categories (Unit/Integration/E2E), async testing best practices, CI/CD integration
+  - All documentation includes code examples and quick reference cards
+
 ### Changed
+
 - Backend testing mode now tolerates missing `DATABASE_URL` (in-memory repo) and accepts backward-compatible `X-Contract-Version` headers while persisting interventions when a repository is available.
 - Editor now loads/saves documents through Task API with local cache fallback and optimistic versioning; timer/lock visuals align with spec (non-intrusive timer, hover-only lock icon + aria label).
 
 ### Added - P2 Vibe Enhancements (2025-11-07)
 
 #### Manual Trigger Button (User Story 1)
+
 - **Manual AI Intervention**: Added "I'm stuck!" button in Muse mode for instant AI assistance
   - Reduces wait time from 60 seconds (automatic STUCK detection) to <2 seconds
   - Button enabled only in Muse mode; disabled in Loki/Off modes
@@ -22,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Accessibility: `aria-label` for screen readers, `data-testid` for testing
 
 #### Sensory Feedback System (User Story 2)
+
 - **Visual Animations**: Added Framer Motion animations for all AI actions
   - **PROVOKE** (Muse mode): Glitch effect with opacity flicker (1.5s duration)
   - **DELETE** (Loki mode): Fade-out effect (0.75s duration)
@@ -31,12 +55,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Whoosh** (18.4 KB): Plays on DELETE actions - air whoosh sound
   - **Bonk** (10.9 KB): Plays on REJECT actions - impact sound (P1 feature)
 - **Cancel-and-Replace**: Previous animation/audio stops when new action triggers
-- **Accessibility**: 
+- **Accessibility**:
   - Respects `prefers-reduced-motion` browser setting (simplified animations)
   - Graceful degradation when Web Audio API unavailable
   - Visual feedback works even when audio is muted
 
 #### Infrastructure & Polish
+
 - **Configuration System**: Centralized sensory feedback configuration
   - `AIActionType` enum with JSDoc documentation
   - `SensoryFeedbackConfig` interface for animation/audio mappings
@@ -68,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - WCAG 2.1 AA compliance for interactive elements
 
 ### Fixed
+
 - **Milkdown Integration**: Fixed React 19 compatibility issue
   - Moved `useEditor` hook inside `MilkdownProvider` context
   - Added ProseMirror CSS (`white-space: pre-wrap`)
@@ -76,11 +102,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ESLint**: Removed unused `container` variables in test files
 
 ### Changed
+
 - **App Layout**: Added `SensoryFeedbackDemo` component to main app for testing
 
 ## [0.1.0] - P1 Core Features (2025-11-06)
 
 ### Added
+
 - **Un-deletable Lock System**: Core P1 functionality
   - Lock enforcement via ProseMirror transaction filtering
   - Lock persistence through Markdown comments

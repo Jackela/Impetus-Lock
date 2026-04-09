@@ -23,6 +23,7 @@ from server.api.errors import (
 )
 from server.api.middleware.rate_limit import RateLimitMiddleware
 from server.api.routes import (
+    collaboration,
     intervention,
     metrics,
     style,
@@ -57,11 +58,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await init_database()
     app.state.idempotency_cache = AsyncIdempotencyCache(ttl=15)
     app.state.provider_registry = ProviderRegistry()
+
+    # Initialize collaboration service
+    from server.api.routes.collaboration import collab_service
+
+    await collab_service.initialize()
+    app.state.collab_service = collab_service
+
     try:
         yield
     finally:
         if is_database_initialized():
             await get_db_manager().close()
+        # Shutdown collaboration service
+        await collab_service.shutdown()
 
 
 app = FastAPI(
@@ -71,9 +81,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(LLMProviderError, llm_provider_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(LLMProviderError, llm_provider_error_handler)
+app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(Exception, global_exception_handler)
 
 # Add middleware (order matters - rate limit first, then auth, then CORS)
@@ -108,6 +118,7 @@ app.include_router(metrics.router)
 app.include_router(style.router)
 app.include_router(style_history.router)
 app.include_router(style_comparison.router)
+app.include_router(collaboration.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):

@@ -61,6 +61,9 @@ const subscribers = new Set<() => void>();
 
 /**
  * Notify all subscribers of state change.
+ *
+ * Iterates through all registered listeners and invokes them.
+ * Called whenever vault state changes (config loaded, saved, cleared, locked).
  */
 function notify(): void {
   subscribers.forEach((fn) => fn());
@@ -69,7 +72,9 @@ function notify(): void {
 /**
  * Read vault preferences from localStorage.
  *
- * @returns Vault preferences
+ * Safely parses stored preferences, returning defaults on error.
+ *
+ * @returns Vault preferences object with current mode and metadata
  */
 function readPreferences(): VaultPreferences {
   try {
@@ -84,7 +89,9 @@ function readPreferences(): VaultPreferences {
 /**
  * Write vault preferences to localStorage.
  *
- * @param pref - Preferences to write
+ * Persists vault configuration including mode, timestamps, and passphrase status.
+ *
+ * @param pref - Preferences object to persist
  */
 function writePreferences(pref: VaultPreferences): void {
   window.localStorage.setItem(PREF_KEY, JSON.stringify(pref));
@@ -148,8 +155,10 @@ export function isVaultLocked(): boolean {
 /**
  * Encode ArrayBuffer/Uint8Array to base64.
  *
- * @param buffer - Buffer to encode
- * @returns Base64 string
+ * Converts binary data to base64 string for JSON-safe storage.
+ *
+ * @param buffer - Binary buffer to encode (ArrayBuffer or Uint8Array)
+ * @returns Base64-encoded string
  */
 function encode(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
@@ -159,8 +168,10 @@ function encode(buffer: ArrayBuffer | Uint8Array): string {
 /**
  * Decode base64 to Uint8Array.
  *
- * @param value - Base64 string
- * @returns Decoded bytes
+ * Converts base64 string back to binary data for decryption operations.
+ *
+ * @param value - Base64-encoded string
+ * @returns Decoded Uint8Array bytes
  */
 function decode(value: string): Uint8Array {
   return Uint8Array.from(window.atob(value), (c) => c.charCodeAt(0));
@@ -169,7 +180,10 @@ function decode(value: string): Uint8Array {
 /**
  * Get or create salt for key derivation.
  *
- * @returns Salt bytes
+ * Retrieves existing salt from storage or generates a new cryptographically
+ * secure random salt for PBKDF2 key derivation.
+ *
+ * @returns 16-byte salt as Uint8Array
  */
 function ensureSalt(): Uint8Array {
   const raw = window.localStorage.getItem(SALT_KEY);
@@ -182,9 +196,12 @@ function ensureSalt(): Uint8Array {
 /**
  * Derive encryption key from passphrase using PBKDF2.
  *
- * @param passphrase - User passphrase
- * @param salt - Salt for key derivation
- * @returns Derived AES-GCM key
+ * Uses PBKDF2 with 200,000 iterations and SHA-256 to derive a 256-bit
+ * AES-GCM key from the user's passphrase and stored salt.
+ *
+ * @param passphrase - User-provided passphrase
+ * @param salt - 16-byte salt for key derivation
+ * @returns Derived AES-GCM CryptoKey for encryption/decryption
  */
 async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
@@ -256,7 +273,10 @@ export async function setVaultPassphrase(passphrase: string): Promise<void> {
 /**
  * Reset session idle timer.
  *
- * Clears cache after inactivity in session mode.
+ * Clears existing timer and sets new timeout to clear cache after
+ * inactivity in session mode. Resets on user activity (mouse, keyboard).
+ *
+ * @see SESSION_IDLE_MS - Default idle timeout (5 minutes)
  */
 function resetSessionTimer(): void {
   if (sessionTimer) {
@@ -272,7 +292,16 @@ function resetSessionTimer(): void {
   }, SESSION_IDLE_MS);
 }
 
+/**
+ * Event handlers for session mode lifecycle management.
+ *
+ * Manages cache clearing on visibility change and activity tracking
+ * for automatic session expiration.
+ */
 const sessionEventHandlers = {
+  /**
+   * Clear cache when document becomes hidden in session mode.
+   */
   visibilityChange: () => {
     if (document.visibilityState === "hidden" && getVaultMode() === "session") {
       cache = null;
@@ -289,6 +318,12 @@ if (typeof document !== "undefined") {
   });
 }
 
+/**
+ * Clean up session mode event listeners.
+ *
+ * Removes all document-level event listeners for session management.
+ * Should be called on component unmount or app shutdown.
+ */
 export function cleanupSessionListeners(): void {
   if (typeof document === "undefined") return;
   document.removeEventListener("visibilitychange", sessionEventHandlers.visibilityChange);

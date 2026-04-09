@@ -19,6 +19,7 @@ jobs:
   e2e:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     defaults:
       run:
@@ -82,7 +83,7 @@ jobs:
 
       - name: Start backend server
         env:
-          TESTING: "true"
+          TESTING: "1"
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
           LLM_ALLOW_DEBUG_PROVIDER: "1"
           LLM_DEFAULT_PROVIDER: debug
@@ -169,7 +170,7 @@ jobs:
 
       - name: Upload Playwright report
         if: ${{ env.ACT != 'true' && always() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: client/playwright-report/

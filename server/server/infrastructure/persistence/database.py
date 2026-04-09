@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any
 
-import asyncpg  # type: ignore[import-untyped]
+import asyncpg
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (

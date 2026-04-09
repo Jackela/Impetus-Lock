@@ -227,6 +227,20 @@ export async function generateIntervention(
   throw lastError || new Error("Request failed after retries");
 }
 
+/**
+ * Build LLM configuration headers for API requests.
+ *
+ * Retrieves cached LLM config and constructs headers for provider, model,
+ * and API key. Returns empty object if no config is available.
+ *
+ * @returns Headers object with LLM configuration or empty object
+ *
+ * @example
+ * ```typescript
+ * const headers = buildLLMHeaders();
+ * // { "X-LLM-Provider": "openai", "X-LLM-Model": "gpt-4o-mini", "X-LLM-Api-Key": "sk-..." }
+ * ```
+ */
 function buildLLMHeaders(): Record<string, string> {
   const config = getVaultCache();
   if (!config?.apiKey) return {};
@@ -237,6 +251,11 @@ function buildLLMHeaders(): Record<string, string> {
   };
 }
 
+/**
+ * Get the current LLM provider from vault cache.
+ *
+ * @returns Current provider name (e.g., "openai", "anthropic") or undefined
+ */
 function currentProvider(): string | undefined {
   return getVaultCache()?.provider;
 }

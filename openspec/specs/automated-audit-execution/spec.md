@@ -1,8 +1,11 @@
 # automated-audit-execution Specification
 
 ## Purpose
-TBD - created by archiving change execute-devtools-audit. Update Purpose after archive.
+
+Automates application quality audits using Chrome DevTools MCP to collect performance metrics, detect accessibility violations and console errors, and generate structured reports for tracking and analysis.
+
 ## Requirements
+
 ### Requirement: Browser Automation via Chrome DevTools MCP
 
 The system SHALL use the Chrome DevTools MCP tool to programmatically control a browser instance for audit execution.
@@ -15,12 +18,14 @@ The system SHALL use the Chrome DevTools MCP tool to programmatically control a 
 **And** the application dev server is accessible at http://localhost:5173
 **When** the audit execution command is invoked
 **Then** the system SHALL:
+
 - Use `list_pages` to verify browser connectivity
 - Use `new_page` or `navigate_page` to load http://localhost:5173
 - Wait for page load completion
 - Verify application loads without critical errors
 
 **Acceptance Criteria**:
+
 - Browser page successfully loads application
 - Page load completes within 30 seconds
 - No critical JavaScript errors in console (errors with severity "error")
@@ -38,12 +43,14 @@ The system SHALL capture performance metrics using Chrome DevTools MCP network a
 **Given** the application is loaded in the browser
 **When** performance metrics are collected
 **Then** the system SHALL record:
+
 - **Total page load time** (DOMContentLoaded to load event)
 - **Resource count** (total JavaScript, CSS, image, font files loaded)
 - **Total transfer size** (sum of all resource sizes in bytes)
 - **Render-blocking resources** (CSS/JS loaded before first paint)
 
 **Acceptance Criteria**:
+
 - Metrics captured and stored in JSON format
 - Timestamp included (ISO 8601 format)
 - Metrics match format: `{ "pageLoadTime": 2345, "resourceCount": 23, "totalBytes": 1234567 }`
@@ -53,11 +60,13 @@ The system SHALL capture performance metrics using Chrome DevTools MCP network a
 **Given** the page has finished loading
 **When** network requests are analyzed via `list_network_requests`
 **Then** the system SHALL:
+
 - Identify render-blocking resources (CSS, synchronous JS)
 - Calculate cumulative transfer size per resource type
 - Detect unoptimized resources (large images, uncompressed assets)
 
 **Acceptance Criteria**:
+
 - Render-blocking resources listed with file paths and sizes
 - At least 90% of CSS/JS resources identified (per SC-002 from spec.md)
 - Resource type breakdown provided (JS: X KB, CSS: Y KB, Images: Z KB)
@@ -75,11 +84,13 @@ The system SHALL detect accessibility violations using Chrome DevTools accessibi
 **Given** the application is loaded in the browser
 **When** accessibility analysis is performed
 **Then** the system SHALL:
+
 - Use `take_snapshot` to capture accessibility tree
 - Parse snapshot for elements missing required attributes (alt, labels, ARIA)
 - Identify contrast violations (if detectable via snapshot metadata)
 
 **Acceptance Criteria**:
+
 - Accessibility snapshot captured successfully
 - Snapshot includes all interactive elements (buttons, inputs, links)
 - Missing alt text detected on images
@@ -90,11 +101,13 @@ The system SHALL detect accessibility violations using Chrome DevTools accessibi
 **Given** accessibility violations have been detected
 **When** violations are categorized
 **Then** the system SHALL assign severity levels:
+
 - **Critical** (WCAG 2.1 Level A): Missing alt text, unlabeled inputs, insufficient contrast <3:1
 - **Warning** (WCAG 2.1 Level AA): Contrast <4.5:1, missing ARIA attributes
 - **Info**: Best practices (descriptive link text, heading hierarchy)
 
 **Acceptance Criteria**:
+
 - Each violation includes: element selector, WCAG criterion, severity, remediation guidance
 - Critical violations flagged for immediate attention
 - At least one example element provided per violation type
@@ -112,11 +125,13 @@ The system SHALL detect and categorize JavaScript console errors using Chrome De
 **Given** the application is loaded and running
 **When** console messages are captured via `list_console_messages`
 **Then** the system SHALL record:
+
 - **Errors** (severity: "error")
 - **Warnings** (severity: "warn")
 - **Info** (severity: "info", "log")
 
 **Acceptance Criteria**:
+
 - All console messages captured with timestamp, severity, message text, stack trace
 - Errors grouped by message pattern (deduplication)
 - Source file and line number included (if available)
@@ -126,11 +141,13 @@ The system SHALL detect and categorize JavaScript console errors using Chrome De
 **Given** console errors have been detected
 **When** errors are prioritized
 **Then** the system SHALL flag as critical:
+
 - Uncaught exceptions
 - Network request failures (4xx, 5xx)
 - Resource load failures (404 for CSS/JS)
 
 **Acceptance Criteria**:
+
 - Critical errors listed first in report
 - Each error includes impact assessment (e.g., "Blocks feature X")
 - Non-critical warnings separated into "Warnings" section
@@ -148,10 +165,12 @@ The system SHALL generate a structured audit report in JSON format compatible wi
 **Given** all audit metrics have been collected
 **When** the audit report is generated
 **Then** the system SHALL create a file:
+
 - **Path**: `specs/007-chrome-devtools-audit/audit-reports/2025-11-09-mcp-audit.json`
 - **Format**: JSON with sections for performance, accessibility, console errors, network analysis
 
 **Acceptance Criteria**:
+
 - Report includes metadata: timestamp, URL, tool version (MCP)
 - Performance metrics section with page load time, resource counts
 - Accessibility violations section with severity, selectors, WCAG criteria
@@ -164,10 +183,12 @@ The system SHALL generate a structured audit report in JSON format compatible wi
 **Given** the JSON audit report has been created
 **When** a summary is generated
 **Then** the system SHALL create:
+
 - **Path**: `specs/007-chrome-devtools-audit/audit-reports/2025-11-09-mcp-audit-summary.md`
 - **Content**: Markdown summary using report-template.md structure
 
 **Acceptance Criteria**:
+
 - Summary includes Executive Summary with 3-5 key findings
 - Top 5 performance opportunities listed
 - Critical accessibility violations highlighted
@@ -187,10 +208,12 @@ The system SHALL capture screenshots of the application and specific issues for 
 **Given** the application is loaded
 **When** the audit completes
 **Then** the system SHALL:
+
 - Use `take_screenshot` with `fullPage: true`
 - Save screenshot to `audit-reports/2025-11-09-homepage-screenshot.png`
 
 **Acceptance Criteria**:
+
 - Screenshot captures entire page (not just viewport)
 - Image format: PNG
 - File saved successfully
@@ -201,13 +224,14 @@ The system SHALL capture screenshots of the application and specific issues for 
 **Given** accessibility violations have been detected
 **When** visual evidence is needed
 **Then** the system SHALL (optional, if time permits):
+
 - Capture screenshot of specific elements with issues (e.g., button with insufficient contrast)
 - Annotate screenshots with issue indicators
 
 **Acceptance Criteria**:
+
 - Element screenshots saved to `audit-reports/issues/` directory
 - Filenames include issue type (e.g., `button-contrast-violation.png`)
 - Referenced in JSON report under relevant violation
 
 ---
-

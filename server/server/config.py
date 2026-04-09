@@ -73,7 +73,7 @@ class ServerConfig:
         valid_levels: set[LogLevel] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
         level_upper = level.upper()
         if level_upper in valid_levels:
-            return level_upper  # type: ignore
+            return level_upper
         return "INFO"
 
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { StyleHistoryRecord } from "../../hooks/useStyleHistory";
 import { useStyleHistory } from "../../hooks/useStyleHistory";
 import styles from "./StyleHistoryList.module.css";
@@ -8,21 +8,21 @@ interface StyleHistoryListProps {
   onSelect: (record: StyleHistoryRecord) => void;
 }
 
-export function StyleHistoryList({ userId, onSelect }: StyleHistoryListProps) {
+export function StyleHistoryList({ userId, onSelect }: StyleHistoryListProps): JSX.Element {
   const { history, total, loading, error, fetchHistory, remove } = useStyleHistory();
   const [offset, setOffset] = useState(0);
-  const limit = 10;
+  const limit: number = 10;
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Fetch history on mount
-  useState(() => {
+  // Fetch history on mount and when dependencies change
+  useEffect(() => {
     fetchHistory(userId, limit, offset);
-  });
+  }, [userId, limit, offset, fetchHistory]);
 
   const totalPages = Math.ceil(total / limit);
   const currentPage = Math.floor(offset / limit) + 1;
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString("zh-CN", {
       year: "numeric",
       month: "long",
@@ -32,12 +32,12 @@ export function StyleHistoryList({ userId, onSelect }: StyleHistoryListProps) {
     });
   };
 
-  const truncateText = (text: string, maxLength: number = 100) => {
+  const truncateText = (text: string, maxLength = 100): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string): Promise<void> => {
     if (deleteConfirm === id) {
       const success = await remove(id);
       if (success) {
@@ -48,7 +48,7 @@ export function StyleHistoryList({ userId, onSelect }: StyleHistoryListProps) {
     }
   };
 
-  const handlePageChange = (newOffset: number) => {
+  const handlePageChange = (newOffset: number): void => {
     setOffset(newOffset);
     fetchHistory(userId, limit, newOffset);
   };
