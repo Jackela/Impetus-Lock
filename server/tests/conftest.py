@@ -25,7 +25,7 @@ os.environ.setdefault("GOOGLE_API_KEY", "test-google-key")
 os.environ.setdefault("LLM_DEFAULT_PROVIDER", "debug")
 os.environ.setdefault("LLM_ALLOW_DEBUG_PROVIDER", "1")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
-os.environ.setdefault("REDIS_URL", "redis://localhost:6379/1")
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 
 if TYPE_CHECKING:
     pass
