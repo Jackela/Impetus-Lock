@@ -6,12 +6,7 @@ Article III (TDD): These tests drive the implementation of health endpoint.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
-
-if TYPE_CHECKING:
-    from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="module")
@@ -19,7 +14,7 @@ def client():
     """Create TestClient for the FastAPI app."""
     from fastapi.testclient import TestClient
     from server.api.main import app
-    
+
     return TestClient(app)
 
 
