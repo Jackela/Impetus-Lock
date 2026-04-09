@@ -28,6 +28,9 @@ const tasksApi = {
     const res = await fetch(`${API_URL}/tasks/`, {
       credentials: "include",
     });
+    if (res.status === 401) {
+      throw new Error("Unauthorized - Please login");
+    }
     if (!res.ok) throw new Error("Failed to fetch tasks");
     const data = await res.json();
     return data.tasks.map((t: TaskApiResponse) => ({
@@ -47,6 +50,9 @@ const tasksApi = {
       credentials: "include",
       body: JSON.stringify({ content, lock_ids: lockIds }),
     });
+    if (res.status === 401) {
+      throw new Error("Unauthorized - Please login");
+    }
     if (!res.ok) throw new Error("Failed to create task");
     const t = await res.json();
     return {
@@ -70,6 +76,9 @@ const tasksApi = {
         version: 0, // TODO: proper versioning
       }),
     });
+    if (res.status === 401) {
+      throw new Error("Unauthorized - Please login");
+    }
     if (!res.ok) throw new Error("Failed to update task");
   },
 
@@ -78,6 +87,9 @@ const tasksApi = {
       method: "DELETE",
       credentials: "include",
     });
+    if (res.status === 401) {
+      throw new Error("Unauthorized - Please login");
+    }
     if (!res.ok) throw new Error("Failed to delete task");
   },
 };

@@ -31,6 +31,7 @@ from server.api.routes import (
     style_history,
     tasks,
 )
+from server.auth import router as auth_router
 from server.domain.errors import AppError, LLMProviderError
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import ProviderRegistry
@@ -125,6 +126,7 @@ app.add_middleware(
 )
 
 # Include API routes
+app.include_router(auth_router)
 app.include_router(intervention.router)
 app.include_router(tasks.router)
 app.include_router(metrics.router)

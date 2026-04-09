@@ -57,44 +57,6 @@ class PostgreSQLTaskRepository(TaskRepository):
         """
         self._session = session
 
-    async def create_task(self, content: str, lock_ids: list[str]) -> Task:
-        """Create new task with content and lock IDs.
-
-        Args:
-            content: Initial task content (Markdown).
-            lock_ids: List of lock IDs for un-deletable blocks.
-
-        Returns:
-            Task: Created task domain entity with generated ID and timestamps.
-
-        Example:
-            ```python
-            task = await repository.create_task(
-                content="他打开门，犹豫着要不要进去。",
-                lock_ids=["lock_1"]
-            )
-            await session.commit()
-            assert task.id is not None
-            ```
-        """
-        # Create domain entity first (generates ID, timestamps, version)
-        entity = Task.create(content, lock_ids)
-
-        # Map to ORM model
-        model = TaskModel(
-            id=entity.id,
-            content=entity.content,
-            lock_ids=entity.lock_ids,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
-            version=entity.version,
-        )
-
-        self._session.add(model)
-        await self._session.flush()  # Flush to get DB-generated fields
-
-        return entity
-
     async def get_task(self, task_id: UUID) -> Task | None:
         """Get task by ID.
 
@@ -302,6 +264,96 @@ class PostgreSQLTaskRepository(TaskRepository):
         )
 
         return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def list_tasks_by_user(
+        self, user_id: UUID, limit: int = 100, offset: int = 0
+    ) -> list[Task]:
+        """List tasks for a specific user (paginated).
+
+        Args:
+            user_id: User UUID to filter by.
+            limit: Maximum number of tasks to return (default 100).
+            offset: Number of tasks to skip for pagination (default 0).
+
+        Returns:
+            list[Task]: User's tasks in reverse chronological order (newest first).
+        """
+        result = await self._session.execute(
+            select(TaskModel)
+            .where(TaskModel.user_id == user_id)
+            .order_by(TaskModel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        return [self._to_entity(m) for m in result.scalars().all()]
+
+    async def count_tasks_by_user(self, user_id: UUID) -> int:
+        """Count total tasks for a specific user.
+
+        Args:
+            user_id: User UUID to count tasks for.
+
+        Returns:
+            int: Total number of tasks for this user.
+        """
+        result = await self._session.execute(
+            select(func.count(TaskModel.id)).where(TaskModel.user_id == user_id)
+        )
+
+        return result.scalar() or 0
+
+    async def get_task_by_user(self, task_id: UUID, user_id: UUID) -> Task | None:
+        """Get task by ID if it belongs to the specified user.
+
+        Args:
+            task_id: Task UUID.
+            user_id: User UUID to verify ownership.
+
+        Returns:
+            Task | None: Task if found and owned by user, None otherwise.
+        """
+        result = await self._session.execute(
+            select(TaskModel).where(
+                TaskModel.id == task_id,
+                TaskModel.user_id == user_id,
+            )
+        )
+        model = result.scalar_one_or_none()
+
+        return self._to_entity(model) if model else None
+
+    async def create_task(
+        self, content: str, lock_ids: list[str], user_id: UUID | None = None
+    ) -> Task:
+        """Create new task with content, lock IDs, and optional user ID.
+
+        Args:
+            content: Initial task content (Markdown).
+            lock_ids: List of lock IDs for un-deletable blocks.
+            user_id: Optional user ID to associate with the task.
+
+        Returns:
+            Task: Created task domain entity with generated ID and timestamps.
+        """
+        # Create domain entity first (generates ID, timestamps, version)
+        entity = Task.create(content, lock_ids)
+
+        # Map to ORM model
+        model = TaskModel(
+            id=entity.id,
+            user_id=user_id,
+            content=entity.content,
+            lock_ids=entity.lock_ids,
+            created_at=entity.created_at,
+            updated_at=entity.updated_at,
+            version=entity.version,
+        )
+
+        self._session.add(model)
+        await self._session.flush()  # Flush to get DB-generated fields
+
+        return entity
 
     @staticmethod
     def _to_entity(model: TaskModel) -> Task:
