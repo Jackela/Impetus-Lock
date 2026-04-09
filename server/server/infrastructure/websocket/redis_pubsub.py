@@ -66,12 +66,15 @@ class RedisPubSubManager:
             self._listener_task.cancel()
             with suppress(asyncio.CancelledError):
                 await self._listener_task
+        self._listener_task = None
 
         if self._pubsub:
             await self._pubsub.close()
+        self._pubsub = None
 
         if self._redis:
             await self._redis.close()
+        self._redis = None
 
         logger.info("Disconnected from Redis")
 

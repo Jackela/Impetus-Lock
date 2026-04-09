@@ -279,6 +279,9 @@ class TestRedisPubSubManagerListening:
 
         # Mock pubsub to return a message
         mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.close = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -318,6 +321,9 @@ class TestRedisPubSubManagerListening:
             handler_called = True
 
         mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.close = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -350,6 +356,9 @@ class TestRedisPubSubManagerListening:
             raise ValueError("Handler error")
 
         mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.close = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -549,6 +558,9 @@ class TestRedisPubSubManagerEdgeCases:
             pass
 
         mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.close = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -559,8 +571,7 @@ class TestRedisPubSubManagerEdgeCases:
                 asyncio.CancelledError(),
             ]
         )
-        mock_redis_client.pubsub = Mock(return_value=mock_redis_client)
-        mock_redis_client.pubsub.return_value = mock_pubsub
+        mock_redis_client.pubsub = Mock(return_value=mock_pubsub)
 
         with patch("redis.asyncio.from_url", return_value=mock_redis_client):
             await manager.connect()
@@ -586,6 +597,9 @@ class TestRedisPubSubManagerEdgeCases:
 
         unicode_message = {"text": "Hello 👋 世界 🌍", "emoji": "🎉🎊"}
         mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.close = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -621,6 +635,9 @@ class TestRedisPubSubManagerEdgeCases:
         large_message = {"type": "large", "content": large_content}
 
         mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.close = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {

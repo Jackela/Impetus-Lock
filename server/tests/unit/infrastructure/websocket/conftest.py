@@ -185,13 +185,14 @@ def mock_redis_client() -> Mock:
     """
     mock = Mock()
 
-    # Create async pubsub mock
+    # Create async pubsub mock with all required async methods
     mock_pubsub = Mock()
     mock_pubsub.subscribe = AsyncMock(return_value=None)
     mock_pubsub.unsubscribe = AsyncMock(return_value=None)
     mock_pubsub.close = AsyncMock(return_value=None)
     mock_pubsub.get_message = AsyncMock(return_value=None)
 
+    # pubsub() should return the mock_pubsub with async methods
     mock.pubsub = Mock(return_value=mock_pubsub)
     mock.publish = AsyncMock(return_value=1)
     mock.setex = AsyncMock(return_value=True)
