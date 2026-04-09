@@ -12,7 +12,6 @@ Constitutional Compliance:
 
 from __future__ import annotations
 
-import asyncio
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -25,7 +24,7 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "test-anthropic-key")
 os.environ.setdefault("GOOGLE_API_KEY", "test-google-key")
 os.environ.setdefault("LLM_DEFAULT_PROVIDER", "debug")
 os.environ.setdefault("LLM_ALLOW_DEBUG_PROVIDER", "1")
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost/test")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/1")
 
 if TYPE_CHECKING:
@@ -47,9 +46,6 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "requires_anthropic: Tests requiring anthropic SDK")
     config.addinivalue_line("markers", "requires_gemini: Tests requiring google-generativeai SDK")
     config.addinivalue_line("markers", "requires_openai: Tests requiring openai SDK")
-
-    # Suppress async fixtures deprecation warnings
-    config.option.asyncio_mode = "auto"
 
 
 def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
@@ -91,14 +87,6 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
                 return True
 
     return None
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """Create an instance of the default event loop for the test session."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 @pytest.fixture(scope="function")
