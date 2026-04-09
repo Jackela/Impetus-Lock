@@ -202,7 +202,16 @@ jobs:
           poetry install --with dev
 
       - name: Run integration tests
-        run: poetry run pytest tests/integration -v --tb=short -n auto -m "integration" --cov=server --cov-report=xml --cov-report=html --junitxml=junit-integration.xml
+        run: |
+          if ls tests/integration/test_*.py 1> /dev/null 2>&1; then
+            poetry run pytest tests/integration -v --tb=short -n auto --cov=server --cov-report=xml --cov-report=html --junitxml=junit-integration.xml
+          else
+            echo "No integration test files found. Skipping integration tests."
+            # Create empty coverage files to prevent upload failures
+            mkdir -p htmlcov
+            touch coverage.xml
+            touch junit-integration.xml
+          fi
         env:
           REDIS_URL: redis://localhost:6379/0
 
@@ -273,7 +282,16 @@ jobs:
           poetry install --with dev
 
       - name: Run E2E tests
-        run: poetry run pytest tests/e2e -v --tb=short -n auto -m "e2e" --cov=server --cov-report=xml --cov-report=html --junitxml=junit-e2e.xml || true
+        run: |
+          if ls tests/e2e/test_*.py 1>/dev/null 2>&1; then
+            poetry run pytest tests/e2e -v --tb=short -n auto --cov=server --cov-report=xml --cov-report=html --junitxml=junit-e2e.xml || true
+          else
+            echo "No E2E test files found. Skipping E2E tests."
+            # Create empty coverage files to prevent upload failures
+            mkdir -p htmlcov
+            touch coverage.xml
+            touch junit-e2e.xml
+          fi
         env:
           REDIS_URL: redis://localhost:6379/0
 
