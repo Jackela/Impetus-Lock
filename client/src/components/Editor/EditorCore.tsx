@@ -97,6 +97,11 @@ interface EditorCoreProps {
    * Surface intervention errors (e.g., backend misconfiguration) to parent UI.
    */
   onInterventionError?: (error: Error) => void;
+  /**
+   * Content version counter for triggering content updates without remounting.
+   * When this changes, the editor will update its content but keep state.
+   */
+  contentVersion?: number;
 }
 
 // Create logger instance for EditorCore namespace
@@ -116,6 +121,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   onTriggerProcessed,
   onTimerUpdate,
   onInterventionError,
+  contentVersion,
 }) => {
   // Get LockManager from context (DIP - Article IV)
   const lockManager = useLockManager();
@@ -150,6 +156,33 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
   // Track if delete is currently executing (separate from trigger processing)
   const isDeletingRef = useRef(false);
+
+  // Track last processed content version to avoid duplicate updates
+  const lastContentVersionRef = useRef(contentVersion);
+
+  // Handle content version changes - update editor content without remounting
+  useEffect(() => {
+    if (contentVersion === undefined) return;
+    if (lastContentVersionRef.current === contentVersion) return;
+
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    // Update the editor content when contentVersion changes
+    editor.action((ctx) => {
+      const view = ctx.get(editorViewCtx);
+      const currentContent = view.state.doc.textContent;
+
+      // Only update if content actually changed
+      if (currentContent !== initialContent) {
+        const tr = view.state.tr;
+        tr.insertText(initialContent || "", 0, view.state.doc.content.size);
+        view.dispatch(tr);
+      }
+    });
+
+    lastContentVersionRef.current = contentVersion;
+  }, [contentVersion, initialContent]);
 
   // Animation durations from centralized config
   const actionResetTimerRef = useRef<NodeJS.Timeout | null>(null);

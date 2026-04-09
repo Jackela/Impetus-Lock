@@ -12,114 +12,21 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, TypeAdapter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.dependencies import get_task_repository
-from server.domain.entities.intervention_action import InterventionAction
-from server.domain.entities.task import Task
-from server.domain.models.anchor import Anchor
+from server.api.schemas.task import (
+    InterventionActionResponse,
+    InterventionHistoryResponse,
+    TaskCreateRequest,
+    TaskListResponse,
+    TaskResponse,
+    TaskUpdateRequest,
+)
 from server.domain.repositories.task_repository import TaskRepository
 from server.infrastructure.persistence.database import get_session_optional
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
-
-# TypeAdapter for validating Anchor union type
-_anchor_adapter: TypeAdapter[Anchor] = TypeAdapter(Anchor)
-
-
-# Request/Response Models
-
-
-class TaskCreateRequest(BaseModel):
-    """Request schema for creating a task."""
-
-    content: str = Field(
-        ..., min_length=1, max_length=100000, description="Task content (Markdown)"
-    )
-    lock_ids: list[str] = Field(default_factory=list, description="List of lock IDs")
-
-
-class TaskUpdateRequest(BaseModel):
-    """Request schema for updating a task."""
-
-    content: str = Field(..., min_length=1, max_length=100000, description="Updated task content")
-    lock_ids: list[str] = Field(..., description="Updated list of lock IDs")
-    version: int = Field(..., ge=0, description="Current version (for optimistic locking)")
-
-
-class TaskResponse(BaseModel):
-    """Response schema for task operations."""
-
-    id: str
-    content: str
-    lock_ids: list[str]
-    created_at: str
-    updated_at: str
-    version: int
-
-    @classmethod
-    def from_entity(cls, task: Task) -> "TaskResponse":
-        """Convert Task entity to response model."""
-        return cls(
-            id=str(task.id),
-            content=task.content,
-            lock_ids=task.lock_ids,
-            created_at=task.created_at.isoformat(),
-            updated_at=task.updated_at.isoformat(),
-            version=task.version,
-        )
-
-
-class InterventionActionResponse(BaseModel):
-    """Response schema for intervention action."""
-
-    id: str
-    task_id: str
-    action_type: str
-    action_id: str
-    lock_id: str | None
-    content: str | None
-    anchor: Anchor
-    mode: str
-    context: str
-    issued_at: str
-    created_at: str
-
-    @classmethod
-    def from_entity(cls, action: InterventionAction) -> "InterventionActionResponse":
-        """Convert InterventionAction entity to response model."""
-        return cls(
-            id=str(action.id),
-            task_id=str(action.task_id),
-            action_type=action.action_type,
-            action_id=action.action_id,
-            lock_id=action.lock_id,
-            content=action.content,
-            anchor=_anchor_adapter.validate_python(action.anchor),
-            mode=action.mode,
-            context=action.context,
-            issued_at=action.issued_at.isoformat(),
-            created_at=action.created_at.isoformat(),
-        )
-
-
-class InterventionHistoryResponse(BaseModel):
-    """Response schema for intervention history query."""
-
-    total: int
-    limit: int
-    offset: int
-    actions: list[InterventionActionResponse]
-
-
-class TaskListResponse(BaseModel):
-    """Response schema for task list query."""
-
-    total: int
-    limit: int
-    offset: int
-    tasks: list[TaskResponse]
 
 
 # Endpoints

@@ -1,6 +1,9 @@
 import { useManualTrigger } from "../hooks/useManualTrigger";
 import type { AgentMode } from "../types/mode";
 import { AIActionType } from "../types/ai-actions";
+import { createLogger } from "../utils/logger";
+
+const logger = createLogger("ManualTriggerButton");
 
 /**
  * Manual trigger button for instant AI intervention in Muse mode.
@@ -71,7 +74,7 @@ export function ManualTriggerButton({
     } catch (error) {
       // P3 US3: Trigger ERROR feedback on API failure
       onTrigger?.(AIActionType.ERROR);
-      console.error("Manual trigger failed:", error);
+      logger.error("Manual trigger failed", error);
     }
   };
 

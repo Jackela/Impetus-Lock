@@ -1,0 +1,148 @@
+/**
+ * TaskList Component Styles
+ *
+ * Sidebar container for task management with fixed header/footer.
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 280px;
+  height: 100%;
+  background-color: #111827;
+  border-right: 1px solid #1f2937;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #1f2937;
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.count {
+  padding: 0.25rem 0.5rem;
+  background-color: #374151;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+/* Scrollable task list */
+.scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+
+.scrollArea::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollArea::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 3px;
+}
+
+.scrollArea::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Empty state */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.empty p {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.empty span {
+  font-size: 0.75rem;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+/* Error state */
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.error p {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #f87171;
+}
+
+.error span {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* Footer with create button */
+.footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #1f2937;
+  flex-shrink: 0;
+}
+
+/* Responsive: Full width on mobile */
+@media (max-width: 768px) {
+  .container {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #1f2937;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .scrollArea::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}

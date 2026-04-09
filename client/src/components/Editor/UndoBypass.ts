@@ -13,6 +13,9 @@
 
 import type { Transaction } from "@milkdown/prose/state";
 import type { EditorView } from "@milkdown/prose/view";
+import { createLogger } from "../../utils/logger";
+
+const logger = createLogger("UndoBypass");
 
 /**
  * Execute a deletion that bypasses the Undo stack.
@@ -49,7 +52,7 @@ export function deleteWithoutUndo(view: EditorView, from: number, to: number): b
 
   // Validate positions
   if (from < 0 || to > state.doc.content.size || from >= to) {
-    console.error("Invalid deletion range:", { from, to, docSize: state.doc.content.size });
+    logger.error("Invalid deletion range", { from, to, docSize: state.doc.content.size });
     return false;
   }
 
@@ -119,7 +122,7 @@ export function insertWithoutUndo(
 
   // Validate position
   if (pos < 0 || pos > state.doc.content.size) {
-    console.error("Invalid insertion position:", { pos, docSize: state.doc.content.size });
+    logger.error("Invalid insertion position", { pos, docSize: state.doc.content.size });
     return false;
   }
 

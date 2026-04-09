@@ -180,8 +180,12 @@ class DatabaseManager:
 
         self._database_url: str = url
         # P1 Fix: Read pool configuration from environment variables with defaults
-        self._pool_size = pool_size if pool_size is not None else int(os.getenv("POOL_SIZE", "5"))
-        self._max_overflow = max_overflow if max_overflow is not None else int(os.getenv("MAX_OVERFLOW", "10"))
+        self._pool_size = pool_size if pool_size is not None else int(
+            os.getenv("POOL_SIZE", "5")
+        )
+        self._max_overflow = max_overflow if max_overflow is not None else int(
+            os.getenv("MAX_OVERFLOW", "10")
+        )
         self._enable_circuit_breaker = enable_circuit_breaker
 
         logger.debug(
