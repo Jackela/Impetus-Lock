@@ -1,26 +1,37 @@
 /**
  * Task API Client
  *
- * Client for task CRUD operations with optimistic locking support.
- * Handles fetch, create, update, and list operations for tasks.
+ * Client for task CRUD operations with Sprint 2 enhancements.
+ * Handles filtering, sorting, and metadata updates.
  *
  * @module services/api/taskClient
  */
 
+import type { TaskCategory, TaskFilter, TaskPriority, TaskSort } from "../../types/task";
 import type { components } from "../../types/api.generated";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 /**
- * Task record from the API.
+ * Task record from the API (Sprint 2 enhanced).
  */
 export interface TaskRecord {
   /** Unique task identifier */
   id: string;
+  /** Task title */
+  title: string;
   /** Markdown content of the task */
   content: string;
   /** Lock IDs applied to task content */
   lock_ids: string[];
+  /** Task category */
+  category: TaskCategory;
+  /** Task priority */
+  priority: TaskPriority;
+  /** Due date (ISO string, null if none) */
+  due_date: string | null;
+  /** Word count */
+  word_count: number;
   /** ISO timestamp of task creation */
   created_at: string;
   /** ISO timestamp of last update */
@@ -63,34 +74,17 @@ export class TaskAPIError extends Error {
 function mapTask(task: ApiTaskResponse): TaskRecord {
   return {
     id: task.id,
+    title: task.title,
     content: task.content,
     lock_ids: task.lock_ids,
+    category: task.category as TaskCategory,
+    priority: task.priority as TaskPriority,
+    due_date: task.due_date || null,
+    word_count: task.word_count,
     created_at: task.created_at,
     updated_at: task.updated_at,
     version: task.version,
   };
-}
-
-/**
- * Fetch a single task by ID.
- *
- * @param taskId - Task identifier
- * @returns Task record
- * @throws {TaskAPIError} If task not found (404) or fetch fails
- *
- * @example
- * ```ts
- * const task = await fetchTask('task_123');
- * console.log(task.content);
- * ```
- */
-export async function fetchTask(taskId: string): Promise<TaskRecord> {
-  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`);
-  if (!res.ok) {
-    throw new TaskAPIError(res.status, "Failed to fetch task");
-  }
-  const data = (await res.json()) as ApiTaskResponse;
-  return mapTask(data);
 }
 
 /**
@@ -108,28 +102,68 @@ export interface TaskListResponse {
 }
 
 /**
- * Fetch a paginated list of tasks.
+ * Fetch a paginated list of tasks with optional filtering and sorting.
  *
- * @param limit - Maximum tasks to return (default: 100)
- * @param offset - Number of tasks to skip (default: 0)
+ * @param options - Query options (pagination, filters, sort)
  * @returns Paginated task list
  * @throws {TaskAPIError} If fetch fails
  *
  * @example
  * ```ts
- * const page1 = await fetchTasks(10, 0); // First 10 tasks
- * const page2 = await fetchTasks(10, 10); // Next 10 tasks
+ * // Fetch all tasks
+ * const page1 = await fetchTasks({ limit: 10, offset: 0 });
+ *
+ * // Fetch with filters
+ * const filtered = await fetchTasks({
+ *   filter: { categories: [TaskCategory.WRITING], overdueOnly: true },
+ *   sort: { field: "due_date", order: "asc" }
+ * });
  * ```
  */
-export async function fetchTasks(
-  limit: number = 100,
-  offset: number = 0
-): Promise<TaskListResponse> {
-  const url = new URL(`${API_BASE_URL}/tasks/`);
-  if (limit > 0) url.searchParams.set("limit", limit.toString());
-  if (offset > 0) url.searchParams.set("offset", offset.toString());
+export interface FetchTasksOptions {
+  limit?: number;
+  offset?: number;
+  filter?: TaskFilter;
+  sort?: TaskSort;
+}
 
-  const res = await fetch(url.toString());
+export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskListResponse> {
+  const { limit = 100, offset = 0, filter, sort } = options;
+  const url = new URL(`${API_BASE_URL}/tasks/`);
+
+  url.searchParams.set("limit", limit.toString());
+  url.searchParams.set("offset", offset.toString());
+
+  // Add filters
+  if (filter?.categories?.length) {
+    filter.categories.forEach((cat) => url.searchParams.append("category", cat));
+  }
+  if (filter?.priorities?.length) {
+    filter.priorities.forEach((pri) => url.searchParams.append("priority", pri));
+  }
+  if (filter?.dueBefore) {
+    url.searchParams.set("due_before", filter.dueBefore);
+  }
+  if (filter?.dueAfter) {
+    url.searchParams.set("due_after", filter.dueAfter);
+  }
+  if (filter?.overdueOnly) {
+    url.searchParams.set("overdue", "true");
+  }
+  if (filter?.searchQuery) {
+    url.searchParams.set("search", filter.searchQuery);
+  }
+
+  // Add sort
+  if (sort) {
+    url.searchParams.set("sort_by", sort.field);
+    url.searchParams.set("sort_order", sort.order);
+  }
+
+  const res = await fetch(url.toString(), {
+    credentials: "include",
+  });
+
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to fetch tasks");
   }
@@ -150,25 +184,70 @@ export async function fetchTasks(
 }
 
 /**
- * Create a new task.
+ * Fetch a single task by ID.
  *
- * @param content - Markdown content for the task
- * @param lockIds - Lock IDs to apply to the task
+ * @param taskId - Task identifier
+ * @returns Task record
+ * @throws {TaskAPIError} If task not found (404) or fetch fails
+ *
+ * @example
+ * ```ts
+ * const task = await fetchTask('task_123');
+ * console.log(task.content);
+ * ```
+ */
+export async function fetchTask(taskId: string): Promise<TaskRecord> {
+  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new TaskAPIError(res.status, "Failed to fetch task");
+  }
+  const data = (await res.json()) as ApiTaskResponse;
+  return mapTask(data);
+}
+
+/**
+ * Create a new task (Sprint 2 enhanced).
+ *
+ * @param params - Task creation parameters
  * @returns Created task record
  * @throws {TaskAPIError} If creation fails
  *
  * @example
  * ```ts
- * const task = await createTask('# New Task', []);
- * console.log('Created:', task.id);
+ * const task = await createTask({
+ *   content: '# My Story',
+ *   category: TaskCategory.WRITING,
+ *   priority: TaskPriority.HIGH,
+ *   dueDate: '2025-12-31T23:59:59Z'
+ * });
  * ```
  */
-export async function createTask(content: string, lockIds: string[]): Promise<TaskRecord> {
+export interface CreateTaskParams {
+  content: string;
+  lockIds?: string[];
+  category?: TaskCategory;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+}
+
+export async function createTask(params: CreateTaskParams): Promise<TaskRecord> {
+  const { content, lockIds = [], category, priority, dueDate } = params;
+
   const res = await fetch(`${API_BASE_URL}/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content, lock_ids: lockIds }),
+    credentials: "include",
+    body: JSON.stringify({
+      content,
+      lock_ids: lockIds,
+      category,
+      priority,
+      due_date: dueDate,
+    }),
   });
+
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to create task");
   }
@@ -177,37 +256,40 @@ export async function createTask(content: string, lockIds: string[]): Promise<Ta
 }
 
 /**
- * Update an existing task with optimistic locking.
+ * Update an existing task with optimistic locking (Sprint 2 enhanced).
  *
  * @param taskId - Task identifier
- * @param content - New markdown content
- * @param lockIds - Lock IDs for the task
- * @param version - Current version for optimistic locking
+ * @param params - Update parameters
  * @returns Updated task record
  * @throws {TaskAPIError} If version conflict (409) or update fails
- *
- * @example
- * ```ts
- * try {
- *   const updated = await updateTask('task_123', '# Updated', [], 1);
- *   console.log('Updated to version:', updated.version);
- * } catch (err) {
- *   if (err instanceof TaskAPIError && err.code === 'version_conflict') {
- *     console.error('Task was modified by another client');
- *   }
- * }
- * ```
  */
+export interface UpdateTaskParams {
+  content: string;
+  lockIds: string[];
+  version: number;
+  category?: TaskCategory;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+}
+
 export async function updateTask(
   taskId: string,
-  content: string,
-  lockIds: string[],
-  version: number
+  params: UpdateTaskParams
 ): Promise<TaskRecord> {
+  const { content, lockIds, version, category, priority, dueDate } = params;
+
   const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content, lock_ids: lockIds, version }),
+    credentials: "include",
+    body: JSON.stringify({
+      content,
+      lock_ids: lockIds,
+      version,
+      category,
+      priority,
+      due_date: dueDate,
+    }),
   });
 
   if (res.status === 409) {
@@ -220,4 +302,54 @@ export async function updateTask(
 
   const data = (await res.json()) as ApiTaskResponse;
   return mapTask(data);
+}
+
+/**
+ * Update only task metadata (category, priority, due_date) without version check.
+ *
+ * @param taskId - Task identifier
+ * @param params - Metadata update parameters
+ * @returns Updated task record
+ * @throws {TaskAPIError} If task not found
+ */
+export interface UpdateTaskMetadataParams {
+  category?: TaskCategory;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+}
+
+export async function updateTaskMetadata(
+  taskId: string,
+  params: UpdateTaskMetadataParams
+): Promise<TaskRecord> {
+  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/metadata`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(params),
+  });
+
+  if (!res.ok) {
+    throw new TaskAPIError(res.status, "Failed to update task metadata");
+  }
+
+  const data = (await res.json()) as ApiTaskResponse;
+  return mapTask(data);
+}
+
+/**
+ * Delete a task.
+ *
+ * @param taskId - Task identifier
+ * @throws {TaskAPIError} If task not found
+ */
+export async function deleteTask(taskId: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new TaskAPIError(res.status, "Failed to delete task");
+  }
 }
