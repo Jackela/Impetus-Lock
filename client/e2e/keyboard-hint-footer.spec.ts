@@ -115,7 +115,7 @@ test.describe("Keyboard Hint Footer", () => {
 
     // Validate styling
     await expect(footer).toHaveCSS("opacity", "0.4");
-    await expect(footer).toHaveCSS("font-size", "14px"); // 0.875rem
+    await expect(footer).toHaveCSS("font-size", "11px"); // 0.6875rem (updated in ElevenLabs design)
     await expect(footer).toHaveCSS("position", "fixed");
     await expect(footer).toHaveCSS("text-align", "center");
     await expect(footer).toHaveCSS("pointer-events", "none");
@@ -123,7 +123,7 @@ test.describe("Keyboard Hint Footer", () => {
     // Validate kbd element styling
     const kbd = footer.locator("kbd");
     await expect(kbd).toHaveCSS("font-family", /monospace/);
-    await expect(kbd).toHaveCSS("border-radius", "3px");
+    await expect(kbd).toHaveCSS("border-radius", "4px");
 
     // Screenshot for visual regression
     await page.screenshot({ path: "test-results/footer-styling.png", fullPage: true });
