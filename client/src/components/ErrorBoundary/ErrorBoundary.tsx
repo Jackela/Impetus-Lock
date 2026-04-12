@@ -1,5 +1,8 @@
 import { Component, ReactNode } from "react";
 import "./ErrorBoundary.css";
+import { createLogger } from "../../utils/logger";
+
+const logger = createLogger("ErrorBoundary");
 
 /**
  * Props for the ErrorBoundary component.
@@ -52,7 +55,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   override componentDidCatch(error: Error, errorInfo: { componentStack: string }): void {
     // Log the error to an error reporting service
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    logger.error("ErrorBoundary caught an error", { error, errorInfo });
 
     // Call custom error handler if provided
     this.props.onError?.(error, errorInfo);

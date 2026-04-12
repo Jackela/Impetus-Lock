@@ -279,4 +279,32 @@ describe("EditorCore", () => {
     expect(provider).toBeInTheDocument();
     expect(provider).toBeVisible();
   });
+
+  /**
+   * Test: EditorCore should accept contentVersion prop.
+   *
+   * Coverage: Content version tracking for performance optimization
+   */
+  it("should accept contentVersion prop", () => {
+    const { rerender } = render(<EditorCore initialContent="Version 1" contentVersion={1} />);
+    expect(screen.getByTestId("milkdown-editor")).toBeInTheDocument();
+
+    // Rerender with same contentVersion should not cause remount
+    rerender(<EditorCore initialContent="Version 1" contentVersion={1} />);
+    expect(screen.getByTestId("milkdown-editor")).toBeInTheDocument();
+
+    // Rerender with different contentVersion should update content without remount
+    rerender(<EditorCore initialContent="Version 2" contentVersion={2} />);
+    expect(screen.getByTestId("milkdown-editor")).toBeInTheDocument();
+  });
+
+  /**
+   * Test: EditorCore should handle undefined contentVersion.
+   *
+   * Coverage: Backward compatibility
+   */
+  it("should handle undefined contentVersion", () => {
+    render(<EditorCore initialContent="Test" />);
+    expect(screen.getByTestId("milkdown-editor")).toBeInTheDocument();
+  });
 });

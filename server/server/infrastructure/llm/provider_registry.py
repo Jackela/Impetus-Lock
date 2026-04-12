@@ -171,14 +171,6 @@ class ProviderFactory:
                 temperature=config.temperature,
             ),
         )
-        if spec.no_args:
-            return provider_class()
-
-        return provider_class(
-            api_key=config.api_key,
-            model=config.model,
-            temperature=config.temperature,
-        )
 
     @classmethod
     def is_available(cls, provider_name: ProviderName) -> bool:

@@ -20,6 +20,101 @@ const LOCAL_CACHE_KEY = "impetus.task.cache";
 const LOCAL_META_KEY = "impetus.task.meta";
 
 /**
+ * Error message constants for task synchronization.
+ *
+ * Centralized error messages to enable consistent error handling
+ * and future internationalization (i18n) support.
+ */
+export const TaskSyncErrorMessages = {
+  /** Network connectivity error */
+  NETWORK_ERROR: "Network connection failed. Please check your internet connection.",
+
+  /** Server-side error (5xx) */
+  SERVER_ERROR: "Server error occurred. Please try again later.",
+
+  /** Task loading failure */
+  LOAD_FAILED: "Failed to load task. Please try again.",
+
+  /** Version conflict during save */
+  CONFLICT_REFRESHED: "Content refreshed due to newer version on server.",
+  CONFLICT_REFRESH_FAILED: "Version conflict; could not refresh latest content.",
+
+  /** Save operation failure */
+  SAVE_FAILED: "Save failed. Changes kept locally.",
+
+  /** API unavailable (fallback to local) */
+  API_UNAVAILABLE: "Task API unavailable. Using local draft.",
+
+  /** Generic fallback error */
+  GENERIC_ERROR: "An unexpected error occurred. Please try again.",
+} as const;
+
+/**
+ * Error type classification for task sync operations.
+ */
+export type TaskSyncErrorType =
+  | "network"
+  | "server"
+  | "conflict"
+  | "auth"
+  | "validation"
+  | "unknown";
+
+/**
+ * Classify an error into a specific type.
+ *
+ * @param error - Error to classify
+ * @returns Error type classification
+ */
+function classifyError(error: unknown): TaskSyncErrorType {
+  if (error instanceof TaskAPIError) {
+    if (error.status >= 500) return "server";
+    if (error.status === 409) return "conflict";
+    if (error.status === 401 || error.status === 403) return "auth";
+    if (error.status === 422) return "validation";
+    return "unknown";
+  }
+
+  // Network errors (fetch failures, timeouts, etc.)
+  if (error instanceof TypeError && error.message.includes("fetch")) {
+    return "network";
+  }
+
+  return "unknown";
+}
+
+/**
+ * Get user-friendly error message for an error.
+ *
+ * @param error - Error to get message for
+ * @param context - Additional context for the error
+ * @returns User-friendly error message
+ */
+function getErrorMessage(error: unknown, context?: { operation?: "load" | "save" }): string {
+  const errorType = classifyError(error);
+
+  switch (errorType) {
+    case "network":
+      return TaskSyncErrorMessages.NETWORK_ERROR;
+    case "server":
+      return TaskSyncErrorMessages.SERVER_ERROR;
+    case "conflict":
+      return TaskSyncErrorMessages.CONFLICT_REFRESHED;
+    case "auth":
+      return "Authentication failed. Please sign in again.";
+    case "validation":
+      return "Invalid data. Please check your input and try again.";
+    default: {
+      const operation = context?.operation;
+      if (operation === "load") {
+        return TaskSyncErrorMessages.LOAD_FAILED;
+      }
+      return TaskSyncErrorMessages.GENERIC_ERROR;
+    }
+  }
+}
+
+/**
  * Sync status for task operations.
  */
 type Status = "loading" | "ready" | "error";
@@ -144,7 +239,8 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         setError(null);
         setStatus("ready");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load task");
+        const message = getErrorMessage(err, { operation: "load" });
+        setError(message);
         setStatus("error");
       } finally {
         isLoadingExternal.current = false;
@@ -178,7 +274,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       setStatus("ready");
     } catch {
       loadFromCache();
-      setError("Task API unavailable. Using local draft.");
+      setError(TaskSyncErrorMessages.API_UNAVAILABLE);
       setStatus("error");
     }
   }, [cacheMeta, defaultContent, loadFromCache]);
@@ -219,18 +315,21 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         cacheMeta({ taskId: record.id, version: record.version });
         setError(null);
       } catch (err) {
-        if (err instanceof TaskAPIError && err.status === 409 && taskId) {
+        const errorType = classifyError(err);
+
+        if (errorType === "conflict" && taskId) {
           try {
             const latest = await fetchTask(taskId);
             setContent(latest.content);
             setLockIds(latest.lock_ids || []);
             setVersion(latest.version);
-            setError("Content refreshed due to newer version on server.");
+            setError(TaskSyncErrorMessages.CONFLICT_REFRESHED);
           } catch {
-            setError("Version conflict; could not refresh latest content.");
+            setError(TaskSyncErrorMessages.CONFLICT_REFRESH_FAILED);
           }
         } else {
-          setError("Save failed. Changes kept locally.");
+          const message = getErrorMessage(err, { operation: "save" });
+          setError(message);
         }
       } finally {
         setIsSaving(false);

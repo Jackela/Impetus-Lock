@@ -8,6 +8,7 @@ Constitutional Compliance:
 - Article V (Documentation): Complete API documentation
 """
 
+import logging
 import os
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -19,18 +20,27 @@ from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
 
 router = APIRouter(prefix="/test", tags=["testing"])
+logger = logging.getLogger("server.api.testing")
 
 
 def _check_testing_enabled() -> None:
     """Verify testing mode is enabled.
 
     Raises:
-        HTTPException: 403 if TESTING environment variable is not set.
+        HTTPException: 403 if TESTING environment variable is not set to "1".
     """
-    if not os.getenv("TESTING"):
+    # P1 Security Fix: Strict check for TESTING="1" only
+    if os.getenv("TESTING") != "1":
+        logger.warning(
+            "Attempted access to test endpoints with invalid TESTING value",
+            extra={
+                "testing_env": os.getenv("TESTING"),
+                "remote_addr": None,  # Will be set by middleware if available
+            },
+        )
         raise HTTPException(
             status_code=403,
-            detail="Test endpoints are disabled. Set TESTING=true to enable.",
+            detail="Test endpoints are disabled. Set TESTING=1 to enable.",
         )
 
 

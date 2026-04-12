@@ -33,6 +33,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { MUSE_IDLE_TIMEOUT_MS, MUSE_STUCK_TIMEOUT_MS } from "../config/animation";
+import { useInterval } from "./useInterval";
 
 /**
  * Writing state values.
@@ -126,8 +127,36 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
   // Track if onStuck was already called for current STUCK transition
   const stuckCallbackFired = useRef<boolean>(false);
 
-  // Timer reference for cleanup
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // State machine tick function
+  const stateMachineTick = useCallback(() => {
+    const idleTime = Date.now() - lastInputTime.current;
+
+    const remainingMs = Math.max(0, STUCK_THRESHOLD - idleTime);
+    const remainingSeconds = Math.ceil(remainingMs / 1000);
+
+    if (onTimerUpdate) {
+      onTimerUpdate(remainingSeconds);
+    }
+
+    setState((prev) => {
+      if (idleTime >= STUCK_THRESHOLD && prev !== "STUCK") {
+        if (onStuck && !stuckCallbackFired.current) {
+          stuckCallbackFired.current = true;
+          onStuck();
+        }
+        return "STUCK";
+      } else if (idleTime >= IDLE_THRESHOLD && prev !== "IDLE") {
+        return "IDLE";
+      }
+      return prev;
+    });
+  }, [onStuck, onTimerUpdate]);
+
+  // Use generic interval hook for state machine
+  const { restart: restartTimer } = useInterval({
+    callback: stateMachineTick,
+    delay: mode === "muse" ? 1000 : null,
+  });
 
   /**
    * Handle user input event.
@@ -147,7 +176,9 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
       }
       return prev;
     });
-  }, [mode]);
+
+    restartTimer();
+  }, [mode, restartTimer]);
 
   /**
    * Manual trigger for Demo mode.
@@ -162,47 +193,12 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
     }
   }, [onStuck]);
 
-  /**
-   * State machine timer effect.
-   * Checks idle time every 1 second and transitions states.
-   */
+  // Reset state when mode changes
   useEffect(() => {
     if (mode !== "muse") {
       setState("WRITING");
-      return;
     }
-
-    timerRef.current = setInterval(() => {
-      const idleTime = Date.now() - lastInputTime.current;
-
-      const remainingMs = Math.max(0, STUCK_THRESHOLD - idleTime);
-      const remainingSeconds = Math.ceil(remainingMs / 1000);
-
-      if (onTimerUpdate) {
-        onTimerUpdate(remainingSeconds);
-      }
-
-      setState((prev) => {
-        if (idleTime >= STUCK_THRESHOLD && prev !== "STUCK") {
-          if (onStuck && !stuckCallbackFired.current) {
-            stuckCallbackFired.current = true;
-            onStuck();
-          }
-          return "STUCK";
-        } else if (idleTime >= IDLE_THRESHOLD && prev !== "IDLE") {
-          return "IDLE";
-        }
-        return prev;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [mode, onStuck, onTimerUpdate]);
+  }, [mode]);
 
   return {
     state,

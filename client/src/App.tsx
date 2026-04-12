@@ -161,7 +161,8 @@ function App() {
           remainingTime={timerRemaining}
         />
         <EditorCore
-          key={`${taskId ?? "local"}:${taskVersion}`}
+          key={taskId ?? "local"}
+          contentVersion={taskVersion}
           mode={mode}
           initialContent={taskContent}
           initialLocks={taskLocks}

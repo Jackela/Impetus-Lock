@@ -92,13 +92,68 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
 @pytest.fixture(scope="function")
 async def async_client():
     """Create async test client with isolated database transaction."""
-    yield None
+    from httpx import AsyncClient, ASGITransport
+    from server.main import app
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test"
+    ) as client:
+        yield client
 
 
 @pytest.fixture(scope="function")
 def test_db():
     """Provide isolated database transaction for test."""
     yield None
+
+
+@pytest.fixture(scope="function")
+async def db_session():
+    """Provide async database session for tests.
+
+    Creates a fresh in-memory SQLite database for each test,
+    creating User table only (TaskModel uses PostgreSQL-specific types).
+    """
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    from sqlalchemy import Column, DateTime, String
+    from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+    from sqlalchemy.orm import declarative_base
+    from uuid import uuid4
+    from datetime import datetime, UTC
+
+    # Create a separate base for auth tests to avoid PostgreSQL-specific types
+    AuthTestBase = declarative_base()
+
+    class TestUser(AuthTestBase):
+        __tablename__ = "users"
+        id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+        email = Column(String(255), nullable=False, unique=True)
+        password_hash = Column(String(255), nullable=False)
+        created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+        updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+
+    # Create async in-memory database
+    engine = create_async_engine(
+        "sqlite+aiosqlite:///:memory:",
+        echo=False,
+    )
+
+    # Create tables
+    async with engine.begin() as conn:
+        await conn.run_sync(AuthTestBase.metadata.create_all)
+
+    # Create session
+    async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+    async with async_session() as session:
+        yield session
+
+    # Cleanup: drop tables
+    async with engine.begin() as conn:
+        await conn.run_sync(AuthTestBase.metadata.drop_all)
+
+    await engine.dispose()
 
 
 @pytest.fixture(autouse=True)

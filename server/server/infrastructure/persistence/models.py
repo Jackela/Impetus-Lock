@@ -40,6 +40,7 @@ class TaskModel(Base):
 
     Attributes:
         id: Primary key (UUID).
+        user_id: Foreign key to users table (task owner).
         content: Task content (Markdown text).
         lock_ids: Array of lock IDs for un-deletable blocks.
         created_at: Creation timestamp (UTC).
@@ -51,6 +52,9 @@ class TaskModel(Base):
     __tablename__ = "tasks"
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     lock_ids: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, server_default="{}")
     created_at: Mapped[datetime] = mapped_column(
@@ -71,6 +75,7 @@ class TaskModel(Base):
 
     __table_args__ = (
         CheckConstraint("length(content) > 0", name="tasks_content_not_empty"),
+        Index("idx_tasks_user_id", "user_id"),
         Index("idx_tasks_created_at", "created_at"),
         Index("idx_tasks_updated_at", "updated_at"),
     )

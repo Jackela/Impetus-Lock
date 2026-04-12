@@ -61,8 +61,13 @@ function createTestQueryClient() {
 describe("useCreateTask", () => {
   const mockCreatedTask: TaskRecord = {
     id: "task-1",
+    title: "New task content",
     content: "New task content",
     lock_ids: [],
+    category: "WRITING",
+    priority: "MEDIUM",
+    due_date: null,
+    word_count: 3,
     created_at: "2025-02-04T10:00:00Z",
     updated_at: "2025-02-04T10:00:00Z",
     version: 0,
@@ -70,8 +75,13 @@ describe("useCreateTask", () => {
 
   const mockTaskResponse = {
     id: "task-1",
+    title: "New task content",
     content: "New task content",
     lock_ids: [],
+    category: "WRITING",
+    priority: "MEDIUM",
+    due_date: null,
+    word_count: 3,
     created_at: "2025-02-04T10:00:00Z",
     updated_at: "2025-02-04T10:00:00Z",
     version: 0,
@@ -122,6 +132,7 @@ describe("useCreateTask", () => {
     expect(mockFetch).toHaveBeenCalledWith("http://localhost:8000/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ content: "New task content", lock_ids: [] }),
     });
   });
@@ -151,6 +162,7 @@ describe("useCreateTask", () => {
     expect(mockFetch).toHaveBeenCalledWith("http://localhost:8000/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ content: "Locked task content", lock_ids: ["lock_1", "lock_2"] }),
     });
   });

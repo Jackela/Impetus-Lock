@@ -203,6 +203,30 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
     });
   }, [editor]);
 
+  // P2 Performance Fix: Debounced position update to reduce Floating UI calculations
+  const debounceTimerRef = useRef<number | null>(null);
+
+  const debouncedUpdatePosition = useCallback(() => {
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current);
+    }
+    // Set new timer for 16ms (1 frame at 60fps)
+    debounceTimerRef.current = window.setTimeout(() => {
+      updatePosition();
+      debounceTimerRef.current = null;
+    }, 16);
+  }, [updatePosition]);
+
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   // T015: ProseMirror transaction interception for selection tracking
   useEffect(() => {
     if (!editor) return;
@@ -235,9 +259,9 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
               bulletList: inBulletList,
             });
 
-            // T069: Update position when selection changes
-            // Use setTimeout to ensure DOM is updated before computing position
-            setTimeout(() => updatePosition(), 0);
+            // P2 Performance Fix: Use debounced position update
+            // Reduces Floating UI calculations from every keystroke to max 60fps
+            debouncedUpdatePosition();
           }
         }
 
@@ -245,7 +269,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
         originalDispatch(tr);
       };
     });
-  }, [editor, updatePosition]);
+  }, [editor, debouncedUpdatePosition]);
 
   // T013: Visibility logic - hide when editor is null or no selection
   if (!editor || !isVisible) return null;

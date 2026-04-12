@@ -78,7 +78,7 @@ export function useTasks(options: { limit?: number; offset?: number } = {}): Use
 
   const query = useQuery({
     queryKey: getQueryKey(limit, offset),
-    queryFn: () => fetchTasks(limit, offset),
+    queryFn: () => fetchTasks({ limit, offset }),
   });
 
   return {
