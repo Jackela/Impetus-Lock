@@ -59,16 +59,26 @@ describe("useTasks", () => {
   const mockTasks: TaskRecord[] = [
     {
       id: "task-1",
+      title: "First task content",
       content: "First task content",
       lock_ids: ["lock_1"],
+      category: "WRITING",
+      priority: "MEDIUM",
+      due_date: null,
+      word_count: 3,
       created_at: "2025-02-04T10:00:00Z",
       updated_at: "2025-02-04T10:00:00Z",
       version: 1,
     },
     {
       id: "task-2",
+      title: "Second task content",
       content: "Second task content",
       lock_ids: [],
+      category: "WRITING",
+      priority: "LOW",
+      due_date: null,
+      word_count: 2,
       created_at: "2025-02-04T09:00:00Z",
       updated_at: "2025-02-04T09:00:00Z",
       version: 0,
@@ -122,7 +132,9 @@ describe("useTasks", () => {
 
     // Verify fetch was called correctly (includes query params)
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch).toHaveBeenCalledWith("http://localhost:8000/tasks/?limit=100");
+    expect(mockFetch).toHaveBeenCalledWith("http://localhost:8000/tasks/?limit=100&offset=0", {
+      credentials: "include",
+    });
   });
 
   it("handles API error and sets error state", async () => {
