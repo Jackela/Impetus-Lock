@@ -56,6 +56,15 @@ export interface UseIntervalReturn {
    * Useful for resetting the timer after user activity.
    */
   restart: () => void;
+
+  /**
+   * Dynamically update the interval delay.
+   * If the interval is currently running, it will be stopped and restarted
+   * with the new delay. If delay is null/undefined, the interval is stopped.
+   *
+   * @param newDelay - The new interval delay in milliseconds, or null to pause
+   */
+  setDelay: (newDelay: number | null | undefined) => void;
 }
 
 /**
@@ -98,6 +107,9 @@ export function useInterval(options: UseIntervalOptions): UseIntervalReturn {
 
   // Store callback in ref to avoid stale closures
   const callbackRef = useRef(callback);
+
+  // Store current delay in ref to allow dynamic updates via setDelay
+  const delayRef = useRef(delay);
   const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update callback ref when callback changes
@@ -113,16 +125,20 @@ export function useInterval(options: UseIntervalOptions): UseIntervalReturn {
     }
   }, []);
 
-  // Start interval
-  const start = useCallback(() => {
-    if (intervalIdRef.current || delay === null || delay === undefined) {
+  // Internal start function that uses delayRef
+  const startWithDelay = useCallback((d: number | null | undefined) => {
+    if (intervalIdRef.current || d === null || d === undefined) {
       return;
     }
-
     intervalIdRef.current = setInterval(() => {
       callbackRef.current();
-    }, delay);
-  }, [delay]);
+    }, d);
+  }, []);
+
+  // Start interval (uses initial delay)
+  const start = useCallback(() => {
+    startWithDelay(delay);
+  }, [delay, startWithDelay]);
 
   // Stop interval
   const stop = useCallback(() => {
@@ -132,8 +148,23 @@ export function useInterval(options: UseIntervalOptions): UseIntervalReturn {
   // Restart interval
   const restart = useCallback(() => {
     clearIntervalRef();
-    start();
-  }, [clearIntervalRef, start]);
+    startWithDelay(delayRef.current);
+  }, [clearIntervalRef, startWithDelay]);
+
+  // Dynamically update delay and restart interval if running
+  const setDelay = useCallback(
+    (newDelay: number | null | undefined) => {
+      const wasRunning = intervalIdRef.current !== null;
+      if (wasRunning) {
+        clearIntervalRef();
+      }
+      delayRef.current = newDelay;
+      if (newDelay !== null && newDelay !== undefined) {
+        startWithDelay(newDelay);
+      }
+    },
+    [clearIntervalRef, startWithDelay]
+  );
 
   // Main effect: start/stop based on delay changes
   useEffect(() => {
@@ -150,5 +181,6 @@ export function useInterval(options: UseIntervalOptions): UseIntervalReturn {
     start,
     stop,
     restart,
+    setDelay,
   };
 }
