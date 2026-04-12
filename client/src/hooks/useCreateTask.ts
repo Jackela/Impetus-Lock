@@ -69,7 +69,7 @@ export function useCreateTask(): UseCreateTaskResult {
 
   const mutation = useMutation({
     mutationFn: async (variables: CreateTaskVariables) => {
-      return createTask(variables.content, variables.lockIds ?? []);
+      return createTask({ content: variables.content, lockIds: variables.lockIds ?? [] });
     },
     onSuccess: () => {
       // Invalidate the task list query to trigger a refetch
