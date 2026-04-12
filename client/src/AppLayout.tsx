@@ -86,6 +86,15 @@ export function AppLayout({
       <header className="app-header">
         <div className="header-left">
           <h1>Impetus Lock</h1>
+          <div className={`header-waveform ${mode !== "off" ? "header-waveform--active" : ""}`}>
+            <div className="header-waveform__bar" />
+            <div className="header-waveform__bar" />
+            <div className="header-waveform__bar" />
+            <div className="header-waveform__bar" />
+            <div className="header-waveform__bar" />
+            <div className="header-waveform__bar" />
+            <div className="header-waveform__bar" />
+          </div>
           <button
             type="button"
             className={`task-list-toggle ${sidebarOpen ? "active" : ""}`}
