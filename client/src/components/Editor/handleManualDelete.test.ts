@@ -14,11 +14,15 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { deleteContentAtAnchor } from "../../services/ContentInjector";
+import type { EditorView } from "@codemirror/view";
+import type { Node as ProsemirrorNode } from "@milkdown/prose";
+
+// Create mock function that can be used in both mock setup and test helper
+const mockDeleteContentAtAnchor = vi.hoisted(() => vi.fn());
 
 // Mock dependencies
 vi.mock("../../services/ContentInjector", () => ({
-  deleteContentAtAnchor: vi.fn(),
+  deleteContentAtAnchor: mockDeleteContentAtAnchor,
 }));
 
 // Mock logger
@@ -32,11 +36,13 @@ vi.mock("../../utils/logger", () => ({
 }));
 
 describe("handleManualDelete", () => {
-  let mockEditor: any;
-  let mockView: any;
-  let mockState: any;
-  let mockDoc: any;
-  let mockContent: any;
+  let mockEditor: {
+    action: (callback: (ctx: { get: (key: string) => EditorView }) => EditorView) => EditorView;
+  };
+  let mockView: EditorView;
+  let mockState: { doc: ProsemirrorNode };
+  let mockDoc: { content: { size: number } };
+  let mockContent: { size: number };
   let isDeletingRef: { current: boolean };
   let showSensoryAction: ReturnType<typeof vi.fn>;
 
@@ -51,6 +57,9 @@ describe("handleManualDelete", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+
+    // Reset mock implementations to prevent cross-test pollution
+    mockDeleteContentAtAnchor.mockImplementation(() => {});
 
     // Setup mock content
     mockContent = {
@@ -107,7 +116,9 @@ describe("handleManualDelete", () => {
     isDeletingRef.current = true;
 
     try {
-      const view = editor.action((ctx: any) => ctx.get("editorViewCtx"));
+      const view = editor.action((ctx: { get: (key: string) => EditorView }) =>
+        ctx.get("editorViewCtx")
+      );
       const { state } = view;
       const docSize = state.doc.content.size;
 
@@ -128,7 +139,7 @@ describe("handleManualDelete", () => {
 
       if (from < to && to <= docSize) {
         showSensoryAction("delete", { duration: MANUAL_ANIMATION_DURATION_MS });
-        deleteContentAtAnchor(view, { type: "range", from, to });
+        mockDeleteContentAtAnchor(view, { type: "range", from, to });
         return { executed: true, from, to, deleteLength };
       }
 
@@ -151,14 +162,14 @@ describe("handleManualDelete", () => {
     const result = executeHandleManualDelete();
 
     expect(result.executed).toBe(true);
-    expect(result.from).toBe(100); // 200 - 100 (max delete length)
+    expect(result.from).toBe(150); // 200 - 50 (20% of 200 = 40, clamped to MIN 50)
     expect(result.to).toBe(200);
     expect(showSensoryAction).toHaveBeenCalledWith("delete", {
       duration: MANUAL_ANIMATION_DURATION_MS,
     });
-    expect(deleteContentAtAnchor).toHaveBeenCalledWith(mockView, {
+    expect(mockDeleteContentAtAnchor).toHaveBeenCalledWith(mockView, {
       type: "range",
-      from: 100,
+      from: 150,
       to: 200,
     });
   });
@@ -177,7 +188,7 @@ describe("handleManualDelete", () => {
 
     expect(result.executed).toBe(false);
     expect(result.reason).toBe("throttled");
-    expect(deleteContentAtAnchor).not.toHaveBeenCalled();
+    expect(mockDeleteContentAtAnchor).not.toHaveBeenCalled();
     expect(showSensoryAction).not.toHaveBeenCalled();
   });
 
@@ -217,7 +228,7 @@ describe("handleManualDelete", () => {
     expect(showSensoryAction).toHaveBeenCalledWith("error", {
       duration: MANUAL_ANIMATION_DURATION_MS,
     });
-    expect(deleteContentAtAnchor).not.toHaveBeenCalled();
+    expect(mockDeleteContentAtAnchor).not.toHaveBeenCalled();
   });
 
   /**
@@ -232,7 +243,7 @@ describe("handleManualDelete", () => {
     const result = executeHandleManualDelete();
 
     expect(result.executed).toBe(true);
-    expect(deleteContentAtAnchor).toHaveBeenCalled();
+    expect(mockDeleteContentAtAnchor).toHaveBeenCalled();
   });
 
   /**
@@ -293,13 +304,13 @@ describe("handleManualDelete", () => {
    * Then: Should return early without error
    */
   it("should handle missing editor gracefully", () => {
-    mockEditor = null;
+    mockEditor = null as unknown as typeof mockEditor;
 
     const result = executeHandleManualDelete();
 
     expect(result.executed).toBe(false);
     expect(result.reason).toBe("no-editor");
-    expect(deleteContentAtAnchor).not.toHaveBeenCalled();
+    expect(mockDeleteContentAtAnchor).not.toHaveBeenCalled();
   });
 
   /**
@@ -309,13 +320,13 @@ describe("handleManualDelete", () => {
    * Then: Should still reset the deleting flag after delay
    */
   it("should reset deleting flag even if deletion throws", () => {
-    vi.mocked(deleteContentAtAnchor).mockImplementation(() => {
+    mockDeleteContentAtAnchor.mockImplementation(() => {
       throw new Error("Deletion failed");
     });
 
     try {
       executeHandleManualDelete();
-    } catch (error) {
+    } catch {
       // Expected to throw
     }
 
@@ -336,7 +347,7 @@ describe("handleManualDelete", () => {
     const result = executeHandleManualDelete();
 
     expect(result.executed).toBe(false);
-    expect(deleteContentAtAnchor).not.toHaveBeenCalled();
+    expect(mockDeleteContentAtAnchor).not.toHaveBeenCalled();
   });
 
   /**
