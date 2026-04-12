@@ -127,10 +127,10 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
     generateNextInterval();
   }, [generateNextInterval]);
 
-  // Use generic interval hook (but we'll manage delay dynamically)
-  const { start, stop } = useInterval({
+  // Use generic interval hook with setDelay for dynamic interval management
+  const { stop, setDelay } = useInterval({
     callback: handleTick,
-    delay: null, // We'll manage delay manually
+    delay: null, // Initial delay, will be set via setDelay
     immediate: false,
   });
 
@@ -141,9 +141,9 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
    * Recursively reschedules after each trigger for continuous chaos.
    */
   const scheduleNextTimer = useCallback(() => {
-    generateNextInterval();
-    start();
-  }, [generateNextInterval, start]);
+    const interval = generateNextInterval();
+    setDelay(interval);
+  }, [generateNextInterval, setDelay]);
 
   /**
    * Manual trigger function for demo mode.
