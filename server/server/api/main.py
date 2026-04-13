@@ -23,13 +23,17 @@ from server.api.errors import (
 )
 from server.api.middleware.rate_limit import RateLimitMiddleware
 from server.api.routes import (
+    achievements,
     collaboration,
     intervention,
     metrics,
     style,
     style_comparison,
     style_history,
+    stats,
+    streaks,
     tasks,
+    templates,
 )
 from server.auth import router as auth_router
 from server.domain.errors import AppError, LLMProviderError
@@ -134,6 +138,10 @@ app.include_router(style.router)
 app.include_router(style_history.router)
 app.include_router(style_comparison.router)
 app.include_router(collaboration.router)
+app.include_router(achievements.router)
+app.include_router(stats.router)
+app.include_router(streaks.router)
+app.include_router(templates.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):

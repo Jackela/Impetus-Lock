@@ -7,6 +7,10 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { NewTaskButton } from "./components/NewTaskButton";
 import { StyleLearningPanel } from "./components/StyleLearning/StyleLearningPanel";
+import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle";
+import { Stats } from "./components/Stats/Stats";
+import { Achievements } from "./components/Achievements/Achievements";
+import { Export } from "./components/Export/Export";
 import { useTasks } from "./hooks/useTasks";
 import type { TaskRecord } from "./types/task";
 import type { AgentMode } from "./hooks/useWritingState";
@@ -33,6 +37,10 @@ interface AppLayoutProps {
   llmFeedback: string | null;
   isConfigured: boolean;
   llmProviderLabel?: string | null;
+  showStats: boolean;
+  onToggleStats: () => void;
+  showAchievements: boolean;
+  onToggleAchievements: () => void;
 }
 
 export function AppLayout({
@@ -56,6 +64,10 @@ export function AppLayout({
   llmFeedback,
   isConfigured,
   llmProviderLabel,
+  showStats,
+  onToggleStats,
+  showAchievements,
+  onToggleAchievements,
 }: AppLayoutProps) {
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasks();
 
@@ -142,9 +154,30 @@ export function AppLayout({
             </svg>
             <span className="toggle-label">Style</span>
           </button>
+          <button
+            type="button"
+            className={`stats-toggle ${showStats ? "active" : ""}`}
+            onClick={onToggleStats}
+            aria-pressed={showStats}
+            title="Toggle Stats"
+            data-testid="stats-toggle"
+          >
+            <span className="toggle-label">Stats</span>
+          </button>
+          <button
+            type="button"
+            className={`achievements-toggle ${showAchievements ? "active" : ""}`}
+            onClick={onToggleAchievements}
+            aria-pressed={showAchievements}
+            title="Toggle Achievements"
+            data-testid="achievements-toggle"
+          >
+            <span className="toggle-label">🏆</span>
+          </button>
         </div>
 
         <div className="header-actions">
+          <ThemeToggle />
           <TelemetryToggle />
           <span className="task-status" role="status">
             {taskStatus === "loading" ? "Loading draft…" : isSaving ? "Saving…" : "Synced"}
@@ -235,8 +268,40 @@ export function AppLayout({
       </main>
 
       <footer className="app-footer">
-        Press <kbd>?</kbd> for help
+        Press <kbd>?</kbd> for help | <Export />
       </footer>
+
+      {showStats && (
+        <div className="stats-overlay" data-testid="stats-overlay">
+          <div className="stats-modal">
+            <Stats />
+            <button
+              type="button"
+              className="close-button"
+              onClick={onToggleStats}
+              aria-label="Close Stats"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAchievements && (
+        <div className="achievements-overlay" data-testid="achievements-overlay">
+          <div className="achievements-modal">
+            <Achievements />
+            <button
+              type="button"
+              className="close-button"
+              onClick={onToggleAchievements}
+              aria-label="Close Achievements"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {showStyleLearning && (
         <div className="style-learning-overlay" data-testid="style-learning-overlay">

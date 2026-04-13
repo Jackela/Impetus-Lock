@@ -15,6 +15,26 @@ from server.api.schemas.task import (
     TaskResponse,
     TaskUpdateRequest,
 )
+from server.api.schemas.template import (
+    TemplateCreateRequest,
+    TemplateListResponse,
+    TemplateResponse,
+)
+from server.api.schemas.achievement import (
+    AchievementDefinitionsResponse,
+    AchievementListResponse,
+    AchievementResponse,
+    AchievementDefinition,
+)
+from server.api.schemas.stats import (
+    InterventionBreakdownResponse,
+    StatsPeriodResponse,
+    StatsResponse,
+)
+from server.api.schemas.streak import (
+    StreakResponse,
+    StreakUpdateRequest,
+)
 
 __all__ = [
     "TaskCreateRequest",
@@ -23,4 +43,16 @@ __all__ = [
     "TaskListResponse",
     "InterventionActionResponse",
     "InterventionHistoryResponse",
+    "TemplateCreateRequest",
+    "TemplateListResponse",
+    "TemplateResponse",
+    "AchievementDefinitionsResponse",
+    "AchievementListResponse",
+    "AchievementResponse",
+    "AchievementDefinition",
+    "StatsResponse",
+    "StatsPeriodResponse",
+    "InterventionBreakdownResponse",
+    "StreakResponse",
+    "StreakUpdateRequest",
 ]
