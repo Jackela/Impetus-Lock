@@ -159,11 +159,38 @@ class TestLoginResponse(BaseModel):
     csrf_token: str
 
 
+_TEST_USER_ID = "12345678-1234-1234-1234-123456789abc"
+_TEST_USER_EMAIL = "e2e-test@example.com"
+
+
+async def _ensure_test_user_exists() -> None:
+    """Create the E2E test user in the database if it doesn't exist."""
+    from uuid import UUID
+
+    from sqlalchemy import select
+
+    from server.infrastructure.persistence.database import get_db_manager
+    from server.models.user import User
+
+    manager = get_db_manager()
+    async with manager.session() as session:
+        result = await session.execute(select(User).where(User.id == UUID(_TEST_USER_ID)))
+        user = result.scalar_one_or_none()
+        if user is None:
+            user = User(
+                id=UUID(_TEST_USER_ID),
+                email=_TEST_USER_EMAIL,
+                password_hash="test-hash",
+            )
+            session.add(user)
+            await session.commit()
+
+
 @router.post("/login", response_model=TestLoginResponse)
 async def test_login(response: Response) -> TestLoginResponse:
     """Test-only: Debug login for E2E tests.
 
-    Creates a test JWT token and CSRF token without requiring database credentials.
+    Creates a test user and JWT token, then returns a CSRF token.
     Only available when TESTING=true.
 
     Returns:
@@ -176,12 +203,11 @@ async def test_login(response: Response) -> TestLoginResponse:
     """
     _check_testing_enabled()
 
-    # Ensure JWT_SECRET is set for testing
-    os.environ.setdefault("JWT_SECRET", "test-jwt-secret-for-e2e-only")
-    os.environ.setdefault("SECRET_KEY", "test-secret-key-for-e2e-only")
+    await _ensure_test_user_exists()
 
-    # Create test token
-    token = JWTHandler.create_token("demo-user-id")
+    from server.auth.utils import create_access_token
+
+    token = create_access_token(_TEST_USER_ID)
 
     response.set_cookie(
         key="access_token",
@@ -192,6 +218,7 @@ async def test_login(response: Response) -> TestLoginResponse:
         max_age=86400,
     )
 
+    os.environ.setdefault("SECRET_KEY", "test-secret-key-for-e2e-only")
     csrf_token = CSRFProtection().generate_token()
     response.set_cookie(
         key="csrf_token",

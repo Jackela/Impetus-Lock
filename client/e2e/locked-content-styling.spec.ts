@@ -36,12 +36,14 @@ test.describe("Locked Content Styling", () => {
 
     const borderLeft = await lockedContent.evaluate((el) => window.getComputedStyle(el).borderLeft);
     expect(borderLeft).toContain("4px");
-    expect(borderLeft).toContain("rgb(167, 139, 250)");
+    // Muse source uses green accent color (#22c55e = rgb(34, 197, 94))
+    expect(borderLeft).toContain("rgb(34, 197, 94)");
 
     const backgroundColor = await lockedContent.evaluate(
       (el) => window.getComputedStyle(el).backgroundColor
     );
-    expect(backgroundColor).toMatch(/rgba?\(\s*167/);
+    // Muse uses green background tint rgba(34, 197, 94, 0.08)
+    expect(backgroundColor).toMatch(/rgba?\(\s*34/);
   });
 
   test("Lock icon appears on hover (CSS pseudo-element)", async ({ page }) => {
@@ -70,8 +72,9 @@ test.describe("Locked Content Styling", () => {
     const hoverBackground = await lockedContent.evaluate(
       (el) => window.getComputedStyle(el).backgroundColor
     );
+    // Hover state uses subtle white background, not source-specific color
     expect(hoverBackground).toMatch(
-      /rgba?\((15[0-9]|16[0-9]|17[0-9]),\s*(12[0-9]|13[0-9]|14[0-9]),\s*24[0-9]/
+      /rgba?\(\s*255,\s*255,\s*255,\s*0\.04\)/
     );
   });
 
@@ -107,7 +110,13 @@ test.describe("Locked Content Styling", () => {
 
     const firstBorder = await firstBlock.evaluate((el) => window.getComputedStyle(el).borderLeft);
     expect(firstBorder).toContain("4px");
-    expect(firstBorder).toContain("rgb(167, 139, 250)");
+    // Muse source (lock_A) uses green accent color
+    expect(firstBorder).toContain("rgb(34, 197, 94)");
+
+    const secondBorder = await secondBlock.evaluate((el) => window.getComputedStyle(el).borderLeft);
+    expect(secondBorder).toContain("4px");
+    // Loki source (lock_B) uses red accent color
+    expect(secondBorder).toContain("rgb(239, 68, 68)");
   });
 
   test("Locked content styling does not break editor layout", async ({ page }) => {
