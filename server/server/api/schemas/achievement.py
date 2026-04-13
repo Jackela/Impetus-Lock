@@ -3,6 +3,7 @@
 Pydantic models for Achievement API request/response validation.
 """
 
+from typing import Any
 from pydantic import BaseModel, Field
 
 
@@ -14,7 +15,7 @@ class AchievementResponse(BaseModel):
     name: str
     description: str
     earned_at: str
-    metadata: dict | None = None
+    metadata: dict[str, Any] | None = None
 
 
 class AchievementListResponse(BaseModel):
