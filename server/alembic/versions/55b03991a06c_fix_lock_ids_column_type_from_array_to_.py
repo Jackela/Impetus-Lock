@@ -25,6 +25,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Change lock_ids from PostgreSQL ARRAY to JSON for model compatibility."""
+    # Step 1: Drop the existing default (can't cast array default to json)
+    op.execute("ALTER TABLE tasks ALTER COLUMN lock_ids DROP DEFAULT")
+    # Step 2: Alter the column type
     op.alter_column(
         "tasks",
         "lock_ids",
@@ -33,10 +36,13 @@ def upgrade() -> None:
         existing_nullable=False,
         postgresql_using="to_json(lock_ids)",
     )
+    # Step 3: Set a new JSON default
+    op.execute("ALTER TABLE tasks ALTER COLUMN lock_ids SET DEFAULT '[]'::json")
 
 
 def downgrade() -> None:
     """Revert lock_ids back to PostgreSQL ARRAY."""
+    op.execute("ALTER TABLE tasks ALTER COLUMN lock_ids DROP DEFAULT")
     op.alter_column(
         "tasks",
         "lock_ids",
@@ -45,3 +51,4 @@ def downgrade() -> None:
         existing_nullable=False,
         postgresql_using="array(select jsonb_array_elements_text(lock_ids::jsonb))",
     )
+    op.execute("ALTER TABLE tasks ALTER COLUMN lock_ids SET DEFAULT '{}'")
