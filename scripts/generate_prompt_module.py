@@ -32,13 +32,13 @@ def main() -> None:
     loki = _load_template("loki")
 
     content = f"""{HEADER}
-MUSE_VERSION = {muse['version']!r}
-MUSE_SYSTEM_PROMPT = {muse['system']!r}
-MUSE_USER_TEMPLATE = {muse['user_template']!r}
+MUSE_VERSION = {muse["version"]!r}
+MUSE_SYSTEM_PROMPT = {muse["system"]!r}
+MUSE_USER_TEMPLATE = {muse["user_template"]!r}
 
-LOKI_VERSION = {loki['version']!r}
-LOKI_SYSTEM_PROMPT = {loki['system']!r}
-LOKI_USER_TEMPLATE = {loki['user_template']!r}
+LOKI_VERSION = {loki["version"]!r}
+LOKI_SYSTEM_PROMPT = {loki["system"]!r}
+LOKI_USER_TEMPLATE = {loki["user_template"]!r}
 """
 
     OUTPUT_PATH.write_text(content, encoding="utf-8")

@@ -227,7 +227,7 @@ class TestInterventionAPIContract:
         )
         # Patch debug provider since LLM_DEFAULT_PROVIDER=debug in conftest
         mock_path = (
-            "server.infrastructure.llm.debug_provider." "DebugLLMProvider.generate_intervention"
+            "server.infrastructure.llm.debug_provider.DebugLLMProvider.generate_intervention"
         )
 
         headers = {

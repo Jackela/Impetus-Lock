@@ -129,8 +129,7 @@ class InterventionResponse(BaseModel):
     action: Literal["provoke", "delete", "rewrite"] = Field(
         ...,
         description=(
-            "Intervention action: provoke (inject), delete (remove) or rewrite "
-            "(surgical replace)"
+            "Intervention action: provoke (inject), delete (remove) or rewrite (surgical replace)"
         ),
     )
     content: str | None = Field(
