@@ -7,8 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, Index, String, Text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy import TIMESTAMP, Index, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
@@ -33,7 +32,7 @@ class StyleHistoryModel(Base):
 
     __tablename__ = "style_history"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     style_vector: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)

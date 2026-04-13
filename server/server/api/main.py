@@ -6,7 +6,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
@@ -23,14 +23,19 @@ from server.api.errors import (
 )
 from server.api.middleware.rate_limit import RateLimitMiddleware
 from server.api.routes import (
+    achievements,
     collaboration,
     intervention,
     metrics,
+    stats,
+    streaks,
     style,
     style_comparison,
     style_history,
     tasks,
+    templates,
 )
+from server.auth import router as auth_router
 from server.domain.errors import AppError, LLMProviderError
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import ProviderRegistry
@@ -81,9 +86,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_exception_handler(AppError, app_error_handler)
-app.add_exception_handler(LLMProviderError, llm_provider_error_handler)
-app.add_exception_handler(RequestValidationError, validation_error_handler)
+app.add_exception_handler(AppError, cast(Any, app_error_handler))
+app.add_exception_handler(LLMProviderError, cast(Any, llm_provider_error_handler))
+app.add_exception_handler(RequestValidationError, cast(Any, validation_error_handler))
 app.add_exception_handler(Exception, global_exception_handler)
 
 # Add middleware (order matters - rate limit first, then auth, then CORS)
@@ -91,27 +96,41 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(AuthenticationMiddleware)
 
 
-# CORS middleware for local development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# P2 Security Fix: Environment-specific CORS configuration
+# Production: Only allow configured origins
+# Development: Allow localhost on standard Vite ports
+env = os.getenv("ENV", "development")
+if env == "production":
+    # Production: Use configured origins only
+    allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+    allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+    if not allowed_origins:
+        # Fallback to empty list if not configured (blocks all cross-origin)
+        allowed_origins = []
+    logger.info(f"CORS configured for production with {len(allowed_origins)} origins")
+else:
+    # Development: Allow standard Vite dev server ports only
+    allowed_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
-        "http://localhost:5176",
-        "http://127.0.0.1:5176",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-    ],
+    ]
+    logger.debug(f"CORS configured for development: {allowed_origins}")
+
+# P2 Security Fix: Explicit method specification
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=allowed_methods,
     allow_headers=["*"],
 )
 
 # Include API routes
+app.include_router(auth_router)
 app.include_router(intervention.router)
 app.include_router(tasks.router)
 app.include_router(metrics.router)
@@ -119,6 +138,10 @@ app.include_router(style.router)
 app.include_router(style_history.router)
 app.include_router(style_comparison.router)
 app.include_router(collaboration.router)
+app.include_router(achievements.router)
+app.include_router(stats.router)
+app.include_router(streaks.router)
+app.include_router(templates.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):

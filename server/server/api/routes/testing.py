@@ -8,29 +8,40 @@ Constitutional Compliance:
 - Article V (Documentation): Complete API documentation
 """
 
+import logging
 import os
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel
 
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
+from server.infrastructure.security.csrf import CSRFProtection
 
 router = APIRouter(prefix="/test", tags=["testing"])
+logger = logging.getLogger("server.api.testing")
 
 
 def _check_testing_enabled() -> None:
     """Verify testing mode is enabled.
 
     Raises:
-        HTTPException: 403 if TESTING environment variable is not set.
+        HTTPException: 403 if TESTING environment variable is not set to "1".
     """
-    if not os.getenv("TESTING"):
+    # P1 Security Fix: Strict check for TESTING="1" only
+    if os.getenv("TESTING") != "1":
+        logger.warning(
+            "Attempted access to test endpoints with invalid TESTING value",
+            extra={
+                "testing_env": os.getenv("TESTING"),
+                "remote_addr": None,  # Will be set by middleware if available
+            },
+        )
         raise HTTPException(
             status_code=403,
-            detail="Test endpoints are disabled. Set TESTING=true to enable.",
+            detail="Test endpoints are disabled. Set TESTING=1 to enable.",
         )
 
 
@@ -134,3 +145,107 @@ def test_health() -> TestHealthResponse:
         testing_enabled=testing_enabled,
         message="Test endpoints active" if testing_enabled else "Test endpoints disabled",
     )
+
+
+# Debug authentication endpoints for E2E testing
+# These allow E2E tests to authenticate without database credentials
+
+
+class TestLoginResponse(BaseModel):
+    """Test login response with CSRF token."""
+
+    message: str
+    csrf_token: str
+
+
+_TEST_USER_ID = "12345678-1234-1234-1234-123456789abc"
+_TEST_USER_EMAIL = "e2e-test@example.com"
+
+
+async def _ensure_test_user_exists() -> None:
+    """Create the E2E test user in the database if it doesn't exist."""
+    from uuid import UUID
+
+    from sqlalchemy import select
+
+    from server.infrastructure.persistence.database import get_db_manager
+    from server.models.user import User
+
+    manager = get_db_manager()
+    async with manager.session() as session:
+        result = await session.execute(select(User).where(User.id == UUID(_TEST_USER_ID)))
+        user = result.scalar_one_or_none()
+        if user is None:
+            user = User(
+                id=UUID(_TEST_USER_ID),
+                email=_TEST_USER_EMAIL,
+                password_hash="test-hash",
+            )
+            session.add(user)
+            await session.commit()
+
+
+@router.post("/login", response_model=TestLoginResponse)
+async def test_login(response: Response) -> TestLoginResponse:
+    """Test-only: Debug login for E2E tests.
+
+    Creates a test user and JWT token, then returns a CSRF token.
+    Only available when TESTING=true.
+
+    Returns:
+        TestLoginResponse: Login success message and CSRF token.
+
+    Example:
+        ```bash
+        curl -X POST http://localhost:8000/test/login
+        ```
+    """
+    _check_testing_enabled()
+
+    await _ensure_test_user_exists()
+
+    from server.auth.utils import create_access_token
+
+    token = create_access_token(_TEST_USER_ID)
+
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,  # Allow HTTP for local E2E testing
+        samesite="lax",
+        max_age=86400,
+    )
+
+    os.environ.setdefault("SECRET_KEY", "test-secret-key-for-e2e-only")
+    csrf_token = CSRFProtection().generate_token()
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        secure=False,  # Allow HTTP for local E2E testing
+        samesite="lax",
+    )
+
+    return TestLoginResponse(message="Login successful", csrf_token=csrf_token)
+
+
+@router.post("/logout")
+async def test_logout(response: Response) -> dict[str, str]:
+    """Test-only: Debug logout for E2E tests.
+
+    Clears authentication cookies. Only available when TESTING=true.
+
+    Returns:
+        dict: Logout success message.
+
+    Example:
+        ```bash
+        curl -X POST http://localhost:8000/test/logout
+        ```
+    """
+    _check_testing_enabled()
+
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="csrf_token")
+
+    return {"message": "Logout successful"}

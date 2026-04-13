@@ -65,7 +65,10 @@ def mock_genai() -> Generator[Mock, None, None]:
     mock_api_core = ModuleType("google.api_core")
     mock_exceptions = ModuleType("google.api_core.exceptions")
     mock_exceptions.InvalidArgument = type("InvalidArgument", (Exception,), {})
+    mock_exceptions.PermissionDenied = type("PermissionDenied", (Exception,), {})
     mock_exceptions.ResourceExhausted = type("ResourceExhausted", (Exception,), {})
+    mock_exceptions.InternalServerError = type("InternalServerError", (Exception,), {})
+    mock_exceptions.ServiceUnavailable = type("ServiceUnavailable", (Exception,), {})
     mock_exceptions.DeadlineExceeded = type("DeadlineExceeded", (Exception,), {})
     mock_api_core.exceptions = mock_exceptions
 

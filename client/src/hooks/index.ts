@@ -32,6 +32,7 @@ export { useFocusTrap } from "./useFocusTrap";
 export { useEditorInitialization } from "./useEditorInitialization";
 export { useSensoryFeedback } from "./useSensoryFeedback";
 export { useManualDelete } from "./useManualDelete";
+export { useInterval } from "./useInterval";
 
 // Additional hooks (not yet in index.ts but available for direct import):
 // - useStyleLearning

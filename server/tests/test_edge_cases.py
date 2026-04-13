@@ -37,7 +37,7 @@ class TestEmptyInputs:
     """Tests for handling empty inputs."""
 
     @pytest.mark.asyncio
-    async def test_empty_task_content(self) -> None:
+    async def test_empty_task_content(self, mock_auth_user: Any) -> None:
         """Test creating task with empty content."""
         from fastapi.testclient import TestClient
 
@@ -150,7 +150,7 @@ class TestVeryLongInputs:
         assert response.status_code in [200, 422, 413]  # OK, validation error, or too large
 
     @pytest.mark.asyncio
-    async def test_long_task_content(self) -> None:
+    async def test_long_task_content(self, mock_auth_user: Any) -> None:
         """Test creating task with very long content."""
         from fastapi.testclient import TestClient
 
@@ -211,7 +211,7 @@ class TestUnicodeAndEmoji:
         assert decoded == text
 
     @pytest.mark.asyncio
-    async def test_unicode_in_task_content(self) -> None:
+    async def test_unicode_in_task_content(self, mock_auth_user: Any) -> None:
         """Test unicode content in tasks."""
         from fastapi.testclient import TestClient
 
@@ -284,7 +284,7 @@ class TestConcurrentRequests:
     """Tests for concurrent request handling."""
 
     @pytest.mark.asyncio
-    async def test_concurrent_task_creation(self) -> None:
+    async def test_concurrent_task_creation(self, mock_auth_user: Any) -> None:
         """Test creating multiple tasks concurrently."""
         from fastapi.testclient import TestClient
 

@@ -58,8 +58,7 @@ def generate_insights(distance: float, vec1: dict[str, Any], vec2: dict[str, Any
         return "The styles are very similar. Both texts share similar tone and structure."
     elif distance < 0.5:
         return (
-            "The styles have moderate differences. "
-            "Some aspects differ while others remain similar."
+            "The styles have moderate differences. Some aspects differ while others remain similar."
         )
     else:
         return (

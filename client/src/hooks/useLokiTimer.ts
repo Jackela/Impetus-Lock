@@ -18,6 +18,7 @@
 import { useEffect, useRef, useCallback, useState, useLayoutEffect } from "react";
 import type { AgentMode } from "../types/mode";
 import { LOKI_MIN_INTERVAL_MS, LOKI_MAX_INTERVAL_MS } from "../config/animation";
+import { useInterval } from "./useInterval";
 
 /**
  * Configuration options for useLokiTimer hook.
@@ -102,14 +103,36 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
   // Store current interval for testing
   const [currentInterval, setCurrentInterval] = useState<number>(0);
 
-  // Store timer ID for cleanup
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-
   // Store callback reference to avoid stale closures
   const onTriggerRef = useRef(onTrigger);
   useEffect(() => {
     onTriggerRef.current = onTrigger;
   }, [onTrigger]);
+
+  /**
+   * Generate and set next random interval.
+   */
+  const generateNextInterval = useCallback(() => {
+    const interval = getRandomInterval(MIN_INTERVAL, MAX_INTERVAL);
+    setCurrentInterval(interval);
+    return interval;
+  }, []);
+
+  /**
+   * Timer tick handler.
+   * Triggers callback and generates next random interval.
+   */
+  const handleTick = useCallback(() => {
+    onTriggerRef.current();
+    generateNextInterval();
+  }, [generateNextInterval]);
+
+  // Use generic interval hook with setDelay for dynamic interval management
+  const { stop, setDelay } = useInterval({
+    callback: handleTick,
+    delay: null, // Initial delay, will be set via setDelay
+    immediate: false,
+  });
 
   /**
    * Schedule next random timer.
@@ -118,25 +141,9 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
    * Recursively reschedules after each trigger for continuous chaos.
    */
   const scheduleNextTimer = useCallback(() => {
-    // Clear any existing timer
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-
-    // Generate random interval
-    const interval = getRandomInterval(MIN_INTERVAL, MAX_INTERVAL);
-    setCurrentInterval(interval);
-
-    // Schedule timer
-    timerRef.current = setTimeout(() => {
-      // Trigger callback
-      onTriggerRef.current();
-
-      // Recursively schedule next timer
-      scheduleNextTimer();
-    }, interval);
-  }, []);
+    const interval = generateNextInterval();
+    setDelay(interval);
+  }, [generateNextInterval, setDelay]);
 
   /**
    * Manual trigger function for demo mode.
@@ -155,21 +162,15 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
       scheduleNextTimer();
     } else {
       // Stop timer
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+      stop();
       setCurrentInterval(0);
     }
 
     // Cleanup on unmount
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
+      stop();
     };
-  }, [mode, scheduleNextTimer]);
+  }, [mode, scheduleNextTimer, stop]);
 
   return {
     currentInterval,

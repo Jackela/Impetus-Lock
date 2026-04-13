@@ -40,29 +40,6 @@ class TaskRepository(ABC):
     """
 
     @abstractmethod
-    async def create_task(self, content: str, lock_ids: list[str]) -> Task:
-        """Create new task with content and lock IDs.
-
-        Args:
-            content: Initial task content (Markdown).
-            lock_ids: List of lock IDs for un-deletable blocks.
-
-        Returns:
-            Task: Created task with generated ID and timestamps.
-
-        Example:
-            ```python
-            task = await repository.create_task(
-                content="他打开门",
-                lock_ids=["lock_1"]
-            )
-            assert task.id is not None
-            assert task.version == 0
-            ```
-        """
-        pass
-
-    @abstractmethod
     async def get_task(self, task_id: UUID) -> Task | None:
         """Get task by ID.
 
@@ -218,5 +195,62 @@ class TaskRepository(ABC):
             # Get next page
             next_tasks = await repository.list_tasks(limit=10, offset=10)
             ```
+        """
+        pass
+
+    @abstractmethod
+    async def list_tasks_by_user(
+        self, user_id: UUID, limit: int = 100, offset: int = 0
+    ) -> list[Task]:
+        """List tasks for a specific user (paginated).
+
+        Args:
+            user_id: User UUID to filter by.
+            limit: Maximum number of tasks to return (default 100).
+            offset: Number of tasks to skip for pagination (default 0).
+
+        Returns:
+            list[Task]: User's tasks in reverse chronological order (newest first).
+        """
+        pass
+
+    @abstractmethod
+    async def count_tasks_by_user(self, user_id: UUID) -> int:
+        """Count total tasks for a specific user.
+
+        Args:
+            user_id: User UUID to count tasks for.
+
+        Returns:
+            int: Total number of tasks for this user.
+        """
+        pass
+
+    @abstractmethod
+    async def get_task_by_user(self, task_id: UUID, user_id: UUID) -> Task | None:
+        """Get task by ID if it belongs to the specified user.
+
+        Args:
+            task_id: Task UUID.
+            user_id: User UUID to verify ownership.
+
+        Returns:
+            Task | None: Task if found and owned by user, None otherwise.
+        """
+        pass
+
+    @abstractmethod
+    async def create_task(
+        self, content: str, lock_ids: list[str], user_id: UUID | None = None
+    ) -> Task:
+        """Create new task with content, lock IDs, and optional user ID.
+
+        Args:
+            content: Initial task content (Markdown).
+            lock_ids: List of lock IDs for un-deletable blocks.
+            user_id: Optional user ID to associate with the task.
+
+        Returns:
+            Task: Created task with generated ID and timestamps.
         """
         pass

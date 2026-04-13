@@ -1,8 +1,15 @@
+/**
+ * LLM Settings Modal Styles
+ *
+ * Settings modal with ElevenLabs dark cinematic aesthetic.
+ * Green accent (#22C55E) for primary actions.
+ */
+
 .llm-settings__backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(2px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,12 +18,15 @@
 
 .llm-settings__card {
   width: min(520px, 90vw);
-  background: #0f172a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-1, #0a0a0a);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
   border-radius: 16px;
   padding: 24px;
-  color: #f8fafc;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+  color: var(--color-text-primary, #fafafa);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    0 0 100px rgba(34, 197, 94, 0.08);
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -35,16 +45,24 @@
 
 .llm-settings__header p {
   margin: 4px 0 0;
-  color: rgba(248, 250, 252, 0.8);
+  color: var(--color-text-secondary, #a1a1aa);
   font-size: 0.9rem;
 }
 
 .llm-settings__close {
   border: none;
   background: transparent;
-  color: rgba(248, 250, 252, 0.8);
+  color: var(--color-text-secondary, #a1a1aa);
   font-size: 1.4rem;
   cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.llm-settings__close:hover {
+  background: var(--color-surface-2, #111111);
+  color: var(--color-text-primary, #fafafa);
 }
 
 .llm-settings__body {
@@ -55,25 +73,31 @@
 }
 
 .llm-settings__tips {
-  background: rgba(148, 163, 184, 0.08);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: var(--color-surface-2, #111111);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
   border-radius: 12px;
   padding: 12px 16px;
   font-size: 0.9rem;
   line-height: 1.4;
-  color: rgba(248, 250, 252, 0.85);
+  color: var(--color-text-secondary, #a1a1aa);
 }
 
 .llm-settings__provider-docs {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: rgba(248, 250, 252, 0.7);
+  color: var(--color-text-tertiary, #71717a);
 }
 
 .llm-settings__provider-docs a {
-  color: #c4b5fd;
+  color: var(--color-accent, #22c55e);
+  text-decoration: none;
 }
+
+.llm-settings__provider-docs a:hover {
+  text-decoration: underline;
+}
+
 .llm-settings__provider-docs span {
   font-style: italic;
 }
@@ -85,26 +109,41 @@
   font-size: 0.95rem;
 }
 
+.llm-settings__field label {
+  color: var(--color-text-secondary, #a1a1aa);
+}
+
 .llm-settings__field input,
 .llm-settings__field select {
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.6);
-  color: #f8fafc;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  background: var(--color-surface-2, #111111);
+  color: var(--color-text-primary, #fafafa);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.llm-settings__field input:focus,
+.llm-settings__field select:focus {
+  outline: none;
+  border-color: var(--color-accent, #22c55e);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 
 .llm-settings__field small {
-  color: rgba(248, 250, 252, 0.65);
+  color: var(--color-text-tertiary, #71717a);
 }
 
 .llm-settings__error {
-  color: #f87171;
+  color: var(--color-loki, #ef4444);
+  font-size: 0.875rem;
 }
 
 .llm-settings__hint {
   font-size: 0.85rem;
-  color: rgba(248, 250, 252, 0.7);
+  color: var(--color-text-tertiary, #71717a);
 }
 
 .llm-settings__footer {
@@ -120,21 +159,37 @@
   border-radius: 999px;
   border: none;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .llm-settings__footer .secondary {
-  background: rgba(148, 163, 184, 0.15);
-  color: #f8fafc;
+  background: var(--color-surface-2, #111111);
+  color: var(--color-text-primary, #fafafa);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+}
+
+.llm-settings__footer .secondary:hover {
+  background: var(--color-surface-3, #1a1a1a);
 }
 
 .llm-settings__footer .primary {
-  background: #7c3aed;
-  color: #fff;
+  background: var(--color-accent, #22c55e);
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.llm-settings__footer .primary:hover {
+  background: #16a34a;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
 }
 
 .llm-settings__footer button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.llm-settings__footer .primary:disabled:hover {
+  box-shadow: none;
 }
 
 .llm-settings__actions {

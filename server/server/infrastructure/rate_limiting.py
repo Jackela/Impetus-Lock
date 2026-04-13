@@ -14,8 +14,8 @@ try:
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
-    redis = None
-    RedisClient = None
+    redis = None  # type: ignore[assignment]
+    RedisClient = None  # type: ignore[assignment,misc]
 
 
 class RateLimiter:

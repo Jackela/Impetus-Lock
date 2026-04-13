@@ -27,7 +27,8 @@
       "Bash(cd server && poetry run pytest:*)",
       "Bash(cd client && npm run lint:*)",
       "Bash(cd client && npm run type-check:*)",
-      "Bash(cd client && npm run test:*)"
+      "Bash(cd client && npm run test:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

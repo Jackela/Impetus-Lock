@@ -29,7 +29,7 @@ Example:
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
@@ -145,6 +145,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         self.api_key = resolved_api_key
 
         # Get default safety settings if none provided
+        self.safety_settings: dict[Any, Any] | None = None
         if safety_settings is None:
             self.safety_settings = {
                 HarmCategory.HARM_CATEGORY_HARASSMENT: (HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE),
@@ -248,8 +249,14 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             LLMProviderError: If the API call fails.
         """
         import google.generativeai as genai
-        from google.api_core.exceptions import DeadlineExceeded, InvalidArgument, ResourceExhausted
-        from google.generativeai.types import InvalidArgument as GenAIInvalidArgument
+        from google.api_core.exceptions import (
+            DeadlineExceeded,
+            InternalServerError,
+            InvalidArgument,
+            PermissionDenied,
+            ResourceExhausted,
+            ServiceUnavailable,
+        )
 
         try:
             return self._model.generate_content(
@@ -270,28 +277,21 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 status_code=502,
                 provider=self.provider_name,
             ) from exc
-        except (
-            genai.api_key.api_errors.InvalidAPIKeyError,
-            InvalidArgument,
-            GenAIInvalidArgument,
-        ) as exc:
+        except InvalidArgument as exc:
             raise LLMProviderError(
                 code="invalid_api_key",
                 message="Gemini API key rejected.",
                 status_code=401,
                 provider=self.provider_name,
             ) from exc
-        except genai.api_key.api_errors.PermissionDeniedError as exc:
+        except PermissionDenied as exc:
             raise LLMProviderError(
                 code="invalid_api_key",
                 message="Gemini API key rejected.",
                 status_code=401,
                 provider=self.provider_name,
             ) from exc
-        except (
-            genai.api_key.api_errors.ResourceExhaustedError,
-            ResourceExhausted,
-        ) as exc:
+        except ResourceExhausted as exc:
             raise LLMProviderError(
                 code="quota_exceeded",
                 message="Gemini quota exceeded. Provide another key or try later.",
@@ -305,14 +305,14 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 status_code=504,
                 provider=self.provider_name,
             ) from exc
-        except genai.api_key.api_errors.InternalServerError as exc:
+        except InternalServerError as exc:
             raise LLMProviderError(
                 code="llm_api_error",
                 message="Gemini API internal error.",
                 status_code=502,
                 provider=self.provider_name,
             ) from exc
-        except genai.api_key.api_errors.UnavailableError as exc:
+        except ServiceUnavailable as exc:
             raise LLMProviderError(
                 code="llm_api_error",
                 message="Gemini API unavailable.",
@@ -369,7 +369,8 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             )
 
         text = text_parts[0]
-        return cast(LLMInterventionDraft, LLMInterventionDraft.model_validate_json(text))
+        draft: LLMInterventionDraft = LLMInterventionDraft.model_validate_json(text)
+        return draft
 
     def count_tokens(self, text: str) -> int:
         """Count tokens in the given text.
@@ -389,7 +390,8 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         """
         try:
             result = self._model.count_tokens(contents=text)
-            return cast(int, result.total_tokens)
+            tokens: int = result.total_tokens
+            return tokens
         except Exception:
             # Fallback: rough estimate (1 token ≈ 4 characters for most languages)
             return len(text) // 4

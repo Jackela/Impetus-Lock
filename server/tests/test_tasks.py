@@ -23,7 +23,7 @@ client = TestClient(app)
 
 
 @pytest.fixture(autouse=True)
-def use_in_memory_repository() -> Generator[None, None, None]:
+def use_in_memory_repository(mock_auth_user) -> Generator[None, None, None]:
     """Use in-memory repository for tests (no database required).
 
     Auto-used for all tests in this module.

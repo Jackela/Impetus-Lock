@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import delete, desc, func, select
@@ -88,12 +88,14 @@ class StyleHistoryRepository:
         if self.session:
             query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
             result = await self.session.execute(query)
-            return cast(StyleHistoryModel | None, result.scalar_one_or_none())
+            record: StyleHistoryModel | None = result.scalar_one_or_none()
+            return record
         else:
             async with get_db_manager().session() as session:
                 query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
                 result = await session.execute(query)
-                return cast(StyleHistoryModel | None, result.scalar_one_or_none())
+            record_else: StyleHistoryModel | None = result.scalar_one_or_none()
+            return record_else
 
         if self.session:
             query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)

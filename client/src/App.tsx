@@ -24,6 +24,8 @@ function App() {
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null);
+  const [showStats, setShowStats] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
 
   const {
     sidebarOpen,
@@ -154,6 +156,10 @@ function App() {
         llmProviderLabel={llmConfig ? getLLMProviderLabel(llmConfig.provider) : null}
         timerProgress={timerProgress}
         timerRemaining={timerRemaining}
+        showStats={showStats}
+        onToggleStats={() => setShowStats((prev) => !prev)}
+        showAchievements={showAchievements}
+        onToggleAchievements={() => setShowAchievements((prev) => !prev)}
       >
         <TimerIndicator
           progress={timerProgress}
@@ -161,7 +167,8 @@ function App() {
           remainingTime={timerRemaining}
         />
         <EditorCore
-          key={`${taskId ?? "local"}:${taskVersion}`}
+          key={taskId ?? "local"}
+          contentVersion={taskVersion}
           mode={mode}
           initialContent={taskContent}
           initialLocks={taskLocks}

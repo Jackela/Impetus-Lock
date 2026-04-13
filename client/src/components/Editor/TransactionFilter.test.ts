@@ -14,7 +14,6 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createLockTransactionFilter, isPositionLocked } from "./TransactionFilter";
 import type { Transaction } from "@milkdown/prose/state";
 import type { Node as ProseMirrorNode } from "@milkdown/prose/model";
-// eslint-disable-next-line no-restricted-imports -- Test file needs direct access to LockManager
 import { LockManager } from "../../services/LockManager";
 
 /**

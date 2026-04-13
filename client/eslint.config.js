@@ -141,7 +141,7 @@ export default defineConfig([
       "no-restricted-imports": "off",
     },
   },
-  // Test files: Relax JSDoc requirements
+  // Test files: Relax JSDoc requirements and allow service imports for mocking
   {
     files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "**/e2e/**/*.{ts,tsx}"],
     rules: {
@@ -149,6 +149,7 @@ export default defineConfig([
       "jsdoc/require-description": "off",
       "jsdoc/require-param": "off",
       "jsdoc/require-returns": "off",
+      "no-restricted-imports": "off",
     },
   },
 ]);

@@ -106,7 +106,7 @@
   padding: 0;
 }
 
-/* Blockquotes (including AI-locked content) */
+/* Blockquotes */
 .milkdown .ProseMirror blockquote {
   border-left: 4px solid #8b5cf6;
   padding-left: 1rem;
@@ -114,6 +114,12 @@
   margin-bottom: 1rem;
   color: #c4b5fd;
   font-style: italic;
+}
+
+/* Exclude locked content from blockquote styling - it has its own theme */
+.milkdown .ProseMirror blockquote.locked-content {
+  color: inherit;
+  font-style: normal;
 }
 
 /* Links */
@@ -570,6 +576,8 @@ button:focus-visible {
     gap: 1rem;
     align-items: flex-start;
     padding: 1rem;
+    position: relative;
+    z-index: 101;
   }
 
   .header-left {

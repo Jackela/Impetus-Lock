@@ -5,19 +5,15 @@
  * `.locked-content`, `data-lock-id`, `data-source`, and `data-lock-shape`
  * attributes so Muse/Loki vibes can be rendered without textual prefixes.
  *
- * **UX-011 Enhanced Visual Indicators**:
- * - Larger lock icons (1.1rem, was 0.9rem) for better visibility
- * - Icons always visible (opacity 0.7, was 0)
- * - Higher contrast icon colors for WCAG AA compliance
- * - Tooltip on hover showing lock source
- * - More prominent border (4px, was 3px)
- * - Enhanced background colors for better visual distinction
+ * Design: ElevenLabs Dark Cinematic + Audio-Waveform Aesthetics
+ * - Muse: Green accent (#22C55E) - inspiration/creativity
+ * - Loki: Red accent (#EF4444) - chaos/disruption
  */
 
 /* Base locked content styling */
 .locked-content {
-  border-left: 4px solid var(--color-lock-border, #8b5cf6);
-  background: var(--color-lock-background, rgba(139, 92, 246, 0.08));
+  border-left: 4px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
+  background: var(--color-surface-2, #111111);
   padding: 0.85rem 1rem 0.85rem 2.25rem;
   margin: 0.6rem 0;
   border-radius: 6px;
@@ -47,8 +43,8 @@
   bottom: 100%;
   margin-bottom: 0.5rem;
   padding: 0.35rem 0.6rem;
-  background: rgba(30, 30, 30, 0.95);
-  color: #e5e5e5;
+  background: rgba(10, 10, 10, 0.95);
+  color: var(--color-text-primary, #fafafa);
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 4px;
@@ -60,36 +56,41 @@
     transform 0.2s ease;
   white-space: nowrap;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--color-border-subtle, rgba(255, 255, 255, 0.08));
 }
 
-/* Muse source - purple theme */
-.locked-content[data-source="muse"] {
-  border-left-color: var(--color-muse-border, #a78bfa);
-  background: var(--color-muse-background, rgba(167, 139, 250, 0.15));
+/* Muse source - green theme (ElevenLabs accent)
+   Note: Using blockquote prefix to match specificity with .milkdown .ProseMirror blockquote
+*/
+blockquote.locked-content[data-source="muse"] {
+  border-left-color: var(--color-accent, #22c55e);
+  background: rgba(34, 197, 94, 0.08);
 }
 
-.locked-content[data-source="muse"]::before {
+blockquote.locked-content[data-source="muse"]::before {
   content: "💡";
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
-.locked-content[data-source="muse"]::after {
+blockquote.locked-content[data-source="muse"]::after {
   content: "Muse inspiration (locked)";
 }
 
-/* Loki source - red theme */
-.locked-content[data-source="loki"] {
-  border-left-color: var(--color-loki-border, #f87171);
-  background: var(--color-loki-background, rgba(248, 113, 113, 0.15));
+/* Loki source - red theme (chaos)
+   Note: Using blockquote prefix to match specificity with .milkdown .ProseMirror blockquote
+*/
+blockquote.locked-content[data-source="loki"] {
+  border-left-color: var(--color-loki, #ef4444);
+  background: rgba(239, 68, 68, 0.08);
 }
 
-.locked-content[data-source="loki"]::before {
+blockquote.locked-content[data-source="loki"]::before {
   content: "💥";
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 
-.locked-content[data-source="loki"]::after {
+blockquote.locked-content[data-source="loki"]::after {
   content: "Loki chaos (locked)";
 }
 
@@ -123,27 +124,41 @@
 }
 
 /* Hover/focus states - show tooltip and enhance icon */
-.locked-content:hover,
-.locked-content:focus-within {
-  background: rgba(255, 255, 255, 0.08);
+blockquote.locked-content:hover,
+blockquote.locked-content:focus-within {
+  background: rgba(255, 255, 255, 0.04);
   border-left-width: 5px;
   padding-left: calc(2.25rem + 1px);
 }
 
-.locked-content:hover::before,
-.locked-content:focus-within::before {
+blockquote.locked-content:hover::before,
+blockquote.locked-content:focus-within::before {
   opacity: 1;
 }
 
-.locked-content:hover::after,
-.locked-content:focus-within::after {
+blockquote.locked-content:hover::after,
+blockquote.locked-content:focus-within::after {
   opacity: 1;
   transform: translateY(0);
 }
 
+/* Muse hover - white overlay + green glow */
+blockquote.locked-content[data-source="muse"]:hover,
+blockquote.locked-content[data-source="muse"]:focus-within {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
+}
+
+/* Loki hover - white overlay + red glow */
+blockquote.locked-content[data-source="loki"]:hover,
+blockquote.locked-content[data-source="loki"]:focus-within {
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+}
+
 /* Inline hover state */
-.locked-content[data-lock-shape="inline"]:hover,
-.locked-content[data-lock-shape="inline"]:focus-within {
+blockquote.locked-content[data-lock-shape="inline"]:hover,
+blockquote.locked-content[data-lock-shape="inline"]:focus-within {
   border-left-width: 3px;
   padding-left: 0.5rem;
 }
