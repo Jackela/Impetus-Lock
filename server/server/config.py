@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 from dotenv import load_dotenv
 
@@ -73,7 +73,7 @@ class ServerConfig:
         valid_levels: set[LogLevel] = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
         level_upper = level.upper()
         if level_upper in valid_levels:
-            return cast(LogLevel, level_upper)
+            return level_upper
         return "INFO"
 
 

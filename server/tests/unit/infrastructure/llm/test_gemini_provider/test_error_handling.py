@@ -31,7 +31,7 @@ class TestGeminiProviderErrors:
                 "Content was blocked by safety filters",
             ),
             (
-                "google.generativeai.types.InvalidArgument",
+                "google.api_core.exceptions.InvalidArgument",
                 "invalid_api_key",
                 401,
                 "Invalid API key",
@@ -82,7 +82,7 @@ class TestGeminiProviderErrors:
 
     def test_auth_error(self, provider: GeminiLLMProvider) -> None:
         """InvalidArgument maps to auth error."""
-        from google.generativeai.types import InvalidArgument
+        from google.api_core.exceptions import InvalidArgument
 
         provider._model.generate_content.side_effect = InvalidArgument("Invalid API key")
 

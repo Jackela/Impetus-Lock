@@ -6,7 +6,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
@@ -86,9 +86,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(LLMProviderError, llm_provider_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(RequestValidationError, validation_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(AppError, cast(Any, app_error_handler))
+app.add_exception_handler(LLMProviderError, cast(Any, llm_provider_error_handler))
+app.add_exception_handler(RequestValidationError, cast(Any, validation_error_handler))
 app.add_exception_handler(Exception, global_exception_handler)
 
 # Add middleware (order matters - rate limit first, then auth, then CORS)

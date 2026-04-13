@@ -96,4 +96,5 @@ async def get_current_user_optional(
         user_id = UUID(user_id)
 
     result = await session.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
+    user: User | None = result.scalar_one_or_none()
+    return user

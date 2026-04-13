@@ -215,7 +215,8 @@ class ClaudeProvider(BasePromptLLMProvider):
                     output_tokens=getattr(raw_response.usage, "output_tokens", 0),
                 )
 
-            return completion
+            draft: LLMInterventionDraft = completion
+            return draft
         except RateLimitError as exc:
             raise LLMProviderError(
                 code="quota_exceeded",
@@ -356,7 +357,8 @@ class ClaudeProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             )
 
-        return LLMInterventionDraft.model_validate_json(text_blocks[0])
+        draft: LLMInterventionDraft = LLMInterventionDraft.model_validate_json(text_blocks[0])
+        return draft
 
     def _handle_api_error(
         self,

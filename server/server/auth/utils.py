@@ -32,7 +32,8 @@ def hash_password(password: str) -> str:
     password_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
     hashed = bcrypt.hashpw(password_bytes, salt)
-    return hashed.decode("utf-8")
+    result: str = hashed.decode("utf-8")
+    return result
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -47,7 +48,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     password_bytes = plain_password.encode("utf-8")
     hash_bytes = hashed_password.encode("utf-8")
-    return bcrypt.checkpw(password_bytes, hash_bytes)
+    match: bool = bcrypt.checkpw(password_bytes, hash_bytes)
+    return match
 
 
 def create_access_token(user_id: str, expires_delta: timedelta | None = None) -> str:
@@ -72,7 +74,8 @@ def create_access_token(user_id: str, expires_delta: timedelta | None = None) ->
         "type": "access",
     }
 
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    token_str: str = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return token_str
 
 
 def decode_access_token(token: str) -> dict[str, Any] | None:
@@ -85,11 +88,11 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
         Decoded token payload if valid, None otherwise.
     """
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload: dict[str, Any] = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         # Verify token type
         if payload.get("type") != "access":
             return None
-        return payload  # type: ignore[no-any-return]
+        return payload
     except jwt.ExpiredSignatureError:
         return None
     except jwt.InvalidTokenError:
