@@ -150,9 +150,10 @@ if os.getenv("TESTING"):
     app.include_router(testing.router)
 
     # Override get_current_user for E2E tests to bypass database lookup
+    from uuid import UUID
+
     from server.auth.dependencies import get_current_user
     from server.models.user import User
-    from uuid import UUID
 
     _test_user = User(
         id=UUID("12345678-1234-1234-1234-123456789abc"),
