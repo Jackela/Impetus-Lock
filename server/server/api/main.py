@@ -149,19 +149,6 @@ if os.getenv("TESTING"):
 
     app.include_router(testing.router)
 
-    # Override get_current_user for E2E tests to bypass database lookup
-    from uuid import UUID
-
-    from server.auth.dependencies import get_current_user
-    from server.models.user import User
-
-    _test_user = User(
-        id=UUID("12345678-1234-1234-1234-123456789abc"),
-        email="e2e-test@example.com",
-        password_hash="test-hash",
-    )
-    app.dependency_overrides[get_current_user] = lambda: _test_user
-
 
 class HealthResponse(BaseModel):
     """Health check response model.
