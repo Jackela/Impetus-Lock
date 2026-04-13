@@ -39,7 +39,9 @@ describe("useTaskStorage", () => {
     it("parses valid data from localStorage", async () => {
       const stored: TaskStorage = {
         version: 1,
-        tasks: [{ id: "t1", title: "Test", content: "# Test", lockIds: [], createdAt: 1, updatedAt: 2 }],
+        tasks: [
+          { id: "t1", title: "Test", content: "# Test", lockIds: [], createdAt: 1, updatedAt: 2 },
+        ],
         currentTaskId: "t1",
       };
       mockLocalStorage.getItem.mockReturnValue(JSON.stringify(stored));
@@ -50,7 +52,9 @@ describe("useTaskStorage", () => {
     });
 
     it("clears and returns empty when version mismatches", async () => {
-      mockLocalStorage.getItem.mockReturnValue(JSON.stringify({ version: 2, tasks: [], currentTaskId: null }));
+      mockLocalStorage.getItem.mockReturnValue(
+        JSON.stringify({ version: 2, tasks: [], currentTaskId: null })
+      );
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
       expect(result.current.tasks).toEqual([]);
@@ -73,7 +77,9 @@ describe("useTaskStorage", () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
       let newTask: StoredTask | undefined;
-      act(() => { newTask = result.current.actions.addTask("# Title\nBody", ["lock1"]); });
+      act(() => {
+        newTask = result.current.actions.addTask("# Title\nBody", ["lock1"]);
+      });
       expect(result.current.tasks).toHaveLength(1);
       expect(newTask!.title).toBe("# Title");
       expect(newTask!.content).toBe("# Title\nBody");
@@ -94,7 +100,9 @@ describe("useTaskStorage", () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
       let taskId: string;
-      act(() => { taskId = result.current.actions.addTask("Original").id; });
+      act(() => {
+        taskId = result.current.actions.addTask("Original").id;
+      });
       const before = Date.now();
       act(() => result.current.actions.updateTask(taskId, { title: "Updated" }));
       const updated = result.current.tasks.find((t) => t.id === taskId);
@@ -106,7 +114,9 @@ describe("useTaskStorage", () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
       let taskId: string;
-      act(() => { taskId = result.current.actions.addTask("Delete Me").id; });
+      act(() => {
+        taskId = result.current.actions.addTask("Delete Me").id;
+      });
       expect(result.current.tasks).toHaveLength(1);
       act(() => result.current.actions.deleteTask(taskId));
       expect(result.current.tasks).toHaveLength(0);
@@ -136,7 +146,9 @@ describe("useTaskStorage", () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
       let taskId: string;
-      act(() => { taskId = result.current.actions.addTask("Current").id; });
+      act(() => {
+        taskId = result.current.actions.addTask("Current").id;
+      });
       act(() => result.current.actions.setCurrentTask(taskId));
       expect(result.current.currentTaskId).toBe(taskId);
       act(() => result.current.actions.deleteTask(taskId));
@@ -147,7 +159,9 @@ describe("useTaskStorage", () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
       let task: StoredTask | undefined;
-      act(() => { task = result.current.actions.addTask("Line1\nLine2"); });
+      act(() => {
+        task = result.current.actions.addTask("Line1\nLine2");
+      });
       expect(task!.title).toBe("Line1");
     });
   });

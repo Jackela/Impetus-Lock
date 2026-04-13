@@ -272,10 +272,7 @@ export interface UpdateTaskParams {
   dueDate?: string | null;
 }
 
-export async function updateTask(
-  taskId: string,
-  params: UpdateTaskParams
-): Promise<TaskRecord> {
+export async function updateTask(taskId: string, params: UpdateTaskParams): Promise<TaskRecord> {
   const { content, lockIds, version, category, priority, dueDate } = params;
 
   const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {

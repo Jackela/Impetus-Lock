@@ -103,7 +103,11 @@ export function useTaskSyncCloud() {
   const queryClient = useQueryClient();
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: tasks = [], isLoading, error } = useQuery({
+  const {
+    data: tasks = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: TASKS_QUERY_KEY,
     queryFn: tasksApi.list,
     staleTime: 30000,
@@ -129,15 +133,18 @@ export function useTaskSyncCloud() {
     },
   });
 
-  const syncTask = useCallback((id: string, updates: Partial<StoredTask>) => {
-    // Debounce sync by 2 seconds
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-    }
-    syncTimeoutRef.current = setTimeout(() => {
-      updateMutation.mutate({ id, updates });
-    }, 2000);
-  }, [updateMutation]);
+  const syncTask = useCallback(
+    (id: string, updates: Partial<StoredTask>) => {
+      // Debounce sync by 2 seconds
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+      syncTimeoutRef.current = setTimeout(() => {
+        updateMutation.mutate({ id, updates });
+      }, 2000);
+    },
+    [updateMutation]
+  );
 
   useEffect(() => {
     return () => {

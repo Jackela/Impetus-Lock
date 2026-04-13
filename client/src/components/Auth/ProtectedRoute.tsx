@@ -52,11 +52,7 @@ export function ProtectedRoute({
   if (!isAuthenticated) {
     // Preserve intended URL for post-login redirect
     return (
-      <Navigate
-        to={redirectTo}
-        state={{ from: location.pathname + location.search }}
-        replace
-      />
+      <Navigate to={redirectTo} state={{ from: location.pathname + location.search }} replace />
     );
   }
 

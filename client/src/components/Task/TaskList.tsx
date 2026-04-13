@@ -88,7 +88,11 @@ export function TaskList({
           if (!b.dueDate) return -1;
           return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
         case "priority": {
-          const priorityOrder = { [TaskPriority.HIGH]: 0, [TaskPriority.MEDIUM]: 1, [TaskPriority.LOW]: 2 };
+          const priorityOrder = {
+            [TaskPriority.HIGH]: 0,
+            [TaskPriority.MEDIUM]: 1,
+            [TaskPriority.LOW]: 2,
+          };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
         }
         case "updated":
@@ -130,7 +134,9 @@ export function TaskList({
         {/* Category filter */}
         <select
           value={filterCategory ?? ""}
-          onChange={(e) => setFilterCategory(e.target.value ? (e.target.value as TaskCategory) : null)}
+          onChange={(e) =>
+            setFilterCategory(e.target.value ? (e.target.value as TaskCategory) : null)
+          }
           className="
             px-3 py-1.5 text-sm rounded-lg
             border border-gray-300 dark:border-gray-600
@@ -151,7 +157,9 @@ export function TaskList({
         {/* Priority filter */}
         <select
           value={filterPriority ?? ""}
-          onChange={(e) => setFilterPriority(e.target.value ? (e.target.value as TaskPriority) : null)}
+          onChange={(e) =>
+            setFilterPriority(e.target.value ? (e.target.value as TaskPriority) : null)
+          }
           className="
             px-3 py-1.5 text-sm rounded-lg
             border border-gray-300 dark:border-gray-600
@@ -320,9 +328,7 @@ function TaskListItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Title */}
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-              {task.title}
-            </h4>
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">{task.title}</h4>
 
             {/* Badges */}
             {!compact && (

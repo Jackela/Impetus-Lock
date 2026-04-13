@@ -93,20 +93,24 @@ export function useTaskStorage(): TaskStorageState {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tasks, currentTaskId }));
       } catch (err) {
-        const type = err instanceof Error && err.name === "QuotaExceededError" ? "quota_exceeded" : "unknown";
+        const type =
+          err instanceof Error && err.name === "QuotaExceededError" ? "quota_exceeded" : "unknown";
         setError(new StorageError(type, err instanceof Error ? err.message : "Save failed"));
         setStatus("error");
       }
     }, SAVE_DEBOUNCE_MS);
-    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
   }, [tasks, currentTaskId, status]);
 
   const addTask = useCallback((content: string, lockIds?: string[]): StoredTask => {
     const now = Date.now();
     const newTask: StoredTask = {
-      id: typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `${now}-${Math.random().toString(36).slice(2)}`,
+      id:
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${now}-${Math.random().toString(36).slice(2)}`,
       title: extractTitle(content),
       content,
       lockIds: lockIds ?? [],
@@ -117,13 +121,14 @@ export function useTaskStorage(): TaskStorageState {
     return newTask;
   }, []);
 
-  const updateTask = useCallback((id: string, updates: Partial<Omit<StoredTask, "id" | "createdAt">>): void => {
-    setTasks((prev) =>
-      prev.map((task) =>
-        task.id === id ? { ...task, ...updates, updatedAt: Date.now() } : task
-      )
-    );
-  }, []);
+  const updateTask = useCallback(
+    (id: string, updates: Partial<Omit<StoredTask, "id" | "createdAt">>): void => {
+      setTasks((prev) =>
+        prev.map((task) => (task.id === id ? { ...task, ...updates, updatedAt: Date.now() } : task))
+      );
+    },
+    []
+  );
 
   const deleteTask = useCallback((id: string): void => {
     setTasks((prev) => prev.filter((task) => task.id !== id));
