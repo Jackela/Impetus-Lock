@@ -30,6 +30,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import StaticPool
 from tenacity import (
     before_sleep_log,
     retry,
@@ -223,6 +224,7 @@ class DatabaseManager:
             }
             if is_sqlite:
                 engine_kwargs["connect_args"] = {"check_same_thread": False}
+                engine_kwargs["poolclass"] = StaticPool
             else:
                 engine_kwargs["pool_pre_ping"] = True
                 engine_kwargs["pool_size"] = self._pool_size

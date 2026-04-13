@@ -48,7 +48,7 @@ class UserRepository:
             User if found, None otherwise.
         """
         result = await self.session.execute(select(User).where(User.email == email))
-        return result.scalar_one_or_none()  # type: ignore[no-any-return]
+        return result.scalar_one_or_none()
 
     async def create(self, email: str, password_hash: str) -> User:
         """Create a new user.

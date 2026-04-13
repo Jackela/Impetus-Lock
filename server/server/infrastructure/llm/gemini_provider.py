@@ -369,7 +369,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             )
 
         text = text_parts[0]
-        return cast(LLMInterventionDraft, LLMInterventionDraft.model_validate_json(text))
+        return LLMInterventionDraft.model_validate_json(text)
 
     def count_tokens(self, text: str) -> int:
         """Count tokens in the given text.

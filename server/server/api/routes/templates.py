@@ -35,14 +35,14 @@ async def list_templates(
     stmt = select(func.count(Template.id)).where(Template.user_id == current_user.id)
     total = (await session.execute(stmt)).scalar_one_or_none() or 0
 
-    stmt = (
+    templates_stmt = (
         select(Template)
         .where(Template.user_id == current_user.id)
         .order_by(Template.created_at.desc())
         .offset(offset)
         .limit(limit)
     )
-    result = await session.execute(stmt)
+    result = await session.execute(templates_stmt)
     templates = result.scalars().all()
 
     return TemplateListResponse(

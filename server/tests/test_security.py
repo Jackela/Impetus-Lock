@@ -9,6 +9,7 @@ Add pytest-asyncio to dev dependencies when implementing async tests:
 """
 
 from datetime import UTC
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -62,7 +63,7 @@ class TestTaskInputValidation:
         assert task.title == "<script>alert('xss')</script>"
 
     @pytest.mark.asyncio
-    async def test_async_create_task_with_html_injection(self) -> None:
+    async def test_async_create_task_with_html_injection(self, mock_auth_user: Any) -> None:
         """Test async endpoint with HTML injection attempt.
 
         Validates that the API properly handles malicious content in async context.
@@ -109,7 +110,7 @@ class TestTaskInputValidation:
             app.dependency_overrides.pop(tasks_module.get_session_optional, None)
 
     @pytest.mark.asyncio
-    async def test_async_get_task_preserves_html_content(self) -> None:
+    async def test_async_get_task_preserves_html_content(self, mock_auth_user: Any) -> None:
         """Test async GET endpoint returns HTML content without modification.
 
         Validates that retrieved content is unchanged from creation.
@@ -159,7 +160,7 @@ class TestTaskInputValidation:
             app.dependency_overrides.pop(tasks_module.get_session_optional, None)
 
     @pytest.mark.asyncio
-    async def test_async_update_task_with_injection(self) -> None:
+    async def test_async_update_task_with_injection(self, mock_auth_user: Any) -> None:
         """Test async update endpoint handles injection attempts.
 
         Validates that updates preserve content as-is without modification.

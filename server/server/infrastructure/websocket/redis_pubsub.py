@@ -220,7 +220,7 @@ class RedisPubSubManager:
             return
 
         key = f"room_users:{room_id}"
-        await self._redis.hset(key, user_id, server_id)
+        await self._redis.hset(key, user_id, server_id)  # type: ignore[misc]
         await self._redis.expire(key, 3600)  # 1 hour TTL
 
     async def remove_user_from_room(self, room_id: str, user_id: str) -> None:
@@ -234,7 +234,7 @@ class RedisPubSubManager:
             return
 
         key = f"room_users:{room_id}"
-        await self._redis.hdel(key, user_id)
+        await self._redis.hdel(key, user_id)  # type: ignore[misc]
 
     async def get_room_servers(self, room_id: str) -> dict[str, str]:
         """Get mapping of users to their server IDs for a room.
@@ -249,10 +249,8 @@ class RedisPubSubManager:
             return {}
 
         key = f"room_users:{room_id}"
-        data = await self._redis.hgetall(key)
+        data = await self._redis.hgetall(key)  # type: ignore[misc]
         return dict(data)
-        data = await self._redis.hgetall(key)
-        return data
 
     async def get_room_user_count(self, room_id: str) -> int:
         """Get total user count across all servers for a room.
@@ -267,7 +265,7 @@ class RedisPubSubManager:
             return 0
 
         key = f"room_users:{room_id}"
-        return int(await self._redis.hlen(key))
+        return int(await self._redis.hlen(key))  # type: ignore[misc]
 
 
 # Global Redis pub/sub manager

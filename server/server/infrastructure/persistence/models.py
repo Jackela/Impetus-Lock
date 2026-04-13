@@ -13,6 +13,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    JSON,
     TIMESTAMP,
     CheckConstraint,
     ForeignKey,
@@ -20,9 +21,8 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Uuid,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -51,12 +51,12 @@ class TaskModel(Base):
 
     __tablename__ = "tasks"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID | None] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    lock_ids: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, server_default="{}")
+    lock_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, server_default="[]")
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
@@ -101,15 +101,15 @@ class InterventionActionModel(Base):
 
     __tablename__ = "intervention_actions"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     task_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False
     )
     action_type: Mapped[str] = mapped_column(String(10), nullable=False)
     action_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     lock_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
-    anchor: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    anchor: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     mode: Mapped[str] = mapped_column(String(10), nullable=False)
     context: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)

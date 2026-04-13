@@ -48,7 +48,12 @@ async def get_current_user(
         raise credentials_exception
 
     # Get user from database
+    from uuid import UUID
+
     from sqlalchemy import select
+
+    if isinstance(user_id, str):
+        user_id = UUID(user_id)
 
     result = await session.execute(select(User).where(User.id == user_id))
     user: User | None = result.scalar_one_or_none()
@@ -83,7 +88,12 @@ async def get_current_user_optional(
     if user_id is None:
         return None
 
+    from uuid import UUID
+
     from sqlalchemy import select
 
+    if isinstance(user_id, str):
+        user_id = UUID(user_id)
+
     result = await session.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()  # type: ignore[no-any-return]
+    return result.scalar_one_or_none()

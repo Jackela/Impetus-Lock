@@ -6,8 +6,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy import BigInteger, ForeignKey, Index, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from server.infrastructure.persistence.models import Base
@@ -29,9 +28,9 @@ class UserStats(Base):
 
     __tablename__ = "user_stats"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     user_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,

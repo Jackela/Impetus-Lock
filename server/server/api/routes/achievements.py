@@ -79,14 +79,14 @@ async def list_achievements(
     stmt = select(func.count(Achievement.id)).where(Achievement.user_id == current_user.id)
     total = (await session.execute(stmt)).scalar_one_or_none() or 0
 
-    stmt = (
+    achievements_stmt = (
         select(Achievement)
         .where(Achievement.user_id == current_user.id)
         .order_by(Achievement.earned_at.desc())
         .offset(offset)
         .limit(limit)
     )
-    result = await session.execute(stmt)
+    result = await session.execute(achievements_stmt)
     achievements = result.scalars().all()
 
     return AchievementListResponse(

@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Any, cast
 
+import instructor
 from anthropic.types import Message
 
 from server.domain.errors import LLMProviderError
@@ -116,19 +117,17 @@ class ClaudeProvider(BasePromptLLMProvider):
         self._last_token_usage: TokenUsage | None = None
 
         # Import and initialize clients
-        import instructor
         from anthropic import Anthropic
 
         self._anthropic_client = Anthropic(api_key=self._api_key)
 
         # Initialize Instructor client if requested
+        self._instructor_client: instructor.Instructor | None = None
         if use_instructor:
             self._instructor_client = instructor.from_anthropic(
                 self._anthropic_client,
                 mode=instructor.Mode.ANTHROPIC_TOOLS,
             )
-        else:
-            self._instructor_client = None
 
     @property
     def last_token_usage(self) -> TokenUsage | None:
@@ -192,6 +191,8 @@ class ClaudeProvider(BasePromptLLMProvider):
             RateLimitError,
         )
 
+        assert self._instructor_client is not None
+
         try:
             # Instructor handles retries internally
             completion, raw_response = (
@@ -214,7 +215,7 @@ class ClaudeProvider(BasePromptLLMProvider):
                     output_tokens=getattr(raw_response.usage, "output_tokens", 0),
                 )
 
-            return cast(LLMInterventionDraft, completion)
+            return completion
         except RateLimitError as exc:
             raise LLMProviderError(
                 code="quota_exceeded",
@@ -321,7 +322,7 @@ class ClaudeProvider(BasePromptLLMProvider):
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             system=system_prompt,
-            messages=payload,
+            messages=payload,  # type: ignore[arg-type]
         )
 
     def _parse_anthropic_response(self, message: Message) -> LLMInterventionDraft:
@@ -355,7 +356,7 @@ class ClaudeProvider(BasePromptLLMProvider):
                 provider=self.provider_name,
             )
 
-        return cast(LLMInterventionDraft, LLMInterventionDraft.model_validate_json(text_blocks[0]))
+        return LLMInterventionDraft.model_validate_json(text_blocks[0])
 
     def _handle_api_error(
         self,
