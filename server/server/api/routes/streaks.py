@@ -57,6 +57,7 @@ async def update_streak(
 ) -> StreakResponse:
     """Update streak on user activity."""
     from datetime import UTC, datetime
+
     from sqlalchemy import select
 
     if not session:

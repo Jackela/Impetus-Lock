@@ -27,11 +27,11 @@ from server.api.routes import (
     collaboration,
     intervention,
     metrics,
+    stats,
+    streaks,
     style,
     style_comparison,
     style_history,
-    stats,
-    streaks,
     tasks,
     templates,
 )

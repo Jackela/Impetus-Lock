@@ -1,9 +1,7 @@
 """Stats API routes."""
 
-from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.schemas.stats import (
@@ -13,8 +11,8 @@ from server.api.schemas.stats import (
 )
 from server.auth import get_current_user
 from server.infrastructure.persistence.database import get_session_optional
-from server.models.user_stats import UserStats
 from server.models.user import User
+from server.models.user_stats import UserStats
 
 router = APIRouter(prefix="/stats", tags=["stats"])
 

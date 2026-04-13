@@ -27,7 +27,7 @@ async def list_templates(
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> TemplateListResponse:
     """List all templates for current user."""
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
 
     if not session:
         return TemplateListResponse(total=0, limit=limit, offset=offset, templates=[])

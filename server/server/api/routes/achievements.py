@@ -71,7 +71,7 @@ async def list_achievements(
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> AchievementListResponse:
     """List all achievements for current user."""
-    from sqlalchemy import select, func
+    from sqlalchemy import func, select
 
     if not session:
         return AchievementListResponse(total=0, limit=limit, offset=offset, achievements=[])
