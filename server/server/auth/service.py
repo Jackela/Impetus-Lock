@@ -48,7 +48,7 @@ class UserRepository:
             User if found, None otherwise.
         """
         result = await self.session.execute(select(User).where(User.email == email))
-        return result.scalar_one_or_none()
+        return result.scalar_one_or_none()  # type: ignore[no-any-return]
 
     async def create(self, email: str, password_hash: str) -> User:
         """Create a new user.
@@ -75,9 +75,7 @@ class UserRepository:
         Returns:
             True if user exists, False otherwise.
         """
-        result = await self.session.execute(
-            select(User.id).where(User.email == email)
-        )
+        result = await self.session.execute(select(User.id).where(User.email == email))
         return result.scalar_one_or_none() is not None
 
 
@@ -114,10 +112,7 @@ class AuthService:
         """
         # Check if user already exists
         if await self._user_repo.exists(email):
-            return AuthResult(
-                success=False,
-                error_message="Email already registered"
-            )
+            return AuthResult(success=False, error_message="Email already registered")
 
         # Hash password
         password_hash = hash_password(password)
@@ -144,10 +139,7 @@ class AuthService:
         user = await self._user_repo.get_by_email(email)
 
         # Generic error message for security (don't reveal if email exists)
-        auth_error = AuthResult(
-            success=False,
-            error_message="Invalid credentials"
-        )
+        auth_error = AuthResult(success=False, error_message="Invalid credentials")
 
         if user is None:
             return auth_error
