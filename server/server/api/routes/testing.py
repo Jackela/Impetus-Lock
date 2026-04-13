@@ -19,7 +19,6 @@ from pydantic import BaseModel
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
 from server.infrastructure.security.csrf import CSRFProtection
-from server.infrastructure.security.jwt_handler import JWTHandler
 
 router = APIRouter(prefix="/test", tags=["testing"])
 logger = logging.getLogger("server.api.testing")
