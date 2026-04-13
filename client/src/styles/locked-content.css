@@ -124,39 +124,39 @@ blockquote.locked-content[data-source="loki"]::after {
 }
 
 /* Hover/focus states - show tooltip and enhance icon */
-.locked-content:hover,
-.locked-content:focus-within {
+blockquote.locked-content:hover,
+blockquote.locked-content:focus-within {
   background: rgba(255, 255, 255, 0.04);
   border-left-width: 5px;
   padding-left: calc(2.25rem + 1px);
 }
 
-.locked-content:hover::before,
-.locked-content:focus-within::before {
+blockquote.locked-content:hover::before,
+blockquote.locked-content:focus-within::before {
   opacity: 1;
 }
 
-.locked-content:hover::after,
-.locked-content:focus-within::after {
+blockquote.locked-content:hover::after,
+blockquote.locked-content:focus-within::after {
   opacity: 1;
   transform: translateY(0);
 }
 
 /* Muse hover - green glow */
-.locked-content[data-source="muse"]:hover,
-.locked-content[data-source="muse"]:focus-within {
+blockquote.locked-content[data-source="muse"]:hover,
+blockquote.locked-content[data-source="muse"]:focus-within {
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
 }
 
 /* Loki hover - red glow */
-.locked-content[data-source="loki"]:hover,
-.locked-content[data-source="loki"]:focus-within {
+blockquote.locked-content[data-source="loki"]:hover,
+blockquote.locked-content[data-source="loki"]:focus-within {
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
 }
 
 /* Inline hover state */
-.locked-content[data-lock-shape="inline"]:hover,
-.locked-content[data-lock-shape="inline"]:focus-within {
+blockquote.locked-content[data-lock-shape="inline"]:hover,
+blockquote.locked-content[data-lock-shape="inline"]:focus-within {
   border-left-width: 3px;
   padding-left: 0.5rem;
 }
