@@ -72,7 +72,7 @@ test.describe("Locked Content Styling", () => {
     const hoverBackground = await lockedContent.evaluate(
       (el) => window.getComputedStyle(el).backgroundColor
     );
-    // Hover state uses subtle white background, not source-specific color
+    // Hover state uses subtle white background overlay
     expect(hoverBackground).toMatch(
       /rgba?\(\s*255,\s*255,\s*255,\s*0\.04\)/
     );
