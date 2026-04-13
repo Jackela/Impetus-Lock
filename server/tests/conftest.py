@@ -92,13 +92,10 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
 @pytest.fixture(scope="function")
 async def async_client():
     """Create async test client with isolated database transaction."""
-    from httpx import AsyncClient, ASGITransport
-    from server.main import app
+    from httpx import ASGITransport, AsyncClient
+    from server.api.main import app
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
@@ -115,12 +112,13 @@ async def db_session():
     Creates a fresh in-memory SQLite database for each test,
     creating User table only (TaskModel uses PostgreSQL-specific types).
     """
-    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
     from sqlalchemy import Column, DateTime, String
     from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+    from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
     from sqlalchemy.orm import declarative_base
-    from uuid import uuid4
-    from datetime import datetime, UTC
 
     # Create a separate base for auth tests to avoid PostgreSQL-specific types
     AuthTestBase = declarative_base()
@@ -130,8 +128,12 @@ async def db_session():
         id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
         email = Column(String(255), nullable=False, unique=True)
         password_hash = Column(String(255), nullable=False)
-        created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
-        updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+        created_at = Column(
+            DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+        )
+        updated_at = Column(
+            DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+        )
 
     # Create async in-memory database
     engine = create_async_engine(
