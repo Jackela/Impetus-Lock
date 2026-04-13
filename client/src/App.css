@@ -570,6 +570,8 @@ button:focus-visible {
     gap: 1rem;
     align-items: flex-start;
     padding: 1rem;
+    position: relative;
+    z-index: 101;
   }
 
   .header-left {

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type APIRequestContext } from "@playwright/test";
 
 /**
  * Database Persistence E2E Test Suite
@@ -15,8 +15,32 @@ import { test, expect } from "@playwright/test";
 const API_BASE = "http://localhost:8000";
 const SKIP_DB_TESTS = process.env.ACT === "true";
 
+let csrfToken = "";
+
+async function authenticate(request: APIRequestContext) {
+  const response = await request.post(`${API_BASE}/auth/login`, {
+    data: {
+      email: "test@example.com",
+      password: "test",
+    },
+  });
+  expect(response.status()).toBe(200);
+  const data = await response.json();
+  csrfToken = data.csrf_token;
+}
+
+function authHeaders() {
+  return {
+    "X-CSRF-Token": csrfToken,
+  };
+}
+
 test.describe("Database Persistence", () => {
   test.skip(SKIP_DB_TESTS, "Database-backed endpoints require Postgres; skipped under act.");
+
+  test.beforeEach(async ({ request }) => {
+    await authenticate(request);
+  });
 
   test("creates task via API", async ({ request }) => {
     // Create task
@@ -25,6 +49,7 @@ test.describe("Database Persistence", () => {
         content: "Initial task content",
         lock_ids: [],
       },
+      headers: authHeaders(),
     });
 
     expect(response.status()).toBe(201);
@@ -45,6 +70,7 @@ test.describe("Database Persistence", () => {
         content: "Test content for get",
         lock_ids: ["lock_1"],
       },
+      headers: authHeaders(),
     });
 
     const createdTask = await createResponse.json();
@@ -67,6 +93,7 @@ test.describe("Database Persistence", () => {
         content: "Original content",
         lock_ids: [],
       },
+      headers: authHeaders(),
     });
 
     const task = await createResponse.json();
@@ -78,6 +105,7 @@ test.describe("Database Persistence", () => {
         lock_ids: ["lock_new"],
         version: task.version, // Optimistic locking
       },
+      headers: authHeaders(),
     });
 
     expect(updateResponse.status()).toBe(200);
@@ -95,6 +123,7 @@ test.describe("Database Persistence", () => {
         content: "Content for version conflict",
         lock_ids: [],
       },
+      headers: authHeaders(),
     });
 
     const task = await createResponse.json();
@@ -106,6 +135,7 @@ test.describe("Database Persistence", () => {
         lock_ids: [],
         version: task.version,
       },
+      headers: authHeaders(),
     });
 
     // Second update with stale version (should fail)
@@ -115,6 +145,7 @@ test.describe("Database Persistence", () => {
         lock_ids: [],
         version: task.version, // Stale version
       },
+      headers: authHeaders(),
     });
 
     expect(conflictResponse.status()).toBe(409); // Conflict
@@ -127,12 +158,15 @@ test.describe("Database Persistence", () => {
         content: "Task to be deleted",
         lock_ids: [],
       },
+      headers: authHeaders(),
     });
 
     const task = await createResponse.json();
 
     // Delete task
-    const deleteResponse = await request.delete(`${API_BASE}/tasks/${task.id}`);
+    const deleteResponse = await request.delete(`${API_BASE}/tasks/${task.id}`, {
+      headers: authHeaders(),
+    });
 
     expect(deleteResponse.status()).toBe(204); // No Content
 
@@ -152,6 +186,10 @@ test.describe("Database Persistence", () => {
 test.describe("Intervention History", () => {
   test.skip(SKIP_DB_TESTS, "Database-backed endpoints require Postgres; skipped under act.");
 
+  test.beforeEach(async ({ request }) => {
+    await authenticate(request);
+  });
+
   test("queries empty intervention history", async ({ request }) => {
     // Create task
     const createResponse = await request.post(`${API_BASE}/tasks`, {
@@ -159,6 +197,7 @@ test.describe("Intervention History", () => {
         content: "Task with no interventions",
         lock_ids: [],
       },
+      headers: authHeaders(),
     });
 
     const task = await createResponse.json();
@@ -181,6 +220,7 @@ test.describe("Intervention History", () => {
         content: "Task for pagination test",
         lock_ids: [],
       },
+      headers: authHeaders(),
     });
 
     const task = await createResponse.json();

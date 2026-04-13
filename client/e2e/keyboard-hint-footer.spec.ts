@@ -114,7 +114,7 @@ test.describe("Keyboard Hint Footer", () => {
     const footer = page.locator(".app-footer");
 
     // Validate styling
-    await expect(footer).toHaveCSS("opacity", "0.5");
+    await expect(footer).toHaveCSS("opacity", "0.4");
     await expect(footer).toHaveCSS("font-size", "14px"); // 0.875rem
     await expect(footer).toHaveCSS("position", "fixed");
     await expect(footer).toHaveCSS("text-align", "center");
