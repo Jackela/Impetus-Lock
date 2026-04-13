@@ -142,15 +142,17 @@ blockquote.locked-content:focus-within::after {
   transform: translateY(0);
 }
 
-/* Muse hover - green glow */
+/* Muse hover - white overlay + green glow */
 blockquote.locked-content[data-source="muse"]:hover,
 blockquote.locked-content[data-source="muse"]:focus-within {
+  background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
 }
 
-/* Loki hover - red glow */
+/* Loki hover - white overlay + red glow */
 blockquote.locked-content[data-source="loki"]:hover,
 blockquote.locked-content[data-source="loki"]:focus-within {
+  background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
 }
 
