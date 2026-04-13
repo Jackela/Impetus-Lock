@@ -20,12 +20,14 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 class RegisterRequest(BaseModel):
     """User registration request."""
 
-    model_config = {"json_schema_extra": {
-        "example": {
-            "email": "user@example.com",
-            "password": "securePassword123",
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "email": "user@example.com",
+                "password": "securePassword123",
+            }
         }
-    }}
+    }
 
     email: EmailStr
     password: str
@@ -34,12 +36,14 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     """User login request."""
 
-    model_config = {"json_schema_extra": {
-        "example": {
-            "email": "user@example.com",
-            "password": "securePassword123",
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "email": "user@example.com",
+                "password": "securePassword123",
+            }
         }
-    }}
+    }
 
     email: EmailStr
     password: str
@@ -130,9 +134,7 @@ async def register(
     if result.token:
         _set_auth_cookie(response, result.token)
 
-    return AuthResponse(
-        user=UserResponse(id=str(result.user.id), email=result.user.email)
-    )
+    return AuthResponse(user=UserResponse(id=str(result.user.id), email=result.user.email))
 
 
 @router.post("/login", response_model=AuthResponse)
@@ -167,9 +169,7 @@ async def login(
     if result.token:
         _set_auth_cookie(response, result.token)
 
-    return AuthResponse(
-        user=UserResponse(id=str(result.user.id), email=result.user.email)
-    )
+    return AuthResponse(user=UserResponse(id=str(result.user.id), email=result.user.email))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

@@ -346,10 +346,7 @@ class TestListTasks:
     ) -> None:
         """Test successful task listing with pagination."""
         # Arrange
-        tasks = [
-            Task.create(content=f"Task {i}", lock_ids=[])
-            for i in range(3)
-        ]
+        tasks = [Task.create(content=f"Task {i}", lock_ids=[]) for i in range(3)]
         mock_repository.list_tasks.side_effect = [
             tasks,  # First call for paginated results
             tasks,  # Second call for total count

@@ -62,9 +62,7 @@ async def list_tasks(
         ```
     """
     # Get tasks scoped to current user
-    tasks = await repository.list_tasks_by_user(
-        user_id=current_user.id, limit=limit, offset=offset
-    )
+    tasks = await repository.list_tasks_by_user(user_id=current_user.id, limit=limit, offset=offset)
 
     # Get total count for user
     total = await repository.count_tasks_by_user(user_id=current_user.id)

@@ -94,9 +94,7 @@ class TestJWTToken:
         """Test decoding an expired token."""
         user_id = "test-user-id"
         # Create token that expired 1 hour ago
-        expired_token = create_access_token(
-            user_id, expires_delta=timedelta(hours=-1)
-        )
+        expired_token = create_access_token(user_id, expires_delta=timedelta(hours=-1))
 
         payload = decode_access_token(expired_token)
 
