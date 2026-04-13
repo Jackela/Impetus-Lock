@@ -73,9 +73,7 @@ test.describe("Locked Content Styling", () => {
       (el) => window.getComputedStyle(el).backgroundColor
     );
     // Hover state uses subtle white background overlay
-    expect(hoverBackground).toMatch(
-      /rgba?\(\s*255,\s*255,\s*255,\s*0\.04\)/
-    );
+    expect(hoverBackground).toMatch(/rgba?\(\s*255,\s*255,\s*255,\s*0\.04\)/);
   });
 
   test("Multiple locked blocks have independent styling", async ({ page }) => {
