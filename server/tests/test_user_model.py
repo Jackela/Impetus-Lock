@@ -5,6 +5,7 @@
 
 import pytest
 from sqlalchemy import select
+
 from server.models.user import User
 
 
@@ -14,17 +15,12 @@ class TestUserModel:
     @pytest.mark.asyncio
     async def test_create_user(self, db_session):
         """Test creating a user with valid data."""
-        user = User(
-            email="test@example.com",
-            password_hash="hashed_password_placeholder"
-        )
+        user = User(email="test@example.com", password_hash="hashed_password_placeholder")
         db_session.add(user)
         await db_session.commit()
 
         # Query the user back
-        result = await db_session.execute(
-            select(User).where(User.email == "test@example.com")
-        )
+        result = await db_session.execute(select(User).where(User.email == "test@example.com"))
         saved_user = result.scalar_one()
 
         assert saved_user.id is not None
@@ -43,7 +39,7 @@ class TestUserModel:
         user2 = User(email="duplicate@example.com", password_hash="hash2")
         db_session.add(user2)
 
-        with pytest.raises(Exception):  # IntegrityError
+        with pytest.raises(Exception):  # noqa: B017
             await db_session.commit()
 
     @pytest.mark.asyncio
@@ -73,7 +69,7 @@ class TestUserModel:
         hashed = hash_password(password)
 
         # Hash should be bytes or string
-        assert isinstance(hashed, (str, bytes))
+        assert isinstance(hashed, str | bytes)
         # Hash should not be the plain password
         assert hashed != password
         # Hash should be verifiable
@@ -83,22 +79,19 @@ class TestUserModel:
 
     def test_bcrypt_work_factor(self):
         """Test that bcrypt uses appropriate work factor."""
+
         from server.auth.utils import hash_password
-        import bcrypt
 
         password = "test_password"
         hashed = hash_password(password)
 
         # Extract work factor from hash
         # bcrypt hash format: $2b$10$... where 10 is the work factor
-        if isinstance(hashed, bytes):
-            hashed_str = hashed.decode('utf-8')
-        else:
-            hashed_str = hashed
+        hashed_str = hashed.decode("utf-8") if isinstance(hashed, bytes) else hashed
 
         # Default work factor in bcrypt is usually 12
         # The hash starts with $2b$12$ for work factor 12
-        parts = hashed_str.split('$')
+        parts = hashed_str.split("$")
         if len(parts) >= 3:
             work_factor = int(parts[2])
             assert work_factor >= 12, f"Work factor {work_factor} is too low"

@@ -7,6 +7,21 @@ Constitutional Compliance:
 - Article V (Documentation): Complete docstrings for all schemas
 """
 
+from server.api.schemas.achievement import (
+    AchievementDefinition,
+    AchievementDefinitionsResponse,
+    AchievementListResponse,
+    AchievementResponse,
+)
+from server.api.schemas.stats import (
+    InterventionBreakdownResponse,
+    StatsPeriodResponse,
+    StatsResponse,
+)
+from server.api.schemas.streak import (
+    StreakResponse,
+    StreakUpdateRequest,
+)
 from server.api.schemas.task import (
     InterventionActionResponse,
     InterventionHistoryResponse,
@@ -19,21 +34,6 @@ from server.api.schemas.template import (
     TemplateCreateRequest,
     TemplateListResponse,
     TemplateResponse,
-)
-from server.api.schemas.achievement import (
-    AchievementDefinitionsResponse,
-    AchievementListResponse,
-    AchievementResponse,
-    AchievementDefinition,
-)
-from server.api.schemas.stats import (
-    InterventionBreakdownResponse,
-    StatsPeriodResponse,
-    StatsResponse,
-)
-from server.api.schemas.streak import (
-    StreakResponse,
-    StreakUpdateRequest,
 )
 
 __all__ = [

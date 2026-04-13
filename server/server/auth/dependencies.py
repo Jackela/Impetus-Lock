@@ -8,7 +8,6 @@ from typing import Annotated
 from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from server.auth.service import UserRepository, get_auth_service
 from server.auth.utils import decode_access_token
 from server.infrastructure.persistence.database import get_session
 from server.models.user import User

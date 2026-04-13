@@ -3,10 +3,7 @@
 @module tests/test_jwt
 """
 
-import time
 from datetime import UTC, datetime, timedelta
-
-import pytest
 
 from server.auth.utils import (
     BCRYPT_ROUNDS,
@@ -128,7 +125,8 @@ class TestJWTToken:
     def test_token_type_verification(self) -> None:
         """Test that token type is verified during decode."""
         import jwt as pyjwt
-        from server.auth.utils import JWT_SECRET, JWT_ALGORITHM
+
+        from server.auth.utils import JWT_ALGORITHM, JWT_SECRET
 
         # Create token with wrong type
         payload = {

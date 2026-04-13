@@ -24,7 +24,12 @@ class InMemoryTaskRepository(TaskRepository):
         self._actions: dict[UUID, list[InterventionAction]] = {}
         self._task_owners: dict[UUID, UUID | None] = {}  # task_id -> user_id
 
-    async def create_task(self, content: str, lock_ids: list[str], user_id: UUID | None = None) -> Task:
+    async def create_task(
+        self,
+        content: str,
+        lock_ids: list[str],
+        user_id: UUID | None = None,
+    ) -> Task:
         task = Task.create(content, lock_ids)
         self._tasks[task.id] = task
         self._actions.setdefault(task.id, [])
@@ -93,7 +98,8 @@ class InMemoryTaskRepository(TaskRepository):
         """
         # Filter tasks by user_id
         user_tasks = [
-            task for task_id, task in self._tasks.items()
+            task
+            for task_id, task in self._tasks.items()
             if self._task_owners.get(task_id) == user_id
         ]
         # Sort by created_at descending (newest first)
@@ -109,10 +115,7 @@ class InMemoryTaskRepository(TaskRepository):
         Returns:
             int: Total number of tasks for this user.
         """
-        return sum(
-            1 for task_id, owner_id in self._task_owners.items()
-            if owner_id == user_id
-        )
+        return sum(1 for task_id, owner_id in self._task_owners.items() if owner_id == user_id)
 
     async def get_task_by_user(self, task_id: UUID, user_id: UUID) -> Task | None:
         """Get task by ID if it belongs to the specified user.

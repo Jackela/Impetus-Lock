@@ -4,7 +4,8 @@ Pydantic models for Achievement API request/response validation.
 """
 
 from typing import Any
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
 
 
 class AchievementResponse(BaseModel):

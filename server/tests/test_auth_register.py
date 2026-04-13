@@ -4,10 +4,7 @@
 """
 
 import pytest
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
-
-from server.auth.utils import verify_password
 
 
 class TestRegisterEndpoint:

@@ -93,6 +93,7 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
 async def async_client():
     """Create async test client with isolated database transaction."""
     from httpx import ASGITransport, AsyncClient
+
     from server.api.main import app
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
