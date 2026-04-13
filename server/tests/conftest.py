@@ -91,13 +91,33 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
 
 @pytest.fixture(scope="function")
 async def async_client():
-    """Create async test client with isolated database transaction."""
+    """Create async test client with initialized database.
+
+    Initializes the database manager and creates only the users table before tests run.
+    """
     from httpx import ASGITransport, AsyncClient
 
     from server.api.main import app
+    from server.infrastructure.persistence import database
+
+    # Clear any existing state and initialize database
+    database._db_manager = None
+    manager = await database.init_database()
+
+    # Create only the users table (auth tests don't need other tables)
+    if manager is not None and manager._engine is not None:
+        from server.models.user import User
+
+        async with manager._engine.begin() as conn:
+            await conn.run_sync(User.__table__.create, checkfirst=True)
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
+
+    # Cleanup: close database connection after test
+    if database._db_manager is not None:
+        await database._db_manager.close()
+        database._db_manager = None
 
 
 @pytest.fixture(scope="function")

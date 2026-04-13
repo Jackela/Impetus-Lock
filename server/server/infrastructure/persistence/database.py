@@ -217,15 +217,19 @@ class DatabaseManager:
             reraise=True,
         )
         async def create_with_retry() -> AsyncEngine:
-            engine = create_async_engine(
-                self._database_url,
-                echo=False,
-                pool_pre_ping=True,
-                pool_size=self._pool_size,
-                max_overflow=self._max_overflow,
-                pool_recycle=3600,
-                pool_timeout=30,
-            )
+            is_sqlite = self._database_url.startswith("sqlite")
+            engine_kwargs: dict[str, Any] = {
+                "echo": False,
+            }
+            if is_sqlite:
+                engine_kwargs["connect_args"] = {"check_same_thread": False}
+            else:
+                engine_kwargs["pool_pre_ping"] = True
+                engine_kwargs["pool_size"] = self._pool_size
+                engine_kwargs["max_overflow"] = self._max_overflow
+                engine_kwargs["pool_recycle"] = 3600
+                engine_kwargs["pool_timeout"] = 30
+            engine = create_async_engine(self._database_url, **engine_kwargs)
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
             logger.info("Database engine created successfully")
