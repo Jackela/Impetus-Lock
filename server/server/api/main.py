@@ -130,6 +130,12 @@ app.add_middleware(
 )
 
 # Include API routes
+# When TESTING=1, include debug auth routes first so they override real auth
+if os.getenv("TESTING"):
+    from server.api.auth.routes import router as debug_auth_router
+
+    app.include_router(debug_auth_router)
+
 app.include_router(auth_router)
 app.include_router(intervention.router)
 app.include_router(tasks.router)
