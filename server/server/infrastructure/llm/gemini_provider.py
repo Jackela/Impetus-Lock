@@ -29,7 +29,7 @@ Example:
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft

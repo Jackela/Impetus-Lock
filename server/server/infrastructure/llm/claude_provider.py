@@ -12,7 +12,7 @@ Constitutional Compliance:
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import instructor
 from anthropic.types import Message
