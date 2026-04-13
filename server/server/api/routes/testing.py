@@ -13,11 +13,13 @@ import os
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel
 
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
+from server.infrastructure.security.csrf import CSRFProtection
+from server.infrastructure.security.jwt_handler import JWTHandler
 
 router = APIRouter(prefix="/test", tags=["testing"])
 logger = logging.getLogger("server.api.testing")
@@ -144,3 +146,80 @@ def test_health() -> TestHealthResponse:
         testing_enabled=testing_enabled,
         message="Test endpoints active" if testing_enabled else "Test endpoints disabled",
     )
+
+
+# Debug authentication endpoints for E2E testing
+# These allow E2E tests to authenticate without database credentials
+
+
+class TestLoginResponse(BaseModel):
+    """Test login response with CSRF token."""
+
+    message: str
+    csrf_token: str
+
+
+@router.post("/login", response_model=TestLoginResponse)
+async def test_login(response: Response) -> TestLoginResponse:
+    """Test-only: Debug login for E2E tests.
+
+    Creates a test JWT token and CSRF token without requiring database credentials.
+    Only available when TESTING=true.
+
+    Returns:
+        TestLoginResponse: Login success message and CSRF token.
+
+    Example:
+        ```bash
+        curl -X POST http://localhost:8000/test/login
+        ```
+    """
+    _check_testing_enabled()
+
+    # Ensure JWT_SECRET is set for testing
+    os.environ.setdefault("JWT_SECRET", "test-jwt-secret-for-e2e-only")
+    os.environ.setdefault("SECRET_KEY", "test-secret-key-for-e2e-only")
+
+    # Create test token
+    token = JWTHandler.create_token("demo-user-id")
+
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,  # Allow HTTP for local E2E testing
+        samesite="lax",
+        max_age=86400,
+    )
+
+    csrf_token = CSRFProtection().generate_token()
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        secure=False,  # Allow HTTP for local E2E testing
+        samesite="lax",
+    )
+
+    return TestLoginResponse(message="Login successful", csrf_token=csrf_token)
+
+
+@router.post("/logout")
+async def test_logout(response: Response) -> dict[str, str]:
+    """Test-only: Debug logout for E2E tests.
+
+    Clears authentication cookies. Only available when TESTING=true.
+
+    Returns:
+        dict: Logout success message.
+
+    Example:
+        ```bash
+        curl -X POST http://localhost:8000/test/logout
+        ```
+    """
+    _check_testing_enabled()
+
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="csrf_token")
+
+    return {"message": "Logout successful"}

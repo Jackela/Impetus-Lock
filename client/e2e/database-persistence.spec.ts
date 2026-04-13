@@ -18,12 +18,8 @@ const SKIP_DB_TESTS = process.env.ACT === "true";
 let csrfToken = "";
 
 async function authenticate(request: APIRequestContext) {
-  const response = await request.post(`${API_BASE}/auth/login`, {
-    data: {
-      email: "test@example.com",
-      password: "test",
-    },
-  });
+  // Use /test/login for debug authentication in E2E tests
+  const response = await request.post(`${API_BASE}/test/login`);
   expect(response.status()).toBe(200);
   const data = await response.json();
   csrfToken = data.csrf_token;
