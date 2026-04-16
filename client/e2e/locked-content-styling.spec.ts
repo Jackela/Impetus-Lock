@@ -35,7 +35,7 @@ test.describe("Locked Content Styling", () => {
     await expect(lockedContent).toHaveClass(/source-muse/);
 
     const borderLeft = await lockedContent.evaluate((el) => window.getComputedStyle(el).borderLeft);
-    expect(borderLeft).toContain("4px");
+    expect(borderLeft).toContain("3px");
     // Muse source uses green accent color (#22c55e = rgb(34, 197, 94))
     expect(borderLeft).toContain("rgb(34, 197, 94)");
 
@@ -107,12 +107,12 @@ test.describe("Locked Content Styling", () => {
     await expect(secondBlock).toHaveClass(/source-loki/);
 
     const firstBorder = await firstBlock.evaluate((el) => window.getComputedStyle(el).borderLeft);
-    expect(firstBorder).toContain("4px");
+    expect(firstBorder).toContain("3px");
     // Muse source (lock_A) uses green accent color
     expect(firstBorder).toContain("rgb(34, 197, 94)");
 
     const secondBorder = await secondBlock.evaluate((el) => window.getComputedStyle(el).borderLeft);
-    expect(secondBorder).toContain("4px");
+    expect(secondBorder).toContain("3px");
     // Loki source (lock_B) uses red accent color
     expect(secondBorder).toContain("rgb(239, 68, 68)");
   });
