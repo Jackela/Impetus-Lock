@@ -11,6 +11,7 @@ Constitutional Compliance:
 """
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 from server.domain.entities.intervention_action import InterventionAction
@@ -241,7 +242,15 @@ class TaskRepository(ABC):
 
     @abstractmethod
     async def create_task(
-        self, content: str, lock_ids: list[str], user_id: UUID | None = None
+        self,
+        content: str,
+        lock_ids: list[str],
+        user_id: UUID | None = None,
+        title: str = "",
+        category: str = "WRITING",
+        priority: str = "MEDIUM",
+        due_date: datetime | None = None,
+        word_count: int = 0,
     ) -> Task:
         """Create new task with content, lock IDs, and optional user ID.
 
@@ -249,6 +258,11 @@ class TaskRepository(ABC):
             content: Initial task content (Markdown).
             lock_ids: List of lock IDs for un-deletable blocks.
             user_id: Optional user ID to associate with the task.
+            title: Optional task title (defaults to empty string).
+            category: Optional task category (defaults to "WRITING").
+            priority: Optional task priority (defaults to "MEDIUM").
+            due_date: Optional task due date.
+            word_count: Optional initial word count (defaults to 0).
 
         Returns:
             Task: Created task with generated ID and timestamps.

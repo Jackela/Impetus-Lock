@@ -8,7 +8,7 @@
 - [x] 1.1.2 Create UserStats model (`server/server/models/user_stats.py`)
 - [x] 1.1.3 Create Streak model (`server/server/models/streak.py`)
 - [x] 1.1.4 Create Template model (`server/server/models/template.py`)
-- [ ] 1.1.5 Add database migrations (Alembic)
+- [x] 1.1.5 Add database migrations (Alembic)
 
 ### 1.2 API Schemas
 
@@ -26,10 +26,10 @@
 
 ### 1.4 Tests
 
-- [ ] 1.4.1 Write unit tests for achievement service
-- [ ] 1.4.2 Write unit tests for stats service
-- [ ] 1.4.3 Write unit tests for streak service
-- [ ] 1.4.4 Write unit tests for template service
+- [x] 1.4.1 Write unit tests for achievement service
+- [x] 1.4.2 Write unit tests for stats service
+- [x] 1.4.3 Write unit tests for streak service
+- [x] 1.4.4 Write unit tests for template service
 
 ## 2. Frontend Implementation
 
@@ -49,19 +49,19 @@
 
 ### 2.3 Tests
 
-- [ ] 2.3.1 Write tests for ThemeToggle
-- [ ] 2.3.2 Write tests for Achievements component
-- [ ] 2.3.3 Write tests for Stats component
-- [ ] 2.3.4 Write tests for Export component
+- [x] 2.3.1 Write tests for ThemeToggle
+- [x] 2.3.2 Write tests for Achievements component
+- [x] 2.3.3 Write tests for Stats component
+- [x] 2.3.4 Write tests for Export component
 
 ## 3. Integration
 
 - [x] 3.1 Register new routes in `server/server/api/main.py`
-- [ ] 3.2 Add new components to app layout
+- [x] 3.2 Add new components to app layout
 - [x] 3.3 Run full lint/type-check/test suite
 
 ## 4. Deployment
 
-- [ ] 4.1 Run database migrations
-- [ ] 4.2 Deploy to staging
-- [ ] 4.3 Verify all CI checks pass
+- [x] 4.1 Run database migrations
+- [x] 4.2 Deploy to staging
+- [x] 4.3 Verify all CI checks pass

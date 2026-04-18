@@ -5,6 +5,7 @@ Provides lightweight persistence when PostgreSQL is unavailable.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -29,8 +30,22 @@ class InMemoryTaskRepository(TaskRepository):
         content: str,
         lock_ids: list[str],
         user_id: UUID | None = None,
+        title: str = "",
+        category: str = "WRITING",
+        priority: str = "MEDIUM",
+        due_date: datetime | None = None,
+        word_count: int = 0,
     ) -> Task:
-        task = Task.create(content, lock_ids)
+        task = Task.create(
+            content=content,
+            lock_ids=lock_ids,
+            title=title,
+            category=category,
+            priority=priority,
+            due_date=due_date,
+            word_count=word_count,
+            user_id=user_id,
+        )
         self._tasks[task.id] = task
         self._actions.setdefault(task.id, [])
         self._task_owners[task.id] = user_id

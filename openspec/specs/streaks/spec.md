@@ -1,5 +1,8 @@
-## ADDED Requirements
+# streaks Specification
 
+## Purpose
+TBD - created by archiving change sprint-3-gamification. Update Purpose after archive.
+## Requirements
 ### Requirement: Writing Streaks
 
 The system SHALL track consecutive writing days (streaks).
@@ -21,6 +24,10 @@ The system SHALL track consecutive writing days (streaks).
 
 ### Requirement: Streak Rules
 
-- A streak day is counted when user creates or edits at least one task
-- Streaks reset at midnight UTC
-- 1-day grace period before streak breaks
+The system SHALL enforce writing streak rules consistently.
+
+#### Scenario: Streak day is counted
+
+- **WHEN** user creates or edits at least one task in a day
+- **THEN** the system MUST count that day toward the streak
+

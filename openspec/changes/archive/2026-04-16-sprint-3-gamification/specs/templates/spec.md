@@ -26,10 +26,9 @@ The system SHALL provide reusable task templates for quick task creation.
 
 ### Requirement: Template Fields
 
-Templates SHALL have:
+Templates SHALL have required fields for identification and content.
 
-- id (UUID)
-- name (string, max 100 chars)
-- content (text, initial task content)
-- created_at (timestamp)
-- user_id (UUID, foreign key)
+#### Scenario: Template fields are validated
+
+- **WHEN** a template is created or updated
+- **THEN** it MUST include id, name, content, created_at, and user_id fields

@@ -9,6 +9,7 @@ Constitutional Compliance:
 - Article V (Documentation): Complete Google-style docstrings
 """
 
+from datetime import datetime
 from typing import Literal, cast
 from uuid import UUID
 
@@ -108,6 +109,11 @@ class PostgreSQLTaskRepository(TaskRepository):
         # Update model fields (version already validated and incremented by entity)
         model.content = task.content
         model.lock_ids = task.lock_ids
+        model.title = task.title
+        model.category = task.category
+        model.priority = task.priority
+        model.due_date = task.due_date
+        model.word_count = task.word_count
         model.updated_at = task.updated_at
         model.version = task.version
 
@@ -324,7 +330,15 @@ class PostgreSQLTaskRepository(TaskRepository):
         return self._to_entity(model) if model else None
 
     async def create_task(
-        self, content: str, lock_ids: list[str], user_id: UUID | None = None
+        self,
+        content: str,
+        lock_ids: list[str],
+        user_id: UUID | None = None,
+        title: str = "",
+        category: str = "WRITING",
+        priority: str = "MEDIUM",
+        due_date: datetime | None = None,
+        word_count: int = 0,
     ) -> Task:
         """Create new task with content, lock IDs, and optional user ID.
 
@@ -332,12 +346,26 @@ class PostgreSQLTaskRepository(TaskRepository):
             content: Initial task content (Markdown).
             lock_ids: List of lock IDs for un-deletable blocks.
             user_id: Optional user ID to associate with the task.
+            title: Optional task title (defaults to empty string).
+            category: Optional task category (defaults to "WRITING").
+            priority: Optional task priority (defaults to "MEDIUM").
+            due_date: Optional task due date.
+            word_count: Optional initial word count (defaults to 0).
 
         Returns:
             Task: Created task domain entity with generated ID and timestamps.
         """
         # Create domain entity first (generates ID, timestamps, version)
-        entity = Task.create(content, lock_ids)
+        entity = Task.create(
+            content=content,
+            lock_ids=lock_ids,
+            title=title,
+            category=category,
+            priority=priority,
+            due_date=due_date,
+            word_count=word_count,
+            user_id=user_id,
+        )
 
         # Map to ORM model
         model = TaskModel(
@@ -345,6 +373,11 @@ class PostgreSQLTaskRepository(TaskRepository):
             user_id=user_id,
             content=entity.content,
             lock_ids=entity.lock_ids,
+            title=entity.title,
+            category=entity.category,
+            priority=entity.priority,
+            due_date=entity.due_date,
+            word_count=entity.word_count,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
             version=entity.version,
@@ -372,6 +405,12 @@ class PostgreSQLTaskRepository(TaskRepository):
             created_at=model.created_at,
             updated_at=model.updated_at,
             version=model.version,
+            title=model.title,
+            category=model.category,
+            priority=model.priority,
+            due_date=model.due_date,
+            word_count=model.word_count,
+            user_id=model.user_id,
         )
 
     @staticmethod

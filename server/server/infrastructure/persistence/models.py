@@ -18,7 +18,6 @@ from sqlalchemy import (
     CheckConstraint,
     ForeignKey,
     Index,
-    Integer,
     String,
     Text,
     Uuid,
@@ -33,52 +32,6 @@ class Base(DeclarativeBase):
     """
 
     pass
-
-
-class TaskModel(Base):
-    """Task ORM model (maps to 'tasks' table).
-
-    Attributes:
-        id: Primary key (UUID).
-        user_id: Foreign key to users table (task owner).
-        content: Task content (Markdown text).
-        lock_ids: Array of lock IDs for un-deletable blocks.
-        created_at: Creation timestamp (UTC).
-        updated_at: Last update timestamp (UTC).
-        version: Optimistic locking version number.
-        actions: Relationship to intervention actions (cascade delete).
-    """
-
-    __tablename__ = "tasks"
-
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    user_id: Mapped[UUID | None] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True
-    )
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    lock_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, server_default="[]")
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-    )
-    version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    # Relationship to intervention actions (cascade delete)
-    actions: Mapped[list["InterventionActionModel"]] = relationship(
-        "InterventionActionModel", back_populates="task", cascade="all, delete-orphan"
-    )
-
-    __table_args__ = (
-        CheckConstraint("length(content) > 0", name="tasks_content_not_empty"),
-        Index("idx_tasks_user_id", "user_id"),
-        Index("idx_tasks_created_at", "created_at"),
-        Index("idx_tasks_updated_at", "updated_at"),
-    )
 
 
 class InterventionActionModel(Base):
@@ -136,3 +89,6 @@ class InterventionActionModel(Base):
         Index("idx_actions_issued_at", "issued_at"),
         Index("idx_actions_mode", "mode"),
     )
+
+
+from server.models.task import TaskModel  # noqa: E402

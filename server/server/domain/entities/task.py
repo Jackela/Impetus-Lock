@@ -28,6 +28,12 @@ class Task:
         created_at: Task creation timestamp (UTC).
         updated_at: Last update timestamp (UTC).
         version: Optimistic locking version number (increments on each update).
+        title: Task title.
+        category: Task category (e.g., "WRITING").
+        priority: Task priority (e.g., "MEDIUM").
+        due_date: Optional task due date (UTC).
+        word_count: Current word count.
+        user_id: Optional user identifier (UUID v4).
 
     Example:
         ```python
@@ -46,14 +52,36 @@ class Task:
     created_at: datetime
     updated_at: datetime
     version: int = 0
+    title: str = ""
+    category: str = "WRITING"
+    priority: str = "MEDIUM"
+    due_date: datetime | None = None
+    word_count: int = 0
+    user_id: UUID | None = None
 
     @classmethod
-    def create(cls, content: str, lock_ids: list[str] | None = None) -> "Task":
+    def create(
+        cls,
+        content: str,
+        lock_ids: list[str] | None = None,
+        title: str = "",
+        category: str = "WRITING",
+        priority: str = "MEDIUM",
+        due_date: datetime | None = None,
+        word_count: int = 0,
+        user_id: UUID | None = None,
+    ) -> "Task":
         """Create new task with generated ID and timestamps.
 
         Args:
             content: Initial task content (Markdown).
             lock_ids: Optional list of lock IDs (defaults to empty list).
+            title: Optional task title (defaults to empty string).
+            category: Optional task category (defaults to "WRITING").
+            priority: Optional task priority (defaults to "MEDIUM").
+            due_date: Optional task due date.
+            word_count: Optional initial word count (defaults to 0).
+            user_id: Optional user identifier.
 
         Returns:
             Task: New task instance with version 0.
@@ -73,6 +101,12 @@ class Task:
             created_at=now,
             updated_at=now,
             version=0,
+            title=title,
+            category=category,
+            priority=priority,
+            due_date=due_date,
+            word_count=word_count,
+            user_id=user_id,
         )
 
     def update_content(self, content: str, lock_ids: list[str]) -> None:
@@ -92,5 +126,53 @@ class Task:
         """
         self.content = content
         self.lock_ids = lock_ids
+        self.updated_at = datetime.now(UTC)
+        self.version += 1
+
+    def update(
+        self,
+        content: str | None = None,
+        lock_ids: list[str] | None = None,
+        title: str | None = None,
+        category: str | None = None,
+        priority: str | None = None,
+        due_date: datetime | None = None,
+        word_count: int | None = None,
+    ) -> None:
+        """Update task fields and increment version (optimistic locking).
+
+        Only provided fields are updated.
+
+        Args:
+            content: New content (Markdown).
+            lock_ids: New list of lock IDs.
+            title: New task title.
+            category: New task category.
+            priority: New task priority.
+            due_date: New task due date.
+            word_count: New word count.
+
+        Example:
+            ```python
+            task = Task.create("Old content", [])
+            old_version = task.version
+            task.update(title="New Title")
+            assert task.version == old_version + 1
+            ```
+        """
+        if content is not None:
+            self.content = content
+        if lock_ids is not None:
+            self.lock_ids = lock_ids
+        if title is not None:
+            self.title = title
+        if category is not None:
+            self.category = category
+        if priority is not None:
+            self.priority = priority
+        if due_date is not None:
+            self.due_date = due_date
+        if word_count is not None:
+            self.word_count = word_count
         self.updated_at = datetime.now(UTC)
         self.version += 1
