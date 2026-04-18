@@ -21,9 +21,9 @@ The system SHALL provide an achievement system to reward users for writing miles
 
 ### Requirement: Achievement Types
 
-The system SHALL support multiple achievement categories:
+The system SHALL support multiple achievement categories.
 
-- **Task Milestones**: First task, 10 tasks, 100 tasks, 1000 tasks
-- **Writing Streaks**: 3-day streak, 7-day streak, 30-day streak
-- **Intervention Types**: First Muse intervention, First Loki intervention
-- **Special**: Weekend warrior, Night owl, Early bird
+#### Scenario: Achievement categories exist
+
+- **WHEN** the system initializes achievement definitions
+- **THEN** it MUST include Task Milestones, Writing Streaks, Intervention Types, and Special categories

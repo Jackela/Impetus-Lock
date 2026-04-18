@@ -1,5 +1,8 @@
-## ADDED Requirements
+# stats Specification
 
+## Purpose
+TBD - created by archiving change sprint-3-gamification. Update Purpose after archive.
+## Requirements
 ### Requirement: User Statistics
 
 The system SHALL provide user statistics for writing analytics.
@@ -21,10 +24,10 @@ The system SHALL provide user statistics for writing analytics.
 
 ### Requirement: Statistics Tracked
 
-The system SHALL track:
+The system SHALL track user writing statistics.
 
-- Total tasks created
-- Total interventions received (Muse + Loki separately)
-- Total writing time (estimated from task edits)
-- Total locks created
-- Average tasks per day
+#### Scenario: Statistics are collected
+
+- **WHEN** user performs writing activities
+- **THEN** the system MUST record total tasks, interventions, writing time, locks created, and average tasks per day
+
