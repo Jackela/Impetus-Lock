@@ -6,10 +6,10 @@ implementation is updated to handle the new Sprint 2 fields.
 
 from __future__ import annotations
 
-import pytest
 from uuid import uuid4
 
-from server.domain.entities.task import Task
+import pytest
+
 from server.infrastructure.persistence.in_memory_task_repository import (
     InMemoryTaskRepository,
 )
