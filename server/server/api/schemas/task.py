@@ -7,6 +7,8 @@ Constitutional Compliance:
 - Article V (Documentation): Complete docstrings for all schemas
 """
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field, TypeAdapter
 
 from server.domain.entities.intervention_action import InterventionAction
@@ -23,6 +25,11 @@ class TaskCreateRequest(BaseModel):
     Attributes:
         content: Task content in Markdown format (1-100000 chars).
         lock_ids: List of lock IDs for un-deletable content blocks.
+        title: Task title.
+        category: Task category.
+        priority: Task priority.
+        due_date: Optional ISO format due date.
+        word_count: Initial word count.
 
     Example:
         ```python
@@ -37,6 +44,11 @@ class TaskCreateRequest(BaseModel):
         ..., min_length=1, max_length=100000, description="Task content (Markdown)"
     )
     lock_ids: list[str] = Field(default_factory=list, description="List of lock IDs")
+    title: str = Field(default="", description="Task title")
+    category: str = Field(default="WRITING", description="Task category")
+    priority: str = Field(default="MEDIUM", description="Task priority")
+    due_date: datetime | None = Field(default=None, description="Optional ISO format due date")
+    word_count: int = Field(default=0, ge=0, description="Initial word count")
 
 
 class TaskUpdateRequest(BaseModel):
@@ -46,6 +58,11 @@ class TaskUpdateRequest(BaseModel):
         content: Updated task content in Markdown format (1-100000 chars).
         lock_ids: Updated list of lock IDs.
         version: Current version for optimistic locking (must match server).
+        title: Updated task title.
+        category: Updated task category.
+        priority: Updated task priority.
+        due_date: Updated ISO format due date.
+        word_count: Updated word count.
 
     Example:
         ```python
@@ -60,6 +77,11 @@ class TaskUpdateRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=100000, description="Updated task content")
     lock_ids: list[str] = Field(..., description="Updated list of lock IDs")
     version: int = Field(..., ge=0, description="Current version (for optimistic locking)")
+    title: str | None = Field(default=None, description="Updated task title")
+    category: str | None = Field(default=None, description="Updated task category")
+    priority: str | None = Field(default=None, description="Updated task priority")
+    due_date: datetime | None = Field(default=None, description="Updated ISO format due date")
+    word_count: int | None = Field(default=None, ge=0, description="Updated word count")
 
 
 class TaskResponse(BaseModel):
@@ -72,6 +94,11 @@ class TaskResponse(BaseModel):
         created_at: ISO format creation timestamp.
         updated_at: ISO format last update timestamp.
         version: Current version number.
+        title: Task title.
+        category: Task category.
+        priority: Task priority.
+        due_date: Optional ISO format due date.
+        word_count: Current word count.
 
     Example:
         ```python
@@ -87,6 +114,11 @@ class TaskResponse(BaseModel):
     created_at: str
     updated_at: str
     version: int
+    title: str
+    category: str
+    priority: str
+    due_date: str | None
+    word_count: int
 
     @classmethod
     def from_entity(cls, task: Task) -> "TaskResponse":
@@ -105,6 +137,11 @@ class TaskResponse(BaseModel):
             created_at=task.created_at.isoformat(),
             updated_at=task.updated_at.isoformat(),
             version=task.version,
+            title=task.title,
+            category=task.category,
+            priority=task.priority,
+            due_date=task.due_date.isoformat() if task.due_date else None,
+            word_count=task.word_count,
         )
 
 
