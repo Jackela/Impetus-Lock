@@ -160,6 +160,7 @@ function App() {
         onToggleStats={() => setShowStats((prev) => !prev)}
         showAchievements={showAchievements}
         onToggleAchievements={() => setShowAchievements((prev) => !prev)}
+        content={taskContent}
       >
         <TimerIndicator
           progress={timerProgress}

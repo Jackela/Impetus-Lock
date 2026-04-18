@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ManualTriggerButton } from "./components/ManualTriggerButton";
 import { TelemetryToggle } from "./components/TelemetryToggle";
 import { TaskList } from "./components/TaskList/TaskList";
@@ -11,6 +11,7 @@ import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle";
 import { Stats } from "./components/Stats/Stats";
 import { Achievements } from "./components/Achievements/Achievements";
 import { Export } from "./components/Export/Export";
+import { ExportModal } from "./components/Export/ExportModal";
 import { useTasks } from "./hooks/useTasks";
 import type { TaskRecord } from "./types/task";
 import type { AgentMode } from "./hooks/useWritingState";
@@ -41,6 +42,7 @@ interface AppLayoutProps {
   onToggleStats: () => void;
   showAchievements: boolean;
   onToggleAchievements: () => void;
+  content: string;
 }
 
 export function AppLayout({
@@ -68,8 +70,10 @@ export function AppLayout({
   onToggleStats,
   showAchievements,
   onToggleAchievements,
+  content,
 }: AppLayoutProps) {
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasks();
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Keyboard shortcut: "?" to re-open welcome modal, Alt+T to toggle task list
   useEffect(() => {
@@ -178,6 +182,14 @@ export function AppLayout({
 
         <div className="header-actions">
           <ThemeToggle />
+          <button
+            type="button"
+            className="export-trigger"
+            onClick={() => setShowExportModal(true)}
+            data-testid="export-button"
+          >
+            Export
+          </button>
           <TelemetryToggle />
           <span className="task-status" role="status">
             {taskStatus === "loading" ? "Loading draft…" : isSaving ? "Saving…" : "Synced"}
@@ -320,6 +332,12 @@ export function AppLayout({
       )}
 
       <NewTaskButton onClick={onCreateTask} ariaLabel="Create new task" />
+
+      <ExportModal
+        open={showExportModal}
+        content={content}
+        onClose={() => setShowExportModal(false)}
+      />
     </div>
   );
 }
