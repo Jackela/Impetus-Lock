@@ -10,6 +10,8 @@ Constitutional Compliance:
 """
 
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from server.domain.entities.task import Task
@@ -88,10 +90,20 @@ class CreateTaskCommand:
     Attributes:
         content: Initial task content (Markdown).
         lock_ids: Optional list of lock IDs for un-deletable blocks.
+        title: Optional task title.
+        category: Optional task category.
+        priority: Optional task priority.
+        due_date: Optional task due date.
+        word_count: Optional initial word count.
     """
 
     content: str
     lock_ids: list[str] | None = None
+    title: str = ""
+    category: str = "WRITING"
+    priority: str = "MEDIUM"
+    due_date: datetime | None = None
+    word_count: int = 0
 
 
 @dataclass
@@ -103,12 +115,22 @@ class UpdateTaskCommand:
         content: New task content.
         lock_ids: New list of lock IDs.
         version: Expected current version (optimistic locking).
+        title: New task title.
+        category: New task category.
+        priority: New task priority.
+        due_date: New task due date.
+        word_count: New word count.
     """
 
     task_id: UUID
     content: str
     lock_ids: list[str]
     version: int
+    title: str | None = None
+    category: str | None = None
+    priority: str | None = None
+    due_date: datetime | None = None
+    word_count: int | None = None
 
 
 @dataclass
@@ -130,6 +152,11 @@ class TaskDTO:
     created_at: str
     updated_at: str
     version: int
+    title: str
+    category: str
+    priority: str
+    due_date: str | None
+    word_count: int
 
     @classmethod
     def from_entity(cls, task: Task) -> "TaskDTO":
@@ -148,6 +175,11 @@ class TaskDTO:
             created_at=task.created_at.isoformat(),
             updated_at=task.updated_at.isoformat(),
             version=task.version,
+            title=task.title,
+            category=task.category,
+            priority=task.priority,
+            due_date=task.due_date.isoformat() if task.due_date else None,
+            word_count=task.word_count,
         )
 
 
@@ -223,11 +255,23 @@ class TaskService:
         if len(command.content) > 100000:
             raise ValidationError("content", "Content exceeds maximum length of 100000")
 
+        kwargs: dict[str, Any] = {
+            "content": command.content,
+            "lock_ids": command.lock_ids or [],
+        }
+        if command.title:
+            kwargs["title"] = command.title
+        if command.category != "WRITING":
+            kwargs["category"] = command.category
+        if command.priority != "MEDIUM":
+            kwargs["priority"] = command.priority
+        if command.due_date is not None:
+            kwargs["due_date"] = command.due_date
+        if command.word_count != 0:
+            kwargs["word_count"] = command.word_count
+
         # Delegate to repository
-        entity = await self._repository.create_task(
-            content=command.content,
-            lock_ids=command.lock_ids or [],
-        )
+        entity = await self._repository.create_task(**kwargs)
 
         return TaskDTO.from_entity(entity)
 
@@ -302,7 +346,15 @@ class TaskService:
             raise VersionMismatchError(command.version, entity.version)
 
         # Update entity
-        entity.update_content(command.content, command.lock_ids)
+        entity.update(
+            content=command.content,
+            lock_ids=command.lock_ids,
+            title=command.title,
+            category=command.category,
+            priority=command.priority,
+            due_date=command.due_date,
+            word_count=command.word_count,
+        )
 
         # Persist changes
         updated = await self._repository.update_task(entity)

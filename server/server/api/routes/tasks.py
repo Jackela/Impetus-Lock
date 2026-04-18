@@ -107,6 +107,11 @@ async def create_task(
         content=request.content,
         lock_ids=request.lock_ids,
         user_id=current_user.id,
+        title=request.title,
+        category=request.category,
+        priority=request.priority,
+        due_date=request.due_date,
+        word_count=request.word_count,
     )
     if session:
         await session.commit()
@@ -192,7 +197,15 @@ async def update_task(
         )
 
     # Update task (will increment version)
-    task.update_content(request.content, request.lock_ids)
+    task.update(
+        content=request.content,
+        lock_ids=request.lock_ids,
+        title=request.title,
+        category=request.category,
+        priority=request.priority,
+        due_date=request.due_date,
+        word_count=request.word_count,
+    )
 
     try:
         updated_task = await repository.update_task(task)
