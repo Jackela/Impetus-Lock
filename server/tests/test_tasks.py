@@ -110,6 +110,30 @@ class TestCreateTask:
 
         assert data["lock_ids"] == []
 
+    def test_create_task_with_sprint2_fields(self) -> None:
+        """Test that creating a task with Sprint 2 fields returns them in the response."""
+        response = client.post(
+            "/tasks/",
+            json={
+                "content": "Task with Sprint 2 fields",
+                "lock_ids": [],
+                "title": "Novel Draft",
+                "category": "FICTION",
+                "priority": "HIGH",
+                "due_date": "2025-12-31T23:59:59+00:00",
+                "word_count": 1200,
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        assert data["title"] == "Novel Draft"
+        assert data["category"] == "FICTION"
+        assert data["priority"] == "HIGH"
+        assert data["due_date"] == "2025-12-31T23:59:59+00:00"
+        assert data["word_count"] == 1200
+
 
 class TestListTasks:
     """Test suite for GET /tasks/ endpoint."""
@@ -191,6 +215,34 @@ class TestGetTask:
 
         assert response.status_code == 422
 
+    def test_get_task_returns_sprint2_fields(self) -> None:
+        """Test that GET /tasks/{id} returns Sprint 2 fields after creation."""
+        create_response = client.post(
+            "/tasks/",
+            json={
+                "content": "Task with Sprint 2 fields",
+                "lock_ids": [],
+                "title": "Novel Draft",
+                "category": "FICTION",
+                "priority": "HIGH",
+                "due_date": "2025-12-31T23:59:59+00:00",
+                "word_count": 1200,
+            },
+        )
+        task_id = create_response.json()["id"]
+
+        response = client.get(f"/tasks/{task_id}")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["id"] == task_id
+        assert data["title"] == "Novel Draft"
+        assert data["category"] == "FICTION"
+        assert data["priority"] == "HIGH"
+        assert data["due_date"] == "2025-12-31T23:59:59+00:00"
+        assert data["word_count"] == 1200
+
 
 class TestUpdateTask:
     """Test suite for PUT /tasks/{task_id} endpoint."""
@@ -256,6 +308,42 @@ class TestUpdateTask:
         )
 
         assert response.status_code == 409
+
+    def test_update_task_with_sprint2_fields(self) -> None:
+        """Test that PUT /tasks/{id} with Sprint 2 fields returns updated values."""
+        create_response = client.post(
+            "/tasks/",
+            json={"content": "Original content", "lock_ids": []},
+        )
+        task_id = create_response.json()["id"]
+        version = create_response.json()["version"]
+
+        response = client.put(
+            f"/tasks/{task_id}",
+            json={
+                "content": "Updated content",
+                "lock_ids": ["lock_1"],
+                "version": version,
+                "title": "Novel Draft",
+                "category": "FICTION",
+                "priority": "HIGH",
+                "due_date": "2025-12-31T23:59:59+00:00",
+                "word_count": 1200,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        assert data["id"] == task_id
+        assert data["content"] == "Updated content"
+        assert data["lock_ids"] == ["lock_1"]
+        assert data["version"] == version + 1
+        assert data["title"] == "Novel Draft"
+        assert data["category"] == "FICTION"
+        assert data["priority"] == "HIGH"
+        assert data["due_date"] == "2025-12-31T23:59:59+00:00"
+        assert data["word_count"] == 1200
 
 
 class TestDeleteTask:
