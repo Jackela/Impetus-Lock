@@ -33,7 +33,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Wait for required checks
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.7.0
         with:
           ref: ${{ github.ref }}
           check-name: "Backend Tests,Frontend Tests,Lint,Type Check"
@@ -81,7 +81,7 @@ jobs:
 
     steps:
       - name: Wait for E2E tests
-        uses: lewagon/wait-on-check-action@v1.3.1
+        uses: lewagon/wait-on-check-action@v1.7.0
         with:
           ref: ${{ github.ref }}
           check-name: "Playwright E2E Tests"
