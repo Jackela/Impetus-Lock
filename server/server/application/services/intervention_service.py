@@ -209,6 +209,15 @@ class InterventionService:
                 {"type": "pos", "from": request.client_meta.selection_from}
             )
 
+        # Loki rewrites also need enough context to avoid destructive changes.
+        if request.mode == "loki" and response.action == "rewrite" and context_length < 50:
+            response.action = "provoke"
+            response.content = "文档内容太少，先扩写细节再让 Loki 介入。"
+            response.lock_id = f"lock_{uuid4()}"
+            response.anchor = AnchorPos.model_validate(
+                {"type": "pos", "from": request.client_meta.selection_from}
+            )
+
         # Ensure rewrite actions have sentence-accurate anchor ranges.
         if response.action == "rewrite":
             cursor = request.client_meta.selection_to or request.client_meta.selection_from
