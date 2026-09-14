@@ -34,7 +34,6 @@ CI/CD validation and code quality reports:
 - **GITHUB_ACTIONS_ANALYSIS.md** - GitHub Actions workflow analysis
 - **COMPREHENSIVE_REVIEW_REPORT.md** - Comprehensive code review and quality analysis
 - **P0_CRITICAL_FIXES_SUMMARY.md** - Critical fixes summary (P0 priority)
-- **act-full-run.log** - Full Act CLI execution log
 
 ## Session Summaries (sessions/)
 
