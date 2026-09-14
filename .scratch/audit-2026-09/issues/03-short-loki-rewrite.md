@@ -1,6 +1,6 @@
 # 03: Apply existing short-context safeguard to Loki rewrite
 
-Status: ready-for-agent
+Status: accepted-locally (main integrator; 2026-09-14)
 
 Blocked by: None
 
@@ -12,9 +12,9 @@ Write scope: server/server/application/services/intervention_service.py; server/
 
 A07; OpenSpec agentic-interventions Context Sufficiency Guard. Existing delete guard behavior remains; additionally Loki rewrite with context length<50 becomes safe provoke. Muse rewrite remains allowed.
 
-- [ ] Loki rewrite at49 chars becomes provoke with nonempty content/lock and cursor position anchor (baseline fails).
-- [ ] Loki rewrite at50 chars remains rewrite; Muse rewrite at49 remains rewrite; existing delete protection passes.
-- [ ] Backend gates pass.
+- [x] Loki rewrite at49 chars becomes provoke with nonempty content/lock and cursor position anchor (baseline fails).
+- [x] Loki rewrite at50 chars remains rewrite; Muse rewrite at49 remains rewrite; existing delete protection passes.
+- [x] Backend gates pass.
       Test seam: public InterventionService.generate_intervention with existing LLMProvider boundary mock; `poetry run pytest tests/test_intervention_service.py`.
 
 ## Dispatch contract

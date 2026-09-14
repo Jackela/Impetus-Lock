@@ -28,6 +28,8 @@ Base: `156eba1412bcf73852ab15c7fcd61b773f33242a`; Wave 1: `b14fdb175134d8b4edd92
 | A15  | P2     | client/package-lock.json:2224                                                    | Milkdown存在不同minor的嵌套内核，当前没有peer invalid或回归失败证据                                               | 记录依赖风险，结合PR141分组验证；本轮不升级      | 3    | 待办                              | FE3（不将风险等同缺陷）       |
 | A17  | P2     | client/src/hooks/useTaskSyncCloud.ts:68; useLockEnforcement.ts:105               | 未使用的云同步路径硬编码version0，锁hook未订阅外部manager变更                                                     | 提出遗留API处置方案，不直接架构重构              | 3    | refactor-unused-client-state      | FE5/6                         |
 
+| A24 | P2 | openspec/project.md:242-243 | 原有CONTRIBUTING.md和SECURITY.md本地链接目标不存在，非本轮新增 | 待真实文档建立后修指针，或单独删除无依据条目 | 1 | 待办 | Wave5文档复核 |
+
 ## 审查范围与裁决
 
 根目录24个Markdown全部审阅；后端抽查宪法五条、依赖与CI；前端检查编辑器、API/state、依赖和测试；卫生审查63个生成物及全部开放PR；协作审查Matt/OpenSpec职责。历史带日期测试快照不是新的失败证据。Python ^3.11 与3.11/3.12矩阵并存合理。CONTEXT/ADR缺失符合惰性创建，不是缺陷。根AGENTS保持不变。
@@ -39,3 +41,20 @@ Base: `156eba1412bcf73852ab15c7fcd61b773f33242a`; Wave 1: `b14fdb175134d8b4edd92
 ## 官方来源
 
 Legacy SDK生命周期见 https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md 和 https://ai.google.dev/gemini-api/docs/libraries 。上游终止支持不等同当前调用必然失败。
+
+## Wave 4 复核补充
+
+A05: `server/.gitignore:30` 忽略 poetry.lock，HEAD未跟踪该文件。worktree没有本机ignored文件导致首轮环境性失败，不算RED。主agent拷贝本机原锁用于平台marker RED，01票补入server/.gitignore移除规则和锁文件版本控制；基准依赖版本保留。
+
+## Final disposition
+
+| Records                           | Outcome                                                                                                     | Local review record                                                                                                                                                                                                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A01, A02, A03, A04, A20, A21      | Current docs corrected; historical status retained as history; missing MP4 pointer changed to existing WEBM | D1/D2, [batches](batches.md), [reviews](reviews.md)                                                                                                                                                                                        |
+| A19                               | Exact63 artifacts no longer tracked; local bytes preserved and ignored                                      | D3, [manifest](junk-manifest.txt)                                                                                                                                                                                                          |
+| A05, A06, A07, A08, A09, A10      | Six isolated TDD tickets implemented, independently reviewed, integrated and accepted by main               | [01](issues/01-arm64-greenlet.md), [02](issues/02-unique-debug-locks.md), [03](issues/03-short-loki-rewrite.md), [04](issues/04-commit-before-cache.md), [05](issues/05-preserve-editor-markdown.md), [06](issues/06-critical-coverage.md) |
+| A12, A14, A17                     | Tier3 proposal drafts only; implementation awaits separate approval                                         | [report proposal index](report.md#tier-3-proposals)                                                                                                                                                                                        |
+| A16                               | Outdated version docs corrected; engines support-policy decision deferred                                   | D1; P2 backlog                                                                                                                                                                                                                             |
+| A11, A13, A15, A18, A22, A23, A24 | Deferred P2; A15/A23 remain risks or unproved failure hypotheses                                            | [report backlog](report.md#remaining-p2)                                                                                                                                                                                                   |
+
+Independent reviews also found and closed regressions in newly written docs and code: marker escaping in code literals, stale CI/JSDoc/mypy descriptions, a missing archived log index, and ambiguous Gemini error status wording. These are recorded in reviews.md instead of duplicating their parent findings.

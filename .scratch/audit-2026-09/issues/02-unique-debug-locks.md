@@ -1,6 +1,6 @@
 # 02: Issue distinct lock IDs for same-clock debug interventions
 
-Status: ready-for-agent
+Status: accepted-locally (main integrator; 2026-09-14)
 
 Blocked by: None
 
@@ -12,10 +12,10 @@ Write scope: server/server/infrastructure/llm/debug_provider.py; new server/test
 
 A06; OpenSpec agentic-interventions Unique Lock Identifiers. Replace timestamp uniqueness with UUID, retain lock*debug*<mode> readable prefix. Do not change action semantics or unrelated identifiers.
 
-- [ ] Freeze provider clock, invoke public generate_intervention twice in same mode/time, lock IDs differ (baseline deterministically fails).
-- [ ] Responses remain valid provoke actions with same source/content/anchor behavior and issued_at.
-- [ ] Provider public methods touched have docstrings.
-- [ ] Backend gates pass.
+- [x] Freeze provider clock, invoke public generate_intervention twice in same mode/time, lock IDs differ (baseline deterministically fails).
+- [x] Responses remain valid provoke actions with same source/content/anchor behavior and issued_at.
+- [x] Provider public methods touched have docstrings.
+- [x] Backend gates pass.
       Test seam: public DebugLLMProvider.generate_intervention, only external clock mocked; `poetry run pytest tests/test_debug_provider_identity.py`.
 
 ## Dispatch contract

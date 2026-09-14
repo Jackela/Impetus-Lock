@@ -12,7 +12,7 @@ Move these11 root historical files to docs/archive/2026-09/: AI_INTEGRATION_STAT
 
 ## D3 hygiene
 
-Own .gitignore and exact junk-manifest only (main already generated manifest). Writer adds /server/.venv.windows._/ and /server/impetus_lock.db and ignores /.scratch/audit-2026-09/logs/ if needed. Existing server _.db ignore already exists; scoped root explicit rule documents intent. Main prints/reviews63-path manifest then removes only those paths from index using git rm --cached, preserving local copies (also restore local copies in integration after commit integration). Do not rm runtime venv or delete disk artifacts.
+Own .gitignore and exact junk-manifest only (main already generated manifest). Writer adds `/server/.venv.windows.*/` and `/server/impetus_lock.db`. Raw logs are kept in the git common directory. Existing server `*.db` ignore already exists; scoped root explicit rule documents intent. Main prints/reviews63-path manifest then removes only those paths from index using git rm --cached, preserving local copies (also restore local copies in integration after commit integration). Do not rm runtime venv or delete disk artifacts.
 
 ## P proposals
 
