@@ -3,6 +3,8 @@
 **Date**: 2025-11-09
 **Status**: ✅ **INTEGRATION COMPLETE** (Pending Backend Server Deployment)
 
+> **归档说明**：本文保留当时记录，归档位置变化不改变原记录；当前状态以仓库现行文档与 OpenSpec 为准。
+
 ## Summary
 
 The Impetus Lock project has **FULL integration** of AI intervention functionality with real LLM API calls. The implementation is complete on both frontend and backend, but requires proper server deployment for end-to-end testing.
@@ -395,7 +397,7 @@ VITE_API_URL=http://localhost:8000
 - `/client/src/services/LockManager.ts` (lock enforcement)
 
 ### Documentation
-- `/AI_INTEGRATION_STATUS.md` (this file)
+- `/docs/archive/2026-09/AI_INTEGRATION_STATUS.md` (this file)
 
 ---
 

@@ -257,7 +257,7 @@ server/
 **Structure Decision**: 
 - **Web application (Option 2)** selected - project has explicit frontend (React editor) + backend (FastAPI API)
 - **Monorepo layout**: Existing structure in place (`client/` + `server/`)
-- **Clean Architecture layers**: Prepared but deferred until P1 code (per ARCHITECTURE_SAFETY_NET_STATUS.md)
+- **Clean Architecture layers**: Prepared but deferred until P1 code (per [ARCHITECTURE_SAFETY_NET_STATUS.md](../../docs/archive/2026-09/ARCHITECTURE_SAFETY_NET_STATUS.md))
 - **Contract-first design**: OpenAPI spec drives both frontend TypeScript types and backend Pydantic models
 
 ---

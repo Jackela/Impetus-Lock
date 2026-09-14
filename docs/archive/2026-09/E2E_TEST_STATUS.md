@@ -4,6 +4,8 @@
 **Executor**: Claude Code  
 **User Request**: "你来进行测试...e2e真实调用" (Run E2E tests with real calls)
 
+> **归档说明**：本文保留当时记录，归档位置变化不改变原记录；当前状态以仓库现行文档与 OpenSpec 为准。
+
 ## Actions Taken ✅
 
 ### 1. Audio File Placement (COMPLETE)

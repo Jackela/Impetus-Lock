@@ -127,7 +127,7 @@
 - `CHANGELOG.md` - Full feature changelog
 - `client/CREDITS.md` - Audio asset attribution
 - `docs/AUDIO_FEEDBACK_GUIDE.md` - Complete audio system reference
-- `E2E_TEST_STATUS.md` - E2E testing guide
+- [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) - E2E testing guide
 
 ### Modified Files (9)
 

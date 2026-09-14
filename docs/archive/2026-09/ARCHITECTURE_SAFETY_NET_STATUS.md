@@ -3,6 +3,8 @@
 **Date:** 2025-11-06  
 **Final Status:** ✅ **50% Installed (Frontend Active, Backend Pending P1)**
 
+> **归档说明**：本文保留当时记录，归档位置变化不改变原记录；当前状态以仓库现行文档与 OpenSpec 为准。
+
 ---
 
 ## 🎯 Goal Achievement

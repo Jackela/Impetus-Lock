@@ -3,6 +3,8 @@
 **Research Date**: 2025-11-08  
 **Context**: Resolving CI failures for Impetus Lock monorepo E2E testing with FastAPI + PostgreSQL
 
+> **归档说明**：本文保留当时记录，归档位置变化不改变原记录；当前状态以仓库现行文档与 OpenSpec 为准。
+
 ---
 
 ## 1. Poetry Package Import in CI Containers

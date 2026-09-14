@@ -1,5 +1,7 @@
 # Lock Storage Refactoring Test Suite Summary
 
+> **归档说明**：本文保留当时记录，归档位置变化不改变原记录；当前状态以仓库现行文档与 OpenSpec 为准。
+
 ## Overview
 
 This document summarizes the comprehensive test suites created for the refactored lock storage system in Impetus Lock. The migration moves from HTML comment-based lock storage to ProseMirror node attribute-based storage for improved performance and maintainability.

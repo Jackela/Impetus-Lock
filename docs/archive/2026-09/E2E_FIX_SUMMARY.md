@@ -4,6 +4,8 @@
 **Status**: ✅ Phase 1 Complete - MVP Ready  
 **Test Results**: 11/11 E2E tests passing (7 Phase 5 tests skipped)
 
+> **归档说明**：本文保留当时记录，归档位置变化不改变原记录；当前状态以仓库现行文档与 OpenSpec 为准。
+
 ---
 
 ## Problem Diagnosis

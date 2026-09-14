@@ -1,5 +1,7 @@
 # Test Suite Examples - Lock Storage Refactoring
 
+> **归档说明**：本文保留当时记录，归档位置变化不改变原记录；当前状态以仓库现行文档与 OpenSpec 为准。
+
 ## File Locations
 
 All test files are in the `/mnt/d/Code/Impetus-Lock/client/src/` directory:
