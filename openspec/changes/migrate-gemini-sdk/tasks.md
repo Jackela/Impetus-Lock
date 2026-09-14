@@ -1,6 +1,6 @@
 ## 1. Characterization before implementation
 - [ ] 1.1 Recheck approval, current provider callers, locked SDK behavior and primary migration documentation; choose a compatible google-genai version.
-- [ ] 1.2 Add failing adapter tests for interleaved BYOK keys, JSON/schema validation, empty/blocked output, mapped errors, effective retry limits, token count/fallback, health and streaming.
+- [ ] 1.2 Add failing adapter tests with separate assertions for response-shape failures (empty candidates, missing content parts or text → `invalid_response`/502) and extracted-text JSON/schema validation failures (Pydantic `ValidationError` propagated to `intervention.py`'s `ValidationError`/422 path), alongside interleaved BYOK keys, blocked output, mapped errors, effective retry limits, token count/fallback, health and streaming.
 
 ## 2. Migration
 - [ ] 2.1 Replace dependency and regenerate Poetry lock; update remaining legacy SDK CI installation references if present.
