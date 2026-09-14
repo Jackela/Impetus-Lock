@@ -43,6 +43,85 @@ describe("EditorCore persistence", () => {
     expect(lockIds).toEqual([]);
   });
 
+  it.each([
+    ["fenced code", (marker: string) => ["```text", marker, "```"].join("\n")],
+    ["indented code", (marker: string) => `    ${marker}`],
+  ] as const)("hydrates %s with the lock marker text unchanged", async (_label, codeBlock) => {
+    const inlineMarker = "<!-- lock:inline_code_001 source:muse -->";
+    const blockMarker = "<!-- lock:code_block_001 source:loki -->";
+    const onReady = vi.fn<(editor: Editor) => void>();
+    const initialContent = [`Inline \`${inlineMarker}\``, "", codeBlock(blockMarker)].join("\n");
+
+    const { container } = render(
+      <EditorCore initialContent={initialContent} onReady={onReady} onChange={vi.fn()} />
+    );
+
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+
+    const editor = onReady.mock.calls[0]![0];
+    const codeNodeTexts = editor.action((ctx) => {
+      const texts: string[] = [];
+      ctx.get(editorViewCtx).state.doc.descendants((node) => {
+        if (
+          node.type.name === "code_block" ||
+          (node.isText && node.marks.some((mark) => mark.type.name === "inlineCode"))
+        ) {
+          texts.push(node.textContent);
+        }
+      });
+      return texts;
+    });
+
+    expect(codeNodeTexts).toEqual([inlineMarker, blockMarker]);
+    expect(container.querySelector("p code")).toHaveTextContent(inlineMarker);
+    expect(container.querySelector("pre code, pre")).toHaveTextContent(blockMarker);
+  });
+
+  it("preserves literal backslashes in code through save and reload", async () => {
+    const onReady = vi.fn<(editor: Editor) => void>();
+    const onChange = vi.fn<(markdown: string, lockIds: string[]) => void>();
+    const mounted = render(
+      <EditorCore initialContent="Normal text" onReady={onReady} onChange={onChange} />
+    );
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+    const literal = String.raw`\<!-- lock:code\_literal source:muse -->`;
+    act(() =>
+      onReady.mock.calls[0]![0].action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        const { schema } = view.state;
+        view.dispatch(
+          view.state.tr.insert(view.state.doc.content.size, [
+            schema.nodes.paragraph.create(
+              null,
+              schema.text(literal, [schema.marks.inlineCode.create()])
+            ),
+            schema.nodes.code_block.create(null, schema.text(literal)),
+          ])
+        );
+      })
+    );
+    const [saved] = onChange.mock.calls.at(-1)!;
+    expect(saved).toContain("`" + literal + "`");
+    expect(saved).toContain("\n" + literal + "\n");
+    mounted.unmount();
+    onReady.mockClear();
+    render(<EditorCore initialContent={saved} onReady={onReady} onChange={onChange} />);
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+    const codeTexts = onReady.mock.calls[0]![0].action((ctx) => {
+      const texts: string[] = [];
+      ctx.get(editorViewCtx).state.doc.descendants((node) => {
+        if (
+          node.type.name === "code_block" ||
+          (node.isText && node.marks.some((mark) => mark.type.name === "inlineCode"))
+        ) {
+          texts.push(node.textContent);
+        }
+      });
+      return texts;
+    });
+    expect(codeTexts).toEqual([literal, literal]);
+  });
+
   it.each(["provoke", "rewrite"] as const)(
     "preserves %s lock comments and sources through persistence",
     async (action) => {
