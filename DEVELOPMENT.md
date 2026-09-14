@@ -16,7 +16,7 @@
 ### Prerequisites
 
 - **Python 3.11+** with Poetry
-- **Node.js LTS** (20+)
+- **Node.js 24.x** (matches the CI toolchain)
 - **Git**
 - **Act CLI** (optional, for local CI testing)
 
@@ -29,7 +29,7 @@ cd Impetus-Lock
 
 # Backend setup
 cd server
-poetry install --no-root
+poetry install
 cd ..
 
 # Frontend setup
@@ -125,7 +125,7 @@ poetry run pytest --cov=server --cov-report=term-missing
 
 ```bash
 cd server
-poetry run uvicorn server.main:app --reload
+poetry run uvicorn server.api.main:app --reload
 # Server: http://localhost:8000
 # Docs: http://localhost:8000/docs
 ```
@@ -194,7 +194,7 @@ npm run dev
 ```python
 # tests/test_main.py
 from fastapi.testclient import TestClient
-from server.main import app
+from server.api.main import app
 
 client = TestClient(app)
 

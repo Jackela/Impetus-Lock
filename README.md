@@ -11,7 +11,7 @@
 
 ## 🎥 演示视频 & 截图
 
-- [Download or view demo](./demo-artifacts/impetus-lock-demo.mp4) – Playwright 自动录制的 Muse/Loki 全流程。
+- [View demo](./demo-artifacts/impetus-lock-demo.webm) – Playwright 自动录制的 Muse/Loki 全流程。
 - ![主界面](client/audit-screenshots/03-main-ui.png)
 - ![欢迎引导](client/audit-screenshots/02-welcome-modal.png)
 - ![锁定反馈](client/e2e-results/manual-trigger-clicked.png)
@@ -65,7 +65,7 @@ This script starts FastAPI (port 8000) and Vite (port 5173) automatically.
 ### Prerequisites
 
 - **Python 3.11+** with [Poetry](https://python-poetry.org/)
-- **Node.js 20+** (LTS)
+- **Node.js 24.x** (matches the CI toolchain)
 - **Docker** (for PostgreSQL)
 
 ### Manual Setup
@@ -77,7 +77,7 @@ This script starts FastAPI (port 8000) and Vite (port 5173) automatically.
 cd server
 poetry install
 cp .env.example .env  # Add your LLM API key
-poetry run uvicorn server.main:app --reload
+poetry run uvicorn server.api.main:app --reload
 ```
 
 </details>
@@ -107,7 +107,9 @@ curl http://localhost:8000/health
 
 ## 🧪 端到端测试报告
 
-### 最新测试结果 (2026-03-17)
+### 历史测试快照 (2026-03-17)
+
+以下结果是 2026-03-17 的记录，保留用于历史追踪，不代表当前测试状态。
 
 **测试范围**: 全功能端到端测试（真实 API 调用）  
 **测试工具**: Playwright E2E 测试套件  
@@ -136,7 +138,7 @@ curl http://localhost:8000/health
 
 #### 数据库连接配置 (开发环境问题)
 
-**状态**: 任务管理功能暂时不可用  
+**当时状态**: 任务管理功能暂时不可用
 **影响**: 9个测试失败（全部与数据库相关）
 
 **错误信息**:
@@ -359,7 +361,7 @@ This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Ne
 
 - 每次 PR 自动运行：`lint`, `type-check`, `backend-tests`, `frontend-tests`
 - 4 个并行 job，快速反馈
-- **Architecture Guards:** ESLint (frontend) + import-linter (backend, pending P1)
+- **Architecture Guards:** ESLint (frontend) + import-linter (backend)
 
 ---
 

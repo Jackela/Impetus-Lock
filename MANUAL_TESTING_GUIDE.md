@@ -11,7 +11,7 @@
 
 This guide covers manual testing for the remaining tasks (T071-T076) that require human verification in Chrome browser.
 
-**Status**: Implementation complete, automated tests passing (118/118 unit, 11/11 E2E). These tests validate user-facing behavior and browser compatibility.
+**Historical status**: Implementation complete, automated tests passing (118/118 unit, 11/11 E2E) in the recorded test run. These dated results are retained for history and do not represent the current test status.
 
 ---
 
@@ -403,13 +403,13 @@ npm run test:e2e
 - ✅ Unit tests: 118/118 passing
 - ✅ E2E tests: 11/11 passing (7 skipped Phase 5 tests)
 
-**Current Status** (from previous session):
+**Historical status** (from the recorded session):
 - ✅ Lint: PASS
 - ✅ Type check: PASS
 - ✅ Unit tests: PASS (118/118)
 - ✅ E2E tests: PASS (11/11, 7 skipped)
 
-**Note**: Based on session context, all automated CI checks are already passing. T081 can be considered **COMPLETE** via manual validation.
+**Note**: These session results are historical evidence for T081 and do not establish the current automated test status.
 
 ---
 
@@ -434,7 +434,7 @@ npm run test:e2e
 - ☐ Debouncing (T076)
 
 ### CI Validation (T081)
-- ✅ Manual validation complete (all automated tests passing)
+- ✅ Manual validation was recorded as complete in that session
 
 ---
 
@@ -442,7 +442,7 @@ npm run test:e2e
 
 **Backend Dependency**: Some tests (Whoosh/Fade-out for Delete action) require backend API. These can be skipped if backend is not running. The implementation is correct; E2E tests gracefully skip when backend is unavailable.
 
-**Test Coverage**: Unit tests (118/118) and E2E tests (11/11) already validate these behaviors programmatically. Manual testing provides **human verification** of:
+**Recorded test coverage**: Unit tests (118/118) and E2E tests (11/11) validated these behaviors in that session. Manual testing provides **human verification** of:
 - Audio quality (subjective)
 - Animation smoothness (visual inspection)
 - Timing accuracy (stopwatch validation)

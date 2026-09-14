@@ -28,14 +28,14 @@ This package contains **comprehensive unit test suites** for the lock storage sy
 
 ### Documentation Files
 
-4. **TEST_SUITE_SUMMARY.md** (12 KB)
+4. **[TEST_SUITE_SUMMARY.md](docs/archive/2026-09/TEST_SUITE_SUMMARY.md)** (12 KB)
    - Detailed breakdown of all 89 test cases
    - Coverage statistics
    - Testing principles applied
    - Migration checklist
    - Running instructions
 
-5. **TEST_SUITE_EXAMPLES.md** (12 KB)
+5. **[TEST_SUITE_EXAMPLES.md](docs/archive/2026-09/TEST_SUITE_EXAMPLES.md)** (12 KB)
    - Code examples from each test suite
    - Mock data structures
    - Key assertion patterns
@@ -85,10 +85,10 @@ This package contains **comprehensive unit test suites** for the lock storage sy
 ### 1. Review Documentation
 ```bash
 # Read comprehensive summary
-cat TEST_SUITE_SUMMARY.md
+cat docs/archive/2026-09/TEST_SUITE_SUMMARY.md
 
 # Review code examples
-cat TEST_SUITE_EXAMPLES.md
+cat docs/archive/2026-09/TEST_SUITE_EXAMPLES.md
 ```
 
 ### 2. Run Tests (Expected to FAIL before refactoring)
@@ -226,8 +226,8 @@ blockquote: {
 
 ## Migration Checklist
 
-- [ ] Read TEST_SUITE_SUMMARY.md
-- [ ] Read TEST_SUITE_EXAMPLES.md
+- [ ] Read docs/archive/2026-09/TEST_SUITE_SUMMARY.md
+- [ ] Read docs/archive/2026-09/TEST_SUITE_EXAMPLES.md
 - [ ] Run tests (expect failures)
 - [ ] Refactor ContentInjector (inject with attrs)
 - [ ] Run ContentInjector tests (expect pass)

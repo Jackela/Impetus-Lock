@@ -152,13 +152,13 @@ cd client && npm run lint && npm run type-check
 
 **Why**: The `--no-root` flag skips installing the project package itself, causing import errors:
 ```bash
-# ❌ WRONG - Causes "Could not import module 'server.main'" error
+# ❌ WRONG - Skips installing the project package
 poetry install --no-root
-poetry run uvicorn server.main:app
+poetry run uvicorn server.api.main:app
 
 # ✅ CORRECT - Installs both dependencies AND the server package
 poetry install
-poetry run uvicorn server.main:app
+poetry run uvicorn server.api.main:app
 ```
 
 **Configuration Requirements**:
@@ -169,7 +169,7 @@ poetry run uvicorn server.main:app
 **Verification**:
 ```bash
 # After poetry install, this should succeed:
-poetry run python -c "import server.main; print('✅ Package installed correctly')"
+poetry run python -c "import server.api.main; print('✅ Package installed correctly')"
 ```
 
 ### GitHub Actions Service Containers
@@ -234,10 +234,10 @@ cd server
 
 # Setup (first time)
 pipx install poetry
-poetry install --no-root
+poetry install
 
 # Development server
-poetry run uvicorn server.main:app --reload
+poetry run uvicorn server.api.main:app --reload
 
 # Testing (TDD workflow - MANDATORY)
 poetry run pytest                    # Run all tests
@@ -392,13 +392,13 @@ import { useManualTrigger } from "../../hooks/useManualTrigger";
 
 ### Backend (import-linter)
 
-Layer contracts are defined in `server/pyproject.toml` (currently disabled for MVP):
+Layer contracts are defined in `server/pyproject.toml` and checked by the CI lint job:
 
 ```
 API Layer → Application Layer → Domain Layer → Infrastructure Layer
 ```
 
-**Note**: import-linter is disabled until domain layer has implementations. Manually verify imports during code review.
+The CI lint job runs `poetry run lint-imports`; review the current CI output for contract results.
 
 ## Testing Strategy
 
@@ -516,7 +516,9 @@ Feature development follows `.specify/templates/`:
 
 ---
 
-### ✅ VALIDATED - Phase 6: E2E Workflow Fix (Feature 004) **ALL WORKFLOWS PASSING**
+### Historical record — Phase 6 E2E Workflow Fix (Feature 004)
+
+The following dated notes are retained as project history. They are not the current validation status.
 
 **Branch**: `004-fix-e2e-workflow` (merged to main)  
 **Issue Resolution**: ✅ **FIXED** - Backend import error resolved by removing `--no-root` flag  
@@ -609,7 +611,7 @@ Feature development follows `.specify/templates/`:
 
 ### ✅ COMPLETE - Architecture Improvements (Branch: `refactor/architecture-improvements`)
 
-**Status**: ✅ **ALL IMPROVEMENTS COMPLETE** - Architecture hardening and code quality improvements
+**Historical status**: ✅ **ALL IMPROVEMENTS COMPLETE** - Architecture hardening and code quality improvements
 
 **Improvements Delivered**:
 
