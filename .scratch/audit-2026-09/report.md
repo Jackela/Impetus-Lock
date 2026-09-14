@@ -142,3 +142,14 @@ Wave5审计归档提交为 `9400476`（`docs: record audit validation and deferr
 README重新聚焦项目功能、可执行启动步骤、完整关键覆盖率门禁与文档导航；原2026-03-17长篇E2E快照移至 `docs/archive/2026-09/README_E2E_SNAPSHOT_2026-03-17.md`。A24两条无效指针已移除；其余需要单独决策的P2及未批准Tier3保持上述状态。
 
 清理预检核实10个实施分支的所有独有提交均已等价集成，没有独有未跟踪文件；3份未提交票据注记已备份。源分支与提交保存在经验证的 `.git/audit-2026-09/completed-branches.bundle`，它以原始基点156eba1为前提；主仓历史保留该基点。独立只读审查确认清理范围、备份及符号链接边界无阻断问题。
+
+### Completed local merge and cleanup
+
+- 文档收尾提交：`ba68df9`（`docs: refresh README and prepare audit closeout`）。README和新E2E归档、A24修复及收尾记录经过独立审查，修正数据库连接示例与状态措辞后，两轴均无剩余问题。
+- `main` 已通过 `merge --ff-only` 合入全部本地成果，合并时到达 `ba68df9`；随后本节作为最终清理记录提交。没有制造额外merge commit，也没有重写已有历史。
+- 已移除10个精确登记的实施worktrees，清理11个审计临时分支；现在仅保留主工作树和本地main分支。三个dirty票据已逐字节备份后恢复，普通worktree removal成功，无需force移除。
+- 原实施提交使用cherry-pick集成，因此删除源分支前逐项验证补丁等价并保存bundle；源分支用限定名称删除，集成分支使用已合并分支删除检查。清理还保留了所有审计原始日志、原分支bundle和dirty-note备份。
+- 合并会重新执行历史中的tracked文件删除，因此主agent在合并后再次从备份恢复63个主仓本地生成文件；逐字节一致、停止跟踪且ignore生效。共享node_modules与Poetry虚拟环境目录仍存在；仅移除工作树中的符号链接。
+- 收尾仅修改Markdown，server、client运行代码、CI和脚本与479/545测试已通过的 `9400476` 完全相同。复用了该已验证结果，另行完成文档格式、全部受影响本地链接、保护文件、Git差异和清理状态检查；未重复迁移或Playwright。
+
+执行证据：`.git/audit-2026-09/closeout-execution.log`、`closeout-doc-verification.log`、`cleanup-inventory.json`、`cleanup-bundle-verification.log`。工作树清理后的源提交可以从 `completed-branches.bundle` 恢复；该bundle基点156eba1仍在main历史中。最终清理记录所在提交完成后，main工作区干净。本轮无任何远端写入。
