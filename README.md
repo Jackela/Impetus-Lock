@@ -1,89 +1,66 @@
-# 🔒 Impetus Lock | 创意施压者
+# Impetus Lock
+
+Impetus Lock 是一个 React + Vite 前端与 FastAPI 后端组成的创作工具。用户在编辑器中写作，选择普通编辑、Muse 或 Loki 模式；AI 可以注入带锁定标记的创作内容，编辑器会阻止删除已锁定内容。项目同时提供任务保存、版本回载、风格学习、统计与成就等配套界面。
 
 [![CI](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/gh/Jackela/impetus-lock/branch/main/graph/badge.svg)](https://codecov.io/gh/Jackela/impetus-lock)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org/)
 
-> **一款对抗式 AI Agent，充当你的"创意陪练"。** 通过强制植入"不可删除的创作束缚"来破除心理定式——将孤独写作变成人机对抗的 Roguelike 游戏。
+演示产物：[Muse/Loki 流程录像](demo-artifacts/impetus-lock-demo.webm)。
 
----
+![主界面](client/audit-screenshots/03-main-ui.png)
 
-## 🎥 演示视频 & 截图
+## 实际功能
 
-- [View demo](./demo-artifacts/impetus-lock-demo.webm) – Playwright 自动录制的 Muse/Loki 全流程。
-- ![主界面](client/audit-screenshots/03-main-ui.png)
-- ![欢迎引导](client/audit-screenshots/02-welcome-modal.png)
-- ![锁定反馈](client/e2e-results/manual-trigger-clicked.png)
+- **编辑器**：基于 Milkdown/ProseMirror，支持 Markdown 内容编辑、基础格式化、保存与回载。
+- **Agent 模式**：`Off` 为普通编辑；`Muse` 在检测到停滞或手动触发时生成施压内容；`Loki` 可随机生成施压内容或重写内容。具体触发和安全降级逻辑以当前代码与测试为准。
+- **锁定约束**：AI 注入内容带有唯一 `lock_id` 和来源标记；编辑器过滤针对锁定内容的删除与逆向变更，并提供视觉和音频反馈。
+- **任务与辅助面板**：支持任务列表、任务状态同步、风格学习、统计、连续记录、成就和模板等功能；后端提供相应的 API 路由。
+- **LLM 与持久化**：后端通过 provider registry 接入配置的 LLM；PostgreSQL 用于需要持久化的任务和历史数据，未配置数据库时部分数据库功能不可用。
 
----
+## 快速启动
 
-## 🧠 设计概要（中文）
+### 环境要求
 
-### 1. 禅模式与基础交互（P4/P5）
+- Python 3.11+ 与 [Poetry](https://python-poetry.org/)。本机已用 Python 3.12 验证。
+- Node.js 24.x（与 CI 工具链一致）。仓库不额外声明 `engines` 支持区间。
+- Docker（使用便捷启动脚本时提供 PostgreSQL）。
 
-- **极简体验**：默认就是无干扰「禅模式」，没有浮躁的 UI，仅在选中内容时才显示轻量级悬浮工具栏。
-- **核心写作能力**：加粗、斜体、标题、列表都在这个悬浮工具栏里完成，不破坏沉浸感。
-- **跨设备一致**：桌面端/平板/手机布局保持一致，移动端工具栏吸附底部，方便拇指操作。
+### 便捷启动（Linux / WSL）
 
-### 2. 双 Agent 模式（P1/P2/P6）
+```bash
+./scripts/dev-start.sh
+```
 
-#### Muse（创意施压）
+该脚本会准备一个 PostgreSQL 容器、执行迁移，并启动后端 `8000` 端口和 Vite 前端 `5173` 端口。可通过 `AUTO_START_POSTGRES=0` 或 `AUTO_START_FRONTEND=0` 关闭对应步骤。Windows PowerShell 可使用：
 
-- **触发**：60 秒无输入或主动点击 “我卡住了！” 按钮。
-- **行为**：不在文末加段落，而是**替换**核心句子并锁定，迫使用户把故事拉到更高立意。
+```powershell
+.\scripts\dev-start.ps1
+```
 
-#### Loki（混沌恶作剧）
+### 手动启动
 
-- **触发**：30–120 秒随机介入，与输入状态无关。
-- **行为**：50% 注入恶作剧句子、50% 删除/重构最后一句。长度不足 50 字时自动退回到安全的 provoke。
+先准备 PostgreSQL。以下使用便捷脚本默认的本地开发连接；已有数据库请替换连接串，让迁移和后端复用同一值：
 
-### 3. 感官反馈与不可逆约束（P1/P3）
+```bash
+export DATABASE_URL='postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres'
+```
 
-- **Glitch + Clank**：Muse 注入时伴随闪屏 + 金属落锁声。
-- **Fade-out + Whoosh**：Loki 删除时优雅淡出 + 风声。
-- **Shake + Bonk**：尝试删除锁定文本时震动提示 + “bonk” 音效。
-- **Lock 永不可逆**：被锁的文本不能 Backspace、不能 Undo，只能继续顺着 AI 的轨道写。
-
----
-
-## ⚡ Quick Start
-
-### One-Command Startup
-
-- **WSL / Linux**
-  ```bash
-  ./scripts/dev-start.sh
-  ```
-- **Windows (PowerShell)**
-  ```powershell
-  .\scripts\dev-start.ps1
-  ```
-
-This script starts FastAPI (port 8000) and Vite (port 5173) automatically.
-
-### Prerequisites
-
-- **Python 3.11+** with [Poetry](https://python-poetry.org/)
-- **Node.js 24.x** (matches the CI toolchain)
-- **Docker** (for PostgreSQL)
-
-### Manual Setup
-
-<details>
-<summary><b>Backend</b></summary>
+后端会在导入应用时读取 `server/.env`（由 `server/.env.example` 复制而来），但 Alembic 迁移脚本直接读取进程环境变量。因此运行迁移时请确保当前 shell 已设置 `DATABASE_URL`：
 
 ```bash
 cd server
 poetry install
-cp .env.example .env  # Add your LLM API key
+cp .env.example .env
+```
+
+按需编辑 `server/.env` 中的 LLM provider 配置和密钥；终端中已导出的 `DATABASE_URL` 优先于 `.env`。不要提交 `.env` 或密钥。然后在同一终端执行：
+
+```bash
+DATABASE_URL="$DATABASE_URL" poetry run alembic upgrade head
 poetry run uvicorn server.api.main:app --reload
 ```
 
-</details>
-
-<details>
-<summary><b>Frontend</b></summary>
+另开终端启动前端：
 
 ```bash
 cd client
@@ -91,780 +68,62 @@ npm ci
 npm run dev
 ```
 
-</details>
-
-### Verify Installation
+打开 <http://localhost:5173>。后端健康检查：
 
 ```bash
-# Backend health check
 curl http://localhost:8000/health
-# Expected: {"status":"ok","service":"impetus-lock"}
-
-# Frontend: Open http://localhost:5173
 ```
 
----
+成功时返回包含 `status`, `service` 和 `version` 的 JSON。
 
-## 🧪 端到端测试报告
+## 开发与门禁
 
-### 历史测试快照 (2026-03-17)
-
-以下结果是 2026-03-17 的记录，保留用于历史追踪，不代表当前测试状态。
-
-**测试范围**: 全功能端到端测试（真实 API 调用）  
-**测试工具**: Playwright E2E 测试套件  
-**测试环境**: WSL2 / Linux / Chromium
-
-| 指标     | 数值               |
-| -------- | ------------------ |
-| 总测试数 | **121**            |
-| 通过     | **107** ✅ (88.4%) |
-| 失败     | **9** ❌           |
-| 跳过     | **5** ⚪           |
-
-### ✅ 核心功能验证通过
-
-- ✅ **编辑器**: 渲染、编辑、Markdown格式化正常
-- ✅ **模式系统**: Off/Muse/Loki 三种模式可切换
-- ✅ **手动触发**: "I'm stuck!" 按钮调用 API 成功 (返回200)
-- ✅ **锁定机制**: AI内容无法删除（震动+Bonk声音反馈）
-- ✅ **感官反馈**: Glitch动画、Clank声音、Bonk声音正常工作
-- ✅ **API健康检查**: `/health` 返回200正常
-- ✅ **响应式设计**: 移动端(375px)、平板(768px)、桌面(1024px)正常
-- ✅ **欢迎模态框**: 首次访问引导、快捷键(?)、偏好持久化
-- ✅ **键盘快捷键**: Alt+T, ?, ESC 正常工作
-
-### ⚠️ 已知问题
-
-#### 数据库连接配置 (开发环境问题)
-
-**当时状态**: 任务管理功能暂时不可用
-**影响**: 9个测试失败（全部与数据库相关）
-
-**错误信息**:
-
-```
-ConnectionRefusedError: [Errno 111] Connection refused
-asyncpg.exceptions.InvalidPasswordError: password authentication failed
-```
-
-**修复方案**:
-
-```bash
-# 1. 启动 PostgreSQL 容器
-docker run -d \
-  --name impetus-lock-db \
-  -e POSTGRES_USER=impetus \
-  -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=impetus_lock \
-  -p 5432:5432 \
-  postgres:15-alpine
-
-# 2. 修改 pg_hba.conf 允许本地连接
-docker exec impetus-lock-db su postgres -c \
-  "sed -i 's/scram-sha-256/trust/g' /var/lib/postgresql/data/pg_hba.conf && \
-   pg_ctl reload"
-
-# 3. 运行数据库迁移
-cd server
-poetry run alembic upgrade head
-
-# 4. 重新测试
-cd client
-npx playwright test database-persistence.spec.ts
-```
-
-**说明**: 这不是代码缺陷，是 WSL2 + Docker 网络配置问题。修复后预计测试通过率可达 **98%+**。
-
-### 运行测试
-
-```bash
-# 启动服务
-./scripts/dev-start.sh
-
-# 运行所有 E2E 测试
-cd client
-npx playwright test
-
-# 运行特定测试
-npx playwright test smoke.spec.ts
-
-# 查看测试报告
-npx playwright show-report
-```
-
-### 🎥 Record Demo
-
-```bash
-./scripts/record-demo.sh  # Generates demo-artifacts/impetus-lock-demo.webm
-```
-
----
-
-## 🎯 核心理念 | The "Aha!" Moment
-
-传统 AI 助手（如 ChatGPT）太过**礼貌**和**被动**。它们是问答机器，无法解决创作者的真正敌人：**心理定式（mental set）** 和 **空白页焦虑（blank page anxiety）**。
-
-**Impetus Lock 是主动行动者（proactive actor）。**
-
-它遵循 `感知（Perceive）→ 决策（Decide）→ 行动（Act）` 的 Agent 循环，主动"感知"你的写作状态。它不会"建议"——它会**介入（intervene）**。
-
-> **我们将孤独写作变成了人机对抗的 Roguelike 游戏。**
-> **We've turned lonely writing into a human-AI adversarial rogue-like game.**
-
-### 🔄 Agent 工作流 | Agent Workflow
-
-```mermaid
-graph LR
-    A[Perceive 感知] --> B[Decide 决策]
-    B --> C[Act 行动]
-    C --> A
-
-    A1[编辑器状态<br/>用户输入模式<br/>时间流逝] -.-> A
-    B1[Muse: STUCK检测<br/>Loki: 随机触发] -.-> B
-    C1[植入约束<br/>删除内容<br/>不可撤销] -.-> C
-```
-
-**Perceive（感知层）**
-
-- 监听编辑器事件（ProseMirror transactions）
-- 检测用户输入模式（连续输入 / 长时间静止）
-- 记录时间流逝（用于 STUCK 状态判定）
-
-**Decide（决策层）**
-
-- **Muse Mode:** 当检测到 STUCK 状态时触发（例如 60 秒无输入）
-- **Loki Mode:** 随机时间间隔触发，无论用户是否在写作
-- 调用 LLM（通过 Instructor + Pydantic）生成结构化决策
-
-**Act（行动层）**
-
-- 通过 `filterTransaction` 拦截删除操作，实现**不可删除约束**
-- 在光标位置植入 AI 生成的"创意压力"文本块
-- 所有行动**不可撤销（irreversible）**
-
----
-
-## 🎮 双模式系统 | Dual Mode System
-
-### 1. **"Muse Mode"** (灵感灌输 | Inspiration Infusion)
-
-**角色定位 | Role:** 严格导师 (Strict Mentor)
-
-**触发条件 | Trigger:**
-
-- Agent **感知（Perceive）** 到用户陷入 **STUCK 状态**（例如：60 秒无输入）
-- 状态机检测：`WRITING` → `IDLE` → `STUCK`
-
-**决策逻辑 | Decision:**
-
-- Agent **决策（Decide）** 需要立即介入
-- 通过 Instructor + Pydantic 调用 LLM，生成上下文相关的"创意压力"文本
-
-**行动方式 | Action:**
-
-- Agent **行动（Act）**：在光标位置强制注入 Markdown 格式的约束块
-- 当 Agent 认为需要“硬重写”时，会直接替换用户刚写完的句子，并对新文本加锁，确保只能沿着 AI 指定的方向继续写
-- 约束块包含 `lock_id`，通过 ProseMirror `filterTransaction` 实现**不可删除**
-- API 调用：`POST /impetus/generate-intervention` (mode: "muse")
-
-**核心约束 | Core Constraint:**
-✅ 注入的文本块**不可删除**  
-✅ 不可通过 Undo/Redo 撤销  
-✅ 强制用户在约束条件下继续创作
-
-**示例 | Example:**
-
-```markdown
-> Muse 注入：你的主角此时必须做出一个违背道德的选择。 <!-- lock:lock_demo source:muse -->
-```
-
----
-
-### 2. **"Loki Mode"** (混沌恶作剧 | Chaos Trickster)
-
-**角色定位 | Role:** 混沌游戏对手 (Chaotic Game Opponent)
-
-**触发条件 | Trigger:**
-
-- **随机时间间隔**触发（与用户是否在写作无关）
-- 客户端定时器：30-120 秒随机触发决策请求
-
-**决策逻辑 | Decision:**
-
-- Agent **决策（Decide）** 执行何种恶作剧行动
-- 通过 Instructor + Pydantic 生成结构化决策：`action: "provoke" | "delete"`
-
-**行动方式 | Action:**
-Agent **行动（Act）** 包含三种操作：
-
-**[PROVOKE] 注入新约束**
-
-- 与 Muse 类似，注入不可删除的创意压力
-- 但**无需 STUCK 状态**，完全随机
-
-**[REWRITE] 混沌改写**
-
-- 直接改写/扭曲用户最近的一句文本，并锁定这些新词
-- 迫使用户沿着非预期方向续写
-
-**[DELETE] 删除用户内容**
-
-- 通过 `anchor` 定位并删除用户最后一句话
-- 删除后的内容**无法恢复**（除非后台使用 `revert_token`）
-
-**核心约束 | Core Constraint:**
-✅ 所有 Loki 行动**不可撤销**  
-✅ 删除操作绕过前端 Undo 栈  
-✅ 用户必须适应"失去控制"的 Roguelike 体验
-
-**示例 | Example:**
-
-```json
-// DELETE 行动示例
-{
-  "action": "delete",
-  "anchor": { "type": "range", "from": 1245, "to": 1289 },
-  "source": "loki",
-  "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8a"
-}
-```
-
----
-
-## 🏗️ 架构设计 | Architecture & "AI Safety Net"
-
-本项目采用 **"Vibe Coding"** 策略，但受到严格的 **"AI 安全网"** 保护，防止 AI 辅助开发导致的架构腐化。
-
-This project uses **"Vibe Coding"** but is protected by a strict **"AI Safety Net"** to prevent architectural decay caused by AI-assisted development.
-
----
-
-### 🛠️ 技术栈 | Tech Stack
-
-**前端 (`client/`)** — React + Vite + TypeScript
-
-- **核心编辑器 | Vibe Core:** [Milkdown](https://milkdown.dev/) (基于 ProseMirror)
-  - 使用 `filterTransaction` 在编辑器内核层实现"不可删除"约束
-  - 拦截删除操作，保护带有 `lock_id` 的文本块
-- **动画 | Animation:** [Framer Motion](https://www.framer.com/motion/)
-- **测试 | Testing:** [Playwright](https://playwright.dev/) (E2E) + [Vitest](https://vitest.dev/) (单元测试)
-
-**后端 (`server/`)** — FastAPI + Python 3.11+
-
-- **AI 核心 | AI Core:** [Instructor](https://github.com/jxnl/instructor) + Pydantic
-  - 强类型 LLM 输出（无原始字符串）
-  - Structured outputs for reliable Agent decisions
-- **测试 | Testing:** [pytest](https://pytest.org/) + [httpx](https://www.python-httpx.org/) (FastAPI TestClient)
-
-**CI/CD (`.github/`)** — GitHub Actions
-
-- 每次 PR 自动运行：`lint`, `type-check`, `backend-tests`, `frontend-tests`
-- 4 个并行 job，快速反馈
-- **Architecture Guards:** ESLint (frontend) + import-linter (backend)
-
----
-
-### 📜 单一真相源 | SSOT (Single Source of Truth)
-
-| 文档                                | 用途                        | Location                                            |
-| ----------------------------------- | --------------------------- | --------------------------------------------------- |
-| **宪法 \| Constitution**            | 项目治理 5 条款             | [CLAUDE.md](CLAUDE.md#constitutional-requirements-️) |
-| **API 契约 \| API Contract**        | OpenAPI 3.0.3 规范          | [API_CONTRACT.md](API_CONTRACT.md)                  |
-| **架构护栏 \| Architecture Guards** | Clean Architecture 规则     | [ARCHITECTURE_GUARDS.md](ARCHITECTURE_GUARDS.md)    |
-| **开发指南 \| Dev Guide**           | TDD 工作流                  | [DEVELOPMENT.md](DEVELOPMENT.md)                    |
-| **测试策略 \| Testing**             | 测试规范                    | [TESTING.md](TESTING.md)                            |
-| **Prompt Registry**                 | Muse/Loki 模板版本管理      | [docs/prompts.md](docs/prompts.md)                  |
-| **Observability**                   | Logging / Metrics / Tracing | [docs/observability.md](docs/observability.md)      |
-
-**关键设计原则 | Key Design Principles:**
-
-- **Contract-First API Design:** OpenAPI 规范先行，Pydantic 模型匹配
-- **Specification-Driven Development:** `specs/` and `openspec/` 驱动特性开发
-- **Versioned Prompt Registry:** 提示词版本化管理
-
----
-
-## 🚀 Development Setup
-
-<details>
-<summary><b>BYOK Onboarding</b> - Bring Your Own API Key</summary>
-
-1. Launch the dev stack (`./scripts/dev-start.sh`) so Dockerized Postgres + backend are ready.
-2. Follow the in-app onboarding checklist (left column) which walks you through dev-start → opening LLM Settings → triggering Muse/Loki.
-3. Inside the LLM Settings modal, pick the desired storage mode, review the provider tips (doc links, pricing hints, inline key validation), and set/rotate passphrases when using encrypted mode. Unlock errors stay client-side and telemetry never captures raw keys.
-4. Use **Lock Session** and **Forget Key** from the header to verify you can drop credentials instantly—our QA privacy checklist (`docs/process/qa-privacy-checklist.md`) requires both paths before sign-off.
-5. Watch the latest demo capture (`demo-artifacts/impetus-lock-demo.webm`, generated via `./scripts/record-demo.sh`) for a full BYOK walkthrough.
-
-</details>
-
-<details>
-<summary><b>Local CI Testing (Act CLI)</b></summary>
-
-1. Install [Act](https://github.com/nektos/act) and ensure Docker is available.
-2. Run the sync helper (WSL/Linux):
-
-   ```bash
-   ./scripts/act-sync.sh act -j e2e -W .github/workflows/e2e.yml --artifact-server-path /tmp/act-artifacts
-   ```
-
-   Use the Windows wrapper if needed: `pwsh ./scripts/act-sync.ps1 -Command "act -j e2e ..."`.
-
-3. The script rsyncs the repo into a Linux-native mirror (default `$HOME/impetus-lock-act`), exports `ACT_WORKSPACE_BASE`, `ACT_CACHE_DIR`, and stops conflicting containers (e.g., `impetus-lock-postgres`).
-4. Tail output is captured at `/tmp/act-e2e.log`; the latest run is mirrored to `test-results/act-e2e.log` (gitignored) for reference.
-
-</details>
-
----
-
-## 💡 Usage Examples
-
-### Basic Integration: Lock Enforcement Hook
-
-```typescript
-import { useLockEnforcement } from './hooks';
-import { generateIntervention } from './services/api/interventionClient';
-
-function WritingEditor() {
-  const { locks, lockCount, applyLock, isLoading, error } = useLockEnforcement();
-
-  const handleStuckDetected = async () => {
-    try {
-      const response = await generateIntervention({
-        context: editorContent,
-        mode: 'muse',
-        client_meta: {
-          doc_version: 1,
-          selection_from: cursorPos,
-          selection_to: cursorPos,
-        },
-      });
-
-      if (response.action === 'provoke') {
-        // Inject locked content into editor
-        injectContent(response.content);
-        applyLock(response.lock_id!);
-      }
-    } catch (err) {
-      console.error('Intervention failed:', err);
-    }
-  };
-
-  return (
-    <div>
-      <EditorCore />
-      <StatusBar>Active Locks: {lockCount}</StatusBar>
-    </div>
-  );
-}
-```
-
-### Lock Persistence Across Sessions
-
-```typescript
-import { lockManager } from "./services/LockManager";
-
-// On page load - extract locks from Markdown
-function loadEditor(initialMarkdown: string) {
-  const locks = lockManager.extractLocksFromMarkdown(initialMarkdown);
-  locks.forEach((lockId) => lockManager.applyLock(lockId));
-
-  // Locks are now enforced in the editor
-}
-
-// When saving - locks persist in Markdown comments
-function saveDocument(content: string) {
-  // Content contains: <!-- lock:lock_xxx --> comments
-  // Locks will be restored on next load
-  localStorage.setItem("doc", content);
-}
-```
-
-### Error Handling with Retries
-
-```typescript
-import { generateIntervention, InterventionAPIError } from './services/api/interventionClient';
-
-async function requestIntervention() {
-  try {
-    const response = await generateIntervention(
-      { context: '...', mode: 'muse', client_meta: {...} },
-      { retries: 3 } // Auto-retry on network errors
-    );
-
-    return response;
-  } catch (error) {
-    if (error instanceof InterventionAPIError) {
-      if (error.status === 422) {
-        console.error('Validation error:', error.details);
-      } else if (error.status === 429) {
-        console.error('Rate limit exceeded');
-      }
-    } else {
-      console.error('Network error:', error);
-    }
-  }
-}
-```
-
-### Idempotency for Duplicate Prevention
-
-```typescript
-// Use custom idempotency key to prevent duplicate interventions
-const idempotencyKey = crypto.randomUUID();
-
-const response1 = await generateIntervention(
-  { context: '...', mode: 'muse', client_meta: {...} },
-  { idempotencyKey }
-);
-
-// Same key returns cached response (within 15s TTL)
-const response2 = await generateIntervention(
-  { context: '...', mode: 'muse', client_meta: {...} },
-  { idempotencyKey }
-);
-
-console.assert(response1.action_id === response2.action_id); // true
-```
-
-### Writing State Machine (Muse Mode)
-
-```typescript
-import { useWritingState } from './hooks';
-
-function MuseModeDetector({ onStuck }: { onStuck: () => void }) {
-  const { state, onKeystroke, idleSeconds } = useWritingState({
-    idleTimeout: 5000,  // 5s → IDLE
-    stuckTimeout: 60000, // 60s → STUCK
-    onStuck: onStuck,
-  });
-
-  return (
-    <div>
-      <EditorCore onInput={onKeystroke} />
-      <StatusIndicator>
-        {state === 'WRITING' && '✍️ Writing'}
-        {state === 'IDLE' && `⏸️ Idle (${idleSeconds}s)`}
-        {state === 'STUCK' && '🚨 STUCK - AI Intervention Triggered'}
-      </StatusIndicator>
-    </div>
-  );
-}
-```
-
----
-
-## 🧪 Testing (TDD Workflow)
-
-**Article III of our Constitution:** Test-Driven Development is **NON-NEGOTIABLE**.
-
-### Backend Tests (pytest)
+前端和后端各自维护依赖锁文件。常用检查如下：
 
 ```bash
 cd server
+poetry run ruff check .
+poetry run ruff format --check .
+poetry run lint-imports
+poetry run mypy . --no-site-packages --ignore-missing-imports
+poetry run pytest tests/ -n auto -k "not RedisIntegration and not redis_pubsub" --cov=server --cov-report=term
+poetry run coverage report --rcfile=coverage-critical.ini
 
-# Run all tests
-poetry run pytest
-
-# Run with coverage
-poetry run pytest --cov=server --cov-report=html
-# Open htmlcov/index.html to view coverage
-
-# Run specific test
-poetry run pytest tests/test_main.py::test_health_endpoint_returns_200
-
-# TDD watch mode (requires pytest-watch)
-poetry run pytest-watch
+cd ../client
+npm ci
+npm run lint
+npm run format
+npm run type-check
+npm run test -- --coverage
 ```
 
-### Frontend Tests (Vitest + Playwright)
+提交前保持测试与实现同步，并通过 GitHub Actions 的 lint、类型检查和测试任务。`act` 本地 CI 流程见[开发指南](DEVELOPMENT.md)。
 
-```bash
-cd client
+2026-09-14 的本地审计结果如下；该记录未运行 Playwright E2E，也不代表远端 CI 或发布状态。
 
-# Unit tests (Vitest) - TDD watch mode
-npm run test:watch
+| 范围                                                    | 结果                                                         |
+| ------------------------------------------------------- | ------------------------------------------------------------ |
+| 后端测试                                                | 479 passed, 4 skipped；固定关键路径集合的聚合行覆盖率 82.19% |
+| 前端测试                                                | 545 passed, 4 skipped；固定关键路径集合的聚合行覆盖率 81.73% |
+| Ruff、import-linter、mypy、ESLint、Prettier、TypeScript | PASS                                                         |
+| OpenSpec 严格校验                                       | 19 passed, 0 failed；3 份 Tier 3 草稿待审批                  |
 
-# Run all unit tests once
-npm run test
+完整证据见 [2026-09-14 本地审计报告](.scratch/audit-2026-09/report.md)。
 
-# E2E tests (Playwright)
-npm run test:e2e
+## 文档导航
 
-# Install Playwright browsers (first time)
-npx playwright install --with-deps
+- [开发指南](DEVELOPMENT.md)：开发流程、测试策略和 CI 说明。
+- [文档索引](docs/INDEX.md)：当前指南、报告、组件文档和历史归档。
+- [部署指南](docs/guides/deployment.md)：部署配置与运行方式。
+- [故障排查](docs/guides/troubleshooting.md)：常见开发问题。
+- [客户端说明](client/README.md) 与 [服务端说明](server/README.md)：分层实现和组件细节。
+- [功能规格](specs/README.md)：遗留功能规格；OpenSpec 规格与变更以 `openspec/` 为准。
+- [历史 E2E 快照（2026-03-17）](docs/archive/2026-09/README_E2E_SNAPSHOT_2026-03-17.md)：仅供历史追踪。
 
-# Interactive E2E debugging
-npx playwright test --ui
-```
+## 贡献
 
-### Quality Gates (Pre-Commit Validation)
+1. 从 `main` 创建分支，保持改动聚焦，并为行为改动补充有区分度的测试。
+2. 在对应目录安装依赖并运行本页门禁；提交前检查 `git diff --check`。
+3. Pull request 应说明用户可见变化、验证命令和未解决事项。涉及新能力、破坏性变化或架构调整时，先按 [OpenSpec 指南](openspec/AGENTS.md) 创建并获批变更提案。
 
-**Use Act CLI to run main CI locally (fast ~4 min):**
-
-```bash
-# Test main CI pipeline (lint, type-check, tests)
-act
-
-# Or test specific job
-act -j lint
-act -j type-check
-act -j backend-tests
-act -j frontend-tests
-```
-
-**E2E tests run separately:**
-
-```bash
-# Local E2E testing (interactive UI mode recommended)
-cd client
-npx playwright test --ui
-
-# Or headless mode
-npm run test:e2e
-```
-
-**Quick quality check (without tests):**
-
-```bash
-# Backend
-cd server && poetry run ruff check . && poetry run mypy .
-
-# Frontend
-cd client && npm run lint && npm run type-check
-```
-
----
-
-## 🔄 Development Workflow
-
-This project follows **Spec-Driven Development (SDD)** protected by the AI Safety Net.
-
-### 1️⃣ **Define** (Specification)
-
-```bash
-# Define project constitution (first time only)
-/speckit.constitution
-
-# Create feature specification (auto-creates feature branch)
-/speckit.specify <feature-description>
-```
-
-### 2️⃣ **Test** (Red Phase - TDD)
-
-```bash
-# Write FAILING test first (Article III requirement)
-cd server
-# Edit tests/test_task_lock.py
-poetry run pytest tests/test_task_lock.py
-# Expected: ❌ FAILED
-
-cd client
-# Edit src/components/TaskCard.test.tsx
-npm run test:watch
-# Expected: ❌ FAILED
-```
-
-### 3️⃣ **Implement** (Green Phase - TDD)
-
-```bash
-# Write minimal code to make tests pass
-cd server
-# Edit server/services/task_service.py
-poetry run pytest tests/test_task_lock.py
-# Expected: ✅ PASSED
-
-cd client
-# Edit src/components/TaskCard.tsx
-# Watch mode auto-reruns
-# Expected: ✅ PASSED
-```
-
-### 4️⃣ **Refactor** (Blue Phase - TDD)
-
-```bash
-# Improve code while keeping tests green
-# Tests continue to pass: ✅ PASSED
-```
-
-### 5️⃣ **Review** (Pull Request)
-
-```bash
-# Create PR to main
-git push origin feature/task-lock
-
-# CI (AI Safety Net) automatically runs:
-# ✅ lint
-# ✅ type-check
-# ✅ backend-tests
-# ✅ frontend-tests
-
-# Merge only when ALL checks pass
-```
-
----
-
-## 🤖 Local CI Testing (Act CLI)
-
-Test GitHub Actions workflows locally before pushing:
-
-```bash
-# Install Act CLI
-# macOS: brew install act
-# Windows: choco install act-cli
-# Linux: curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
-
-# Run all CI jobs locally
-act
-
-# Run specific job
-act -j lint
-act -j type-check
-act -j backend-tests
-act -j frontend-tests
-
-# List available workflows
-act -l
-```
-
-**Configuration:** `.actrc` and `.secrets.example` are pre-configured.
-
----
-
-## 📚 文档索引 | Documentation
-
-### 核心文档 | Core Documents
-
-- **[API_CONTRACT.md](API_CONTRACT.md)** — OpenAPI 3.0.3 契约规范（SSOT）
-- **[ARCHITECTURE_GUARDS.md](ARCHITECTURE_GUARDS.md)** — 架构护栏与 Clean Architecture 规则
-- **[Constitution](CLAUDE.md#constitutional-requirements-️)** — 项目宪法（5 条款）
-
-### 开发指南 | Development Guides
-
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** — 综合开发指南与工作流
-- **[TESTING.md](TESTING.md)** — TDD 策略与测试规范
-- **[DEPENDENCY_MANAGEMENT.md](DEPENDENCY_MANAGEMENT.md)** — 依赖更新策略（Dependabot）
-- **[CLAUDE.md](CLAUDE.md)** — AI 助手操作指南
-
-### 自动生成文档 | Auto-Generated Docs
-
-- **[FastAPI Swagger UI](http://localhost:8000/docs)** — 交互式 API 文档（需先启动后端）
-- **[FastAPI ReDoc](http://localhost:8000/redoc)** — API 文档（ReDoc 版本）
-
----
-
-## 🏛️ Project Constitution
-
-This project operates under 5 constitutional articles:
-
-1. **Simplicity & Anti-Abstraction** — 5-day MVP sprint, no over-engineering
-2. **Vibe-First Imperative** — "Un-deletable pressure" is the ONLY P1 priority
-3. **Test-First Imperative** — TDD is non-negotiable (Red-Green-Refactor)
-4. **SOLID Principles** — Backend services follow SRP and DIP
-5. **Clear Comments & Documentation** — JSDoc (frontend) + Docstrings (backend) required
-
-**Constitutional Gates:**
-
-- ✅ P1 priority reserved ONLY for un-deletable constraint
-- ✅ Tests written → verified failing → minimal implementation → refactor
-- ✅ FastAPI endpoints delegate to services (SRP)
-- ✅ Constructor injection for dependencies (DIP)
-- ✅ ≥80% test coverage for P1 features
-
-See [CLAUDE.md](CLAUDE.md#constitutional-requirements-️) for complete details.
-
----
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-**Poetry not found:**
-
-```bash
-python -m pip install --user pipx
-python -m pipx ensurepath
-pipx install poetry
-```
-
-**npm permission errors:**
-
-```bash
-# Kill running processes
-# Windows: taskkill /F /IM node.exe
-# Linux/macOS: killall node
-
-npm cache clean --force
-cd client && npm ci
-```
-
-**Playwright browsers not installed:**
-
-```bash
-cd client
-npx playwright install --with-deps
-```
-
-**Tests hanging:**
-
-```bash
-# Force run mode (not watch)
-npm run test -- --run
-```
-
-See [DEVELOPMENT.md](DEVELOPMENT.md#troubleshooting) for more solutions.
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. Read the [Constitution](CLAUDE.md#constitutional-requirements-️) for our 5 articles
-2. Follow the [Development Workflow](#-development-workflow) below
-3. Ensure all [Quality Gates](#-quality-gates-pre-commit-validation) pass
-4. Test with [Act CLI](#-local-ci-testing-act-cli) before pushing
-5. Create PR using our [PR Template](.github/PULL_REQUEST_TEMPLATE.md)
-
-All contributions must comply with our constitutional requirements.
-
-**Key Requirements:**
-
-- TDD (Test-Driven Development) is mandatory - Red-Green-Refactor cycle
-- ≥80% test coverage for P1 features (un-deletable constraint)
-- Clean Architecture: endpoints delegate to service layer (SRP)
-- Constructor injection for dependencies (DIP)
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) for details
-
----
-
-## 🙏 Acknowledgments
-
-- **Milkdown** — For the ProseMirror-based editor that enables kernel-level transaction filtering
-- **Instructor** — For strongly-typed LLM outputs with Pydantic
-- **Act CLI** — For local GitHub Actions testing
-- **The TDD Community** — For evangelizing test-first development
-
----
-
-<div align="center">
-
-**Built with ❤️ and adversarial AI | 用爱与对抗性 AI 构建**
-
----
-
-### 📖 快速链接 | Quick Links
-
-[Development Guide 开发指南](DEVELOPMENT.md) · [Report Bug 报告问题](https://github.com/Jackela/impetus-lock/issues/new?template=bug_report.md) · [Request Feature 功能请求](https://github.com/Jackela/impetus-lock/issues/new?template=feature_request.md) · [API Contract API契约](API_CONTRACT.md)
-
----
-
-**Impetus Lock** - Transform lonely writing into an adversarial rogue-like game.  
-**创意施压者** - 将孤独写作变成人机对抗的 Roguelike 游戏。
-
-</div>
+项目采用 MIT License，详见 [LICENSE](LICENSE)。

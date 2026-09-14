@@ -239,5 +239,3 @@ WRITING → (idle timeout) → IDLE → (stuck timeout) → STUCK
 - [Architecture Guards](../ARCHITECTURE_GUARDS.md) - Clean Architecture rules
 - [Development Guide](../DEVELOPMENT.md) - Setup and workflow
 - [Testing Guide](../TESTING.md) - Testing strategy
-- [Contributing](../CONTRIBUTING.md) - How to contribute
-- [Security](../SECURITY.md) - Security policy

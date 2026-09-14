@@ -2,7 +2,7 @@
 
 2026-09-14。本轮在 `codex/audit-2026-09` 完成 Matt 项目配置、五项并行审查、六张代码修复票、三个文档/卫生批次和三个 Tier3 提案草稿。所有实施批次经独立审查和主 agent 验收；适用本地门禁全绿。
 
-起点及保留的本地 `main`：`156eba1412bcf73852ab15c7fcd61b773f33242a`。没有 push、远端 Issue/PR/label 写入、迁移重跑、Playwright 或外部付费 LLM 调用。Tier3 未实施、未获批；本地结果不代表远端 CI 或发布。
+五波验收时保留的本地 `main` 起点：`156eba1412bcf73852ab15c7fcd61b773f33242a`。没有 push、远端 Issue/PR/label 写入、迁移重跑、Playwright 或外部付费 LLM 调用。Tier3 未实施、未获批；本地结果不代表远端 CI 或发布。
 
 ## Delivered changes
 
@@ -55,7 +55,7 @@ Wave2为只读审查，五份 charter 按3+2调度，无实现提交。各任务
 | `ed872ab` | docs: remove missing report index entry                        |
 | `29d2515` | docs: clarify Gemini response error characterization           |
 
-Wave5审计归档提交为本报告所在的 `docs: record audit validation and deferred work`，包含findings、tickets、review ledger及Dependabot清单。集成分支保留逐票与审查修复提交，不压缩原始证据历史；源提交与审查区间见reviews.md。
+Wave5审计归档提交为 `9400476`（`docs: record audit validation and deferred work`），包含findings、tickets、review ledger及Dependabot清单。本地提交历史保留逐票与审查修复提交，不压缩原始证据历史；源提交与审查区间见reviews.md。
 
 ## Gates and evidence
 
@@ -74,7 +74,7 @@ Wave5审计归档提交为本报告所在的 `docs: record audit validation and 
 | client     | `npm run type-check`                                                                                                                                   | PASS                                                        |
 | client     | `npm run test -- --coverage`                                                                                                                           | **545 passed, 4 skipped**，55 files；**81.73% lines**，PASS |
 | OpenSpec   | pinned0.23.0，每项 `validate <id> --strict --no-interactive` 及 `validate --all --strict --no-interactive`                                             | PASS，3份草稿逐项通过；全量19 passed / 0 failed             |
-| Repository | `git diff --check`，保护块、归档链接、精确垃圾清单/ignore验证                                                                                          | PASS；两条原有缺失链接列A24待办                             |
+| Repository | `git diff --check`，保护块、归档链接、精确垃圾清单/ignore验证                                                                                          | PASS；A24两条缺失链接已于收尾移除                           |
 
 固定关键集合由ticket06定义，未因分数调整；前端另外报告statements82.01%、branches78.77%、functions88.23%。后端全包行覆盖率72.23%，不用于替代关键门禁；本次coverage.py配置未采集分支/函数指标。各层原有4个skip保留，未运行Playwright。
 
@@ -93,16 +93,15 @@ Wave5审计归档提交为本报告所在的 `docs: record audit validation and 
 
 ## Remaining P2
 
-| Finding | Remaining work                                                                     | Tier / decision                        |
-| ------- | ---------------------------------------------------------------------------------- | -------------------------------------- |
-| A11     | 清理CI中Poetry安装前无版本的独立SDK pip安装；先验证隔离导入                        | Tier2独立票                            |
-| A13     | 公共docstring缺口及presence门禁治理，保留宪法要求                                  | Tier2，需逐点TDD/范围界定              |
-| A15     | Milkdown不同minor嵌套版本风险；当前无peer-invalid或回归证据，结合PR141分组验证     | 依赖升级按Tier3审批                    |
-| A16     | 确定Node支持区间与engines；文档已与CI Node24对齐，legacy-peer-deps不单凭存在就删除 | 支持政策先决策，相关迁移Tier3          |
-| A18     | 用实际TransactionFilter行为替换既有手工调用onReject的伪集成断言                    | Tier2测试改进                          |
-| A22     | 历史OpenSpec状态/审批证据不一致，保留原记录并待人工来源核实                        | Tier1记录治理，不补造审批              |
-| A23     | dev-start使用--no-root尚未证明启动失败；先复现再定修复                             | 待核假设，不直接改脚本                 |
-| A24     | openspec/project.md原有CONTRIBUTING/SECURITY两个链接目标不存在                     | Tier1后续纠错；本轮新增/改动链接均有效 |
+| Finding | Remaining work                                                                     | Tier / decision               |
+| ------- | ---------------------------------------------------------------------------------- | ----------------------------- |
+| A11     | 清理CI中Poetry安装前无版本的独立SDK pip安装；先验证隔离导入                        | Tier2独立票                   |
+| A13     | 公共docstring缺口及presence门禁治理，保留宪法要求                                  | Tier2，需逐点TDD/范围界定     |
+| A15     | Milkdown不同minor嵌套版本风险；当前无peer-invalid或回归证据，结合PR141分组验证     | 依赖升级按Tier3审批           |
+| A16     | 确定Node支持区间与engines；文档已与CI Node24对齐，legacy-peer-deps不单凭存在就删除 | 支持政策先决策，相关迁移Tier3 |
+| A18     | 用实际TransactionFilter行为替换既有手工调用onReject的伪集成断言                    | Tier2测试改进                 |
+| A22     | 历史OpenSpec状态/审批证据不一致，保留原记录并待人工来源核实                        | Tier1记录治理，不补造审批     |
+| A23     | dev-start使用--no-root尚未证明启动失败；先复现再定修复                             | 待核假设，不直接改脚本        |
 
 ## Tier 3 proposals
 
@@ -135,3 +134,11 @@ Wave5审计归档提交为本报告所在的 `docs: record audit validation and 
 | [141](https://github.com/Jackela/Impetus-Lock/pull/141) | 高；23项前端组合，先拆编辑器与测试工具链，再分别验证         |
 
 建议先处理同major开发工具，随后协调telemetry/CI变更；major和组合迁移先拆分、审批与测试。此处风险评级不表示PR当前已通过或可直接合并。
+
+## Authorized closeout
+
+用户在五波验收后追加授权：调整README、将本地分支合并到main、清理本轮worktrees并结束任务。该授权更新了此前“保留main不动”的收尾选择，禁止远端写入及Tier3仅提案的边界仍然有效。
+
+README重新聚焦项目功能、可执行启动步骤、完整关键覆盖率门禁与文档导航；原2026-03-17长篇E2E快照移至 `docs/archive/2026-09/README_E2E_SNAPSHOT_2026-03-17.md`。A24两条无效指针已移除；其余需要单独决策的P2及未批准Tier3保持上述状态。
+
+清理预检核实10个实施分支的所有独有提交均已等价集成，没有独有未跟踪文件；3份未提交票据注记已备份。源分支与提交保存在经验证的 `.git/audit-2026-09/completed-branches.bundle`，它以原始基点156eba1为前提；主仓历史保留该基点。独立只读审查确认清理范围、备份及符号链接边界无阻断问题。
