@@ -67,6 +67,8 @@ venv/
 .ruff_cache/
 server/.hypothesis/
 server/.venv.windows/
+/server/.venv.windows.*/
+/server/impetus_lock.db
 .coverage
 .coverage.*
 htmlcov/
