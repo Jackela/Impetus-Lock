@@ -253,7 +253,7 @@ poetry run ruff check --fix .        # Auto-fix linting issues
 
 # Type Checking (mypy strict mode - MANDATORY)
 poetry run mypy .                    # Type check all files
-poetry run mypy server/main.py       # Type check specific file
+poetry run mypy server/api/main.py   # Type check specific file
 ```
 
 **Backend Quality Gates**:

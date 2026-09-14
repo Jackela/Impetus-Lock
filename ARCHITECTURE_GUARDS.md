@@ -284,7 +284,7 @@ lint:
 
 The CI workflow runs all three contracts with `poetry run lint-imports`; the output of the current CI run is the validation record.
 
-**Documentation enforcement note:** Article V remains a constitutional requirement. The current CI workflow runs Ruff, mypy, ESLint, and Prettier, but does not run a dedicated JSDoc or Python docstring lint rule. Missing documentation therefore remains a tracked quality gap until a separate change enables that check.
+**Documentation enforcement note:** Article V remains a constitutional requirement. The current CI workflow runs Ruff, mypy, ESLint, and Prettier. It does not enforce JSDoc or Python docstring presence, while the existing ESLint JSDoc validation rules for `check-types` and `valid-types` remain enabled.
 
 ---
 
