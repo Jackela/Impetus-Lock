@@ -9,7 +9,8 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Editor, rootCtx, defaultValueCtx, editorViewCtx } from "@milkdown/core";
+import { Editor, rootCtx, defaultValueCtx, editorViewCtx, serializerCtx, parserCtx } from "@milkdown/core";
+import { preserveLockMarkers, restoreLockMarkers } from "../../utils/editorMarkdown";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
@@ -171,12 +172,13 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     // Update the editor content when contentVersion changes
     editor.action((ctx) => {
       const view = ctx.get(editorViewCtx);
-      const currentContent = view.state.doc.textContent;
+      const currentContent = restoreLockMarkers(ctx.get(serializerCtx)(view.state.doc));
 
       // Only update if content actually changed
       if (currentContent !== initialContent) {
         const tr = view.state.tr;
-        tr.insertText(initialContent || "", 0, view.state.doc.content.size);
+        const document = ctx.get(parserCtx)(preserveLockMarkers(initialContent || ""));
+        tr.replaceWith(0, view.state.doc.content.size, document.content);
         view.dispatch(tr);
       }
     });
@@ -489,7 +491,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         .config((ctx) => {
           ctx.set(rootCtx, root);
           // Use empty string as default if no initialContent provided
-          ctx.set(defaultValueCtx, initialContent || "");
+          ctx.set(defaultValueCtx, preserveLockMarkers(initialContent || ""));
         })
         .config(nord)
         // NOTE: LockSchemaExtension NOT integrated - lock attributes are
@@ -642,7 +644,8 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
               }
             });
 
-            onChangeRef.current?.(tr.doc.textContent, lockManager.getAllLocks());
+            const markdown = restoreLockMarkers(ctx.get(serializerCtx)(tr.doc));
+            onChangeRef.current?.(markdown, lockManager.getAllLocks());
           }
           originalDispatchTransaction(tr);
         };
