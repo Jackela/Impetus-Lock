@@ -189,12 +189,6 @@ async def generate_intervention(
             llm_override=provider,
         )
 
-        # Cache response for idempotency
-        await idempotency_cache.set(idempotency_key, intervention_response)
-
-        response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
-        _set_cooldown_header(response, intervention_response.source, idempotency_key)
-
         # Commit persistence when applicable
         if session is not None:
             try:
@@ -209,6 +203,12 @@ async def generate_intervention(
                         "details": {"db_error": str(e)},
                     },
                 ) from e
+
+        # Publish only responses whose applicable persistence has committed.
+        await idempotency_cache.set(idempotency_key, intervention_response)
+
+        response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
+        _set_cooldown_header(response, intervention_response.source, idempotency_key)
 
         return intervention_response
 
