@@ -303,9 +303,9 @@ GitHub Actions runs 4 parallel jobs on push/PR to `main`:
 1. **lint**: Ruff (backend) + ESLint/Prettier (frontend)
 2. **type-check**: mypy (backend) + tsc --noEmit (frontend)
 3. **backend-tests**: pytest
-4. **frontend-tests**: Vitest + Playwright (with browser installation)
+4. **frontend-tests**: Vitest unit tests
 
-**Caching**: Python (Poetry) and Node (npm) dependencies are cached. Playwright browsers installed on-demand.
+**Caching**: Python (Poetry) and Node (npm) dependencies are cached.
 
 ## Architecture Patterns
 
