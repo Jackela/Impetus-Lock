@@ -677,3 +677,17 @@ Frontend:
 - `client/src/hooks/useSensoryFeedback.ts` - NEW
 - `client/src/hooks/useManualDelete.ts` - NEW
 - `client/src/hooks/index.ts` - Export new hooks
+
+## Agent skills
+
+### Issue tracker
+
+Tasks use GitHub Issues via gh; specs and proposals use OpenSpec. See `docs/agents/issue-tracker.md` before tracker operations.
+
+### Triage labels
+
+Use the five default triage labels. See `docs/agents/triage-labels.md` when classifying tickets.
+
+### Domain docs
+
+Use single-context domain docs. See `docs/agents/domain.md` before codebase exploration.
