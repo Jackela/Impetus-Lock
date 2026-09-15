@@ -36,9 +36,17 @@ def test_generate_token_roundtrip_with_validate(protection: CSRFProtection) -> N
 
 
 def test_validate_token_rejects_tampered_token(protection: CSRFProtection) -> None:
-    """Modifying the trailing signature characters must invalidate the token."""
+    """Modifying the token must invalidate it.
+
+    Tampering targets the first character: every bit of a leading
+    base64 character is significant, so the decoded payload (and thus
+    the signature check) always changes. The trailing character is
+    unsuitable because unpadded base64 ignores its low bits, so some
+    replacements decode to identical bytes and still validate
+    (~6% false-accept rate, observed over 2000 tokens).
+    """
     token = protection.generate_token()
-    tampered = token[:-1] + ("A" if token[-1] != "A" else "B")
+    tampered = ("A" if token[0] != "A" else "B") + token[1:]
     assert protection.validate_token(tampered) is False
 
 
