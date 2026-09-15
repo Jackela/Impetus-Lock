@@ -24,7 +24,7 @@ Every archived record is preserved exactly as it was written:
 | Directory | Inconsistency (verified against the archived files) |
 | --- | --- |
 | `2025-11-09-execute-devtools-audit/` | `proposal.md` line 4 reads `**Status**: Draft`, while `COMPLETION.md` declares the change `COMPLETED`; `tasks.md` has 12 of 33 boxes checked. |
-| `2025-11-09-fix-intervention-api-contract/` | `proposal.md` reads `**Status**: Proposed`, while `COMPLETION.md` declares `ALREADY COMPLIANT - NO CHANGES REQUIRED`; `tasks.md` has 0 of 69 boxes checked. |
+| `2025-11-09-fix-intervention-api-contract/` | `proposal.md` reads `**Status**: Proposed`, while `COMPLETION.md` declares `ALREADY COMPLIANT - NO CHANGES REQUIRED`; `tasks.md` has 0 of 72 boxes checked (69 top-level + 3 nested). |
 | `2025-11-09-control-muse-trigger/` | `proposal.md` reads `**Status**: Proposed`, while `COMPLETION.md` declares `ALREADY COMPLIANT - NO CHANGES REQUIRED`; `tasks.md` has 45 of 74 boxes checked. |
 | `2025-11-10-fix-ux-issues/` | `proposal.md` reads `**Status**: Proposed`; there is no `COMPLETION.md` at all; `tasks.md` has 33 of 79 boxes checked. |
 | `2025-04-09-sprint-1-user-auth/` | Inverse mismatch: `proposal.md` claims `COMPLETE` ("All user stories implemented and tested"), yet all 24 tasks (T001-T024) in `tasks.md` still say `Status: pending`. |
