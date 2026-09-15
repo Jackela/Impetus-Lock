@@ -42,3 +42,17 @@ Full group: lint/type-check/test all green (541 passed/4 skipped, 81.25% lines);
 
 - `npm ci` was run in the main worktree after verification to restore node_modules to the committed lock (verification installs had mutated the shared tree).
 - Pre-existing `npm audit` report (2 low/5 moderate/8 high) observed during #141 verification — out of scope, uninvestigated.
+
+## 2026-09-15 continuation ("彻底解决"): remaining majors landed
+
+| Item | Outcome | Vehicle |
+| --- | --- | --- |
+| #147 mypy 2.3.1 | Landed — zero source changes needed; mypy 2.3 clean over 106 files; 610 passed | #159 (local landing, #147 closed superseded) |
+| #148 anthropic 1.5.0 | Landed — TDD characterization (15 tests green on 0.40 → exact RED on removed `temperature` kwarg → green via `extra_body` on 3 call sites); instructor path verified wire-level (extra_body reaches request JSON); 625 passed, critical 82.77% | #161 (local landing, #148 closed superseded) |
+| Client minor-patch group (#141/#145 family) | Landed — ~20 minor/patch bumps (milkdown 7.22, react 19.3, playwright 1.63, testing-library, eslint toolchain 8.70, prettier 3.9 + 2-file reformat, …); majors excluded; @types/node held at 24.x per engines policy | #160 |
+| Playwright E2E infra | e2e.yml Docker image aligned v1.58.2→v1.63.0-noble (required by the bump; the workflow's own version check flagged it) | #160 |
+
+Known issues recorded during this pass:
+- **vitest 4.1 cross-file mock leakage** (held at ~4.0.18 in #160): on CI, file-scoped `vi.mock` factories leak across test files (telemetry via logger mock; EditorCore.persistence via ContentInjector mock) in a worker-grouping-dependent way; not reproducible locally at default workers; `maxWorkers:1` makes it worse; `isolate` is already default-true. Two partial mocks completed as hardening. Take vitest 4.1 up again when upstream clarifies (no matching GitHub issue found as of 2026-09-15).
+- anthropic 1.5 emits a model-EOL DeprecationWarning for `claude-3-5-haiku-latest` (2026-02-19) — model refresh is a separate product decision.
+- Auto-merge machinery now fully operational end-to-end (first unassisted merge: #154; six-fix chain #150/#153/#155/#156/#157/#158 plus repo `allow_auto_merge` enabled).
