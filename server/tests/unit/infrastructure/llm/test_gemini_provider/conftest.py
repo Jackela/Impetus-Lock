@@ -5,19 +5,17 @@ Fixtures defined here are shared across all test modules in this package.
 
 from __future__ import annotations
 
-import json
-import sys
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    pass
 
-# Check if google.generativeai is available
+# Check if google.genai is available
 try:
-    import google.generativeai as _genai  # noqa: F401
+    import google.genai as _genai  # noqa: F401
 
     _GENAI_AVAILABLE = True
 except ImportError:
@@ -25,118 +23,68 @@ except ImportError:
 
 from server.infrastructure.llm.gemini_provider import GeminiLLMProvider
 
+DEFAULT_RESPONSE_TEXT = '{"action": "provoke", "content": "Test intervention content"}'
 
-@pytest.fixture
-def mock_genai() -> Generator[Mock, None, None]:
-    """Mock the google.generativeai module."""
-    if not _GENAI_AVAILABLE:
-        pytest.skip("google.generativeai not installed")
 
-    # Create proper exception classes that inherit from Exception
-    class BlockedPromptException(Exception):
-        """Mock BlockedPromptException."""
+def make_generate_response(text: str = DEFAULT_RESPONSE_TEXT) -> MagicMock:
+    """Create a mock google-genai response with one successful text part."""
+    part = MagicMock()
+    part.text = text
 
-        pass
+    content = MagicMock()
+    content.parts = [part]
 
-    class StopCandidateException(Exception):
-        """Mock StopCandidateException."""
+    candidate = MagicMock()
+    candidate.content = content
+    candidate.finish_reason = None
 
-        pass
+    response = MagicMock()
+    response.candidates = [candidate]
+    response.prompt_feedback = MagicMock()
+    response.prompt_feedback.block_reason = None
+    return response
 
-    class InvalidArgument(Exception):
-        """Mock InvalidArgument."""
 
-        pass
+def make_blocked_prompt_response() -> MagicMock:
+    """Create a mock response whose prompt was blocked before generation."""
+    response = MagicMock()
+    response.candidates = []
+    response.prompt_feedback = MagicMock()
+    response.prompt_feedback.block_reason = "SAFETY"
+    return response
 
-    class InvalidAPIKeyError(Exception):
-        """Mock InvalidAPIKeyError."""
 
-        pass
+def make_stopped_candidate_response() -> MagicMock:
+    """Create a mock response whose candidate was stopped by safety filters."""
+    from google.genai.types import FinishReason
 
-    class PermissionDeniedError(Exception):
-        """Mock PermissionDeniedError."""
+    candidate = MagicMock()
+    candidate.content = MagicMock()
+    candidate.content.parts = []
+    candidate.finish_reason = FinishReason.SAFETY
 
-        pass
-
-    class ResourceExhaustedError(Exception):
-        """Mock ResourceExhaustedError."""
-
-        pass
-
-    class InternalServerError(Exception):
-        """Mock InternalServerError."""
-
-        pass
-
-    class UnavailableError(Exception):
-        """Mock UnavailableError."""
-
-        pass
-
-    class ResourceExhausted(Exception):
-        """Mock ResourceExhausted."""
-
-        pass
-
-    # Patch both modules
-    with patch("google.api_core.exceptions") as mock_api_core, patch("google.generativeai") as mock:
-        # Set up the mock types
-        mock.types = MagicMock()
-        mock.types.BlockedPromptException = BlockedPromptException
-        mock.types.StopCandidateException = StopCandidateException
-        mock.types.InvalidArgument = InvalidArgument
-
-        # Set up api_key errors
-        mock.api_key = MagicMock()
-        mock.api_key.api_errors = MagicMock()
-        mock.api_key.api_errors.InvalidAPIKeyError = InvalidAPIKeyError
-        mock.api_key.api_errors.PermissionDeniedError = PermissionDeniedError
-        mock.api_key.api_errors.ResourceExhaustedError = ResourceExhaustedError
-        mock.api_key.api_errors.InternalServerError = InternalServerError
-        mock.api_key.api_errors.UnavailableError = UnavailableError
-
-        # Set up google.api_core.exceptions
-        mock_api_core.ResourceExhausted = ResourceExhausted
-
-        # Inject into sys.modules so direct imports work in tests
-        # This ensures `from google.generativeai.types import X` works
-        mock_types_module = MagicMock()
-        mock_types_module.BlockedPromptException = BlockedPromptException
-        mock_types_module.StopCandidateException = StopCandidateException
-        mock_types_module.InvalidArgument = InvalidArgument
-        sys.modules["google.generativeai.types"] = mock_types_module
-
-        mock_api_errors_module = MagicMock()
-        mock_api_errors_module.InvalidAPIKeyError = InvalidAPIKeyError
-        mock_api_errors_module.PermissionDeniedError = PermissionDeniedError
-        mock_api_errors_module.ResourceExhaustedError = ResourceExhaustedError
-        mock_api_errors_module.InternalServerError = InternalServerError
-        mock_api_errors_module.UnavailableError = UnavailableError
-        sys.modules["google.generativeai.api_errors"] = mock_api_errors_module
-
-        yield mock
-
-        # Cleanup
-        del sys.modules["google.generativeai.types"]
-        del sys.modules["google.generativeai.api_errors"]
+    response = MagicMock()
+    response.candidates = [candidate]
+    response.prompt_feedback = MagicMock()
+    response.prompt_feedback.block_reason = None
+    return response
 
 
 @pytest.fixture
 def mock_response() -> MagicMock:
     """Create a mock Gemini response with successful completion."""
-    response = MagicMock()
-    response.candidates = [MagicMock()]
-    response.candidates[0].content.parts = [MagicMock()]
-    response.candidates[0].content.parts[0].text = json.dumps(
-        {"action": "provoke", "content": "Test intervention content"}
-    )
-    return response
+    return make_generate_response()
 
 
 @pytest.fixture
-def provider(mock_genai: Mock) -> GeminiLLMProvider:
-    """Create a GeminiLLMProvider instance with mocked genai."""
-    return GeminiLLMProvider(
+def provider() -> GeminiLLMProvider:
+    """Create a GeminiLLMProvider with stubbed SDK clients (no outbound call)."""
+    if not _GENAI_AVAILABLE:
+        pytest.skip("google.genai not installed")
+    instance = GeminiLLMProvider(
         api_key="test-api-key",
         model="gemini-pro",
     )
+    instance._client = MagicMock()
+    instance._tokens_client = MagicMock()
+    return instance

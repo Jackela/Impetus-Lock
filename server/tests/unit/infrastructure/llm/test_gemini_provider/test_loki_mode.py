@@ -24,7 +24,7 @@ class TestGeminiProviderLokiMode:
     ) -> None:
         """Loki mode generates intervention with chaos action."""
         mock_response.candidates[0].content.parts[0].text = json.dumps({"action": "delete"})
-        provider._model.generate_content.return_value = mock_response
+        provider._client.models.generate_content.return_value = mock_response
 
         response = provider.generate_intervention(
             context="He opened the door and stepped inside.", mode="loki"
@@ -42,7 +42,7 @@ class TestGeminiProviderLokiMode:
         mock_response.candidates[0].content.parts[0].text = json.dumps(
             {"action": "provoke", "content": "Disruptive content"}
         )
-        provider._model.generate_content.return_value = mock_response
+        provider._client.models.generate_content.return_value = mock_response
 
         response = provider.generate_intervention(
             context="He opened the door and stepped inside.", mode="loki"
@@ -55,7 +55,7 @@ class TestGeminiProviderLokiMode:
         self, provider: GeminiLLMProvider, mock_response: MagicMock
     ) -> None:
         """Loki mode uses appropriate safety thresholds."""
-        provider._model.generate_content.return_value = mock_response
+        provider._client.models.generate_content.return_value = mock_response
 
         response = provider.generate_intervention(context="Test context", mode="loki")
 

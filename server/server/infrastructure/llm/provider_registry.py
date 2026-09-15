@@ -113,7 +113,7 @@ class ProviderFactory:
             module="server.infrastructure.llm.gemini_provider",
             class_name="GeminiLLMProvider",
             install_msg=(
-                "Gemini provider is not available. Install with: pip install google-generativeai"
+                "Gemini provider is not available. Install with: pip install google-genai"
             ),
         ),
         "debug": ProviderSpec(

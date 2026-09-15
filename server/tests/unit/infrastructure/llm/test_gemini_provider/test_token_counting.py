@@ -22,18 +22,21 @@ class TestGeminiProviderToken:
         """Token counting returns correct value."""
         mock_result = MagicMock()
         mock_result.total_tokens = 42
-        provider._model.count_tokens.return_value = mock_result
+        provider._tokens_client.models.count_tokens.return_value = mock_result
 
         count = provider.count_tokens("Hello, world!")
 
         assert count == 42
-        provider._model.count_tokens.assert_called_once_with(contents="Hello, world!")
+        provider._tokens_client.models.count_tokens.assert_called_once_with(
+            model=provider.model,
+            contents="Hello, world!",
+        )
 
     def test_token_usage_tracking(self, provider: GeminiLLMProvider) -> None:
         """Token usage is tracked across operations."""
         mock_result = MagicMock()
         mock_result.total_tokens = 100
-        provider._model.count_tokens.return_value = mock_result
+        provider._tokens_client.models.count_tokens.return_value = mock_result
 
         # First count
         count1 = provider.count_tokens("First text")
@@ -45,4 +48,4 @@ class TestGeminiProviderToken:
         assert count2 == 50
 
         # Verify both calls were made
-        assert provider._model.count_tokens.call_count == 2
+        assert provider._tokens_client.models.count_tokens.call_count == 2

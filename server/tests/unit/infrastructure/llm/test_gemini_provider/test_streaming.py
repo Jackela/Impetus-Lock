@@ -29,7 +29,7 @@ class TestGeminiProviderStreaming:
             MagicMock(text='content": "'),
             MagicMock(text='Test"}'),
         ]
-        provider._model.generate_content.return_value = chunks
+        provider._client.models.generate_content_stream.return_value = iter(chunks)
 
         result = list(provider.stream_intervention("Context", "muse"))
 
@@ -37,7 +37,7 @@ class TestGeminiProviderStreaming:
 
     def test_stream_error_handling(self, provider: GeminiLLMProvider) -> None:
         """Streaming raises LLMProviderError on failure."""
-        provider._model.generate_content.side_effect = Exception("Stream error")
+        provider._client.models.generate_content_stream.side_effect = RuntimeError("Stream error")
 
         with pytest.raises(LLMProviderError) as exc_info:
             list(provider.stream_intervention("Context", "muse"))
@@ -46,13 +46,14 @@ class TestGeminiProviderStreaming:
         assert "Streaming failed" in exc_info.value.message
 
     def test_stream_timeout(self, provider: GeminiLLMProvider) -> None:
-        """Streaming handles timeout appropriately."""
-        from google.api_core.exceptions import DeadlineExceeded
+        """Local httpx timeouts during streaming map to timeout / 504."""
+        import httpx
 
-        provider._model.generate_content.side_effect = DeadlineExceeded("Timeout")
+        provider._client.models.generate_content_stream.side_effect = httpx.ReadTimeout("Timeout")
 
         with pytest.raises(LLMProviderError) as exc_info:
             list(provider.stream_intervention("Context", "muse"))
 
         assert exc_info.value.code == "timeout"
+        assert exc_info.value.status_code == 504
         assert exc_info.value.provider == "gemini"

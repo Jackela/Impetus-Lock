@@ -129,7 +129,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-generativeai
           poetry install --with dev
 
       - name: Run unit tests with parallel execution
@@ -198,7 +197,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-generativeai
           poetry install --with dev
 
       - name: Run integration tests
@@ -278,7 +276,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-generativeai
           poetry install --with dev
 
       - name: Run E2E tests
@@ -346,7 +343,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install google-generativeai
           poetry install
 
       - name: Build

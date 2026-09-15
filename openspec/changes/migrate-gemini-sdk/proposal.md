@@ -1,6 +1,7 @@
 # Change: Migrate Gemini to the maintained Google GenAI SDK
 
 Status: Proposed; awaiting approval. Tier 3, audit finding A14. This package contains no implementation.
+Approved: 2026-09-15 (user-approved followup implementation plan; implementer dispatched same day).
 
 ## Why
 
