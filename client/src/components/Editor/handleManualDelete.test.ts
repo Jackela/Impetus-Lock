@@ -25,7 +25,8 @@ vi.mock("../../services/ContentInjector", () => ({
   deleteContentAtAnchor: mockDeleteContentAtAnchor,
 }));
 
-// Mock logger
+// Mock logger (provide every export consumed via this module so the mock is
+// complete if other test files' imports resolve against it)
 vi.mock("../../utils/logger", () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
@@ -33,6 +34,8 @@ vi.mock("../../utils/logger", () => ({
     warn: vi.fn(),
     error: vi.fn(),
   })),
+  configureLogger: vi.fn(),
+  LogLevel: { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3, NONE: 4 },
 }));
 
 describe("handleManualDelete", () => {
