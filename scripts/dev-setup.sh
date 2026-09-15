@@ -126,7 +126,7 @@ step "Installing backend dependencies..."
 
 (
   cd "$SERVER_DIR"
-  poetry install --no-root
+  poetry install
   success "Backend dependencies installed"
 )
 echo ""
