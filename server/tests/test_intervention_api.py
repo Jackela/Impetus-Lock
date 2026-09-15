@@ -12,6 +12,7 @@ Expected Initial State: All tests FAIL (endpoint not implemented yet)
 
 from collections.abc import Generator
 from contextlib import ExitStack
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from unittest.mock import patch
 
@@ -20,9 +21,14 @@ from fastapi.testclient import TestClient
 
 from server.api.main import app
 from server.api.routes import intervention as intervention_module
+from server.domain.errors import LLMProviderError
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
-from server.infrastructure.llm.provider_registry import ProviderRegistry
+from server.infrastructure.llm.provider_registry import (
+    ProviderConfig,
+    ProviderRegistry,
+)
+from tests.utils.mock_factories import CloseSpyProvider
 
 client = TestClient(app)
 
@@ -73,6 +79,47 @@ def mock_llm_provider() -> Generator[None, None, None]:
         for mock_path in mock_paths:
             stack.enter_context(patch(mock_path, return_value=mock_response))
         yield
+
+
+@dataclass
+class SpyRegistryHarness:
+    """Wires a ProviderRegistry to build CloseSpyProvider instances.
+
+    Attributes:
+        registry: Registry installed on app.state for the test.
+        created: Every spy built by the patched instantiation, in order.
+        fail_on_close: Make subsequently built spies raise on close().
+        generate_error: Make subsequently built spies raise on generate.
+    """
+
+    registry: ProviderRegistry
+    created: list[CloseSpyProvider] = field(default_factory=list)
+    fail_on_close: bool = False
+    generate_error: Exception | None = None
+
+
+@pytest.fixture()
+def spy_registry(monkeypatch: pytest.MonkeyPatch) -> Generator[SpyRegistryHarness, None, None]:
+    """Install a registry whose built providers are close-spy fakes.
+
+    The registry logic (caching, is_cached) stays real; only provider
+    instantiation is replaced so tests can observe close() calls.
+    """
+    registry = ProviderRegistry()
+    harness = SpyRegistryHarness(registry=registry)
+
+    def fake_instantiate(config: ProviderConfig) -> CloseSpyProvider:
+        spy = CloseSpyProvider(
+            fail_on_close=harness.fail_on_close,
+            generate_error=harness.generate_error,
+        )
+        harness.created.append(spy)
+        return spy
+
+    monkeypatch.setattr(registry, "_instantiate", fake_instantiate)
+    app.state.provider_registry = registry
+    yield harness
+    app.state.provider_registry = ProviderRegistry()
 
 
 class TestInterventionAPIContract:
@@ -382,3 +429,103 @@ class TestInterventionAPIContract:
         assert stored_actions[0].task_id.hex == "550e8400e29b41d4a716446655440000"
 
         app.dependency_overrides.pop(intervention_module.get_task_repository, None)
+
+
+class TestProviderTeardown:
+    """Covers per-request release of non-cached (BYOK) providers."""
+
+    def test_byok_provider_closed_exactly_once(self, spy_registry: SpyRegistryHarness) -> None:
+        """A BYOK (api_key override) provider must be closed exactly once."""
+
+        headers = {
+            **REQUIRED_HEADERS,
+            "Idempotency-Key": "byok-close-once",
+            "X-LLM-Provider": "anthropic",
+            "X-LLM-Api-Key": "sk-ant-test",
+        }
+
+        response = client.post(
+            "/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+        # First spy = cached default provider (dependency resolution),
+        # second spy = per-request BYOK provider built inside the endpoint.
+        assert len(spy_registry.created) == 2
+        default_spy, byok_spy = spy_registry.created
+        assert byok_spy.close_calls == 1
+        assert default_spy.close_calls == 0
+
+    def test_cached_provider_not_closed(self, spy_registry: SpyRegistryHarness) -> None:
+        """A request without overrides reuses the shared cached provider, never closing it."""
+
+        headers = {
+            **REQUIRED_HEADERS,
+            "Idempotency-Key": "cached-provider-no-close",
+        }
+
+        response = client.post(
+            "/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+        assert len(spy_registry.created) == 1
+        assert spy_registry.created[0].close_calls == 0
+
+    def test_byok_close_failure_does_not_affect_response(
+        self,
+        spy_registry: SpyRegistryHarness,
+    ) -> None:
+        """A provider close() failure must be suppressed and not break the response."""
+
+        spy_registry.fail_on_close = True
+        headers = {
+            **REQUIRED_HEADERS,
+            "Idempotency-Key": "byok-close-failure",
+            "X-LLM-Provider": "anthropic",
+            "X-LLM-Api-Key": "sk-ant-test",
+        }
+
+        response = client.post(
+            "/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["source"] == "muse"
+        byok_spy = spy_registry.created[-1]
+        assert byok_spy.close_calls == 1
+
+    def test_byok_provider_closed_on_error_exit(
+        self,
+        spy_registry: SpyRegistryHarness,
+    ) -> None:
+        """The per-request BYOK provider must also be closed when generation fails."""
+
+        spy_registry.generate_error = LLMProviderError(
+            code="llm_api_error",
+            message="boom",
+            status_code=502,
+            provider="anthropic",
+        )
+        headers = {
+            **REQUIRED_HEADERS,
+            "Idempotency-Key": "byok-error-exit-close",
+            "X-LLM-Provider": "anthropic",
+            "X-LLM-Api-Key": "sk-ant-test",
+        }
+
+        response = client.post(
+            "/impetus/generate-intervention",
+            json=VALID_MUSE_REQUEST,
+            headers=headers,
+        )
+
+        assert response.status_code == 502
+        byok_spy = spy_registry.created[-1]
+        assert byok_spy.close_calls == 1
