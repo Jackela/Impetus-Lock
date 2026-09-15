@@ -110,11 +110,7 @@ export interface TaskSort {
  * Error types for storage operations.
  */
 export type StorageErrorType =
-  | "quota_exceeded"
-  | "version_mismatch"
-  | "parse_error"
-  | "unavailable"
-  | "unknown";
+  "quota_exceeded" | "version_mismatch" | "parse_error" | "unavailable" | "unknown";
 
 /**
  * Error class for storage operations.

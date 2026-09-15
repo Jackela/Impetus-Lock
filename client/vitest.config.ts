@@ -25,14 +25,9 @@ export default defineConfig({
       reporter: ["text", "json", "html"],
       thresholds: { lines: 80 },
     },
+    // Vitest 4 removed `poolOptions.{threads,forks}.single`; the default pool
+    // with per-file isolation replaces it (the old single-worker mode's shared
+    // registry let file-scoped vi.mock instances bleed across test files).
     pool: testPool,
-    poolOptions: {
-      threads: {
-        single: true,
-      },
-      forks: {
-        single: true,
-      },
-    },
   },
 });
