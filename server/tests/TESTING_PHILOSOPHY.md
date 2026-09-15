@@ -138,6 +138,7 @@ from unittest.mock import Mock
 # Imports from tested module
 from server.domain.models.intervention import InterventionRequest
 
+
 # Test class for grouping related tests
 class TestFeatureName:
     """Test suite for FeatureName functionality."""
@@ -209,6 +210,7 @@ def test_behavior(self) -> None:
 ```python
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_async_function() -> None:
     """Test async function properly."""
@@ -221,6 +223,7 @@ async def test_async_function() -> None:
 ```python
 import pytest
 from collections.abc import AsyncGenerator
+
 
 @pytest.fixture
 async def async_resource() -> AsyncGenerator[Resource, None]:
@@ -246,6 +249,7 @@ async def test_async_context_manager() -> None:
 ```python
 from unittest.mock import AsyncMock
 
+
 @pytest.mark.asyncio
 async def test_with_async_mock() -> None:
     """Test with mocked async dependency."""
@@ -264,8 +268,10 @@ async def test_with_async_mock() -> None:
 # ❌ BAD: Creating new event loop
 def test_bad() -> None:
     import asyncio
+
     loop = asyncio.new_event_loop()
     result = loop.run_until_complete(async_func())
+
 
 # ✅ GOOD: Using pytest-asyncio
 @pytest.mark.asyncio
@@ -278,6 +284,7 @@ async def test_good() -> None:
 ```python
 import asyncio
 import pytest
+
 
 @pytest.mark.asyncio
 async def test_concurrent_access() -> None:
@@ -411,6 +418,7 @@ def debug_helper():  # pragma: no cover
     """Debug function - not tested."""
     print("Debug info")
 
+
 # Or in pyproject.toml:
 [tool.coverage.run]
 omit = [
@@ -443,6 +451,7 @@ class TaskFactory:
             locked=locked,
         )
 
+
 # Usage
 @pytest.fixture
 def sample_task() -> Task:
@@ -453,6 +462,7 @@ def sample_task() -> Task:
 
 ```python
 import pytest
+
 
 @pytest.mark.parametrize(
     "mode,expected_action",

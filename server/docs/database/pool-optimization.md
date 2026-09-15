@@ -90,6 +90,7 @@ print(f"Utilization: {metrics.utilization:.1f}%")
 @app.get("/health/database")
 async def database_health():
     from server.infrastructure.persistence.database import health_check
+
     status = await health_check()
     return status.to_dict()
 ```
@@ -224,6 +225,7 @@ Use the following to test pool behavior under load:
 import asyncio
 from server.infrastructure.persistence.database import init_database
 
+
 async def load_test():
     db = await init_database()
 
@@ -235,6 +237,7 @@ async def load_test():
             await asyncio.sleep(0.01)
 
     await asyncio.gather(*[worker(i) for i in range(50)])
+
 
 asyncio.run(load_test())
 ```

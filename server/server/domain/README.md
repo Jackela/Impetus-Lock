@@ -32,14 +32,15 @@ domain/
 from pydantic import BaseModel
 from datetime import datetime
 
+
 class Task(BaseModel):
     """Core Task entity - represents un-deletable locked task."""
-    
+
     id: str
     content: str
     locked: bool
     locked_at: datetime | None
-    
+
     def lock(self) -> None:
         """Apply un-deletable lock (core business rule)."""
         if self.locked:

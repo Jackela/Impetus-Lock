@@ -268,12 +268,14 @@ response = await service.generate_intervention(
 # 领域层接口 (server/domain/repositories/task_repository.py)
 from abc import ABC, abstractmethod
 
+
 class TaskRepositoryProtocol(ABC):
     @abstractmethod
     async def save(self, task: Task) -> Task: ...
 
     @abstractmethod
     async def find_by_id(self, task_id: str) -> Task | None: ...
+
 
 # 基础设施层实现 (server/infrastructure/persistence/postgresql_task_repository.py)
 class PostgreSQLTaskRepository(TaskRepositoryProtocol):
