@@ -13,8 +13,9 @@ from collections.abc import Generator
 import pytest
 from fastapi.testclient import TestClient
 
+from server.api.dependencies import get_task_repository
 from server.api.main import app
-from server.api.routes import tasks as tasks_module
+from server.infrastructure.persistence.database import get_session_optional
 from server.infrastructure.persistence.in_memory_task_repository import (
     InMemoryTaskRepository,
 )
@@ -33,13 +34,13 @@ def use_in_memory_repository(mock_auth_user) -> Generator[None, None, None]:
     async def override_repo() -> InMemoryTaskRepository:
         return repo
 
-    app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-    app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+    app.dependency_overrides[get_task_repository] = override_repo
+    app.dependency_overrides[get_session_optional] = lambda: None
 
     yield
 
-    app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-    app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+    app.dependency_overrides.pop(get_task_repository, None)
+    app.dependency_overrides.pop(get_session_optional, None)
 
 
 class TestCreateTask:

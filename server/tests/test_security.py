@@ -70,8 +70,9 @@ class TestTaskInputValidation:
         """
         from fastapi.testclient import TestClient
 
+        from server.api.dependencies import get_task_repository
         from server.api.main import app
-        from server.api.routes import tasks as tasks_module
+        from server.infrastructure.persistence.database import get_session_optional
         from server.infrastructure.persistence.in_memory_task_repository import (
             InMemoryTaskRepository,
         )
@@ -81,8 +82,8 @@ class TestTaskInputValidation:
         async def override_repo() -> InMemoryTaskRepository:
             return repo
 
-        app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-        app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+        app.dependency_overrides[get_task_repository] = override_repo
+        app.dependency_overrides[get_session_optional] = lambda: None
 
         client = TestClient(app)
 
@@ -106,8 +107,8 @@ class TestTaskInputValidation:
             assert "id" in data
             assert data["version"] == 0
         finally:
-            app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-            app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+            app.dependency_overrides.pop(get_task_repository, None)
+            app.dependency_overrides.pop(get_session_optional, None)
 
     @pytest.mark.asyncio
     async def test_async_get_task_preserves_html_content(self, mock_auth_user: Any) -> None:
@@ -117,8 +118,9 @@ class TestTaskInputValidation:
         """
         from fastapi.testclient import TestClient
 
+        from server.api.dependencies import get_task_repository
         from server.api.main import app
-        from server.api.routes import tasks as tasks_module
+        from server.infrastructure.persistence.database import get_session_optional
         from server.infrastructure.persistence.in_memory_task_repository import (
             InMemoryTaskRepository,
         )
@@ -128,8 +130,8 @@ class TestTaskInputValidation:
         async def override_repo() -> InMemoryTaskRepository:
             return repo
 
-        app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-        app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+        app.dependency_overrides[get_task_repository] = override_repo
+        app.dependency_overrides[get_session_optional] = lambda: None
 
         client = TestClient(app)
 
@@ -156,8 +158,8 @@ class TestTaskInputValidation:
             assert data["content"] == "<div data-lock-id='lock_123'>Content &amp; more</div>"
             assert data["lock_ids"] == ["lock_123"]
         finally:
-            app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-            app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+            app.dependency_overrides.pop(get_task_repository, None)
+            app.dependency_overrides.pop(get_session_optional, None)
 
     @pytest.mark.asyncio
     async def test_async_update_task_with_injection(self, mock_auth_user: Any) -> None:
@@ -167,8 +169,9 @@ class TestTaskInputValidation:
         """
         from fastapi.testclient import TestClient
 
+        from server.api.dependencies import get_task_repository
         from server.api.main import app
-        from server.api.routes import tasks as tasks_module
+        from server.infrastructure.persistence.database import get_session_optional
         from server.infrastructure.persistence.in_memory_task_repository import (
             InMemoryTaskRepository,
         )
@@ -178,8 +181,8 @@ class TestTaskInputValidation:
         async def override_repo() -> InMemoryTaskRepository:
             return repo
 
-        app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-        app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+        app.dependency_overrides[get_task_repository] = override_repo
+        app.dependency_overrides[get_session_optional] = lambda: None
 
         client = TestClient(app)
 
@@ -212,8 +215,8 @@ class TestTaskInputValidation:
             assert data["lock_ids"] == ["<script>bad_lock</script>"]
             assert data["version"] == version + 1
         finally:
-            app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-            app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+            app.dependency_overrides.pop(get_task_repository, None)
+            app.dependency_overrides.pop(get_session_optional, None)
 
 
 class TestLockSecurity:

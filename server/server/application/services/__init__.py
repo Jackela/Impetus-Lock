@@ -4,6 +4,7 @@ Business logic layer (use cases).
 """
 
 from server.application.services.intervention_service import InterventionService
+from server.application.services.streak_service import StreakService
 from server.application.services.task_service import (
     CreateTaskCommand,
     TaskDTO,
@@ -12,6 +13,10 @@ from server.application.services.task_service import (
     UpdateTaskCommand,
     ValidationError,
     VersionMismatchError,
+)
+from server.application.services.template_service import (
+    TemplateNotFoundError,
+    TemplateService,
 )
 
 __all__ = [
@@ -23,4 +28,7 @@ __all__ = [
     "TaskNotFoundError",
     "VersionMismatchError",
     "ValidationError",
+    "StreakService",
+    "TemplateService",
+    "TemplateNotFoundError",
 ]

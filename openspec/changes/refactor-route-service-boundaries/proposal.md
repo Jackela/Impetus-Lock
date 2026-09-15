@@ -1,6 +1,7 @@
 # Change: Delegate task, template and streak business logic to services
 
 Status: Proposed; awaiting approval. Tier 3, audit finding A12. No implementation is included.
+Approved: 2026-09-15 (user-approved followup implementation plan; implementer dispatched same day).
 
 ## Why
 
