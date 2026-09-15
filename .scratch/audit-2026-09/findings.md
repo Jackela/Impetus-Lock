@@ -62,3 +62,21 @@ Independent reviews also found and closed regressions in newly written docs and 
 ## Closeout follow-up
 
 A24 closed during the user-authorized README/merge cleanup: removed the two nonexistent CONTRIBUTING/SECURITY targets from openspec/project.md. Existing Development and Testing guide links remain the actionable project entry points. No replacement security policy was invented.
+
+## 2026-09-15 followup disposition
+
+All remaining P2 findings and the three Tier3 proposals were completed on 2026-09-15 under the user-approved followup plan (multi-agent protocol preserved: fresh-context implementers, independent reviews, ff-only integration; local-only, no push). Details: [followup report](../audit-2026-09-followup/report.md), [followup tickets](../audit-2026-09-followup/issues/), [Dependabot dispositions](../audit-2026-09-followup/dependabot-followup.md).
+
+| Records | Followup outcome | Local commits |
+| --- | --- | --- |
+| A11 | Folded into the gemini migration: 5 unversioned CI `pip install google-generativeai` lines removed | `d2f7dd0` |
+| A13 | pydocstyle 91→0 with comment-only fixes, gated in both CI lint jobs; client JSDoc 320→0 with presence rules enabled | `82f9897`, `3be2f42` |
+| A15 | Unused `@milkdown/plugin-listener` removed; single `@milkdown/prose` 7.18.0 restored | `6aafde0` |
+| A16 | Engines `>=20.19 <25` declared; Docker builders unified on node:24-alpine; `.nvmrc` 24 | `f26fd16` |
+| A18 | Pseudo-integration onReject tests replaced with real LockManager+TransactionFilter integration | `7543f60` |
+| A22 | Archive reconciliation index added; originals untouched, no approvals fabricated | `e8895a3`, `36d564f` |
+| A23 | Reproduced: full `poetry install` works and boots; `--no-root` removed from 3 dev scripts | `ef0f4c4` |
+| A12 (Tier3) | refactor-route-service-boundaries implemented, characterized, reviewed, archived | `ead4d46` |
+| A14 (Tier3) | migrate-gemini-sdk implemented (google-genai 2.23, retry parity measured & pinned), archived | `d2f7dd0` |
+| A17 (Tier3) | refactor-unused-client-state implemented (unused hooks deleted), archived | `dc1aaf4` |
+| Dependabot | 5 same-major/coordinated PRs landed locally; 8 majors/group verify-only records with recommendations | `2167c18`..`109a2ec` |
