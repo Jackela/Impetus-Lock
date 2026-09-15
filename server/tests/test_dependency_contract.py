@@ -56,6 +56,6 @@ def test_greenlet_is_installable_for_supported_interpreters(
     """The public greenlet requirement must select both supported environments."""
     marker = _greenlet_marker()
 
-    assert marker is None or marker.evaluate(
-        environment
-    ), f"greenlet dependency marker excludes {interpreter}: {marker}"
+    assert marker is None or marker.evaluate(environment), (
+        f"greenlet dependency marker excludes {interpreter}: {marker}"
+    )

@@ -224,6 +224,7 @@ async def test_async_function() -> None:
 import pytest
 from unittest.mock import Mock
 
+
 @pytest.fixture
 def mock_llm_provider() -> Mock:
     """Create a mock LLM provider for testing."""
@@ -237,6 +238,7 @@ def mock_llm_provider() -> Mock:
         source="muse",
     )
     return mock
+
 
 @pytest.fixture
 def intervention_service(mock_llm_provider: Mock) -> InterventionService:
@@ -271,12 +273,14 @@ def test_intervention_service(
 from unittest.mock import Mock, patch
 from server.infrastructure.llm.provider_registry import ProviderRegistry
 
+
 @pytest.fixture
 def mock_provider_registry() -> Mock:
     """Create mock provider registry."""
     registry = Mock(spec=ProviderRegistry)
     registry.get_provider.return_value = Mock(spec=LLMProvider)
     return registry
+
 
 # Using patch
 def test_with_patched_provider() -> None:
@@ -296,13 +300,12 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+
 @pytest.fixture
 async def async_session() -> AsyncGenerator[AsyncSession, None]:
     """Create async database session for tests."""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
-    async_session_maker = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session_maker = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session_maker() as session:
         yield session
@@ -315,13 +318,13 @@ async def async_session() -> AsyncGenerator[AsyncSession, None]:
 ```python
 from unittest.mock import patch, AsyncMock
 
+
 @pytest.mark.asyncio
 async def test_api_call() -> None:
     """Test with mocked external API."""
     with patch("httpx.AsyncClient.post") as mock_post:
         mock_post.return_value = AsyncMock(
-            status_code=200,
-            json=AsyncMock(return_value={"result": "success"})
+            status_code=200, json=AsyncMock(return_value={"result": "success"})
         )
 
         # Test code here
@@ -335,6 +338,7 @@ async def test_api_call() -> None:
 # tests/fixtures/factories.py
 from dataclasses import dataclass
 from datetime import UTC, datetime
+
 
 @dataclass
 class InterventionRequestFactory:
@@ -355,6 +359,7 @@ class InterventionRequestFactory:
                 selection_to=len(context),
             ),
         )
+
 
 # Usage in tests
 def test_with_factory() -> None:
@@ -377,9 +382,11 @@ def test_with_factory() -> None:
 # ❌ BAD: Module-level import may hang
 from server.api.main import app  # Can hang during collection
 
+
 # ✅ GOOD: Import inside fixture or test
 def test_something() -> None:
     from server.api.main import app  # Import at runtime
+
     ...
 ```
 
@@ -394,6 +401,7 @@ def test_something() -> None:
 @pytest.fixture(scope="function")
 def anyio_backend() -> str:
     return "asyncio"
+
 
 # In test
 @pytest.mark.asyncio
@@ -411,6 +419,7 @@ async def test_async_function() -> None:
 ```python
 # Use file-based SQLite for parallel tests
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+
 
 # Or ensure proper cleanup
 @pytest.fixture(autouse=True)
@@ -491,12 +500,11 @@ TESTING = "1"
 
 ```python
 # ✅ Good: Descriptive and specific
-def test_locked_task_cannot_be_deleted_by_user() -> None:
-    ...
+def test_locked_task_cannot_be_deleted_by_user() -> None: ...
+
 
 # ❌ Bad: Too vague
-def test_task() -> None:
-    ...
+def test_task() -> None: ...
 ```
 
 ### Test Structure (AAA Pattern)

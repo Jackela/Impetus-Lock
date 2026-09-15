@@ -32,11 +32,9 @@ from server.server.api.dependencies import get_lock_task_use_case
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
+
 @router.post("/{task_id}/lock")
-def lock_task(
-    task_id: str,
-    use_case: LockTaskUseCase = Depends(get_lock_task_use_case)
-):
+def lock_task(task_id: str, use_case: LockTaskUseCase = Depends(get_lock_task_use_case)):
     """Lock a task to make it un-deletable."""
     task = use_case.execute(task_id)
     return {"id": task.id, "locked": task.locked}

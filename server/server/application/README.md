@@ -30,12 +30,13 @@ application/
 from server.server.domain.entities.task import Task
 from server.server.domain.repositories.task_repository import ITaskRepository
 
+
 class LockTaskUseCase:
     """Use case: Lock a task to make it un-deletable."""
-    
+
     def __init__(self, task_repo: ITaskRepository):
         self.task_repo = task_repo
-    
+
     def execute(self, task_id: str) -> Task:
         task = self.task_repo.get_by_id(task_id)
         task.lock()  # Core business logic in domain

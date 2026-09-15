@@ -30,17 +30,18 @@ infrastructure/
 from server.server.domain.entities.task import Task
 from server.server.domain.repositories.task_repository import ITaskRepository
 
+
 class InMemoryTaskRepository(ITaskRepository):
     """In-memory implementation (for MVP)."""
-    
+
     def __init__(self):
         self._tasks: dict[str, Task] = {}
-    
+
     def get_by_id(self, task_id: str) -> Task:
         if task_id not in self._tasks:
             raise ValueError(f"Task {task_id} not found")
         return self._tasks[task_id]
-    
+
     def save(self, task: Task) -> None:
         self._tasks[task.id] = task
 ```

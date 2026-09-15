@@ -29,18 +29,23 @@ test_<feature>_<aspect>.py         # Feature with aspect (e.g., test_security_au
 def test_locked_task_cannot_be_deleted_by_unauthorized_user():
     pass
 
+
 def test_generate_intervention_returns_valid_response_with_muse_mode():
     pass
 
+
 def test_provider_registry_raises_error_for_unknown_provider():
     pass
+
 
 # ❌ Bad: Vague or unclear
 def test_task():
     pass
 
+
 def test_intervention():
     pass
+
 
 def test_1():
     pass
@@ -53,14 +58,19 @@ def test_1():
 ```python
 class TestInterventionService:
     """Tests for InterventionService class."""
+
     pass
+
 
 class TestTaskLock:
     """Tests for task lock functionality."""
+
     pass
+
 
 class TestClaudeProvider:
     """Tests for Anthropic Claude provider."""
+
     pass
 ```
 
@@ -132,6 +142,7 @@ def database_engine():
     yield engine
     engine.dispose()
 
+
 @pytest.fixture(scope="module")
 def module_config():
     """Module scope: Created once per test module.
@@ -140,6 +151,7 @@ def module_config():
     """
     return {"setting": "value"}
 
+
 @pytest.fixture(scope="function")  # Default
 def test_data():
     """Function scope: Created for each test.
@@ -147,6 +159,7 @@ def test_data():
     Use for: Test data, fresh state
     """
     return {"fresh": "data"}
+
 
 @pytest.fixture(scope="function", autouse=True)
 def reset_state():
@@ -166,22 +179,27 @@ def reset_state():
 def mock_llm_provider():
     pass
 
+
 @pytest.fixture
 def intervention_request_factory():
     pass
 
+
 @pytest.fixture
 def async_db_session():
     pass
+
 
 # ❌ Bad: Ambiguous names
 @pytest.fixture
 def mock():
     pass
 
+
 @pytest.fixture
 def data():
     pass
+
 
 @pytest.fixture
 def session():
@@ -196,11 +214,13 @@ def base_request():
     """Base fixture."""
     return InterventionRequest(context="test")
 
+
 @pytest.fixture
 def muse_request(base_request):
     """Composed fixture extending base."""
     base_request.mode = "muse"
     return base_request
+
 
 @pytest.fixture
 def loki_request(base_request):
@@ -215,6 +235,7 @@ def loki_request(base_request):
 @pytest.fixture
 def intervention_factory():
     """Factory fixture for creating test data."""
+
     class Factory:
         def create(self, **overrides):
             defaults = {
@@ -225,6 +246,7 @@ def intervention_factory():
             return InterventionRequest(**defaults)
 
     return Factory()
+
 
 # Usage
 def test_with_factory(intervention_factory):
@@ -268,16 +290,19 @@ mock.invalid_attribute  # Raises AttributeError
 mock_method = Mock(return_value=42)
 result = mock_method()  # Returns 42
 
+
 # 4. Mock with side effect
 def side_effect(arg):
     if arg == "good":
         return "success"
     raise ValueError("bad")
 
+
 mock_method = Mock(side_effect=side_effect)
 
 # 5. Mock for async functions
 from unittest.mock import AsyncMock
+
 async_mock = AsyncMock(return_value={"result": "ok"})
 result = await async_mock()  # Returns {"result": "ok"}
 ```
@@ -301,11 +326,13 @@ with patch.object(obj, "method") as mock_method:
     mock_method.return_value = 42
     result = obj.method()
 
+
 # 4. Patch as decorator
 @patch("module.function")
 def test_with_patch(mock_function):
     mock_function.return_value = "mocked"
     # Test code
+
 
 # 5. Multiple patches
 @patch("module.func1")
@@ -313,6 +340,7 @@ def test_with_patch(mock_function):
 def test_multiple_patches(mock2, mock1):
     # mock1 is for func1, mock2 is for func2
     pass
+
 
 # 6. Patch with context manager
 @pytest.fixture
@@ -379,6 +407,7 @@ mock_method()
 
 ```python
 import pytest
+
 
 @pytest.mark.parametrize(
     "input_val,expected",
@@ -450,6 +479,7 @@ def test_validation(input_data, expected):
 ```python
 import pytest
 
+
 # Skip certain combinations
 @pytest.mark.parametrize(
     "mode,provider",
@@ -457,8 +487,7 @@ import pytest
         ("muse", "openai"),
         ("muse", "anthropic"),
         pytest.param(
-            "loki", "gemini",
-            marks=pytest.mark.skip(reason="Gemini not supported for Loki")
+            "loki", "gemini", marks=pytest.mark.skip(reason="Gemini not supported for Loki")
         ),
     ],
 )
@@ -591,6 +620,7 @@ assert result.id == expected.id
 assert result.name == expected.name
 # Ignore timestamp fields
 
+
 # Using helper functions
 def assert_intervention_equals(actual, expected):
     assert actual.action == expected.action
@@ -622,14 +652,17 @@ from server.application.services.intervention_service import InterventionService
 from typing import Any
 from collections.abc import AsyncGenerator
 
+
 def test_function(input_data: str) -> None:
     """Function with type hints."""
     pass
+
 
 @pytest.fixture
 def mock_provider() -> Mock:
     """Fixture with return type hint."""
     return Mock()
+
 
 async def test_async() -> AsyncGenerator[None, None]:
     """Async test with generator hint."""
@@ -651,11 +684,13 @@ def test_behavior(self) -> None:
     """
     pass
 
+
 class TestFeature:
     """Test suite for Feature functionality.
 
     Groups related tests for the Feature class or module.
     """
+
     pass
 ```
 
@@ -668,30 +703,37 @@ def test_everything():
     assert task.title == "Task"
     assert service.is_ready  # Unrelated!
 
+
 # ✅ Split into focused tests
 def test_user_has_name():
     assert user.name == "Test"
 
+
 def test_task_has_title():
     assert task.title == "Task"
+
 
 # ❌ Test depends on other tests
 def test_step1():
     global state
     state = "step1"
 
+
 def test_step2():
     assert state == "step1"  # Depends on test_step1!
+
 
 # ✅ Independent tests with proper setup
 def test_feature_with_setup():
     state = setup_state()
     assert process(state) == "expected"
 
+
 # ❌ Testing implementation details
 def test_private_method():
     obj = MyClass()
     assert obj._internal_state == "value"  # Implementation detail!
+
 
 # ✅ Test public behavior
 def test_public_api():
@@ -699,12 +741,14 @@ def test_public_api():
     result = obj.public_method()
     assert result == "expected"
 
+
 # ❌ Noisy tests (print statements)
 def test_noisy():
     print("Starting test")  # Remove in committed code
     result = do_something()
     print(f"Result: {result}")  # Use -s flag if debugging
     assert result
+
 
 # ✅ Clean tests
 def test_clean():

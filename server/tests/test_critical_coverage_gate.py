@@ -52,6 +52,6 @@ def test_critical_coverage_report_enforces_threshold(
     assert "text_window.py" in output, output
     total = next(line for line in report.stdout.splitlines() if line.startswith("TOTAL"))
     assert float(total.split()[-1].rstrip("%")) == expected_percent, output
-    assert (
-        report.returncode == expected_exit
-    ), f"Critical coverage must reject 50% and accept 100%; using {config.name}:\n{output}"
+    assert report.returncode == expected_exit, (
+        f"Critical coverage must reject 50% and accept 100%; using {config.name}:\n{output}"
+    )
