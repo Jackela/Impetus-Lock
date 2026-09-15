@@ -94,7 +94,7 @@ class TestRedisPubSubManagerConnection:
             await manager.disconnect()
 
             assert manager._running is False
-            mock_redis_client.close.assert_called_once()
+            mock_redis_client.aclose.assert_called_once()
 
 
 class TestRedisPubSubManagerSubscription:
@@ -281,7 +281,7 @@ class TestRedisPubSubManagerListening:
         mock_pubsub = Mock()
         mock_pubsub.subscribe = AsyncMock(return_value=None)
         mock_pubsub.unsubscribe = AsyncMock(return_value=None)
-        mock_pubsub.close = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -323,7 +323,7 @@ class TestRedisPubSubManagerListening:
         mock_pubsub = Mock()
         mock_pubsub.subscribe = AsyncMock(return_value=None)
         mock_pubsub.unsubscribe = AsyncMock(return_value=None)
-        mock_pubsub.close = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -358,7 +358,7 @@ class TestRedisPubSubManagerListening:
         mock_pubsub = Mock()
         mock_pubsub.subscribe = AsyncMock(return_value=None)
         mock_pubsub.unsubscribe = AsyncMock(return_value=None)
-        mock_pubsub.close = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -560,7 +560,7 @@ class TestRedisPubSubManagerEdgeCases:
         mock_pubsub = Mock()
         mock_pubsub.subscribe = AsyncMock(return_value=None)
         mock_pubsub.unsubscribe = AsyncMock(return_value=None)
-        mock_pubsub.close = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -599,7 +599,7 @@ class TestRedisPubSubManagerEdgeCases:
         mock_pubsub = Mock()
         mock_pubsub.subscribe = AsyncMock(return_value=None)
         mock_pubsub.unsubscribe = AsyncMock(return_value=None)
-        mock_pubsub.close = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {
@@ -637,7 +637,7 @@ class TestRedisPubSubManagerEdgeCases:
         mock_pubsub = Mock()
         mock_pubsub.subscribe = AsyncMock(return_value=None)
         mock_pubsub.unsubscribe = AsyncMock(return_value=None)
-        mock_pubsub.close = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
         mock_pubsub.get_message = AsyncMock(
             side_effect=[
                 {

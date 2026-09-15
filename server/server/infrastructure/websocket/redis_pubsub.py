@@ -7,6 +7,7 @@ server instances via Redis.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import logging
 from collections.abc import Awaitable, Callable
@@ -69,11 +70,11 @@ class RedisPubSubManager:
         self._listener_task = None
 
         if self._pubsub:
-            await self._pubsub.close()
+            await self._pubsub.aclose()
         self._pubsub = None
 
         if self._redis:
-            await self._redis.close()
+            await self._redis.aclose()
         self._redis = None
 
         logger.info("Disconnected from Redis")
@@ -161,7 +162,7 @@ class RedisPubSubManager:
                     handlers = self._message_handlers.get(channel, [])
                     for handler in handlers:
                         try:
-                            if asyncio.iscoroutinefunction(handler):
+                            if inspect.iscoroutinefunction(handler):
                                 await handler(data)
                             else:
                                 handler(data)
