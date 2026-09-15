@@ -35,7 +35,7 @@ jobs:
       - name: Wait for required checks
         uses: lewagon/wait-on-check-action@v1.9.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Backend Tests,Frontend Tests,Lint (Backend + Frontend),Type Check (Backend + Frontend)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 20
@@ -84,7 +84,7 @@ jobs:
       - name: Wait for E2E tests
         uses: lewagon/wait-on-check-action@v1.9.1
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Playwright E2E Tests"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
