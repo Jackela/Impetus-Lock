@@ -49,9 +49,10 @@ class AnthropicLLMProvider(BasePromptLLMProvider):
         ]
 
         try:
+            # anthropic>=1.0 removed the `temperature` kwarg; transmit it via extra_body.
             message: Message = self.client.messages.create(
                 model=self.model,
-                temperature=self.temperature,
+                extra_body={"temperature": self.temperature},
                 max_tokens=400,
                 system=system_prompt,
                 messages=payload,
