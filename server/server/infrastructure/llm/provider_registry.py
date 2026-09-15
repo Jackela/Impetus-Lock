@@ -225,9 +225,32 @@ class ProviderRegistry:
         self._default_instances: dict[ProviderName, LLMProvider] = {}
 
     def reload(self) -> None:
-        """Reload env backed defaults (used by tests)."""
+        """Reload env backed defaults (used by tests).
+
+        Closing the previous cached instances releases their SDK clients;
+        providers are expected to tolerate close() while another request
+        may still hold a reference (double close must stay safe).
+        """
         self._default_configs = self._load_default_configs()
+        for provider in self._default_instances.values():
+            close_provider(provider)
         self._default_instances.clear()
+
+    def is_cached(self, provider: LLMProvider) -> bool:
+        """Check whether ``provider`` is one of the shared cached instances.
+
+        Uses identity comparison (``is``) rather than equality so that only
+        the exact instances stored in the default cache are reported as
+        shared; structurally equal but distinct instances (for example
+        per-request BYOK providers) are never matched.
+
+        Args:
+            provider: Provider instance to check.
+
+        Returns:
+            True if the instance is shared cache state, False otherwise.
+        """
+        return any(cached is provider for cached in self._default_instances.values())
 
     def get_provider(
         self,
@@ -389,6 +412,27 @@ class ProviderRegistry:
                 provider=normalized,
             )
         return cast(ProviderName, normalized)
+
+
+def close_provider(provider: LLMProvider) -> None:
+    """Close a provider's resources defensively.
+
+    ``LLMProvider`` is a structural Protocol whose implementors are not all
+    required to expose ``close()`` (only SDK-backed providers holding HTTP
+    transports do), so the hook is resolved with ``getattr``. Failures are
+    logged and suppressed because resource release must never break request
+    handling or registry reloads.
+
+    Args:
+        provider: Provider instance to close, if it supports closing.
+    """
+    close = getattr(provider, "close", None)
+    if not callable(close):
+        return
+    try:
+        close()
+    except Exception:
+        logger.warning("Failed to close LLM provider %r", provider, exc_info=True)
 
 
 def _normalize(value: str | None) -> str | None:

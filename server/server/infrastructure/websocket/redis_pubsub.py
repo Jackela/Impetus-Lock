@@ -7,6 +7,7 @@ server instances via Redis.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import json
 import logging
 from collections.abc import Awaitable, Callable
@@ -69,11 +70,11 @@ class RedisPubSubManager:
         self._listener_task = None
 
         if self._pubsub:
-            await self._pubsub.close()
+            await self._pubsub.aclose()
         self._pubsub = None
 
         if self._redis:
-            await self._redis.close()
+            await self._redis.aclose()
         self._redis = None
 
         logger.info("Disconnected from Redis")
@@ -133,7 +134,12 @@ class RedisPubSubManager:
         self._listener_task = asyncio.create_task(self._listen())
 
     async def _listen(self) -> None:
-        """Background task to listen for Redis messages."""
+        """Background task to listen for Redis messages.
+
+        Yields to the event loop when no message is available so that
+        mocked (non-blocking) ``get_message`` implementations cannot
+        starve other tasks.
+        """
         if not self._pubsub:
             return
 
@@ -142,7 +148,13 @@ class RedisPubSubManager:
                 message = await self._pubsub.get_message(
                     ignore_subscribe_messages=True, timeout=1.0
                 )
-                if message and message["type"] == "message":
+                if message is None:
+                    # No message available. With a real Redis client,
+                    # get_message(timeout=1.0) blocks on the socket; with a
+                    # mock that returns immediately, this sleep prevents
+                    # starving the event loop.
+                    await asyncio.sleep(0.05)
+                elif message["type"] == "message":
                     channel = message["channel"]
                     data = json.loads(message["data"])
 
@@ -150,7 +162,7 @@ class RedisPubSubManager:
                     handlers = self._message_handlers.get(channel, [])
                     for handler in handlers:
                         try:
-                            if asyncio.iscoroutinefunction(handler):
+                            if inspect.iscoroutinefunction(handler):
                                 await handler(data)
                             else:
                                 handler(data)

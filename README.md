@@ -86,7 +86,7 @@ poetry run ruff check .
 poetry run ruff format --check .
 poetry run lint-imports
 poetry run mypy . --no-site-packages --ignore-missing-imports
-poetry run pytest tests/ -n auto -k "not RedisIntegration and not redis_pubsub" --cov=server --cov-report=term
+poetry run pytest tests/ -n auto --cov=server --cov-report=term
 poetry run coverage report --rcfile=coverage-critical.ini
 
 cd ../client

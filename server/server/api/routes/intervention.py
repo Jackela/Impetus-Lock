@@ -25,7 +25,11 @@ from server.domain.llm_provider import LLMProvider
 from server.domain.models.intervention import InterventionRequest, InterventionResponse
 from server.domain.repositories.task_repository import TaskRepository
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
-from server.infrastructure.llm.provider_registry import ProviderOverride, ProviderRegistry
+from server.infrastructure.llm.provider_registry import (
+    ProviderOverride,
+    ProviderRegistry,
+    close_provider,
+)
 from server.infrastructure.persistence.database import get_session_optional
 
 router = APIRouter(prefix="/impetus", tags=["intervention"])
@@ -149,6 +153,7 @@ async def generate_intervention(
     overrides_provided = any(filter(None, [provider_header, model_header, api_key_header]))
     http_request.state.llm_override = overrides_provided
     http_request.state.llm_provider = None
+    provider: LLMProvider | None = None
     overrides = (
         ProviderOverride(
             provider=provider_header,
@@ -237,6 +242,12 @@ async def generate_intervention(
                 "details": {"llm_error": str(e)},
             },
         ) from e
+
+    finally:
+        # Release per-request providers (e.g. BYOK) on every exit; shared
+        # cached instances must survive to serve subsequent requests.
+        if provider is not None and not provider_registry.is_cached(provider):
+            close_provider(provider)
 
 
 def _safe_uuid(value: str | None) -> UUID | None:

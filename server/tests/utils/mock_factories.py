@@ -798,3 +798,54 @@ def create_coroutine_mock(return_value: Any = None) -> Mock:
 
     mock.side_effect = coro
     return mock
+
+
+class CloseSpyProvider:
+    """LLMProvider double that records close() calls for lifecycle tests.
+
+    Satisfies the LLMProvider protocol structurally while counting close()
+    invocations, so tests can assert which instances were released. close()
+    can optionally raise to verify that callers suppress release failures.
+
+    Attributes:
+        close_calls: Number of times close() has been invoked.
+        fail_on_close: Raise RuntimeError on close() when True.
+        generate_error: Exception raised by generate_intervention when set.
+
+    Example:
+        >>> spy = CloseSpyProvider()
+        >>> spy.generate_intervention("上下文", "muse").action
+        'provoke'
+        >>> spy.close()
+        >>> spy.close_calls
+        1
+    """
+
+    def __init__(
+        self,
+        fail_on_close: bool = False,
+        generate_error: Exception | None = None,
+    ) -> None:
+        """Initialize the spy with release-failure and generation-error toggles."""
+        self.close_calls = 0
+        self.fail_on_close = fail_on_close
+        self.generate_error = generate_error
+
+    def generate_intervention(
+        self,
+        context: str,
+        mode: Literal["muse", "loki"],
+        doc_version: int | None = None,
+        selection_from: int | None = None,
+        selection_to: int | None = None,
+    ) -> InterventionResponse:
+        """Return a canned valid response, or raise the configured error."""
+        if self.generate_error is not None:
+            raise self.generate_error
+        return MockResponseBuilder().build()
+
+    def close(self) -> None:
+        """Count the release and optionally simulate a release failure."""
+        self.close_calls += 1
+        if self.fail_on_close:
+            raise RuntimeError("simulated provider close failure")

@@ -7,7 +7,12 @@ from itsdangerous import URLSafeTimedSerializer
 
 
 class CSRFProtection:
-    """Generate and validate signed, time-limited CSRF tokens."""
+    """Generate and validate signed, time-limited CSRF tokens.
+
+    Tokens carry a random payload signed with the SECRET_KEY, so any
+    instance constructed with the same SECRET_KEY can both issue tokens
+    and verify their integrity and age.
+    """
 
     def __init__(self) -> None:
         """Create a serializer from the SECRET_KEY environment variable.
@@ -21,8 +26,16 @@ class CSRFProtection:
         self._serializer = URLSafeTimedSerializer(secret)
 
     def generate_token(self) -> str:
-        """Return a fresh random URL-safe CSRF token."""
-        return secrets.token_urlsafe(32)
+        """Return a signed URL-safe CSRF token.
+
+        The token wraps a fresh random payload in a timed signature, so it
+        roundtrips through validate_token on any instance sharing the
+        SECRET_KEY.
+
+        Returns:
+            A signed, URL-safe CSRF token string.
+        """
+        return str(self._serializer.dumps(secrets.token_urlsafe(32)))
 
     def validate_token(self, token: str, max_age: int = 3600) -> bool:
         """Check a signed token within the allowed age.

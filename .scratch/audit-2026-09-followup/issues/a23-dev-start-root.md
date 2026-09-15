@@ -22,7 +22,7 @@ Reproduction protocol (in YOUR worktree, server/ dir — it gets its own Poetry 
 If fixing:
 
 - [ ] All three scripts lose exactly the `--no-root` token (dev-start.sh, dev-setup.sh, dev-start.ps1); no other edits.
-- [ ] Server gates from worktree server/: `poetry run ruff check .`, `poetry run ruff format --check .`, `poetry run lint-imports`, `poetry run mypy . --no-site-packages --ignore-missing-imports`, `poetry run pytest tests/ -n auto -k "not RedisIntegration and not redis_pubsub"` — all pass (your venv already has everything from R2).
+- [ ] Server gates from worktree server/: `poetry run ruff check .`, `poetry run ruff format --check .`, `poetry run lint-imports`, `poetry run mypy . --no-site-packages --ignore-missing-imports`, `poetry run pytest tests/ -n auto` — all pass (your venv already has everything from R2).
 - [ ] `git status` shows only the three scripts; `git diff --check` clean; shell syntax check passes: `bash -n scripts/dev-start.sh && bash -n scripts/dev-setup.sh`.
 - [ ] Single conventional commit: `fix: install project root package in dev scripts` (or `chore:` if you judge better; state why).
 

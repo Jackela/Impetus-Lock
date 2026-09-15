@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-import os
 from typing import Any
 from unittest.mock import Mock, patch
 
@@ -567,16 +566,16 @@ class TestCollaborationServiceDocumentHistory:
         assert history == []
 
 
-class TestCollaborationServiceRedisIntegration:
-    """Tests for Redis integration."""
+class TestCollaborationServiceRedisPubSub:
+    """Tests for Redis pub/sub message handling.
+
+    These tests patch ``redis.asyncio.from_url`` with a mock client and do
+    NOT require a running Redis server.
+    """
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        os.getenv("CI") == "true" or os.getenv("REDIS_URL") is None,
-        reason="Redis integration test requires Redis server",
-    )
     async def test_handle_redis_message(self, mock_redis_client: Mock) -> None:
-        """Test handling messages from Redis."""
+        """Test handling messages from Redis (mocked client, no server needed)."""
         from server.infrastructure.websocket.redis_pubsub import RedisPubSubManager
         from tests.unit.infrastructure.websocket.conftest import MockWebSocket
 
@@ -606,6 +605,9 @@ class TestCollaborationServiceRedisIntegration:
 
             # Message should be broadcast to local clients
             await asyncio.sleep(0.1)  # Allow async task to complete
+
+            # Stop the listener task started by initialize()
+            await service.shutdown()
 
     @pytest.mark.asyncio
     async def test_handle_own_redis_message(self, mock_redis_client: Mock) -> None:

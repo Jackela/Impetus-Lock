@@ -15,6 +15,7 @@ from server.infrastructure.llm.provider_registry import (
     ProviderOverride,
     ProviderRegistry,
 )
+from tests.utils.mock_factories import CloseSpyProvider
 
 
 class TestProviderRegistry:
@@ -152,3 +153,59 @@ class TestProviderRegistry:
         provider = ProviderFactory.create("anthropic", config)
 
         assert isinstance(provider, AnthropicLLMProvider)
+
+
+class TestProviderLifecycle:
+    """Covers provider resource release on registry reload and cache lookup."""
+
+    def _registry_with_spy_cache(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        spy: CloseSpyProvider,
+    ) -> ProviderRegistry:
+        """Build a registry whose default instance cache holds ``spy``."""
+        registry = ProviderRegistry()
+        registry.reload()
+        monkeypatch.setattr(registry, "_instantiate", lambda config: spy)
+        assert registry.get_provider() is spy
+        return registry
+
+    def test_reload_closes_cached_instances(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Reload must close old cached instances before clearing the cache."""
+        spy = CloseSpyProvider()
+        registry = self._registry_with_spy_cache(monkeypatch, spy)
+
+        registry.reload()
+
+        assert spy.close_calls == 1
+
+    def test_reload_survives_close_failure(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Reload must not fail when a cached provider's close() raises."""
+        spy = CloseSpyProvider(fail_on_close=True)
+        registry = self._registry_with_spy_cache(monkeypatch, spy)
+
+        registry.reload()
+
+        assert spy.close_calls == 1
+
+    def test_is_cached_uses_identity(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """is_cached must match by identity, not structural equality."""
+        spy = CloseSpyProvider()
+        registry = self._registry_with_spy_cache(monkeypatch, spy)
+
+        assert registry.is_cached(spy) is True
+        assert registry.is_cached(CloseSpyProvider()) is False
+
+    def test_byok_provider_is_not_cached(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Providers built from an api_key override must not report as cached."""
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-default")
+        registry = ProviderRegistry()
+        registry.reload()
+
+        byok = registry.get_provider(
+            overrides=ProviderOverride(provider="anthropic", api_key="sk-ant-test"),
+            allow_blank=False,
+        )
+
+        assert byok is not None
+        assert registry.is_cached(byok) is False

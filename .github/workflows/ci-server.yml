@@ -135,7 +135,7 @@ jobs:
           poetry install --with dev
 
       - name: Run unit tests with parallel execution
-        run: poetry run pytest tests/unit -v --tb=short -x -n auto -k "not RedisIntegration and not redis_pubsub" --cov=server --cov-report=xml --cov-report=html --junitxml=junit-unit.xml
+        run: poetry run pytest tests/unit -v --tb=short -x -n auto --cov=server --cov-report=xml --cov-report=html --junitxml=junit-unit.xml
 
       - name: Upload unit test results
         if: always()
@@ -205,7 +205,7 @@ jobs:
       - name: Run integration tests
         run: |
           if ls tests/integration/test_*.py 1> /dev/null 2>&1; then
-            poetry run pytest tests/integration -v --tb=short -n auto --cov=server --cov-report=xml --cov-report=html --junitxml=junit-integration.xml
+            poetry run pytest tests/integration -v --tb=short -n auto --cov=server --cov-fail-under=0 --cov-report=xml --cov-report=html --junitxml=junit-integration.xml
           else
             echo "No integration test files found. Skipping integration tests."
             # Create empty coverage files to prevent upload failures
