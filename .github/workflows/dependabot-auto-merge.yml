@@ -36,7 +36,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.9.1
         with:
           ref: ${{ github.ref }}
-          check-name: "Backend Tests,Frontend Tests,Lint,Type Check"
+          check-name: "Backend Tests,Frontend Tests,Lint (Backend + Frontend),Type Check (Backend + Frontend)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 20
           allowed-conclusions: success,skipped
