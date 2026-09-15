@@ -32,6 +32,14 @@ Every batch received an independent fresh-context review (Spec + Standards axes,
 
 ## Deferred / discovered (not fixed, out of scope)
 
+> 2026-09-15 hardening round 2 update: the csrf pair mismatch, the Redis test hang
+> (plus real-Redis CI wiring and redis `^7.4` unlocking #134), the Gemini `close()`
+> lifecycle, the streak double-SELECT, and the npm audit triage were all handled in
+> round 2 — see [hardening-round2.md](hardening-round2.md) and
+> [npm-audit-triage-2026-09.md](npm-audit-triage-2026-09.md). Still open from the
+> list below: client majors #126-#128 (recommended), #129 (engines policy), #141
+> (prettier split); vitest unfreeze target updated to ≥5.0.0 per the triage report.
+
 - csrf `generate_token` (random) vs `validate_token` (signed serializer) mismatch — pre-existing; docstrings describe actual behavior. Found during A13.
 - `TestCollaborationServiceRedisIntegration::test_handle_redis_message` busy-loop hang: `tests/conftest.py:28` REDIS_URL setdefault defeats its skipif (hangs on redis 5.3.1 and 7.4.1 alike). Found during #134 verification.
 - Gemini `close()` lifecycle has no production caller (registry reload / per-request cleanup could adopt it). Reviewer minor from t2.

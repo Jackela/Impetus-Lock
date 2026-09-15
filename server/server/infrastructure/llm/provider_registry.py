@@ -225,7 +225,12 @@ class ProviderRegistry:
         self._default_instances: dict[ProviderName, LLMProvider] = {}
 
     def reload(self) -> None:
-        """Reload env backed defaults (used by tests)."""
+        """Reload env backed defaults (used by tests).
+
+        Closing the previous cached instances releases their SDK clients;
+        providers are expected to tolerate close() while another request
+        may still hold a reference (double close must stay safe).
+        """
         self._default_configs = self._load_default_configs()
         for provider in self._default_instances.values():
             close_provider(provider)

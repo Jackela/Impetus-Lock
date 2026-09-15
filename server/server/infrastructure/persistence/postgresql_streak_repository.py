@@ -4,8 +4,9 @@ Implements user-scoped streak persistence with SQLAlchemy async. The update
 path writes first: upsert() targets the existing row with one primary-key
 Core UPDATE (no pre-write re-read), commits, then performs exactly one
 post-commit read to build the "refreshed from storage" return value. The
-whole record_activity path keeps the pre-refactor route's shape of one
-pre-read (get_by_user), one write, and one post-commit read.
+mutating record_activity path keeps the pre-refactor route's shape of one
+pre-read (get_by_user), one write, and one post-commit read; the same-day
+no-change path issues one idempotent same-value UPDATE.
 
 Constitutional Compliance:
 - Article I (Simplicity): Uses framework-native SQLAlchemy async patterns
