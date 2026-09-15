@@ -45,6 +45,12 @@ class BasePromptLLMProvider(LLMProvider, ABC):
     provider_name: str = "generic"
 
     def __init__(self, *, model: str, temperature: float = 0.9) -> None:
+        """Store the shared model configuration.
+
+        Args:
+            model: Model identifier used by concrete providers.
+            temperature: Sampling temperature for completions.
+        """
         self.model = model
         self.temperature = temperature
 
@@ -56,6 +62,22 @@ class BasePromptLLMProvider(LLMProvider, ABC):
         selection_from: int | None = None,
         selection_to: int | None = None,
     ) -> InterventionResponse:
+        """Generate an intervention response from the editing context.
+
+        Args:
+            context: The user's editing context fed into the prompt.
+            mode: Intervention persona ("muse" or "loki").
+            doc_version: Optional document version echoed back in the response.
+            selection_from: Optional start offset of the user's selection.
+            selection_to: Optional end offset of the user's selection.
+
+        Returns:
+            The validated intervention response with anchor and action.
+
+        Raises:
+            ValueError: If context is empty or mode is unknown.
+            LLMProviderError: If the underlying provider call fails.
+        """
         if not context:
             raise ValueError("Context cannot be empty")
         if mode not in {"muse", "loki"}:

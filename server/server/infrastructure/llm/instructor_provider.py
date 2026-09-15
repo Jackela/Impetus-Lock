@@ -15,6 +15,13 @@ class InstructorLLMProvider(BasePromptLLMProvider):
     provider_name = "openai"
 
     def __init__(self, api_key: str, model: str = "gpt-4o-mini", temperature: float = 0.9) -> None:
+        """Initialize the OpenAI client wrapped by Instructor.
+
+        Args:
+            api_key: OpenAI API key.
+            model: Model identifier to use for completions.
+            temperature: Sampling temperature.
+        """
         super().__init__(model=model, temperature=temperature)
         self.client = instructor.from_openai(OpenAI(api_key=api_key))
 

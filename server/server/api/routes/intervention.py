@@ -56,7 +56,6 @@ def get_default_provider(
     registry: ProviderRegistry = Depends(get_provider_registry),
 ) -> LLMProvider | None:
     """Resolve default provider allowing blank configuration (used for baseline service)."""
-
     return registry.get_provider(allow_blank=True)
 
 
@@ -64,7 +63,6 @@ def get_intervention_service(
     default_provider: LLMProvider | None = Depends(get_default_provider),
 ) -> InterventionService:
     """Dependency injection for InterventionService."""
-
     return InterventionService(llm_provider=default_provider)
 
 
@@ -243,7 +241,6 @@ async def generate_intervention(
 
 def _safe_uuid(value: str | None) -> UUID | None:
     """Parse UUID string safely, returning None on failure."""
-
     if value is None:
         return None
     try:
@@ -258,7 +255,6 @@ def _set_cooldown_header(response: Response, mode: str | None, idempotency_key: 
     The value is deterministically derived from Idempotency-Key to keep cached
     responses stable while staying within the 30-120s window expected by the client.
     """
-
     if mode == "loki":
         cooldown = _compute_cooldown_seconds(idempotency_key)
         response.headers["X-Cooldown-Seconds"] = str(cooldown)
@@ -266,7 +262,6 @@ def _set_cooldown_header(response: Response, mode: str | None, idempotency_key: 
 
 def _compute_cooldown_seconds(idempotency_key: str) -> int:
     """Derive a stable cooldown (30-120s) from the idempotency key."""
-
     digest = hashlib.md5(idempotency_key.encode("utf-8"), usedforsecurity=False).hexdigest()
     value = int(digest, 16) % 91  # 0-90
     return 30 + value  # 30-120 inclusive

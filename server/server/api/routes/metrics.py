@@ -12,7 +12,6 @@ router = APIRouter()
 @router.get("/metrics", include_in_schema=False)
 def metrics() -> Response:
     """Return Prometheus metrics if enabled."""
-
     if not metrics_module.ENABLE_PROM_METRICS:
         raise HTTPException(status_code=404, detail="Metrics disabled")
 

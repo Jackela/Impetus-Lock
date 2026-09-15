@@ -53,6 +53,9 @@ jobs:
       - name: Run Ruff check
         run: poetry run ruff check .
 
+      - name: Run pydocstyle (Docstring Guard)
+        run: poetry run pydocstyle server/
+
       - name: Run Ruff format check
         run: poetry run ruff format --check
 

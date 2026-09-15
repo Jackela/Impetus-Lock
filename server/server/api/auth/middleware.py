@@ -12,11 +12,27 @@ from server.infrastructure.security.jwt_handler import JWTHandler
 
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
+    """Gate requests behind JWT authentication and double-submit CSRF checks.
+
+    Attributes:
+        PUBLIC_PATHS: Path prefixes reachable without authentication.
+    """
+
     PUBLIC_PATHS = ["/health", "/auth/login", "/auth/register", "/docs", "/openapi.json"]
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        """Authenticate the request, then enforce CSRF on unsafe methods.
+
+        Args:
+            request: The incoming HTTP request.
+            call_next: Handler that continues the middleware chain.
+
+        Returns:
+            The downstream response, or a 401/403 error response when
+            authentication or CSRF validation fails.
+        """
         if os.getenv("TESTING") == "1":
             return await call_next(request)
 

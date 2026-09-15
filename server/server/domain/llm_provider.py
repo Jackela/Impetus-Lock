@@ -1,4 +1,4 @@
-"""LLM Provider Protocol (DIP Abstraction per Article IV)
+"""LLM Provider Protocol (DIP Abstraction per Article IV).
 
 This protocol defines the abstraction for LLM interactions, enabling dependency
 inversion. Concrete implementations (OpenAI, Anthropic, local LLM) can be swapped

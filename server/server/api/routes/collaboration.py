@@ -135,7 +135,7 @@ async def collaboration_websocket(
     document_id: str,
     connection_manager: ConnectionManager = Depends(get_connection_manager),
 ) -> None:
-    """WebSocket endpoint for real-time collaboration.
+    """Expose a WebSocket endpoint for real-time collaboration.
 
     Handles:
     - Document editing with OT
@@ -227,6 +227,7 @@ class MessageHandlerRegistry:
     """
 
     def __init__(self) -> None:
+        """Initialize the registry with an empty handler map."""
         self._handlers: dict[str, MessageHandler] = {}
 
     def register(self, msg_type: str) -> Callable[[MessageHandler], MessageHandler]:

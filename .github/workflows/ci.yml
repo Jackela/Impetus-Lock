@@ -67,6 +67,10 @@ jobs:
         working-directory: ./server
         run: poetry run ruff check .
 
+      - name: Run pydocstyle (Docstring Guard)
+        working-directory: ./server
+        run: poetry run pydocstyle server/
+
       - name: Run Ruff format check
         working-directory: ./server
         run: poetry run ruff format --check

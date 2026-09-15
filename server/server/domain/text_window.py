@@ -18,13 +18,11 @@ SENTENCE_BOUNDARIES: Final[tuple[str, ...]] = ("。", "！", "？", "!", "?", ".
 
 def _strip_trailing_whitespace(value: str) -> str:
     """Trim trailing whitespace but preserve intentional mid-sentence spacing."""
-
     return value.rstrip()
 
 
 def _strip_leading_whitespace(value: str) -> str:
     """Remove leading whitespace characters from a fragment."""
-
     offset = 0
     length = len(value)
     while offset < length and value[offset].isspace():
@@ -34,7 +32,6 @@ def _strip_leading_whitespace(value: str) -> str:
 
 def _slice_sentences(context: str) -> list[str]:
     """Split context into rough sentences using punctuation and newlines."""
-
     trimmed = _strip_trailing_whitespace(context)
     if not trimmed:
         return []
@@ -73,7 +70,6 @@ def compute_last_sentence_length(
     Returns:
         Number of characters belonging to the most recent sentence.
     """
-
     sentences = _slice_sentences(context)
     if not sentences:
         return min_length
@@ -104,7 +100,6 @@ def compute_last_sentence_anchor(
     Returns:
         Tuple of (from, to) document positions for rewrite anchors.
     """
-
     safe_cursor = max(0, cursor)
     sentence_length = compute_last_sentence_length(
         context, min_length=min_length, max_length=max_length

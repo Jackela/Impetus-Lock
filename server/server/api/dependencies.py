@@ -37,8 +37,16 @@ _in_memory_repository: InMemoryTaskRepository | None = None
 async def get_task_repository(
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> AsyncGenerator[TaskRepository, None]:
-    """FastAPI dependency for TaskRepository with testing fallback."""
+    """Provide the TaskRepository dependency with an in-memory testing fallback.
 
+    Args:
+        session: Optional async database session; when ``None`` (TESTING mode),
+            yields the module-level in-memory repository instead of PostgreSQL.
+
+    Yields:
+        The task repository bound to the request's session, or the shared
+        in-memory fallback repository.
+    """
     if session is None:
         yield _get_in_memory_repository()
         return
@@ -58,11 +66,18 @@ def get_task_service(
     repository: TaskRepository = Depends(get_task_repository),
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> TaskService:
-    """FastAPI dependency for the user-scoped TaskService.
+    """Provide the user-scoped TaskService as a FastAPI dependency.
 
     Write operations commit through the transaction support bound to the
     request's session; without a session (in-memory fallback) commits are
     no-ops, preserving the historical per-route commit behavior.
+
+    Args:
+        repository: Task repository resolved for the current request.
+        session: Optional async database session backing the transaction.
+
+    Returns:
+        The TaskService wired with the session-bound or null transaction.
     """
     if session is None:
         return TaskService(repository, transaction=NullTransaction())
@@ -72,10 +87,16 @@ def get_task_service(
 def get_template_service(
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> TemplateService | None:
-    """FastAPI dependency for the user-scoped TemplateService.
+    """Provide the user-scoped TemplateService as a FastAPI dependency.
 
     Returns None when no database session is available; routes map that to
     their historical degraded outcomes (empty list, or 500 elsewhere).
+
+    Args:
+        session: Optional async database session for template persistence.
+
+    Returns:
+        The TemplateService bound to the session, or None when unavailable.
     """
     if session is None:
         return None
@@ -85,10 +106,16 @@ def get_template_service(
 def get_streak_service(
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> StreakService | None:
-    """FastAPI dependency for the user-scoped StreakService.
+    """Provide the user-scoped StreakService as a FastAPI dependency.
 
     Returns None when no database session is available; routes map that to
     the historical 500 database-unavailable response.
+
+    Args:
+        session: Optional async database session for streak persistence.
+
+    Returns:
+        The StreakService bound to the session, or None when unavailable.
     """
     if session is None:
         return None

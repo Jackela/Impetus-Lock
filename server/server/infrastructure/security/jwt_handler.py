@@ -8,11 +8,30 @@ import jwt
 
 
 class JWTHandler:
+    """Create and verify HS256-signed access tokens for authentication.
+
+    Attributes:
+        ALGORITHM: Signing algorithm used for all tokens.
+        ACCESS_TOKEN_EXPIRE: Lifetime applied to issued tokens.
+    """
+
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE = timedelta(hours=24)
 
     @classmethod
     def create_token(cls, user_id: str, **claims: Any) -> str:
+        """Encode a signed access token for the given user.
+
+        Args:
+            user_id: Subject identifier stored in the "sub" claim.
+            **claims: Extra claims merged into the token payload.
+
+        Returns:
+            The encoded JWT string.
+
+        Raises:
+            ValueError: If JWT_SECRET is not set.
+        """
         now = datetime.now(UTC)
         payload = {
             "sub": user_id,
@@ -27,6 +46,18 @@ class JWTHandler:
 
     @classmethod
     def verify_token(cls, token: str) -> dict[str, Any]:
+        """Decode and verify a signed JWT.
+
+        Args:
+            token: The encoded JWT string.
+
+        Returns:
+            The verified token payload.
+
+        Raises:
+            ValueError: If JWT_SECRET is not set.
+            jwt.InvalidTokenError: If the token is invalid or expired.
+        """
         secret = os.getenv("JWT_SECRET")
         if not secret:
             raise ValueError("JWT_SECRET not set")
