@@ -2,9 +2,18 @@ name: Dependabot Auto-Merge
 
 # Automatically merge Dependabot PRs that pass CI
 # Uses GitHub's built-in merge queue for safety
+#
+# pull_request_target (not pull_request): workflows triggered by
+# dependabot[bot] pull requests receive a restricted read-only GITHUB_TOKEN
+# ("Secret source: Dependabot") that cannot list other workflows' check runs,
+# which made wait-on-check see zero checks on every Dependabot PR. The
+# pull_request_target trigger runs in the base-repo context with a full
+# GITHUB_TOKEN. This workflow executes no pull-request code (no checkout step;
+# gh operates on PR numbers only), so the usual pull_request_target
+# code-execution concern does not apply.
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - synchronize
@@ -23,9 +32,6 @@ jobs:
     if: github.actor == 'dependabot[bot]'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Fetch Dependabot metadata
         id: dependabot-metadata
         uses: dependabot/fetch-metadata@v3
@@ -55,6 +61,7 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
       - name: Comment on major updates
         if: steps.dependabot-metadata.outputs.update-type == 'version-update:semver-major'
@@ -72,6 +79,7 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
 
   # Separate job for E2E tests (they take longer)
   auto-merge-e2e:
