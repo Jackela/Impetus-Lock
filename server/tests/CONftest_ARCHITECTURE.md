@@ -197,11 +197,7 @@ async def test_api_endpoint(api_client, db_session):
 ### Test with Mock LLM
 
 ```python
-def test_with_mock_llm(
-    mock_claude_provider,
-    mock_anthropic_response_factory,
-    monkeypatch
-):
+def test_with_mock_llm(mock_claude_provider, mock_anthropic_response_factory, monkeypatch):
     mock_response = mock_anthropic_response_factory.provoke()
     mock_claude_provider.generate_intervention.return_value = mock_response
     # ... test code
