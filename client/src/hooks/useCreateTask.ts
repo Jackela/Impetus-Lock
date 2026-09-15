@@ -18,6 +18,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createTask } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
 
+/** Result object returned by the useCreateTask hook. */
 export interface UseCreateTaskResult {
   /** Function to trigger the mutation (no return value, fire-and-forget) */
   mutate: (variables: CreateTaskVariables) => void;
@@ -29,6 +30,7 @@ export interface UseCreateTaskResult {
   error: Error | null;
 }
 
+/** Input variables accepted by the create-task mutation. */
 export interface CreateTaskVariables {
   /** Task content (Markdown text) */
   content: string;

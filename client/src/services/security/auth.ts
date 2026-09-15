@@ -1,11 +1,13 @@
 /* Authentication utilities. */
 import { secureApiClient } from "./secureApi";
 
+/** Credentials submitted to the login endpoint. */
 export interface LoginCredentials {
   email: string;
   password: string;
 }
 
+/** Authentication service exposing login, logout, and session checks. */
 export const authService = {
   async login(credentials: LoginCredentials): Promise<void> {
     await secureApiClient.post("/auth/login", credentials);

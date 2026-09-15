@@ -18,6 +18,10 @@ interface SimpleEditorProps {
 /**
  * Inner editor component that uses the useEditor hook.
  * Must be inside MilkdownProvider context.
+ *
+ * @param root0 - Component props
+ * @param root0.initialContent - Initial Markdown content loaded into the editor
+ * @returns The rendered Milkdown editor container
  */
 const EditorComponent: React.FC<{ initialContent: string }> = ({ initialContent }) => {
   // Don't use loading state - just render immediately
@@ -48,7 +52,9 @@ const EditorComponent: React.FC<{ initialContent: string }> = ({ initialContent 
  * - Basic formatting (commonmark)
  * - Nord theme
  *
- * @param initialContent - Initial Markdown content (default: "# Hello Milkdown")
+ * @param root0 - Component props
+ * @param root0.initialContent - Initial Markdown content (default: "# Hello Milkdown")
+ * @returns The rendered editor wrapped in MilkdownProvider
  *
  * @example
  * ```tsx

@@ -52,6 +52,11 @@ interface UseStyleComparisonResult {
   swapStyles: () => void;
 }
 
+/**
+ * Manages selection and comparison of two historical style profiles.
+ *
+ * @returns Selected styles, comparison result, and selection/comparison actions
+ */
 export function useStyleComparison(): UseStyleComparisonResult {
   const [firstStyle, setFirstStyle] = useState<StyleHistoryRecord | null>(null);
   const [secondStyle, setSecondStyle] = useState<StyleHistoryRecord | null>(null);

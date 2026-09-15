@@ -46,6 +46,10 @@ function countWords(text: string): number {
  * word count validation and submission handling.
  *
  * @param props - Component props
+ * @param props.onSubmit - Callback when form is submitted with valid text
+ * @param props.isLoading - Whether the form is in a loading/submission state
+ * @param props.error - Error message to display
+ * @param props.onErrorClear - Callback when error should be cleared
  * @returns The rendered form component
  *
  * @example

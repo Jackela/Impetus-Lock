@@ -4,6 +4,7 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+/** An achievement earned by the user. */
 export interface AchievementRecord {
   id: string;
   achievement_type: string;
@@ -13,6 +14,7 @@ export interface AchievementRecord {
   metadata: Record<string, unknown> | null;
 }
 
+/** An achievement definition describing an earnable achievement. */
 export interface AchievementDefinition {
   achievement_type: string;
   name: string;
@@ -20,6 +22,7 @@ export interface AchievementDefinition {
   icon: string | null;
 }
 
+/** Error thrown when an achievements API request fails. */
 export class AchievementAPIError extends Error {
   constructor(
     public status: number,
@@ -30,6 +33,11 @@ export class AchievementAPIError extends Error {
   }
 }
 
+/**
+ * Fetch all achievements earned by the current user.
+ *
+ * @returns The earned achievement records and total count
+ */
 export async function fetchAchievements(): Promise<{
   achievements: AchievementRecord[];
   total: number;
@@ -39,6 +47,11 @@ export async function fetchAchievements(): Promise<{
   return res.json();
 }
 
+/**
+ * Fetch all achievement definitions available to earn.
+ *
+ * @returns The achievement definitions
+ */
 export async function fetchAchievementDefinitions(): Promise<{
   achievements: AchievementDefinition[];
 }> {

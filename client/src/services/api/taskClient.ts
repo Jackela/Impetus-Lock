@@ -127,6 +127,12 @@ export interface FetchTasksOptions {
   sort?: TaskSort;
 }
 
+/**
+ * Fetch a paginated list of tasks for the current user.
+ *
+ * @param options - Query options for pagination, filtering, and sorting
+ * @returns The task list response with pagination metadata
+ */
 export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskListResponse> {
   const { limit = 100, offset = 0, filter, sort } = options;
   const url = new URL(`${API_BASE_URL}/tasks/`);
@@ -232,6 +238,12 @@ export interface CreateTaskParams {
   dueDate?: string | null;
 }
 
+/**
+ * Create a new task.
+ *
+ * @param params - Task content, lock ids, and optional metadata
+ * @returns The created task record
+ */
 export async function createTask(params: CreateTaskParams): Promise<TaskRecord> {
   const { content, lockIds = [], category, priority, dueDate } = params;
 
@@ -272,6 +284,13 @@ export interface UpdateTaskParams {
   dueDate?: string | null;
 }
 
+/**
+ * Update a task with optimistic version conflict detection.
+ *
+ * @param taskId - Identifier of the task to update
+ * @param params - New content, lock ids, expected version, and metadata
+ * @returns The updated task record
+ */
 export async function updateTask(taskId: string, params: UpdateTaskParams): Promise<TaskRecord> {
   const { content, lockIds, version, category, priority, dueDate } = params;
 
@@ -301,6 +320,13 @@ export async function updateTask(taskId: string, params: UpdateTaskParams): Prom
   return mapTask(data);
 }
 
+/** Parameters for updating task metadata without a version check. */
+export interface UpdateTaskMetadataParams {
+  category?: TaskCategory;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+}
+
 /**
  * Update only task metadata (category, priority, due_date) without version check.
  *
@@ -309,12 +335,6 @@ export async function updateTask(taskId: string, params: UpdateTaskParams): Prom
  * @returns Updated task record
  * @throws {TaskAPIError} If task not found
  */
-export interface UpdateTaskMetadataParams {
-  category?: TaskCategory;
-  priority?: TaskPriority;
-  dueDate?: string | null;
-}
-
 export async function updateTaskMetadata(
   taskId: string,
   params: UpdateTaskMetadataParams

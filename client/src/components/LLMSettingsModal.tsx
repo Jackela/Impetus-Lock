@@ -24,6 +24,23 @@ interface LLMSettingsModalProps {
   metadata?: VaultMetadata;
 }
 
+/**
+ * Configures the LLM provider, API key storage, and vault lock state.
+ *
+ * @param root0 - Component props
+ * @param root0.open - Whether the modal is shown
+ * @param root0.onClose - Callback to close the modal
+ * @param root0.config - Current LLM configuration, if any
+ * @param root0.onSave - Callback to persist the edited configuration
+ * @param root0.onClear - Callback to clear the stored configuration
+ * @param root0.storageMode - Current vault storage mode
+ * @param root0.onModeChange - Callback to change the vault storage mode
+ * @param root0.locked - Whether the LLM key vault is locked
+ * @param root0.onUnlock - Callback to unlock the vault with a passphrase
+ * @param root0.onLock - Callback to lock the vault
+ * @param root0.metadata - Vault metadata, if any
+ * @returns The rendered LLM settings modal
+ */
 export function LLMSettingsModal({
   open,
   onClose,

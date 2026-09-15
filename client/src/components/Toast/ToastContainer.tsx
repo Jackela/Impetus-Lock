@@ -1,6 +1,7 @@
 import type { FC } from "react";
 import { Toast, type ToastProps } from "./Toast";
 
+/** A single toast entry managed by the container. */
 export interface ToastItem {
   id: string;
   type: ToastProps["type"];
@@ -22,6 +23,11 @@ export interface ToastContainerProps {
  *
  * Manages the layout and animation of multiple toast notifications.
  * Toasts stack vertically with spacing between them.
+ *
+ * @param root0 - Component props
+ * @param root0.toasts - Array of toast items to display
+ * @param root0.onDismiss - Callback when a toast is dismissed
+ * @returns The rendered toast stack container
  *
  * @example
  * ```tsx

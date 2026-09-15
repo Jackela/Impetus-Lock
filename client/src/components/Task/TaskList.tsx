@@ -51,6 +51,17 @@ interface TaskListProps {
  * - Inline actions
  * - Empty state
  * - Responsive design
+ *
+ * @param root0 - Component props
+ * @param root0.tasks - Array of tasks to display
+ * @param root0.selectedId - Currently selected task ID
+ * @param root0.onSelect - Callback when task is selected
+ * @param root0.onDelete - Callback when task is deleted
+ * @param root0.onToggleComplete - Callback when task completion is toggled
+ * @param root0.isLoading - Loading state
+ * @param root0.emptyMessage - Empty state message
+ * @param root0.compact - Enable compact view
+ * @returns The rendered task list with filter bar and skeleton loading state
  */
 export function TaskList({
   tasks,
@@ -449,6 +460,8 @@ function TaskListItem({
 
 /**
  * Task list loading skeleton.
+ *
+ * @returns The rendered skeleton placeholder for the task list
  */
 function TaskListSkeleton() {
   return (

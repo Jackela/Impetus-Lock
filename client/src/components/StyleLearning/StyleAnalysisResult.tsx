@@ -85,6 +85,9 @@ const METRICS: MetricConfig[] = [
  * and an overall confidence score.
  *
  * @param props - Component props
+ * @param props.result - Style analysis result to display
+ * @param props.onApplyClick - Callback invoked when the apply button is clicked
+ * @param props.isApplyDisabled - Whether the apply button is disabled
  * @returns The rendered result component
  *
  * @example

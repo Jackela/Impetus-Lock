@@ -111,6 +111,19 @@ const logger = createLogger("EditorCore");
 /**
  * Inner component that uses useEditor hook.
  * Must be wrapped by MilkdownProvider.
+ *
+ * @param root0 - Component props
+ * @param root0.initialContent - Initial Markdown content loaded into the editor
+ * @param root0.mode - Current agent mode controlling intervention behavior
+ * @param root0.onChange - Callback receiving markdown and lock ids on content change
+ * @param root0.onReady - Callback invoked once the editor instance is ready
+ * @param root0.initialLocks - Initial lock ids loaded from persistence
+ * @param root0.externalTrigger - External trigger for manual AI intervention
+ * @param root0.onTriggerProcessed - Callback when the external trigger is processed
+ * @param root0.onTimerUpdate - Callback with remaining seconds in Muse mode
+ * @param root0.onInterventionError - Callback surfacing intervention errors to parent UI
+ * @param root0.contentVersion - Counter triggering content updates without remounting
+ * @returns The rendered editor with toolbars and sensory feedback
  */
 const EditorCoreInner: React.FC<EditorCoreProps> = ({
   initialContent = "",
@@ -695,6 +708,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
  * - Providing LockManager context for dependency injection (Article IV)
  * - Removing loading state blocking
  * - Using stable refs for callbacks
+ *
+ * @param props - EditorCore props forwarded to the inner editor component
+ * @returns The inner editor wrapped in MilkdownProvider and LockManagerProvider
  */
 export const EditorCore: React.FC<EditorCoreProps> = (props) => {
   return (

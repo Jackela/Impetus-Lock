@@ -13,8 +13,10 @@
 
 import type { StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
+/** Re-export of the style analysis and apply response types. */
 export type { StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
+/** Re-export of the style learning API response types. */
 export type { StyleVector, StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
 /**

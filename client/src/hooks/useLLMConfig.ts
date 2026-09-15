@@ -153,6 +153,7 @@ export function useLLMConfig(): UseLLMConfigReturn {
   } as const;
 }
 
+/** Re-export of the LLM configuration and provider name types. */
 export type { LLMConfig, LLMProviderName };
 
 /**
@@ -256,4 +257,5 @@ export function getLLMProviderOptions(): LLMProviderOption[] {
   }));
 }
 
+/** Re-export of the vault metadata and storage mode types. */
 export type { VaultMetadata, VaultMode };

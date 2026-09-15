@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchTasks } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
 
+/** Result object returned by the useTasks hook. */
 export interface UseTasksResult {
   /** List of tasks (empty array when loading or on error) */
   data: TaskRecord[];
@@ -39,6 +40,10 @@ export interface UseTasksResult {
 /**
  * Query key factory for useTasks hook.
  * Provides stable query keys for React Query caching.
+ *
+ * @param limit - Maximum number of tasks to fetch
+ * @param offset - Number of tasks to skip for pagination
+ * @returns Stable React Query key for the given page
  */
 function getQueryKey(limit: number, offset: number) {
   return ["tasks", { limit, offset }] as const;

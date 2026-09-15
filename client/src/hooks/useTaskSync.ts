@@ -88,6 +88,7 @@ function classifyError(error: unknown): TaskSyncErrorType {
  *
  * @param error - Error to get message for
  * @param context - Additional context for the error
+ * @param context.operation - Task operation the error occurred during
  * @returns User-friendly error message
  */
 function getErrorMessage(error: unknown, context?: { operation?: "load" | "save" }): string {

@@ -8,6 +8,13 @@ interface ComparisonViewProps {
   historyItems: StyleHistoryRecord[];
 }
 
+/**
+ * Compares two historical style profiles side by side with a radar chart.
+ *
+ * @param root0 - Component props
+ * @param root0.historyItems - Style history records available for comparison
+ * @returns The rendered comparison view
+ */
 export function ComparisonView({ historyItems }: ComparisonViewProps): JSX.Element {
   const {
     firstStyle,

@@ -31,6 +31,8 @@ export interface StyleLearningPanelProps {
  * Provides a complete style learning interface with input form and result display.
  *
  * @param props - Component props
+ * @param props.userId - User ID for style association
+ * @param props.onApplyStyle - Callback when a style is applied
  * @returns The rendered panel component
  *
  * @example

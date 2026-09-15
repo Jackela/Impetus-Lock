@@ -62,6 +62,8 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
    *
    * @param tr - ProseMirror transaction to evaluate
    * @param state - Current editor state
+   * @param state.doc - ProseMirror document to scan for locked ranges
+   * @param state.doc.nodesBetween - Iterates nodes between two positions
    * @returns True if transaction is allowed, false to block it
    */
   return (
@@ -147,6 +149,8 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
  * is within a locked block.
  *
  * @param state - ProseMirror editor state
+ * @param state.doc - ProseMirror document containing the position
+ * @param state.doc.resolve - Resolves a document position into node access
  * @param pos - Document position to check
  * @param lockManager - LockManager instance
  * @returns True if position is within locked content
@@ -179,6 +183,13 @@ export function isPositionLocked(
   return false;
 }
 
+/**
+ * Return a copy of the given node marked with a lock id.
+ *
+ * @param node - ProseMirror-like node record to mark
+ * @param lockId - Identifier of the lock to attach to the node
+ * @returns A new node record carrying the lock id attribute
+ */
 export function markNodeAsLocked(
   node: Record<string, unknown>,
   lockId: string

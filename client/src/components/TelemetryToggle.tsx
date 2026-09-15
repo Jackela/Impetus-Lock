@@ -1,5 +1,10 @@
 import { useTelemetry } from "../hooks/useTelemetry";
 
+/**
+ * Header button toggling anonymous telemetry on and off.
+ *
+ * @returns The rendered telemetry toggle button
+ */
 export function TelemetryToggle() {
   const { enabled, toggleTelemetry } = useTelemetry();
 

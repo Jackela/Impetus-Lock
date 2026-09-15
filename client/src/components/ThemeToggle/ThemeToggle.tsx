@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 
+/** Supported application color theme names. */
 export type Theme = "light" | "dark" | "elevenlabs";
 
 const THEME_KEY = "impetus-theme";
 
+/**
+ * Button cycling through light, dark, and elevenlabs themes.
+ *
+ * Persists the choice to localStorage and applies it to the document root.
+ *
+ * @returns The rendered theme toggle button
+ */
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(() => {
     return (localStorage.getItem(THEME_KEY) as Theme) || "dark";

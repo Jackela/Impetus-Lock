@@ -124,6 +124,8 @@ function extractErrorMessage(err: unknown): string {
  * Provides error state management and categorization for API and other errors.
  * Automatically categorizes errors into network, timeout, server, client, or unknown types.
  *
+ * @returns Error state plus handleError, clearError, and setCustomError callbacks
+ *
  * @example
  * ```tsx
  * const { error, clearError, handleError } = useErrorHandler();

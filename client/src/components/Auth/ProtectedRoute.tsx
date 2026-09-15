@@ -22,6 +22,11 @@ interface ProtectedRouteProps {
 /**
  * Protected route wrapper that requires authentication.
  *
+ * @param root0 - Component props
+ * @param root0.children - Child components to render if authenticated
+ * @param root0.redirectTo - Path to redirect to if not authenticated
+ * @returns The children, a redirect, or a loading spinner
+ *
  * @example
  * ```tsx
  * <Route path="/tasks" element={

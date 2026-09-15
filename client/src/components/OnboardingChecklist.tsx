@@ -6,6 +6,11 @@ const steps = [
   "Trigger Muse or Loki to verify the flow",
 ];
 
+/**
+ * Interactive BYOK onboarding checklist rendered above the editor.
+ *
+ * @returns The rendered onboarding checklist section
+ */
 export function OnboardingChecklist() {
   const [completed, setCompleted] = useState<boolean[]>(steps.map(() => false));
 

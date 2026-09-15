@@ -19,6 +19,11 @@ interface WelcomeModalProps {
  * - Lock: AI additions cannot be removed
  *
  * Shows on first visit, can be dismissed permanently via localStorage.
+ *
+ * @param root0 - Component props
+ * @param root0.forceShow - Force modal to show (for testing or re-triggering)
+ * @param root0.onDismiss - Callback when modal is dismissed
+ * @returns The rendered welcome modal
  */
 export function WelcomeModal({ forceShow = false, onDismiss }: WelcomeModalProps) {
   const [isOpen, setIsOpen] = useState(false);

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { exportMarkdown, exportPdf } from "../../services/exportService";
 import "./ExportModal.css";
 
+/** Props controlling the export modal's visibility, content, and dismissal. */
 export interface ExportModalProps {
   open: boolean;
   content: string;
@@ -27,6 +28,16 @@ pre { white-space: pre-wrap; word-wrap: break-word; font-family: ui-monospace, S
 </html>`;
 }
 
+/**
+ * Modal exporting the current document as Markdown, HTML, or PDF.
+ *
+ * @param root0 - Component props
+ * @param root0.open - Whether the modal is shown
+ * @param root0.content - Markdown content to export
+ * @param root0.htmlContent - Optional pre-rendered HTML content
+ * @param root0.onClose - Callback to close the modal
+ * @returns The rendered export modal
+ */
 export function ExportModal({ open, content, htmlContent, onClose }: ExportModalProps) {
   const [filename, setFilename] = useState("impetus-export");
   const [isExiting, setIsExiting] = useState(false);

@@ -47,6 +47,8 @@ interface LockManagerProviderProps {
  * lock management functionality via the `useLockManager` hook.
  *
  * @param props - Provider props
+ * @param props.children - Subtree receiving the lock manager context
+ * @param props.lockManager - Optional LockManager instance for testing
  * @returns Provider component wrapping children
  *
  * @example

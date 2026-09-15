@@ -27,6 +27,7 @@ const logger = createLogger("ManualTriggerButton");
  * @param props - Component props
  * @param props.mode - Current agent mode (muse/loki/off)
  * @param props.onTrigger - Callback for sensory feedback (receives AIActionType: PROVOKE on success, ERROR on failure)
+ * @returns The manual trigger button plus any dev-only trigger buttons
  *
  * @example
  * ```typescript

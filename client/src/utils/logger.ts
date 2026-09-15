@@ -23,6 +23,7 @@
  * @module utils/logger
  */
 
+/** Log severity levels, ordered from most verbose to fully suppressed. */
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -93,6 +94,9 @@ export interface Logger {
 
 /**
  * Check if a namespace is enabled for logging.
+ *
+ * @param namespace - Namespace to check against the configured filters
+ * @returns True if the namespace passes the global filters
  */
 function isNamespaceEnabled(namespace: string): boolean {
   if (config.enableAll) return true;
@@ -102,6 +106,11 @@ function isNamespaceEnabled(namespace: string): boolean {
 
 /**
  * Format log message with namespace prefix and optional data.
+ *
+ * @param namespace - Namespace prefix to render
+ * @param message - Log message text
+ * @param data - Optional structured data to append
+ * @returns Console argument list for the log call
  */
 function formatMessage(namespace: string, message: string, data?: unknown): unknown[] {
   const prefix = `[${namespace}]`;

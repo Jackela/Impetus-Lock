@@ -251,6 +251,8 @@ export function applyLockDecorations(view: EditorView, lockManager: LockManager)
 
 /**
  * Force a refresh of lock decorations without mutating the document.
+ *
+ * @param view - ProseMirror EditorView whose decorations should refresh
  */
 export function refreshLockDecorations(view: EditorView): void {
   const tr = view.state.tr.setMeta(lockDecorationsKey, { refresh: true });

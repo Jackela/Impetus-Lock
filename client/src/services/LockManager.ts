@@ -158,6 +158,9 @@ export class LockManager {
 
   /**
    * Convenience helper to read only the source metadata.
+   *
+   * @param lockId - Lock identifier
+   * @returns Source of the lock, or undefined if unknown
    */
   getLockSource(lockId: string): AgentSource | undefined {
     return this.locks.get(lockId)?.source;
@@ -239,6 +242,7 @@ export class LockManager {
    *
    * @param content - Markdown content (e.g., blockquote)
    * @param lockId - Lock ID to inject
+   * @param metadata - Optional metadata (e.g., source agent) to embed
    * @returns Content with lock comment appended
    *
    * @example
