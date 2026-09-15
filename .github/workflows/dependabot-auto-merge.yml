@@ -39,6 +39,7 @@ jobs:
           check-name: "Backend Tests,Frontend Tests,Lint (Backend + Frontend),Type Check (Backend + Frontend)"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 20
+          checks-discovery-timeout: 600
           allowed-conclusions: success,skipped
 
       - name: Approve and auto-merge patch/minor updates
@@ -87,4 +88,5 @@ jobs:
           check-name: "Playwright E2E Tests"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 30
+          checks-discovery-timeout: 600
           allowed-conclusions: success,skipped
