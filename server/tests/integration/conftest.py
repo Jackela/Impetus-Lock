@@ -197,46 +197,6 @@ async def api_client_no_db() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture
-def mock_redis() -> Generator[Mock, None, None]:
-    """Create mock Redis client.
-
-    Yields:
-        Mock Redis client with async methods.
-    """
-    mock = Mock()
-    mock.get = AsyncMock(return_value=None)
-    mock.set = AsyncMock(return_value=True)
-    mock.setex = AsyncMock(return_value=True)
-    mock.delete = AsyncMock(return_value=1)
-    mock.exists = AsyncMock(return_value=0)
-    mock.expire = AsyncMock(return_value=True)
-    mock.close = AsyncMock(return_value=None)
-
-    # Connection pool mock
-    mock.connection_pool = Mock()
-    mock.connection_pool.disconnect = AsyncMock(return_value=None)
-
-    yield mock
-
-
-@pytest_asyncio.fixture
-async def redis_mock_client(mock_redis: Mock) -> AsyncGenerator[Mock, None]:
-    """Create mock Redis with context manager support.
-
-    Args:
-        mock_redis: Base mock Redis fixture.
-
-    Yields:
-        Mock Redis client with async context manager.
-    """
-    mock_redis.__aenter__ = AsyncMock(return_value=mock_redis)
-    mock_redis.__aexit__ = AsyncMock(return_value=None)
-
-    with patch("redis.asyncio.from_url", return_value=mock_redis):
-        yield mock_redis
-
-
-@pytest.fixture
 def mock_idempotency_cache() -> Mock:
     """Create mock idempotency cache.
 

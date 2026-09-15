@@ -30,7 +30,7 @@ pyjwt = "^2.8.0"
 itsdangerous = "^2.1.2"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 email-validator = "^2.2.0"
-redis = {extras = ["asyncio"], version = "^7.4"}
+redis = "^7.4"
 websockets = ">=13.0,<17.0"
 python-socketio = {extras = ["asyncio"], version = "^5.11.0"}
 
