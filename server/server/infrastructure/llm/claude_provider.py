@@ -194,12 +194,14 @@ class ClaudeProvider(BasePromptLLMProvider):
         assert self._instructor_client is not None
 
         try:
-            # Instructor handles retries internally
+            # Instructor handles retries internally.
+            # anthropic>=1.0 removed the `temperature` kwarg; instructor forwards
+            # extra_body to messages.create, so transmit the temperature there.
             completion, raw_response = (
                 self._instructor_client.chat.completions.create_with_completion(
                     model=self.model,
                     max_tokens=self.max_tokens,
-                    temperature=self.temperature,
+                    extra_body={"temperature": self.temperature},
                     response_model=LLMInterventionDraft,
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -318,9 +320,10 @@ class ClaudeProvider(BasePromptLLMProvider):
         Returns:
             Raw message response from Anthropic.
         """
+        # anthropic>=1.0 removed the `temperature` kwarg; transmit it via extra_body.
         return self._anthropic_client.messages.create(
             model=self.model,
-            temperature=self.temperature,
+            extra_body={"temperature": self.temperature},
             max_tokens=self.max_tokens,
             system=system_prompt,
             messages=payload,  # type: ignore[arg-type]
