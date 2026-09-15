@@ -59,7 +59,6 @@ logger = logging.getLogger("server.api")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize shared resources and close them on shutdown."""
-
     await init_database()
     app.state.idempotency_cache = AsyncIdempotencyCache(ttl=15)
     app.state.provider_registry = ProviderRegistry()
@@ -204,7 +203,6 @@ async def request_logging_middleware(
     request: Request, call_next: Callable[[Request], Awaitable[Response]]
 ) -> Response:
     """Log every HTTP request with duration and LLM metadata."""
-
     request_id = uuid.uuid4().hex
     request.state.request_id = request_id
     start = time.perf_counter()

@@ -11,6 +11,7 @@ import "./TaskList.css";
  * @param props.tasks - Array of tasks to display
  * @param props.onTaskClick - Optional callback when a task is clicked
  * @param props.selectedTaskId - Optional ID of the currently selected task
+ * @returns The rendered task list, or an empty-state notice
  *
  * @example
  * ```tsx

@@ -1,10 +1,13 @@
 """Task management API routes with authentication.
 
-Provides CRUD operations for tasks with user scoping and intervention history.
+HTTP adapter for task CRUD and intervention history. Authentication,
+request validation, response schemas and HTTP exception mapping stay here;
+ownership checks, optimistic version orchestration and persistence are
+delegated to the injected user-scoped TaskService.
 
 Constitutional Compliance:
-- Article IV (SOLID - SRP): Endpoints delegate to repository
-- Article IV (SOLID - DIP): Depends on TaskRepository abstraction
+- Article IV (SOLID - SRP): Endpoints are HTTP adapters over TaskService
+- Article IV (SOLID - DIP): Depends on the service abstraction
 - Article V (Documentation): Complete API documentation
 """
 
@@ -12,9 +15,8 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from server.api.dependencies import get_task_repository
+from server.api.dependencies import get_task_service
 from server.api.schemas.task import (
     InterventionActionResponse,
     InterventionHistoryResponse,
@@ -23,9 +25,12 @@ from server.api.schemas.task import (
     TaskResponse,
     TaskUpdateRequest,
 )
+from server.application.services.task_service import (
+    TaskNotFoundError,
+    TaskService,
+    VersionMismatchError,
+)
 from server.auth import get_current_user
-from server.domain.repositories.task_repository import TaskRepository
-from server.infrastructure.persistence.database import get_session_optional
 from server.models.user import User
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -36,15 +41,15 @@ async def list_tasks(
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
     current_user: User = Depends(get_current_user),
-    repository: TaskRepository = Depends(get_task_repository),
+    service: TaskService = Depends(get_task_service),
 ) -> TaskListResponse:
-    """List all tasks for current user (paginated).
+    """List all tasks for current user (paginated, reverse chronological).
 
     Args:
         limit: Maximum number of tasks to return (1-100).
         offset: Number of tasks to skip.
         current_user: Authenticated user (injected via auth).
-        repository: Task repository (injected via DIP).
+        service: User-scoped task service (injected via DIP).
 
     Returns:
         TaskListResponse: Paginated task list in reverse chronological order.
@@ -61,11 +66,9 @@ async def list_tasks(
         curl http://localhost:8000/tasks/?limit=10&offset=10
         ```
     """
-    # Get tasks scoped to current user
-    tasks = await repository.list_tasks_by_user(user_id=current_user.id, limit=limit, offset=offset)
-
-    # Get total count for user
-    total = await repository.count_tasks_by_user(user_id=current_user.id)
+    tasks, total = await service.list_tasks_for_user(
+        user_id=current_user.id, limit=limit, offset=offset
+    )
 
     return TaskListResponse(
         total=total,
@@ -79,16 +82,14 @@ async def list_tasks(
 async def create_task(
     request: TaskCreateRequest,
     current_user: User = Depends(get_current_user),
-    repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession | None = Depends(get_session_optional),
+    service: TaskService = Depends(get_task_service),
 ) -> TaskResponse:
     """Create new task for current user.
 
     Args:
         request: Task creation request.
         current_user: Authenticated user (injected via auth).
-        repository: Task repository (injected via DIP).
-        session: Database session (injected).
+        service: User-scoped task service (injected via DIP).
 
     Returns:
         TaskResponse: Created task.
@@ -103,18 +104,16 @@ async def create_task(
           -d '{"content": "Initial content", "lock_ids": []}'
         ```
     """
-    task = await repository.create_task(
-        content=request.content,
-        lock_ids=request.lock_ids,
-        user_id=current_user.id,
+    task = await service.create_task_for_user(
+        current_user.id,
+        request.content,
+        request.lock_ids,
         title=request.title,
         category=request.category,
         priority=request.priority,
         due_date=request.due_date,
         word_count=request.word_count,
     )
-    if session:
-        await session.commit()
 
     return TaskResponse.from_entity(task)
 
@@ -123,14 +122,14 @@ async def create_task(
 async def get_task(
     task_id: UUID,
     current_user: User = Depends(get_current_user),
-    repository: TaskRepository = Depends(get_task_repository),
+    service: TaskService = Depends(get_task_service),
 ) -> TaskResponse:
     """Get task by ID (must belong to current user).
 
     Args:
         task_id: Task UUID.
         current_user: Authenticated user (injected via auth).
-        repository: Task repository (injected via DIP).
+        service: User-scoped task service (injected via DIP).
 
     Returns:
         TaskResponse: Task details.
@@ -144,10 +143,10 @@ async def get_task(
         curl http://localhost:8000/tasks/{task_id}
         ```
     """
-    task = await repository.get_task_by_user(task_id, user_id=current_user.id)
-
-    if not task:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    try:
+        task = await service.get_task_for_user(current_user.id, task_id)
+    except TaskNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
     return TaskResponse.from_entity(task)
 
@@ -157,8 +156,7 @@ async def update_task(
     task_id: UUID,
     request: TaskUpdateRequest,
     current_user: User = Depends(get_current_user),
-    repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession | None = Depends(get_session_optional),
+    service: TaskService = Depends(get_task_service),
 ) -> TaskResponse:
     """Update task content and lock IDs (must belong to current user).
 
@@ -166,8 +164,7 @@ async def update_task(
         task_id: Task UUID.
         request: Task update request.
         current_user: Authenticated user (injected via auth).
-        repository: Task repository (injected via DIP).
-        session: Database session (injected).
+        service: User-scoped task service (injected via DIP).
 
     Returns:
         TaskResponse: Updated task.
@@ -175,6 +172,7 @@ async def update_task(
     Raises:
         HTTPException: 404 if task not found or not owned by user.
         HTTPException: 409 if version mismatch.
+        HTTPException: 500 if the update cannot be persisted.
         HTTPException: 401 if not authenticated.
 
     Example:
@@ -184,52 +182,41 @@ async def update_task(
           -d '{"content": "Updated", "lock_ids": ["lock_1"], "version": 0}'
         ```
     """
-    task = await repository.get_task_by_user(task_id, user_id=current_user.id)
-
-    if not task:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-
-    # Validate version before updating (optimistic locking)
-    if task.version != request.version:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Version mismatch: expected {request.version}, got {task.version}",
-        )
-
-    # Update task (will increment version)
-    task.update(
-        content=request.content,
-        lock_ids=request.lock_ids,
-        title=request.title,
-        category=request.category,
-        priority=request.priority,
-        due_date=request.due_date,
-        word_count=request.word_count,
-    )
-
     try:
-        updated_task = await repository.update_task(task)
-        if session:
-            await session.commit()
-        return TaskResponse.from_entity(updated_task)
+        updated_task = await service.update_task_for_user(
+            current_user.id,
+            task_id,
+            content=request.content,
+            lock_ids=request.lock_ids,
+            version=request.version,
+            title=request.title,
+            category=request.category,
+            priority=request.priority,
+            due_date=request.due_date,
+            word_count=request.word_count,
+        )
+    except TaskNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except VersionMismatchError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+    return TaskResponse.from_entity(updated_task)
 
 
 @router.delete("/{task_id}", status_code=204)
 async def delete_task(
     task_id: UUID,
     current_user: User = Depends(get_current_user),
-    repository: TaskRepository = Depends(get_task_repository),
-    session: AsyncSession | None = Depends(get_session_optional),
+    service: TaskService = Depends(get_task_service),
 ) -> None:
     """Delete task (must belong to current user, cascade deletes intervention actions).
 
     Args:
         task_id: Task UUID.
         current_user: Authenticated user (injected via auth).
-        repository: Task repository (injected via DIP).
-        session: Database session (injected).
+        service: User-scoped task service (injected via DIP).
 
     Raises:
         HTTPException: 404 if task not found or not owned by user.
@@ -240,15 +227,10 @@ async def delete_task(
         curl -X DELETE http://localhost:8000/tasks/{task_id}
         ```
     """
-    # Verify task exists and belongs to user before deleting
-    task = await repository.get_task_by_user(task_id, user_id=current_user.id)
-    if not task:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-
     try:
-        await repository.delete_task(task_id)
-        if session:
-            await session.commit()
+        await service.delete_task_for_user(current_user.id, task_id)
+    except TaskNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
 
@@ -259,7 +241,7 @@ async def get_intervention_history(
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
     current_user: User = Depends(get_current_user),
-    repository: TaskRepository = Depends(get_task_repository),
+    service: TaskService = Depends(get_task_service),
 ) -> InterventionHistoryResponse:
     """Get intervention action history for task (must belong to current user).
 
@@ -268,7 +250,7 @@ async def get_intervention_history(
         limit: Maximum number of actions to return (1-100).
         offset: Number of actions to skip.
         current_user: Authenticated user (injected via auth).
-        repository: Task repository (injected via DIP).
+        service: User-scoped task service (injected via DIP).
 
     Returns:
         InterventionHistoryResponse: Paginated intervention history.
@@ -286,14 +268,12 @@ async def get_intervention_history(
         curl http://localhost:8000/tasks/{task_id}/actions?limit=10&offset=10
         ```
     """
-    # Verify task exists and belongs to user
-    task = await repository.get_task_by_user(task_id, user_id=current_user.id)
-    if not task:
-        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-
-    # Get actions and count
-    actions = await repository.get_actions(task_id, limit=limit, offset=offset)
-    total = await repository.get_action_count(task_id)
+    try:
+        actions, total = await service.get_intervention_history_for_user(
+            current_user.id, task_id, limit=limit, offset=offset
+        )
+    except TaskNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
     return InterventionHistoryResponse(
         total=total,

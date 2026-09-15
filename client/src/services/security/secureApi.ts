@@ -3,6 +3,7 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+/** Axios instance with CSRF headers, timestamps, and 401 redirect handling. */
 export const secureApiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Send cookies

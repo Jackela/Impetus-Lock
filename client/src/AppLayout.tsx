@@ -45,6 +45,37 @@ interface AppLayoutProps {
   content: string;
 }
 
+/**
+ * Top-level layout rendering header controls, task sidebar, editor area, and overlays.
+ *
+ * @param root0 - Component props
+ * @param root0.children - Editor content rendered inside the main area
+ * @param root0.mode - Current agent mode ("off", "muse", or "loki")
+ * @param root0.sidebarOpen - Whether the task sidebar is visible
+ * @param root0.onToggleSidebar - Callback to toggle the task sidebar
+ * @param root0.onModeChange - Callback to change the agent mode
+ * @param root0.onManualTrigger - Callback to fire a manual AI action
+ * @param root0.onTaskClick - Callback when a task is selected in the list
+ * @param root0.selectedTaskId - Currently selected task id, if any
+ * @param root0.taskStatus - Aggregate draft sync status shown in the header
+ * @param root0.isSaving - Whether the draft is currently being saved
+ * @param root0.taskError - Error message for draft sync, if any
+ * @param root0.onCreateTask - Callback to open the create-task modal
+ * @param root0.onShowSettings - Callback to open LLM settings
+ * @param root0.onLockSession - Callback to lock the LLM key vault
+ * @param root0.onForgetKey - Callback to clear the stored LLM key
+ * @param root0.onShowStyleLearning - Callback to toggle the style learning panel
+ * @param root0.showStyleLearning - Whether the style learning overlay is visible
+ * @param root0.llmFeedback - Transient feedback message shown in the header
+ * @param root0.isConfigured - Whether an LLM provider is configured
+ * @param root0.llmProviderLabel - Display label for the active LLM provider
+ * @param root0.showStats - Whether the stats overlay is visible
+ * @param root0.onToggleStats - Callback to toggle the stats overlay
+ * @param root0.showAchievements - Whether the achievements overlay is visible
+ * @param root0.onToggleAchievements - Callback to toggle the achievements overlay
+ * @param root0.content - Current document content for export
+ * @returns The rendered application layout
+ */
 export function AppLayout({
   children,
   mode,

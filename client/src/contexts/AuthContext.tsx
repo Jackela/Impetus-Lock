@@ -49,6 +49,10 @@ interface AuthProviderProps {
  *
  * Wraps application with auth state and provides auth methods.
  *
+ * @param root0 - Provider props
+ * @param root0.children - Application subtree receiving auth context
+ * @returns The auth context provider wrapping children
+ *
  * @example
  * ```tsx
  * <AuthProvider>

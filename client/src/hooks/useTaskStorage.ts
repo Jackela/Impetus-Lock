@@ -19,7 +19,12 @@ import { StorageError } from "../types/task";
 const STORAGE_KEY = "impetus_tasks_v1";
 const SAVE_DEBOUNCE_MS = 500;
 
-/** Extract title from content (first line). */
+/**
+ * Extract title from content (first line).
+ *
+ * @param content - Task content to extract the title from
+ * @returns The trimmed first line, or "Untitled" when empty
+ */
 function extractTitle(content: string): string {
   return content.split("\n")[0]?.trim() || "Untitled";
 }

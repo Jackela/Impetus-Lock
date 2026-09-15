@@ -23,5 +23,7 @@
  * ```
  */
 
+/** Re-export of the ErrorBoundary component. */
 export { ErrorBoundary } from "./ErrorBoundary";
+/** Re-export of the ErrorBoundaryProps type. */
 export type { ErrorBoundaryProps } from "./ErrorBoundary";

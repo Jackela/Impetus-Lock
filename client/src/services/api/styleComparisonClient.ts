@@ -13,6 +13,7 @@
 
 import type { StyleVector } from "./types";
 
+/** Re-export of the style vector type. */
 export type { StyleVector } from "./types";
 
 /**

@@ -62,6 +62,15 @@ _TEMP_FALLBACKS: dict[ProviderName, float] = {
 
 @dataclass
 class ProviderConfig:
+    """Fully resolved credentials and settings for one provider instance.
+
+    Attributes:
+        provider: Canonical provider name.
+        api_key: API key to authenticate with.
+        model: Model identifier to use.
+        temperature: Sampling temperature.
+    """
+
     provider: ProviderName
     api_key: str
     model: str
@@ -70,6 +79,14 @@ class ProviderConfig:
 
 @dataclass
 class ProviderOverride:
+    """Per-request BYOK override values parsed from client headers.
+
+    Attributes:
+        provider: Requested provider name, if any.
+        model: Requested model identifier, if any.
+        api_key: Client-supplied API key, if any.
+    """
+
     provider: str | None = None
     model: str | None = None
     api_key: str | None = None
@@ -113,7 +130,7 @@ class ProviderFactory:
             module="server.infrastructure.llm.gemini_provider",
             class_name="GeminiLLMProvider",
             install_msg=(
-                "Gemini provider is not available. Install with: pip install google-generativeai"
+                "Gemini provider is not available. Install with: pip install google-genai"
             ),
         ),
         "debug": ProviderSpec(
@@ -197,6 +214,7 @@ class ProviderRegistry:
     """Resolves provider instances from env defaults or BYOK overrides."""
 
     def __init__(self) -> None:
+        """Read environment defaults and prepare the instance cache."""
         self._allow_debug = _is_truthy(os.getenv("LLM_ALLOW_DEBUG_PROVIDER")) or _is_truthy(
             os.getenv("TESTING")
         )
@@ -208,7 +226,6 @@ class ProviderRegistry:
 
     def reload(self) -> None:
         """Reload env backed defaults (used by tests)."""
-
         self._default_configs = self._load_default_configs()
         self._default_instances.clear()
 
@@ -218,6 +235,21 @@ class ProviderRegistry:
         *,
         allow_blank: bool = False,
     ) -> LLMProvider | None:
+        """Resolve and return a provider for the given overrides.
+
+        Args:
+            overrides: Optional BYOK header overrides for provider/model/key.
+            allow_blank: Return None instead of raising when no configuration
+                can be resolved (used for the baseline service).
+
+        Returns:
+            A cached or newly built provider instance, or None when
+            allow_blank is set and no configuration exists.
+
+        Raises:
+            LLMProviderError: If the provider is unsupported or unconfigured
+                and allow_blank is False.
+        """
         resolved = self._resolve_config(overrides, allow_blank=allow_blank)
         if resolved is None:
             return None

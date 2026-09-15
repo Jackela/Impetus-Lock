@@ -7,6 +7,7 @@
 
 import type { TaskRecord } from "../services/api/taskClient";
 
+/** Re-export of the API task record type. */
 export type { TaskRecord };
 
 /**
@@ -173,6 +174,9 @@ export interface TaskStorageState {
 
 /**
  * Helper to get display name for category.
+ *
+ * @param category - Task category to label
+ * @returns Human-readable category name
  */
 export function getCategoryDisplayName(category: TaskCategory): string {
   const names: Record<TaskCategory, string> = {
@@ -186,6 +190,9 @@ export function getCategoryDisplayName(category: TaskCategory): string {
 
 /**
  * Helper to get color class for category.
+ *
+ * @param category - Task category to color
+ * @returns Color class name for the category
  */
 export function getCategoryColor(category: TaskCategory): string {
   const colors: Record<TaskCategory, string> = {
@@ -199,6 +206,9 @@ export function getCategoryColor(category: TaskCategory): string {
 
 /**
  * Helper to get display name for priority.
+ *
+ * @param priority - Task priority to label
+ * @returns Human-readable priority name
  */
 export function getPriorityDisplayName(priority: TaskPriority): string {
   const names: Record<TaskPriority, string> = {
@@ -211,6 +221,9 @@ export function getPriorityDisplayName(priority: TaskPriority): string {
 
 /**
  * Helper to get color class for priority.
+ *
+ * @param priority - Task priority to color
+ * @returns Color class name for the priority
  */
 export function getPriorityColor(priority: TaskPriority): string {
   const colors: Record<TaskPriority, string> = {
@@ -223,6 +236,9 @@ export function getPriorityColor(priority: TaskPriority): string {
 
 /**
  * Check if a task is overdue.
+ *
+ * @param dueDate - ISO due date, or null when unset
+ * @returns True if the due date is in the past
  */
 export function isTaskOverdue(dueDate: string | null): boolean {
   if (!dueDate) return false;
@@ -231,6 +247,9 @@ export function isTaskOverdue(dueDate: string | null): boolean {
 
 /**
  * Check if a task is due soon (within 24 hours).
+ *
+ * @param dueDate - ISO due date, or null when unset
+ * @returns True if the due date falls within the next 24 hours
  */
 export function isTaskDueSoon(dueDate: string | null): boolean {
   if (!dueDate) return false;

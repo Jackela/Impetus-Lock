@@ -20,6 +20,11 @@ interface RegisterFormProps {
 /**
  * Registration form component with email and password fields.
  *
+ * @param root0 - Component props
+ * @param root0.onSuccess - Callback invoked after successful registration
+ * @param root0.onSwitchToLogin - Callback to switch to the login form
+ * @returns The rendered registration form
+ *
  * @example
  * ```tsx
  * <RegisterForm onSuccess={() => navigate("/tasks")} />

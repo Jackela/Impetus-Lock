@@ -1277,7 +1277,7 @@ ruff = "^0.8.0"
 
 ✅ **用户文档**:
 - README.md: 项目介绍
-- QUICKSTART_TESTING.md: 快速开始
+- TESTING.md: 测试策略与命令
 
 ✅ **技术文档**:
 - API_CONTRACT.md: OpenAPI 规范

@@ -21,6 +21,8 @@ interface NewTaskButtonProps {
  * NewTaskButton - Creates new tasks with inline input.
  *
  * @param props - Component props
+ * @param props.onCreate - Callback when a new task should be created
+ * @param props.disabled - Whether the button is disabled
  * @returns New task button JSX element
  */
 export function NewTaskButton({ onCreate, disabled = false }: NewTaskButtonProps): JSX.Element {

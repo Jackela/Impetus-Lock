@@ -31,6 +31,7 @@ import "./CreateTaskModal.css";
  * @param props.open - Whether the modal is open
  * @param props.onClose - Callback when modal is closed
  * @param props.onSuccess - Optional callback after successful task creation
+ * @returns The rendered modal dialog, or `null` when closed
  *
  * @example
  * ```tsx

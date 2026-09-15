@@ -1,3 +1,6 @@
+/**
+ * Opening story seed loaded into the editor on first launch.
+ */
 export const INITIAL_STORY = [
   "“信使”穿过霓虹灯闪烁的小巷，雨水打湿了他的风衣。",
   "他检查了手腕上的数据终端，时间不多了。",

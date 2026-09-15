@@ -94,7 +94,7 @@ $VITE_API_URL   = if ($env:VITE_API_URL)   { $env:VITE_API_URL }   else { "http:
 
 $backendCmd = @(
     "cd '$repoRootWsl/server'",
-    "poetry install --no-root >/dev/null 2>&1 || true",
+    "poetry install >/dev/null 2>&1 || true",
     "poetry run uvicorn server.api.main:app --host $API_HOST --port $BACKEND_PORT --reload"
 ) -join " && "
 

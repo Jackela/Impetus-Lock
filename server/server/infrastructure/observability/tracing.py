@@ -54,11 +54,18 @@ except ImportError:  # pragma: no cover - optional dependency
 
 
 def is_tracing_enabled() -> bool:
+    """Report whether an OTLP tracer was successfully initialized."""
     return _tracer is not None
 
 
 @contextmanager
 def start_llm_span(name: str, attributes: dict[str, Any] | None = None) -> Iterator[None]:
+    """Trace an LLM call as a span, recording exceptions and error status.
+
+    Args:
+        name: Span name identifying the operation.
+        attributes: Optional attributes attached to the span.
+    """
     if not _tracer or not trace:
         yield
         return

@@ -18,6 +18,8 @@ import { AIActionType } from "../types/ai-actions";
  * - DELETE: Fade-out animation + Whoosh sound
  * - REJECT: Shake animation + Bonk sound
  *
+ * @returns The rendered demo panel with trigger buttons
+ *
  * @example
  * ```tsx
  * // Add to App.tsx for testing:

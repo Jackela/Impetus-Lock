@@ -30,6 +30,8 @@ export interface UseFocusTrapOptions {
  * - Supports Escape key to deactivate (via callback)
  *
  * @param options - Configuration options
+ * @param options.active - Whether the focus trap is active
+ * @param options.excludeSelectors - Additional elements to exclude from the focus trap
  * @returns Object containing container ref and trigger ref
  *
  * @example

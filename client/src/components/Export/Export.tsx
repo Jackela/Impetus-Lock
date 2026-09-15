@@ -4,6 +4,11 @@ import { fetchTasks } from "../../services/api/taskClient";
 // eslint-disable-next-line no-restricted-imports
 import { fetchStats } from "../../services/api/statsClient";
 
+/**
+ * Footer panel exporting tasks and stats as Markdown or JSON downloads.
+ *
+ * @returns The rendered export panel with format selector
+ */
 export function Export() {
   const [exporting, setExporting] = useState(false);
   const [format, setFormat] = useState<"json" | "markdown">("markdown");

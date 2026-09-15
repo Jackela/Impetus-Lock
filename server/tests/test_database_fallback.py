@@ -12,13 +12,18 @@ async def test_init_database_allows_testing_fallback(monkeypatch: pytest.MonkeyP
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("TESTING", "1")
 
-    # Ensure global state is cleared before invocation
-    database._db_manager = None  # noqa: SLF001
+    # Store original state; later tests in the same worker rely on the
+    # session-initialized manager surviving this test.
+    original_manager = database._db_manager  # noqa: SLF001
 
-    result = await database.init_database()
+    try:
+        database._db_manager = None  # noqa: SLF001
+        result = await database.init_database()
 
-    assert result is None
-    assert database.is_database_initialized() is False
+        assert result is None
+        assert database.is_database_initialized() is False
+    finally:
+        database._db_manager = original_manager  # noqa: SLF001
 
 
 @pytest.mark.asyncio

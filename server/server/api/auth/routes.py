@@ -13,6 +13,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 @router.post("/login")
 async def login(credentials: LoginRequest, response: Response) -> dict[str, Any]:
+    """Issue JWT and CSRF cookies for the submitted credentials.
+
+    Args:
+        credentials: The user's email and password.
+        response: The outgoing response used to attach cookies.
+
+    Returns:
+        A success message with the generated CSRF token.
+    """
     token = JWTHandler.create_token("demo-user-id")
 
     response.set_cookie(
@@ -32,6 +41,14 @@ async def login(credentials: LoginRequest, response: Response) -> dict[str, Any]
 
 @router.post("/logout")
 async def logout(response: Response) -> dict[str, str]:
+    """Clear the authentication and CSRF cookies.
+
+    Args:
+        response: The outgoing response used to delete cookies.
+
+    Returns:
+        A logout success message.
+    """
     response.delete_cookie("access_token")
     response.delete_cookie("csrf_token")
     return {"message": "Logout successful"}

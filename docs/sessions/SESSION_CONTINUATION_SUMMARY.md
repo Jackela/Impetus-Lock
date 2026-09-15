@@ -92,7 +92,7 @@ Return a JSON object with:
 
 ---
 
-## 🎯 Next Steps (As Per QUICKSTART_TESTING.md)
+## 🎯 Next Steps (As Per [TESTING.md](../../TESTING.md))
 
 ### Manual Testing Prerequisites
 1. **Configure OpenAI API Key**:

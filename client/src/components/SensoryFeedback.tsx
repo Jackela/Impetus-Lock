@@ -37,6 +37,7 @@ interface SensoryFeedbackProps {
  *
  * @param props - Component props
  * @param props.actionType - AI action type (PROVOKE/DELETE/REJECT) or null
+ * @returns The feedback animation overlay, or `null` when no action is active
  *
  * @example
  * ```typescript

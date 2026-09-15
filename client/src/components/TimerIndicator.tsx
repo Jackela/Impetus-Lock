@@ -46,6 +46,12 @@ interface TimerIndicatorProps {
  *
  * Shows ambient awareness of 60s timer without distracting from writing.
  *
+ * @param root0 - Component props
+ * @param root0.progress - Progress percentage (0-100) of the STUCK timer
+ * @param root0.visible - Whether the indicator is visible (Muse mode only)
+ * @param root0.remainingTime - Remaining seconds announced via ARIA label
+ * @returns The progress bar element, or `null` when hidden
+ *
  * @example
  * ```tsx
  * <TimerIndicator

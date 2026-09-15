@@ -41,8 +41,9 @@ class TestEmptyInputs:
         """Test creating task with empty content."""
         from fastapi.testclient import TestClient
 
+        from server.api.dependencies import get_task_repository
         from server.api.main import app
-        from server.api.routes import tasks as tasks_module
+        from server.infrastructure.persistence.database import get_session_optional
         from server.infrastructure.persistence.in_memory_task_repository import (
             InMemoryTaskRepository,
         )
@@ -52,8 +53,8 @@ class TestEmptyInputs:
         async def override_repo() -> InMemoryTaskRepository:
             return repo
 
-        app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-        app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+        app.dependency_overrides[get_task_repository] = override_repo
+        app.dependency_overrides[get_session_optional] = lambda: None
 
         try:
             client = TestClient(app)
@@ -65,8 +66,8 @@ class TestEmptyInputs:
             # Empty content should be handled gracefully
             assert response.status_code in [201, 422]
         finally:
-            app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-            app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+            app.dependency_overrides.pop(get_task_repository, None)
+            app.dependency_overrides.pop(get_session_optional, None)
 
     @pytest.mark.asyncio
     async def test_empty_context_intervention(self) -> None:
@@ -154,8 +155,9 @@ class TestVeryLongInputs:
         """Test creating task with very long content."""
         from fastapi.testclient import TestClient
 
+        from server.api.dependencies import get_task_repository
         from server.api.main import app
-        from server.api.routes import tasks as tasks_module
+        from server.infrastructure.persistence.database import get_session_optional
         from server.infrastructure.persistence.in_memory_task_repository import (
             InMemoryTaskRepository,
         )
@@ -165,8 +167,8 @@ class TestVeryLongInputs:
         async def override_repo() -> InMemoryTaskRepository:
             return repo
 
-        app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-        app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+        app.dependency_overrides[get_task_repository] = override_repo
+        app.dependency_overrides[get_session_optional] = lambda: None
 
         try:
             client = TestClient(app)
@@ -180,8 +182,8 @@ class TestVeryLongInputs:
             # Should handle gracefully
             assert response.status_code in [201, 422, 413]
         finally:
-            app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-            app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+            app.dependency_overrides.pop(get_task_repository, None)
+            app.dependency_overrides.pop(get_session_optional, None)
 
 
 class TestUnicodeAndEmoji:
@@ -215,8 +217,9 @@ class TestUnicodeAndEmoji:
         """Test unicode content in tasks."""
         from fastapi.testclient import TestClient
 
+        from server.api.dependencies import get_task_repository
         from server.api.main import app
-        from server.api.routes import tasks as tasks_module
+        from server.infrastructure.persistence.database import get_session_optional
         from server.infrastructure.persistence.in_memory_task_repository import (
             InMemoryTaskRepository,
         )
@@ -226,8 +229,8 @@ class TestUnicodeAndEmoji:
         async def override_repo() -> InMemoryTaskRepository:
             return repo
 
-        app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-        app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+        app.dependency_overrides[get_task_repository] = override_repo
+        app.dependency_overrides[get_session_optional] = lambda: None
 
         try:
             client = TestClient(app)
@@ -242,8 +245,8 @@ class TestUnicodeAndEmoji:
                 data = response.json()
                 assert data["content"] == unicode_content
         finally:
-            app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-            app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+            app.dependency_overrides.pop(get_task_repository, None)
+            app.dependency_overrides.pop(get_session_optional, None)
 
     @pytest.mark.asyncio
     async def test_unicode_in_username(self) -> None:
@@ -288,8 +291,9 @@ class TestConcurrentRequests:
         """Test creating multiple tasks concurrently."""
         from fastapi.testclient import TestClient
 
+        from server.api.dependencies import get_task_repository
         from server.api.main import app
-        from server.api.routes import tasks as tasks_module
+        from server.infrastructure.persistence.database import get_session_optional
         from server.infrastructure.persistence.in_memory_task_repository import (
             InMemoryTaskRepository,
         )
@@ -299,8 +303,8 @@ class TestConcurrentRequests:
         async def override_repo() -> InMemoryTaskRepository:
             return repo
 
-        app.dependency_overrides[tasks_module.get_task_repository] = override_repo
-        app.dependency_overrides[tasks_module.get_session_optional] = lambda: None
+        app.dependency_overrides[get_task_repository] = override_repo
+        app.dependency_overrides[get_session_optional] = lambda: None
 
         try:
             client = TestClient(app)
@@ -319,8 +323,8 @@ class TestConcurrentRequests:
             # All should succeed
             assert all(code == 201 for code in results)
         finally:
-            app.dependency_overrides.pop(tasks_module.get_task_repository, None)
-            app.dependency_overrides.pop(tasks_module.get_session_optional, None)
+            app.dependency_overrides.pop(get_task_repository, None)
+            app.dependency_overrides.pop(get_session_optional, None)
 
     @pytest.mark.asyncio
     async def test_concurrent_websocket_connections(self) -> None:

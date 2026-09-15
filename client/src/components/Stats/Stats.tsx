@@ -1,5 +1,10 @@
 import { useStats } from "../../hooks/useStats";
 
+/**
+ * Displays aggregate writing statistics fetched from the stats API.
+ *
+ * @returns The stats grid, or loading/error states
+ */
 export function Stats() {
   const { data: stats, isLoading, error } = useStats();
 

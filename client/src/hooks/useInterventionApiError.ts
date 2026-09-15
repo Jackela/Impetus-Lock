@@ -8,6 +8,7 @@
 
 import { InterventionAPIError } from "../services/api/interventionClient";
 
+/** Re-export of the InterventionAPIError class. */
 export type { InterventionAPIError };
 
 /**

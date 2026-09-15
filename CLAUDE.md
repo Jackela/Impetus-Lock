@@ -152,13 +152,13 @@ cd client && npm run lint && npm run type-check
 
 **Why**: The `--no-root` flag skips installing the project package itself, causing import errors:
 ```bash
-# ❌ WRONG - Causes "Could not import module 'server.main'" error
+# ❌ WRONG - Skips installing the project package
 poetry install --no-root
-poetry run uvicorn server.main:app
+poetry run uvicorn server.api.main:app
 
 # ✅ CORRECT - Installs both dependencies AND the server package
 poetry install
-poetry run uvicorn server.main:app
+poetry run uvicorn server.api.main:app
 ```
 
 **Configuration Requirements**:
@@ -169,7 +169,7 @@ poetry run uvicorn server.main:app
 **Verification**:
 ```bash
 # After poetry install, this should succeed:
-poetry run python -c "import server.main; print('✅ Package installed correctly')"
+poetry run python -c "import server.api.main; print('✅ Package installed correctly')"
 ```
 
 ### GitHub Actions Service Containers
@@ -234,10 +234,10 @@ cd server
 
 # Setup (first time)
 pipx install poetry
-poetry install --no-root
+poetry install
 
 # Development server
-poetry run uvicorn server.main:app --reload
+poetry run uvicorn server.api.main:app --reload
 
 # Testing (TDD workflow - MANDATORY)
 poetry run pytest                    # Run all tests
@@ -253,7 +253,7 @@ poetry run ruff check --fix .        # Auto-fix linting issues
 
 # Type Checking (mypy strict mode - MANDATORY)
 poetry run mypy .                    # Type check all files
-poetry run mypy server/main.py       # Type check specific file
+poetry run mypy server/api/main.py   # Type check specific file
 ```
 
 **Backend Quality Gates**:
@@ -303,9 +303,9 @@ GitHub Actions runs 4 parallel jobs on push/PR to `main`:
 1. **lint**: Ruff (backend) + ESLint/Prettier (frontend)
 2. **type-check**: mypy (backend) + tsc --noEmit (frontend)
 3. **backend-tests**: pytest
-4. **frontend-tests**: Vitest + Playwright (with browser installation)
+4. **frontend-tests**: Vitest unit tests
 
-**Caching**: Python (Poetry) and Node (npm) dependencies are cached. Playwright browsers installed on-demand.
+**Caching**: Python (Poetry) and Node (npm) dependencies are cached.
 
 ## Architecture Patterns
 
@@ -392,13 +392,13 @@ import { useManualTrigger } from "../../hooks/useManualTrigger";
 
 ### Backend (import-linter)
 
-Layer contracts are defined in `server/pyproject.toml` (currently disabled for MVP):
+Layer contracts are defined in `server/pyproject.toml` and checked by the CI lint job:
 
 ```
 API Layer → Application Layer → Domain Layer → Infrastructure Layer
 ```
 
-**Note**: import-linter is disabled until domain layer has implementations. Manually verify imports during code review.
+The CI lint job runs `poetry run lint-imports`; review the current CI output for contract results.
 
 ## Testing Strategy
 
@@ -516,7 +516,9 @@ Feature development follows `.specify/templates/`:
 
 ---
 
-### ✅ VALIDATED - Phase 6: E2E Workflow Fix (Feature 004) **ALL WORKFLOWS PASSING**
+### Historical record — Phase 6 E2E Workflow Fix (Feature 004)
+
+The following dated notes are retained as project history. They are not the current validation status.
 
 **Branch**: `004-fix-e2e-workflow` (merged to main)  
 **Issue Resolution**: ✅ **FIXED** - Backend import error resolved by removing `--no-root` flag  
@@ -609,7 +611,7 @@ Feature development follows `.specify/templates/`:
 
 ### ✅ COMPLETE - Architecture Improvements (Branch: `refactor/architecture-improvements`)
 
-**Status**: ✅ **ALL IMPROVEMENTS COMPLETE** - Architecture hardening and code quality improvements
+**Historical status**: ✅ **ALL IMPROVEMENTS COMPLETE** - Architecture hardening and code quality improvements
 
 **Improvements Delivered**:
 
@@ -677,3 +679,17 @@ Frontend:
 - `client/src/hooks/useSensoryFeedback.ts` - NEW
 - `client/src/hooks/useManualDelete.ts` - NEW
 - `client/src/hooks/index.ts` - Export new hooks
+
+## Agent skills
+
+### Issue tracker
+
+Tasks use GitHub Issues via gh; specs and proposals use OpenSpec. See `docs/agents/issue-tracker.md` before tracker operations.
+
+### Triage labels
+
+Use the five default triage labels. See `docs/agents/triage-labels.md` when classifying tickets.
+
+### Domain docs
+
+Use single-context domain docs. See `docs/agents/domain.md` before codebase exploration.

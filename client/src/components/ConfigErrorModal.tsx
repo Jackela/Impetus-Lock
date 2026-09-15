@@ -9,6 +9,18 @@ interface ConfigErrorModalProps {
   provider?: string | null;
 }
 
+/**
+ * Modal shown when the LLM service is unavailable, offering to open settings.
+ *
+ * @param root0 - Component props
+ * @param root0.visible - Whether the modal is shown
+ * @param root0.onDismiss - Callback to dismiss the modal
+ * @param root0.onOpenSettings - Callback to open the LLM settings modal
+ * @param root0.errorCode - Optional provider error code to display
+ * @param root0.errorMessage - Optional provider error message to display
+ * @param root0.provider - LLM provider id related to the error
+ * @returns The modal dialog, or `null` when hidden
+ */
 export function ConfigErrorModal({
   visible,
   onDismiss,

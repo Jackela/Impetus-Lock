@@ -536,7 +536,7 @@ test('should trigger fade-out animation and whoosh sound on Loki delete', async 
 
 **Expected Result**: ❌ Test fails (no Loki delete implementation yet)
 
-**Note**: This test may require Loki timer implementation (out of scope for this sprint). If so, create manual test scenario in E2E_TEST_STATUS.md.
+**Note**: This test may require Loki timer implementation (out of scope for this sprint). If so, create manual test scenario in [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md).
 
 ---
 

@@ -60,13 +60,9 @@ export default defineConfig([
         },
       ],
       // JSDoc enforcement for Article V (Documentation) compliance
-      // Currently set to "off" - enable incrementally as documentation is added
-      // Full enforcement would require ~120 JSDoc additions
-      // JSDoc enforcement for Article V (Documentation) compliance
-      // Currently set to "off" - enable incrementally as documentation is added
-      // Full enforcement would require ~120 JSDoc additions
+      // Presence rules enabled after backfilling missing JSDoc in src/**
       "jsdoc/require-jsdoc": [
-        "off", // TODO: Enable after adding missing JSDoc comments
+        "error",
         {
           publicOnly: true,
           require: {
@@ -78,9 +74,9 @@ export default defineConfig([
           checkConstructors: false,
         },
       ],
-      "jsdoc/require-description": "off",
-      "jsdoc/require-param": "off",
-      "jsdoc/require-returns": "off",
+      "jsdoc/require-description": "error",
+      "jsdoc/require-param": "error",
+      "jsdoc/require-returns": "error",
       // Validation rules (check existing JSDoc for correctness)
       // Note: check-param-names disabled due to complex destructured props
       // TODO: Fix existing JSDoc to document all destructured parameters

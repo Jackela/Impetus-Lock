@@ -93,7 +93,6 @@ function buildLockAttributes(lockId: string, source?: AgentSource) {
  * }
  * ```
  */
-
 export function injectLockedBlock(
   view: EditorView,
   content: string,
@@ -151,6 +150,11 @@ export function injectLockedBlock(
   // SensoryFeedback component in EditorCore, triggered by currentAction state
 }
 
+// Module-level throttle state for delete operations
+// Using closure instead of window global to avoid state pollution
+const DELETE_THROTTLE_MS = 1500; // 1.5 seconds minimum between deletes
+let lastDeleteTimestamp: number | null = null;
+
 /**
  * Delete content at anchor range (Loki mode).
  *
@@ -169,11 +173,6 @@ export function injectLockedBlock(
  * }
  * ```
  */
-// Module-level throttle state for delete operations
-// Using closure instead of window global to avoid state pollution
-const DELETE_THROTTLE_MS = 1500; // 1.5 seconds minimum between deletes
-let lastDeleteTimestamp: number | null = null;
-
 export function deleteContentAtAnchor(
   view: EditorView,
   anchor: Extract<Anchor, { type: "range" }>
@@ -242,11 +241,12 @@ export function deleteLastSentence(view: EditorView): void {
  * Replaces content within the specified anchor range with new locked content.
  * Falls back to rewriting the last sentence if anchor is invalid or missing.
  *
- * @param view - Milkdown editor view
- * @param content - New locked content to insert
- * @param lockId - Lock identifier for the new content
- * @param anchor - Optional anchor range specifying what to replace
- * @param source - Optional agent source for styling
+ * @param root0 - Rewrite options
+ * @param root0.view - Milkdown editor view
+ * @param root0.content - New locked content to insert
+ * @param root0.lockId - Lock identifier for the new content
+ * @param root0.anchor - Optional anchor range specifying what to replace
+ * @param root0.source - Optional agent source for styling
  *
  * @example
  * ```typescript

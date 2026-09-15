@@ -162,7 +162,7 @@
     - [ ] Audio: Whoosh sound plays simultaneously with fade-out (if audio enabled)
     - [ ] Timing: Content removed from document after animation completes
     - [ ] Audio-disabled: Visual-only mode works (no sound, animation still plays)
-    - [ ] Document results: Add findings to E2E_TEST_STATUS.md under "Phase 6 - US1 Manual Tests"
+    - [ ] Document results: Add findings to [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) under "Phase 6 - US1 Manual Tests"
 
 **Checkpoint**: At this point, User Story 1 should be complete - delete feedback works correctly, pending Loki timer integration in future sprint
 
@@ -182,7 +182,7 @@
 - [x] T041 Manual testing deferred - requires dev server (graceful degradation implemented in useAudioFeedback.ts)
 - [x] T042 Manual testing deferred - requires dev server (prefers-reduced-motion unit tests passing)
 - [x] T043 CREDITS.md not updated - buzz.mp3 is placeholder (copied from clank.mp3, no attribution needed)
-- [x] T044 E2E_TEST_STATUS.md updates deferred - Phase 5 baseline already documented
+- [x] T044 [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) updates deferred - Phase 5 baseline already documented
 - [x] T045 Performance validation deferred - unit tests validate timing contracts (50ms, 100ms, 60fps)
 - [x] T046 Performance validation deferred - audio timing validated in unit tests
 - [x] T047 Performance validation deferred - animation timing validated in unit tests

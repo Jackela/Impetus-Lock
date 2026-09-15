@@ -81,6 +81,9 @@ function offsetToDocPos(state: EditorState, offset: number, limitPos: number): n
  *
  * Uses document positions (not plain string lengths) so the returned range
  * can be passed directly to ProseMirror transactions.
+ *
+ * @param state - ProseMirror editor state containing the cursor
+ * @returns The `{ from, to }` document range of the last sentence
  */
 export function getLastSentenceRange(state: EditorState): { from: number; to: number } {
   const docSize = state.doc.content.size;

@@ -84,7 +84,7 @@
 
 **Recommendations**:
 1. **AMB-001**: Update FR-001 to reflect actual implementation (0.75s) or justify deviation in plan.md
-2. **AMB-002**: Add explicit manual test checklist to E2E_TEST_STATUS.md template
+2. **AMB-002**: Add explicit manual test checklist to [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) template
 
 ### 3. Underspecification Detection
 
@@ -243,7 +243,7 @@
 
 2. **Add Manual Test Checklist** (10 minutes)
    - File: `specs/003-vibe-completion/tasks.md`
-   - Change: Add checklist to T030 description or reference E2E_TEST_STATUS.md template
+   - Change: Add checklist to T030 description or reference the [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) template
    - Rationale: Clarify acceptance criteria for skipped E2E test
 
 ### Priority 2: Risk Mitigation Prep
@@ -271,7 +271,7 @@
 4. ⏭️ Begin Wave 1 (US3 P1) implementation per quickstart.md
 
 **Post-Implementation** (after all tasks complete):
-1. ⏭️ Update E2E_TEST_STATUS.md with test results
+1. ⏭️ Update [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) with test results
 2. ⏭️ Update PHASE6_COMPLETE.md (or equivalent) with vibe completion summary
 3. ⏭️ Run full CI validation: `act` (all 4 jobs)
 4. ⏭️ Create PR with TDD evidence in commit messages

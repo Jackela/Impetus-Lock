@@ -11,6 +11,7 @@ import { $prose } from "@milkdown/utils";
 import { Plugin, PluginKey } from "@milkdown/prose/state";
 import { Decoration, DecorationSet } from "@milkdown/prose/view";
 
+/** Plugin key used to identify and communicate with the placeholder plugin. */
 export const placeholderPluginKey = new PluginKey("placeholder");
 
 /**

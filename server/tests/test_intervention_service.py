@@ -305,6 +305,84 @@ class TestInterventionService:
         assert response.action == "provoke"
         assert response.source == "loki"
 
+    def test_safety_guard_forces_loki_rewrite_to_provoke_on_49_chars(
+        self, service: InterventionService, mock_llm_provider: Mock
+    ) -> None:
+        """Short Loki rewrite responses should become safe provoke actions."""
+        request = InterventionRequest(
+            context="1234567890" * 4 + "123456789",
+            mode="loki",
+            client_meta=ClientMeta(doc_version=1, selection_from=49, selection_to=49),
+        )
+        mock_llm_provider.generate_intervention.return_value = InterventionResponse(
+            action="rewrite",
+            content="改写后的内容",
+            lock_id="lock_rewrite_short",
+            anchor=AnchorRange(from_=10, to=40),
+            action_id="act_rewrite_short",
+            issued_at=datetime.now(UTC),
+            source="loki",
+        )
+
+        response = service.generate_intervention(request)
+
+        assert response.action == "provoke"
+        assert response.content
+        assert response.lock_id
+        assert response.anchor.type == "pos"
+        assert response.anchor.from_ == 49
+        assert response.source == "loki"
+
+    def test_loki_rewrite_at_50_chars_remains_rewrite(
+        self, service: InterventionService, mock_llm_provider: Mock
+    ) -> None:
+        """A Loki rewrite is allowed at the exact 50-character boundary."""
+        request = InterventionRequest(
+            context="1234567890" * 5,
+            mode="loki",
+            client_meta=ClientMeta(doc_version=1, selection_from=50, selection_to=50),
+        )
+        mock_llm_provider.generate_intervention.return_value = InterventionResponse(
+            action="rewrite",
+            content="边界改写内容",
+            lock_id="lock_rewrite_boundary",
+            anchor=AnchorRange(from_=10, to=40),
+            action_id="act_rewrite_boundary",
+            issued_at=datetime.now(UTC),
+            source="loki",
+        )
+
+        response = service.generate_intervention(request)
+
+        assert response.action == "rewrite"
+        assert response.content == "边界改写内容"
+        assert response.source == "loki"
+
+    def test_muse_rewrite_at_49_chars_remains_rewrite(
+        self, service: InterventionService, mock_llm_provider: Mock
+    ) -> None:
+        """Muse rewrite behavior remains allowed below the Loki threshold."""
+        request = InterventionRequest(
+            context="1234567890" * 4 + "123456789",
+            mode="muse",
+            client_meta=ClientMeta(doc_version=1, selection_from=49, selection_to=49),
+        )
+        mock_llm_provider.generate_intervention.return_value = InterventionResponse(
+            action="rewrite",
+            content="Muse 改写内容",
+            lock_id="lock_muse_rewrite_short",
+            anchor=AnchorRange(from_=10, to=40),
+            action_id="act_muse_rewrite_short",
+            issued_at=datetime.now(UTC),
+            source="muse",
+        )
+
+        response = service.generate_intervention(request)
+
+        assert response.action == "rewrite"
+        assert response.content == "Muse 改写内容"
+        assert response.source == "muse"
+
     def test_muse_mode_never_returns_delete(
         self,
         service: InterventionService,

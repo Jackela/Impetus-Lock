@@ -22,19 +22,16 @@ class PromptTemplate:
 
     def render_user_prompt(self, context: str) -> str:
         """Inject runtime context into the template placeholder."""
-
         return self.user_template.replace("{{context}}", context)
 
 
 def get_prompt_template(name: PromptName) -> PromptTemplate:
     """Return the parsed prompt template for the given provider."""
-
     return _load_templates()[name]
 
 
 def get_prompt_pair(name: PromptName, context: str) -> tuple[str, str]:
     """Convenience helper that returns the (system, user) pair."""
-
     template = get_prompt_template(name)
     return template.system_prompt, template.render_user_prompt(context)
 
@@ -42,7 +39,6 @@ def get_prompt_pair(name: PromptName, context: str) -> tuple[str, str]:
 @lru_cache(maxsize=1)
 def _load_templates() -> dict[PromptName, PromptTemplate]:
     """Load all templates from the ``server/prompts`` package."""
-
     templates: dict[PromptName, PromptTemplate] = {}
     package = resources.files("server.prompts")
     prompt_names: tuple[PromptName, ...] = ("muse", "loki")

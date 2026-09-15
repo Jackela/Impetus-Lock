@@ -1,5 +1,10 @@
 import { useAchievements } from "../../hooks/useAchievements";
 
+/**
+ * Displays all achievement definitions as earned or locked badges.
+ *
+ * @returns The rendered achievements panel with a loading state
+ */
 export function Achievements() {
   const { achievements, definitions } = useAchievements();
 

@@ -1,6 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import type { InterventionAPIError } from "./hooks/useInterventionApiError";
 
+/**
+ * Central UI state hook for sidebar, modals, feedback, and Muse timer.
+ *
+ * @returns Shared UI state and its setter/toggle callbacks
+ */
 export function useAppState() {
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);

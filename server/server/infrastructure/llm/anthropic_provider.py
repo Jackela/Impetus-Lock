@@ -25,6 +25,13 @@ class AnthropicLLMProvider(BasePromptLLMProvider):
         model: str = "claude-3-5-haiku-latest",
         temperature: float = 0.8,
     ) -> None:
+        """Initialize the Anthropic Messages API client.
+
+        Args:
+            api_key: Anthropic API key.
+            model: Model identifier to use for completions.
+            temperature: Sampling temperature.
+        """
         super().__init__(model=model, temperature=temperature)
         self.client = Anthropic(api_key=api_key)
 

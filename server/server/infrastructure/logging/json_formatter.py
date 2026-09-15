@@ -23,10 +23,24 @@ class JsonFormatter(logging.Formatter):
     }
 
     def __init__(self, *, default_fields: set[str] | None = None) -> None:
+        """Initialize the formatter's base field whitelist.
+
+        Args:
+            default_fields: Field names always emitted; defaults to
+                DEFAULT_FIELDS when omitted.
+        """
         super().__init__()
         self._base_fields = default_fields or self.DEFAULT_FIELDS
 
     def format(self, record: logging.LogRecord) -> str:  # noqa: A003 (formatter API)
+        """Serialize a log record as a single-line JSON string.
+
+        Args:
+            record: The log record to serialize.
+
+        Returns:
+            The JSON representation of the record.
+        """
         payload: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
@@ -50,7 +64,6 @@ class JsonFormatter(logging.Formatter):
 
 def setup_json_logging(level: str = "INFO") -> None:
     """Configure root logger with the JSON formatter if not already set."""
-
     root = logging.getLogger()
     if any(isinstance(handler.formatter, JsonFormatter) for handler in root.handlers):
         root.setLevel(level)

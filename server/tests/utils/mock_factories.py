@@ -382,37 +382,48 @@ class GeminiMockFactory:
         return mock_response
 
     @staticmethod
-    def create_blocked_error() -> Exception:
-        """Create a mock BlockedPromptException.
+    def create_blocked_error() -> MagicMock:
+        """Create a mock blocked-prompt response.
+
+        The google-genai SDK reports blocked prompts as response metadata
+        (``prompt_feedback.block_reason``) instead of an exception.
 
         Returns:
-            A BlockedPromptException for testing content blocking.
+            A blocked response for testing content blocking.
         """
-        import google.generativeai as genai
-
-        return genai.types.BlockedPromptException("Content blocked by safety filters")
+        mock_response = MagicMock()
+        mock_response.candidates = []
+        mock_response.prompt_feedback = MagicMock()
+        mock_response.prompt_feedback.block_reason = "SAFETY"
+        return mock_response
 
     @staticmethod
     def create_quota_error() -> Exception:
-        """Create a mock ResourceExhaustedError.
+        """Create a mock quota ClientError.
 
         Returns:
-            A ResourceExhaustedError for testing rate limiting.
+            A ClientError(429) for testing rate limiting.
         """
-        import google.generativeai as genai
+        from google.genai import errors
 
-        return genai.api_key.api_errors.ResourceExhaustedError("Quota exceeded")
+        return errors.ClientError(
+            code=429,
+            response_json={"error": {"message": "Quota exceeded", "status": "RESOURCE_EXHAUSTED"}},
+        )
 
     @staticmethod
     def create_auth_error() -> Exception:
-        """Create a mock InvalidAPIKeyError.
+        """Create a mock invalid-key ClientError.
 
         Returns:
-            An InvalidAPIKeyError for testing authentication failures.
+            A ClientError(400) for testing authentication failures.
         """
-        import google.generativeai as genai
+        from google.genai import errors
 
-        return genai.api_key.api_errors.InvalidAPIKeyError("Invalid API key")
+        return errors.ClientError(
+            code=400,
+            response_json={"error": {"message": "Invalid API key", "status": "INVALID_ARGUMENT"}},
+        )
 
 
 class LLMProviderMocker:

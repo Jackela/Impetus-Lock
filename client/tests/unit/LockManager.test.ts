@@ -11,8 +11,11 @@
  * Expected Initial State: All tests FAIL (LockManager not implemented yet)
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { LockManager } from "../../src/services/LockManager.ts";
+import { createLockTransactionFilter } from "../../src/components/Editor/TransactionFilter.ts";
+import type { Transaction } from "@milkdown/prose/state";
+import type { Node as ProseMirrorNode } from "@milkdown/prose/model";
 
 describe("LockManager", () => {
   let lockManager: LockManager;
@@ -243,71 +246,143 @@ Just regular text without any locks.
 
   describe("Transaction Filter - onReject Callback", () => {
     /**
-     * Test: T021 - onReject callback should be called when deletion is blocked
+     * Create a mock ProseMirror Step whose StepMap covers [oldStart, oldEnd).
      *
-     * Verifies that the transaction filter calls the onReject callback when:
-     * - A transaction attempts to delete/modify locked content
-     * - The transaction is blocked by lock enforcement
-     * - The callback is provided to createLockTransactionFilter
+     * Mirrors the transaction construction pattern from
+     * `src/components/Editor/TransactionFilter.test.ts` so these tests drive the
+     * real filter with realistic step maps.
+     */
+    function createMockStep(oldStart: number, oldEnd: number) {
+      return {
+        getMap: () => ({
+          forEach: (callback: (oldStart: number, oldEnd: number) => void) => {
+            callback(oldStart, oldEnd);
+          },
+        }),
+      };
+    }
+
+    /**
+     * Create a mock editor state whose document yields the given nodes for any
+     * nodesBetween() range scan (same shape as TransactionFilter.test.ts mocks).
+     */
+    function createMockEditorState(nodes: unknown[]) {
+      return {
+        doc: {
+          nodesBetween: (_from: number, _to: number, callback: (node: unknown) => void | false) => {
+            nodes.forEach((node) => callback(node));
+          },
+        },
+      };
+    }
+
+    /**
+     * Create a node carrying a lockId attribute (attribute-based lock detection).
+     */
+    function createMockLockedNode(lockId: string): ProseMirrorNode {
+      return {
+        type: { name: "blockquote" },
+        attrs: { lockId },
+        textContent: "Locked content",
+        isText: false,
+      } as unknown as ProseMirrorNode;
+    }
+
+    /**
+     * Create a node without any lock attributes.
+     */
+    function createMockUnlockedNode(): ProseMirrorNode {
+      return {
+        type: { name: "paragraph" },
+        attrs: {},
+        textContent: "Normal content",
+        isText: false,
+      } as unknown as ProseMirrorNode;
+    }
+
+    /**
+     * Test: T021 - deleting a node whose lockId is registered in the LockManager
+     * must be blocked by the real transaction filter, and the filter itself must
+     * invoke the onReject callback (never invoked manually by the test).
+     *
+     * Integration: LockManager (lock state) ↔ createLockTransactionFilter (enforcement).
      *
      * **Coverage**: FR-003 (Lock rejection feedback - P3 US2)
      * **User Story**: US2 (Lock Rejection Sensory Feedback - P2)
-     *
-     * This test validates the integration point between lock enforcement
-     * and sensory feedback (shake animation + bonk sound).
-     *
-     * Expected (RED): Test fails until T023-T024 implemented
      */
-    it("onReject callback should be called when locked content deletion is blocked", () => {
-      // This test will validate the integration once transaction filter is updated
-      // For now, we test the expected behavior interface
+    it("blocks deletion of a locked node and fires onReject via the real filter", () => {
       const lockId = "lock_test_reject";
-      lockManager.applyLock(lockId);
+      lockManager.applyLock(lockId, { source: "muse" });
 
-      // Mock onReject callback
-      let rejectCallCount = 0;
-      const onReject = () => {
-        rejectCallCount++;
-      };
+      const onReject = vi.fn();
+      const filter = createLockTransactionFilter(lockManager, onReject);
 
-      // Verify callback is defined and callable
-      expect(onReject).toBeDefined();
-      expect(typeof onReject).toBe("function");
+      const deletion = {
+        docChanged: true,
+        steps: [createMockStep(0, 20)],
+      } as unknown as Transaction;
+      const state = createMockEditorState([createMockLockedNode(lockId)]);
 
-      // Simulate rejection (manual call for now)
-      // In full implementation, this would be called by createLockTransactionFilter
-      onReject();
+      const result = filter(deletion, state);
 
-      // Verify callback was called
-      expect(rejectCallCount).toBe(1);
+      // Blocked by the filter, and rejection feedback fired from inside the filter
+      expect(result).toBe(false);
+      expect(onReject).toHaveBeenCalledTimes(1);
 
-      // Verify lock still exists (deletion blocked)
+      // Lock still registered (deletion was blocked)
       expect(lockManager.hasLock(lockId)).toBe(true);
     });
 
     /**
-     * Test: onReject callback should NOT be called when non-locked content is modified
-     *
-     * Verifies that the onReject callback:
-     * - Is NOT called for transactions that don't affect locked content
-     * - Only triggers for actual lock violations (not false positives)
+     * Test: deleting an unlocked node must pass the real filter without any
+     * rejection feedback (no false positives).
      *
      * **Coverage**: FR-003 (Lock rejection feedback - negative case)
      */
-    it("onReject callback should NOT be called for non-locked content modifications", () => {
-      // Mock onReject callback
-      let rejectCallCount = 0;
-      const onReject = () => {
-        rejectCallCount++;
-      };
+    it("allows deletion of an unlocked node without firing onReject", () => {
+      const onReject = vi.fn();
+      const filter = createLockTransactionFilter(lockManager, onReject);
 
-      // Verify callback is not called when no lock violations occur
-      expect(rejectCallCount).toBe(0);
+      const deletion = {
+        docChanged: true,
+        steps: [createMockStep(0, 20)],
+      } as unknown as Transaction;
+      const state = createMockEditorState([createMockUnlockedNode()]);
 
-      // In full implementation, this would verify that:
-      // - createLockTransactionFilter returns true (allows transaction)
-      // - onReject callback is never invoked
-      // - Transaction completes successfully
+      const result = filter(deletion, state);
+
+      expect(result).toBe(true);
+      expect(onReject).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Test: releasing the lock through the LockManager must permit the exact
+     * deletion that was previously blocked (LockManager state drives the filter).
+     *
+     * **Coverage**: FR-003 (Lock rejection feedback - state coupling)
+     */
+    it("permits the same deletion after the lock is released via LockManager", () => {
+      const lockId = "lock_test_release";
+      lockManager.applyLock(lockId, { source: "loki" });
+
+      const onReject = vi.fn();
+      const filter = createLockTransactionFilter(lockManager, onReject);
+
+      const deletion = {
+        docChanged: true,
+        steps: [createMockStep(0, 20)],
+      } as unknown as Transaction;
+      const state = createMockEditorState([createMockLockedNode(lockId)]);
+
+      // While the lock is registered, the deletion is blocked
+      expect(filter(deletion, state)).toBe(false);
+      expect(onReject).toHaveBeenCalledTimes(1);
+
+      // Release the lock through the manager, then retry the same deletion
+      lockManager.removeLock(lockId);
+
+      expect(filter(deletion, state)).toBe(true);
+      expect(onReject).toHaveBeenCalledTimes(1); // no additional rejection
     });
   });
 });

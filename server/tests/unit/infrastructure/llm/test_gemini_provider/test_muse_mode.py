@@ -23,7 +23,7 @@ class TestGeminiProviderMuseMode:
         self, provider: GeminiLLMProvider, mock_response: MagicMock
     ) -> None:
         """Muse mode generates intervention with provoke action."""
-        provider._model.generate_content.return_value = mock_response
+        provider._client.models.generate_content.return_value = mock_response
 
         response = provider.generate_intervention(context="He opened the door.", mode="muse")
 
@@ -40,7 +40,7 @@ class TestGeminiProviderMuseMode:
         mock_response.candidates[0].content.parts[0].text = json.dumps(
             {"action": "rewrite", "content": "He smashed the door open."}
         )
-        provider._model.generate_content.return_value = mock_response
+        provider._client.models.generate_content.return_value = mock_response
 
         response = provider.generate_intervention(context="He opened the door.", mode="muse")
 
@@ -52,7 +52,7 @@ class TestGeminiProviderMuseMode:
         self, provider: GeminiLLMProvider, mock_response: MagicMock
     ) -> None:
         """Muse mode respects safety settings."""
-        provider._model.generate_content.return_value = mock_response
+        provider._client.models.generate_content.return_value = mock_response
 
         response = provider.generate_intervention(context="He opened the door.", mode="muse")
 

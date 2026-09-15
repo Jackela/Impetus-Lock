@@ -49,6 +49,9 @@ Historical session summaries:
 - `SESSION_CONTINUATION_SUMMARY.md`
 - `PROJECT_STATUS_REPORT.md`
 
+The later root report cleanup keeps these 11 dated records under
+`docs/archive/2026-09/`; their historical facts and status are unchanged.
+
 ### 3. Documentation Index Created ✅
 
 Created `docs/INDEX.md` providing:
@@ -67,11 +70,8 @@ DEVELOPMENT.md                     # Development workflow
 TESTING.md                         # Testing strategy
 API_CONTRACT.md                    # API specifications
 ARCHITECTURE_GUARDS.md             # Architecture rules
-ARCHITECTURE_SAFETY_NET_STATUS.md  # Safety net status
 DEPENDENCY_MANAGEMENT.md           # Dependency security
-PROJECT_SUMMARY.md                 # High-level summary
-QUICKSTART_TESTING.md              # Quick testing guide
-READY_FOR_TESTING.md               # Testing readiness
+docs/archive/2026-09/              # Historical root reports
 LICENSE                            # Project license
 ```
 
@@ -133,7 +133,7 @@ scripts/                           # Build and utility scripts
 
 ## File Organization Best Practices Applied
 
-✅ Root directory contains only active/essential documentation  
+✅ Root directory contains active/essential documentation
 ✅ Historical documents archived with clear categorization  
 ✅ Assets organized by application structure (client/src/assets/)  
 ✅ Documentation includes INDEX for easy navigation  

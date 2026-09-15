@@ -46,6 +46,18 @@ function prepareChartData(vector1: StyleVector, vector2: StyleVector): ChartData
   }));
 }
 
+/**
+ * Renders a radar chart comparing two style vectors with optional export.
+ *
+ * @param root0 - Component props
+ * @param root0.vector1 - Style vector of the first text
+ * @param root0.vector2 - Style vector of the second text
+ * @param root0.label1 - Display label for the first style (default: "Style 1")
+ * @param root0.label2 - Display label for the second style (default: "Style 2")
+ * @param root0.text1 - Original text of the first sample, for export
+ * @param root0.text2 - Original text of the second sample, for export
+ * @returns The rendered comparison radar chart
+ */
 export function StyleComparisonChart({
   vector1,
   vector2,

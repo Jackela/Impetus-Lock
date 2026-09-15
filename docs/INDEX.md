@@ -2,13 +2,14 @@
 
 **Last Updated**: 2025-11-07
 
-This directory contains archived process documents, reports, and session summaries for the Impetus Lock project.
+This directory contains active guides and archived process documents, reports, and session summaries for the Impetus Lock project.
 
 ## Directory Structure
 
 ```
 docs/
 ├── INDEX.md (this file)
+├── archive/2026-09/ # Root historical reports and session records
 ├── process/          # Feature implementation process documents
 ├── reports/          # Validation, review, and analysis reports
 └── sessions/         # Session summaries and status updates
@@ -33,7 +34,6 @@ CI/CD validation and code quality reports:
 - **GITHUB_ACTIONS_ANALYSIS.md** - GitHub Actions workflow analysis
 - **COMPREHENSIVE_REVIEW_REPORT.md** - Comprehensive code review and quality analysis
 - **P0_CRITICAL_FIXES_SUMMARY.md** - Critical fixes summary (P0 priority)
-- **act-full-run.log** - Full Act CLI execution log
 
 ## Session Summaries (sessions/)
 
@@ -56,11 +56,25 @@ Core project documentation remains in the root directory:
 - **TESTING.md** - Testing strategy and commands
 - **API_CONTRACT.md** - API endpoint specifications
 - **ARCHITECTURE_GUARDS.md** - Architecture enforcement rules
-- **ARCHITECTURE_SAFETY_NET_STATUS.md** - Architecture safety net status
 - **DEPENDENCY_MANAGEMENT.md** - Dependency security and management
-- **PROJECT_SUMMARY.md** - High-level project summary
-- **QUICKSTART_TESTING.md** - Quick testing guide
-- **READY_FOR_TESTING.md** - Testing readiness checklist
+
+Historical root reports are in [archive/2026-09/](archive/2026-09/).
+
+## Historical Root Reports (archive/2026-09/)
+
+The following reports retain their original facts and status as dated process records:
+
+- [AI_INTEGRATION_STATUS.md](archive/2026-09/AI_INTEGRATION_STATUS.md) - AI integration status
+- [ARCHITECTURE_SAFETY_NET_STATUS.md](archive/2026-09/ARCHITECTURE_SAFETY_NET_STATUS.md) - Architecture safety net status
+- [E2E_FIX_SUMMARY.md](archive/2026-09/E2E_FIX_SUMMARY.md) - E2E debugging and fix summary
+- [E2E_STABILITY_FIX.md](archive/2026-09/E2E_STABILITY_FIX.md) - E2E stability fix plan
+- [E2E_TEST_STATUS.md](archive/2026-09/E2E_TEST_STATUS.md) - E2E execution status
+- [FIX_PLAN.md](archive/2026-09/FIX_PLAN.md) - CI fix plan
+- [READY_FOR_TESTING.md](archive/2026-09/READY_FOR_TESTING.md) - Historical testing readiness record
+- [RESEARCH_FINDINGS.md](archive/2026-09/RESEARCH_FINDINGS.md) - CI and Poetry research findings
+- [SESSION_SUMMARY.md](archive/2026-09/SESSION_SUMMARY.md) - Historical session summary
+- [TEST_SUITE_EXAMPLES.md](archive/2026-09/TEST_SUITE_EXAMPLES.md) - Lock storage test examples
+- [TEST_SUITE_SUMMARY.md](archive/2026-09/TEST_SUITE_SUMMARY.md) - Lock storage test suite summary
 
 ## Component Documentation (components/)
 
@@ -97,7 +111,7 @@ These documents have been archived to keep the root directory clean and focused 
 
 ## Navigation Tips
 
-- **For current status**: See root-level README.md and READY_FOR_TESTING.md
+- **For current status**: See root-level README.md, DEVELOPMENT.md, and TESTING.md
 - **For implementation details**: Check process/ subdirectory
 - **For validation results**: Check reports/ subdirectory
 - **For historical context**: Check sessions/ subdirectory

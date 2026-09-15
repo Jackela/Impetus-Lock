@@ -144,7 +144,7 @@ run_backend_setup() {
   require poetry
   pushd "$SERVER_DIR" >/dev/null
   info "Installing backend dependencies"
-  poetry install --no-root >/dev/null 2>&1
+  poetry install >/dev/null 2>&1
   info "Running Alembic migrations"
   poetry run alembic upgrade head
   popd >/dev/null

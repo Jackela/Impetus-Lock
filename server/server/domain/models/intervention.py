@@ -155,7 +155,6 @@ class InterventionResponse(BaseModel):
     @model_validator(mode="after")
     def _validate_payload(self) -> "InterventionResponse":
         """Ensure required fields exist for each action type."""
-
         if self.action in {"provoke", "rewrite"}:
             if not self.content or not self.content.strip():
                 raise ValueError("content is required for provoke/rewrite actions")

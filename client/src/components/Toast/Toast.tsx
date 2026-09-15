@@ -27,6 +27,14 @@ export interface ToastProps {
  * Shows success, error, or info messages with auto-dismiss capability.
  * Supports accessibility with ARIA live regions.
  *
+ * @param root0 - Component props
+ * @param root0.id - Unique identifier for the toast
+ * @param root0.type - Type of toast notification
+ * @param root0.message - Message to display
+ * @param root0.duration - Auto-close delay in milliseconds (0 = no auto-close)
+ * @param root0.onDismiss - Callback when toast is dismissed
+ * @returns The rendered toast notification
+ *
  * @example
  * ```tsx
  * <Toast

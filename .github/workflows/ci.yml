@@ -67,6 +67,10 @@ jobs:
         working-directory: ./server
         run: poetry run ruff check .
 
+      - name: Run pydocstyle (Docstring Guard)
+        working-directory: ./server
+        run: poetry run pydocstyle server/
+
       - name: Run Ruff format check
         working-directory: ./server
         run: poetry run ruff format --check
@@ -191,12 +195,15 @@ jobs:
       - name: Install dependencies
         working-directory: ./server
         run: |
-          pip install google-generativeai
           poetry install
 
       - name: Run pytest
         working-directory: ./server
-        run: poetry run pytest tests/ -v -n auto --tb=short -k "not RedisIntegration and not redis_pubsub" || (echo "::error::Tests failed" && exit 1)
+        run: poetry run pytest tests/ --cov=server --cov-report=term-missing -v -n auto --tb=short -k "not RedisIntegration and not redis_pubsub" || (echo "::error::Tests failed" && exit 1)
+
+      - name: Enforce lock-critical line coverage
+        working-directory: ./server
+        run: poetry run coverage report --rcfile=coverage-critical.ini
 
   frontend-tests:
     name: Frontend Tests
@@ -226,4 +233,4 @@ jobs:
 
       - name: Run Vitest unit tests
         working-directory: ./client
-        run: npm run test -- --passWithNoTests
+        run: npm run test -- --coverage

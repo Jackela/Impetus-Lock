@@ -22,5 +22,7 @@
  * ```
  */
 
+/** Re-export of the Skeleton component. */
 export { Skeleton } from "./Skeleton";
+/** Re-export of the SkeletonProps type. */
 export type { SkeletonProps } from "./Skeleton";

@@ -44,14 +44,14 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "slow: Tests taking >1 second")
     config.addinivalue_line("markers", "llm_live: Tests requiring live LLM APIs")
     config.addinivalue_line("markers", "requires_anthropic: Tests requiring anthropic SDK")
-    config.addinivalue_line("markers", "requires_gemini: Tests requiring google-generativeai SDK")
+    config.addinivalue_line("markers", "requires_gemini: Tests requiring google-genai SDK")
     config.addinivalue_line("markers", "requires_openai: Tests requiring openai SDK")
 
 
 def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
     """Skip test files that import optional SDKs when dependencies unavailable.
 
-    Files that import optional SDKs (anthropic, google-generativeai) at module
+    Files that import optional SDKs (anthropic, google-genai) at module
     level can cause collection hangs. This hook skips those files when the
     dependencies are not available.
 
@@ -68,7 +68,7 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
 
     # Map test file/directory patterns to their optional dependencies
     optional_deps: dict[str, str] = {
-        "test_gemini_provider": "google.generativeai",
+        "test_gemini_provider": "google.genai",
         "test_anthropic_provider": "anthropic",
         "test_claude_provider": "anthropic",
         "test_openai_provider": "openai",

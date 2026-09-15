@@ -73,7 +73,7 @@
 Essential documentation only:
 - README.md, CLAUDE.md, DEVELOPMENT.md, TESTING.md
 - API_CONTRACT.md, ARCHITECTURE_GUARDS.md
-- DEPENDENCY_MANAGEMENT.md, PROJECT_SUMMARY.md
+- DEPENDENCY_MANAGEMENT.md
 - LICENSE
 
 ### Documentation (docs/)

@@ -79,7 +79,7 @@ server/
 ```python
 # tests/test_main.py
 from fastapi.testclient import TestClient
-from server.main import app
+from server.api.main import app
 
 client = TestClient(app)
 
@@ -160,7 +160,7 @@ def test_locked_task_cannot_be_deleted(task_service: TaskService) -> None:
 
 import pytest
 from fastapi.testclient import TestClient
-from server.main import app
+from server.api.main import app
 
 @pytest.fixture
 def client() -> TestClient:

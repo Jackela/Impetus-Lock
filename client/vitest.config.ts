@@ -12,6 +12,19 @@ export default defineConfig({
     setupFiles: "./vitest.setup.ts",
     include: ["tests/**/*.{test,spec}.{ts,tsx}", "src/**/*.{test,spec}.{ts,tsx}"],
     exclude: ["tests/e2e/**", "node_modules"],
+    coverage: {
+      provider: "v8",
+      include: [
+        "src/services/LockManager.ts",
+        "src/components/Editor/TransactionFilter.ts",
+        "src/services/ContentInjector.ts",
+        "src/utils/prosemirror-helpers.ts",
+        "src/utils/textRange.ts",
+        "src/utils/editorMarkdown.ts",
+      ],
+      reporter: ["text", "json", "html"],
+      thresholds: { lines: 80 },
+    },
     pool: testPool,
     poolOptions: {
       threads: {

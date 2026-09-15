@@ -8,7 +8,7 @@ Impetus Lock (创意施压者) is an adversarial AI Agent that acts as a "creati
 
 ### Frontend
 
-- **Framework**: React 18 + Vite 5
+- **Framework**: React 19 + Vite 7
 - **Language**: TypeScript (strict mode)
 - **Editor Core**: Milkdown (ProseMirror-based) with custom plugins
 - **State Management**: React Query (@tanstack/react-query) for server state
@@ -239,5 +239,3 @@ WRITING → (idle timeout) → IDLE → (stuck timeout) → STUCK
 - [Architecture Guards](../ARCHITECTURE_GUARDS.md) - Clean Architecture rules
 - [Development Guide](../DEVELOPMENT.md) - Setup and workflow
 - [Testing Guide](../TESTING.md) - Testing strategy
-- [Contributing](../CONTRIBUTING.md) - How to contribute
-- [Security](../SECURITY.md) - Security policy

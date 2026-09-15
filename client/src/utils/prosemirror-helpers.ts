@@ -189,6 +189,7 @@ export function extractLockAttributes(
  *
  * @param node - ProseMirror node to inspect
  * @param lockManager - Optional LockManager instance for source lookup
+ * @returns The lock ID, or `null` if the node is not locked
  */
 export function extractLockId(node: Node, lockManager?: LockManager): string | null {
   return extractLockAttributes(node, lockManager)?.lockId ?? null;

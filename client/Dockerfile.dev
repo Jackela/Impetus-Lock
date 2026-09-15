@@ -3,7 +3,7 @@
 # This Dockerfile is optimized for development with hot reload support.
 # For production builds, see Dockerfile.prod
 
-FROM node:20-alpine
+FROM node:24-alpine
 
 # Labels
 LABEL maintainer="Impetus Team <team@impetus-lock.dev>"

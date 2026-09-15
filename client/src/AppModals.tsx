@@ -33,6 +33,33 @@ interface AppModalsProps {
   currentProvider?: string | null;
 }
 
+/**
+ * Renders the application's modal stack (welcome, config error, settings, create task).
+ *
+ * @param root0 - Component props
+ * @param root0.showWelcome - Whether the welcome modal is visible
+ * @param root0.onDismissWelcome - Callback to dismiss the welcome modal
+ * @param root0.showConfigError - Whether the config error modal is visible
+ * @param root0.onDismissConfigError - Callback to dismiss the config error modal
+ * @param root0.onOpenSettingsFromError - Callback to open settings from the error modal
+ * @param root0.lastLLMError - Last intervention API error, if any
+ * @param root0.showSettings - Whether the LLM settings modal is visible
+ * @param root0.onCloseSettings - Callback to close the settings modal
+ * @param root0.llmConfig - Current LLM configuration, if any
+ * @param root0.storageMode - Current vault storage mode
+ * @param root0.vaultLocked - Whether the LLM key vault is locked
+ * @param root0.metadata - Vault metadata, if any
+ * @param root0.onSaveConfig - Callback to persist an LLM configuration
+ * @param root0.onClearConfig - Callback to clear the stored configuration
+ * @param root0.onStorageModeChange - Callback to change the vault storage mode
+ * @param root0.onUnlock - Callback to unlock the vault with a passphrase
+ * @param root0.onLock - Callback to lock the vault
+ * @param root0.showCreateTaskModal - Whether the create task modal is visible
+ * @param root0.onCloseCreateTaskModal - Callback to close the create task modal
+ * @param root0.onTaskCreated - Callback invoked after a task is created
+ * @param root0.currentProvider - Fallback provider id derived from the saved config
+ * @returns The rendered modal subtree
+ */
 export function AppModals({
   showWelcome,
   onDismissWelcome,

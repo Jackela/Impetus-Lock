@@ -36,7 +36,6 @@ src/components/Editor/EditorCore.tsx
 src/components/Editor/LockDecorations.ts
 src/components/TimerIndicator.tsx
 src/components/WelcomeModal.tsx
-src/hooks/useLockEnforcement.ts
 src/services/ContentInjector.ts
 src/styles/locked-content.css
 src/utils/logger.ts

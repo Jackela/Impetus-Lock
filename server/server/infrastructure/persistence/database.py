@@ -455,7 +455,14 @@ async def init_database(
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency for database sessions."""
+    """Provide a database session as a FastAPI dependency.
+
+    Yields:
+        An async session bound to the initialized database manager.
+
+    Raises:
+        RuntimeError: If the database manager has not been initialized.
+    """
     if _db_manager is None:
         raise RuntimeError("Database manager not initialized")
     async with _db_manager.session() as session:

@@ -19,6 +19,11 @@ import { useAppState } from "./AppState";
 import { AppLayout } from "./AppLayout";
 import { AppModals } from "./AppModals";
 
+/**
+ * Root application component wiring editor, task sync, LLM config, and modals.
+ *
+ * @returns The application layout with editor and modal subtree
+ */
 function App() {
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);

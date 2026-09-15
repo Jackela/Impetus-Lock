@@ -25,6 +25,7 @@ import "./NewTaskButton.css";
  * @param props.disabled - Whether the button is disabled (default: false)
  * @param props.ariaLabel - Custom aria-label (default: "Create new task")
  * @param props.className - Additional CSS classes
+ * @returns The rendered floating action button
  *
  * @example
  * ```tsx

@@ -282,7 +282,9 @@ lint:
 - ✅ Application Layer Dependencies: KEPT
 - ✅ Infrastructure Layer Dependencies: KEPT
 
-All 3 contracts passing with 66 files and 177 dependencies analyzed.
+The CI workflow runs all three contracts with `poetry run lint-imports`; the output of the current CI run is the validation record.
+
+**Documentation enforcement note:** Article V remains a constitutional requirement. The current CI workflow runs Ruff, mypy, ESLint, and Prettier. It does not enforce JSDoc or Python docstring presence, while the existing ESLint JSDoc validation rules for `check-types` and `valid-types` remain enabled.
 
 ---
 
@@ -330,7 +332,7 @@ All 3 contracts passing with 66 files and 177 dependencies analyzed.
 
 ```bash
 cd server
-poetry install --no-root
+poetry install
 poetry run lint-imports
 ```
 
@@ -430,4 +432,4 @@ npm run lint -- --format json > lint-report.json
 ---
 
 **Last Updated:** 2025-11-06  
-**Status:** ✅ Active in CI, Ready for P1 Development
+**Status:** ✅ Active in CI

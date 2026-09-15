@@ -137,7 +137,7 @@ Successfully implemented P3 Vibe Completion feature, adding comprehensive sensor
 - ✅ T037: **Type-check passing (0 errors)**
 - ✅ T038-T042: Manual tests deferred (unit tests validate infrastructure)
 - ✅ T043: CREDITS.md not updated (buzz.mp3 is placeholder)
-- ✅ T044: E2E_TEST_STATUS.md updates deferred
+- ✅ T044: [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) updates deferred
 - ✅ T045-T047: Performance validated via unit tests (timing contracts)
 - ✅ T048: Act CLI deferred (CI already passing)
 

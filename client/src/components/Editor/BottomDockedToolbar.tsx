@@ -44,6 +44,9 @@ export interface BottomDockedToolbarProps {
  * Remains fixed during scroll (doesn't move with content).
  *
  * @param props - Component props
+ * @param props.editor - Milkdown Editor instance, or `null` before ready
+ * @param props.className - Optional custom className for styling override
+ * @param props.zIndex - Optional z-index override for stacking context
  * @returns Toolbar element or null if hidden
  */
 export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({

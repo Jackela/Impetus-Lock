@@ -66,6 +66,10 @@ function formatRelativeTime(timestamp: number): string {
  * selection and deletion functionality.
  *
  * @param props - Component props
+ * @param props.task - Task record to render
+ * @param props.isSelected - Whether this task is currently selected
+ * @param props.onClick - Callback when the task card is clicked
+ * @param props.onDelete - Callback when the task is deleted
  * @returns Task item JSX element
  *
  * @example
@@ -81,6 +85,8 @@ function formatRelativeTime(timestamp: number): string {
 export function TaskItem({ task, isSelected, onClick, onDelete }: TaskItemProps): JSX.Element {
   /**
    * Handle delete button click with confirmation.
+   *
+   * @param e - Mouse event from the delete button click
    */
   const handleDelete = (e: React.MouseEvent): void => {
     e.stopPropagation();

@@ -100,6 +100,9 @@ export class LockError extends AppError {
 
 /**
  * Type guard to check if error is an AppError.
+ *
+ * @param error - Unknown error to check
+ * @returns True if error is an AppError instance
  */
 export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
@@ -107,6 +110,9 @@ export function isAppError(error: unknown): error is AppError {
 
 /**
  * Type guard to check if error is an APIError.
+ *
+ * @param error - Unknown error to check
+ * @returns True if error is an APIError instance
  */
 export function isAPIError(error: unknown): error is APIError {
   return error instanceof APIError;
@@ -114,6 +120,9 @@ export function isAPIError(error: unknown): error is APIError {
 
 /**
  * Extract error message from unknown error type.
+ *
+ * @param error - Unknown error to extract a message from
+ * @returns The error message, or a fallback for non-Error values
  */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -127,6 +136,9 @@ export function getErrorMessage(error: unknown): string {
 
 /**
  * Extract error code from unknown error type.
+ *
+ * @param error - Unknown error to extract a code from
+ * @returns The AppError code, or "UNKNOWN" for other errors
  */
 export function getErrorCode(error: unknown): string {
   if (isAppError(error)) {

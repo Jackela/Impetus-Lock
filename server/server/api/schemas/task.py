@@ -20,7 +20,7 @@ _anchor_adapter: TypeAdapter[Anchor] = TypeAdapter(Anchor)
 
 
 class TaskCreateRequest(BaseModel):
-    """Request schema for creating a task.
+    r"""Request schema for creating a task.
 
     Attributes:
         content: Task content in Markdown format (1-100000 chars).
@@ -34,7 +34,7 @@ class TaskCreateRequest(BaseModel):
     Example:
         ```python
         request = TaskCreateRequest(
-            content="# My Task\\n\\nContent here",
+            content="# My Task\n\nContent here",
             lock_ids=["lock_01j4z3m8a6q3qz2x8j4z3m8a"]
         )
         ```

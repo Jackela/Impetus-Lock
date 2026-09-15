@@ -24,6 +24,14 @@ class LLMProviderError(RuntimeError):
         status_code: int,
         provider: str | None = None,
     ) -> None:
+        """Initialize the error with its structured payload.
+
+        Args:
+            code: Stable machine-readable error code.
+            message: Human-facing message (safe to surface to clients).
+            status_code: HTTP status that best matches the failure.
+            provider: Optional provider identifier (e.g., "openai").
+        """
         super().__init__(message)
         self.code = code
         self.message = message
@@ -65,6 +73,7 @@ class AuthenticationError(AppError):
     """Authentication failed error."""
 
     def __init__(self, message: str = "Authentication failed"):
+        """Initialize with code AUTHENTICATION_ERROR and status 401."""
         super().__init__("AUTHENTICATION_ERROR", message, 401)
 
 
@@ -72,6 +81,7 @@ class AuthorizationError(AppError):
     """Authorization failed error (not authorized)."""
 
     def __init__(self, message: str = "Not authorized"):
+        """Initialize with code AUTHORIZATION_ERROR and status 403."""
         super().__init__("AUTHORIZATION_ERROR", message, 403)
 
 
@@ -79,6 +89,11 @@ class RateLimitError(AppError):
     """Rate limit exceeded error."""
 
     def __init__(self, retry_after: int = 60):
+        """Initialize with code RATE_LIMIT_EXCEEDED and status 429.
+
+        Args:
+            retry_after: Seconds until the client may retry, stored in details.
+        """
         super().__init__(
             "RATE_LIMIT_EXCEEDED",
             "Rate limit exceeded. Please try again later.",
@@ -91,6 +106,12 @@ class ValidationError(AppError):
     """Validation error with field details."""
 
     def __init__(self, message: str, details: dict[str, Any] | None = None):
+        """Initialize with code VALIDATION_ERROR and status 422.
+
+        Args:
+            message: Description of the validation failure.
+            details: Optional field-level validation details.
+        """
         super().__init__("VALIDATION_ERROR", message, 422, details)
 
 
@@ -98,6 +119,7 @@ class ServiceUnavailableError(AppError):
     """Service temporarily unavailable error."""
 
     def __init__(self, message: str = "Service temporarily unavailable"):
+        """Initialize with code SERVICE_UNAVAILABLE and status 503."""
         super().__init__("SERVICE_UNAVAILABLE", message, 503)
 
 
@@ -107,6 +129,12 @@ class DatabaseError(AppError):
     def __init__(
         self, message: str = "Database operation failed", details: dict[str, Any] | None = None
     ):
+        """Initialize with code DATABASE_ERROR and status 500.
+
+        Args:
+            message: Description of the database failure.
+            details: Optional structured details about the failure.
+        """
         super().__init__("DATABASE_ERROR", message, 500, details)
 
 
@@ -114,6 +142,7 @@ class ConflictError(AppError):
     """Resource conflict error (e.g., duplicate entry)."""
 
     def __init__(self, message: str = "Resource conflict"):
+        """Initialize with code CONFLICT_ERROR and status 409."""
         super().__init__("CONFLICT_ERROR", message, 409)
 
 
@@ -121,4 +150,5 @@ class NotFoundError(AppError):
     """Resource not found error."""
 
     def __init__(self, message: str = "Resource not found"):
+        """Initialize with code NOT_FOUND and status 404."""
         super().__init__("NOT_FOUND", message, 404)

@@ -87,6 +87,7 @@ export class InterventionAPIError extends Error {
  * @param options - Optional configuration
  * @param options.idempotencyKey - Custom idempotency key (auto-generated if not provided)
  * @param options.signal - AbortSignal for request cancellation
+ * @param options.retries - Number of retry attempts on failure (default: 2)
  * @returns Intervention response from backend
  *
  * @throws {InterventionAPIError} If API returns error (400, 422, 429, 500)
@@ -266,7 +267,7 @@ function currentProvider(): string | undefined {
  * Convenience wrapper for generateIntervention with Muse-specific defaults.
  * Extracts context using contextExtractor and calls backend API.
  *
- * @param fullText - Full editor content
+ * @param context - Editor context text (e.g., last sentences before the cursor)
  * @param cursorPosition - Current cursor position
  * @param docVersion - Document version (for optimistic locking)
  * @returns Intervention response with provoke action

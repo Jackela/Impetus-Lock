@@ -75,7 +75,6 @@ def log_llm_call(
     error_code: str | None = None,
 ) -> None:
     """Emit a structured log entry describing an LLM invocation."""
-
     extra: dict[str, Any] = {
         "event": "llm_call",
         "provider": provider_name,
@@ -105,5 +104,4 @@ def log_llm_call(
 
 def prometheus_latest() -> tuple[bytes, str]:
     """Expose current metrics payload and content-type."""
-
     return generate_latest(), CONTENT_TYPE_LATEST

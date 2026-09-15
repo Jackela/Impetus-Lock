@@ -8,6 +8,14 @@ interface StyleHistoryListProps {
   onSelect: (record: StyleHistoryRecord) => void;
 }
 
+/**
+ * Paginated list of saved style analysis records with delete confirmation.
+ *
+ * @param root0 - Component props
+ * @param root0.userId - User whose style history is listed
+ * @param root0.onSelect - Callback when a history record is selected
+ * @returns The rendered style history list
+ */
 export function StyleHistoryList({ userId, onSelect }: StyleHistoryListProps): JSX.Element {
   const { history, total, loading, error, fetchHistory, remove } = useStyleHistory();
   const [offset, setOffset] = useState(0);

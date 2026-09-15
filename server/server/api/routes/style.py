@@ -370,7 +370,7 @@ async def apply_style(
     """Apply learned style to AI-generated text.
 
     Retrieves user's stored style profile and applies style transformations
-to the provided text.
+    to the provided text.
 
     Args:
         request: Style application request with text and user_id.

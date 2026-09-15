@@ -48,11 +48,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.state = { hasError: false, error: null };
   }
 
+  /**
+   * Update boundary state from a descendant error.
+   *
+   * @param error - Error thrown by a descendant component
+   * @returns State patch enabling the fallback UI on next render
+   */
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     // Update state so the next render will show the fallback UI
     return { hasError: true, error };
   }
 
+  /**
+   * Log the caught error and forward it to the optional custom handler.
+   *
+   * @param error - Error caught by the boundary
+   * @param errorInfo - Component stack information for the error
+   * @param errorInfo.componentStack - Stack trace of the component tree
+   */
   override componentDidCatch(error: Error, errorInfo: { componentStack: string }): void {
     // Log the error to an error reporting service
     logger.error("ErrorBoundary caught an error", { error, errorInfo });
@@ -65,6 +78,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.setState({ hasError: false, error: null });
   };
 
+  /**
+   * Render the fallback UI when errored, otherwise render children.
+   *
+   * @returns The fallback element or the wrapped children
+   */
   override render(): ReactNode {
     if (this.state.hasError) {
       // Custom fallback UI

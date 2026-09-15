@@ -101,10 +101,10 @@ Development: http://127.0.0.1:8000/
 | `context` | string | ✅ | 光标前最后 N 句话。服务端不持久化原文 |
 | `mode` | enum | ✅ | `"muse"` 或 `"loki"` |
 | `mock` | boolean | ❌ | 是否使用模拟数据（用于测试），默认 `false` |
-| `client_meta` | object | ❌ | 客户端编辑器的当前状态，用于后端决策 |
-| `client_meta.doc_version` | integer | ❌ | ProseMirror 文档版本号 (≥0) |
-| `client_meta.selection_from` | integer | ❌ | 选区起始位置 (≥0) |
-| `client_meta.selection_to` | integer | ❌ | 选区结束位置 (≥0) |
+| `client_meta` | object | ✅ | 客户端编辑器的当前状态，用于后端决策 |
+| `client_meta.doc_version` | integer | ✅ | ProseMirror 文档版本号 (≥0) |
+| `client_meta.selection_from` | integer | ✅ | 选区起始位置 (≥0) |
+| `client_meta.selection_to` | integer | ✅ | 选区结束位置 (≥0) |
 
 **Mode 说明:**
 - **`muse`**: Agent 在检测到 STUCK 状态时触发（例如 60 秒无输入）

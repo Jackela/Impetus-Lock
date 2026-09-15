@@ -16,7 +16,6 @@ hooks/
 ├── useFocusTrap.ts             # Modal focus management
 ├── useInterventionApiError.ts  # API error parsing
 ├── useLLMConfig.ts             # LLM configuration management
-├── useLockEnforcement.ts       # Lock state management
 ├── useLokiTimer.ts             # Loki mode random timer
 ├── useManualDelete.ts          # Manual delete operations
 ├── useManualTrigger.ts         # Manual AI trigger
@@ -66,7 +65,6 @@ import { useWritingState, useLokiTimer, useSensoryFeedback } from "../hooks";
 
 - `useLLMConfig` - LLM settings
 - `useTelemetry` - Analytics
-- `useLockEnforcement` - Lock management
 
 ### Utility Hooks
 
