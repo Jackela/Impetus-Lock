@@ -36,4 +36,13 @@ Every archived record is preserved exactly as it was written:
 
 The eight entries above are the exceptions. Every other archived directory
 has a fully checked `tasks.md` with no completion contradiction, and none of
-them carries an explicit Status line in its `proposal.md`.
+the pre-2026-09 archives carries an explicit Status line in its
+`proposal.md`.
+
+The three `2026-09-15-*` archives (migrate-gemini-sdk,
+refactor-route-service-boundaries, refactor-unused-client-state) do carry a
+`Status: Proposed; awaiting approval` line — written when the drafts were
+created — followed by an appended `Approved: 2026-09-15 (...)` record of the
+user approval that authorized implementation the same day. Unlike the eight
+indexed entries, these have contemporaneous approval evidence and fully
+checked tasks; the Status line is preserved as history, not an open request.
