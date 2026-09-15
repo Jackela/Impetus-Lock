@@ -51,7 +51,7 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
     """Skip test files that import optional SDKs when dependencies unavailable.
 
-    Files that import optional SDKs (anthropic, google-generativeai) at module
+    Files that import optional SDKs (anthropic, google-genai) at module
     level can cause collection hangs. This hook skips those files when the
     dependencies are not available.
 
