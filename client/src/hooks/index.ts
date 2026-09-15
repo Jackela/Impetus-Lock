@@ -10,7 +10,6 @@
  * Available hooks include:
  * - **Editor & Content**: useEditorInitialization, useWritingState, useManualDelete, useSensoryFeedback
  * - **Task Management**: useTasks, useCreateTask, useTaskSync
- * - **Lock System**: useLockEnforcement
  * - **UI Components**: useToast, useFocusTrap, useToolbarActions
  * - **Animation & Feedback**: useAnimationController, useAudioFeedback
  * - **Agent Modes**: useLokiTimer, useWritingState, useManualTrigger
@@ -20,7 +19,6 @@
  * - **Utilities**: useMediaQuery
  */
 
-export { useLockEnforcement } from "./useLockEnforcement";
 export { useWritingState } from "./useWritingState";
 export { useTelemetry } from "./useTelemetry";
 export { useTaskSync } from "./useTaskSync";

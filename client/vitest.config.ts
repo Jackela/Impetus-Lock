@@ -18,7 +18,6 @@ export default defineConfig({
         "src/services/LockManager.ts",
         "src/components/Editor/TransactionFilter.ts",
         "src/services/ContentInjector.ts",
-        "src/hooks/useLockEnforcement.ts",
         "src/utils/prosemirror-helpers.ts",
         "src/utils/textRange.ts",
         "src/utils/editorMarkdown.ts",

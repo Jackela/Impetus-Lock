@@ -1,6 +1,7 @@
 # Change: Remove unused cloud-sync and lock hook entry points
 
 Status: Proposed; awaiting approval. Tier 3, audit finding A17. Production code remains unchanged in this proposal.
+Approved: 2026-09-14 (user-approved followup implementation plan; implementer dispatched same day)
 
 ## Why
 
