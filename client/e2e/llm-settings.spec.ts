@@ -26,7 +26,7 @@ test.describe("LLM Settings", () => {
 
     await openLLMSettings(page);
     await page.getByTestId("llm-provider-select").selectOption("anthropic");
-    await page.getByTestId("llm-model-input").fill("claude-3-5-haiku-latest");
+    await page.getByTestId("llm-model-input").fill("claude-sonnet-5");
     await page.getByTestId("llm-key-input").fill("sk-ant-playwright");
     const saveButton = page.getByTestId("llm-settings-save");
     await saveButton.scrollIntoViewIfNeeded();

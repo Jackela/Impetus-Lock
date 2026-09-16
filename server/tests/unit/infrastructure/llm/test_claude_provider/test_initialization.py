@@ -30,7 +30,7 @@ def claude_provider(mock_api_key: str) -> ClaudeProvider:
     """Fixture for ClaudeProvider instance."""
     return ClaudeProvider(
         api_key=mock_api_key,
-        model=ClaudeProvider.CLAUDE_35_SONNET,
+        model=ClaudeProvider.CLAUDE_SONNET_5,
         temperature=0.8,
         max_tokens=400,
         use_instructor=False,
@@ -59,7 +59,7 @@ class TestClaudeProviderInitialization:
         """Test initialization with explicit API key."""
         provider = ClaudeProvider(api_key=mock_api_key)
 
-        assert provider.model == ClaudeProvider.CLAUDE_35_SONNET
+        assert provider.model == ClaudeProvider.CLAUDE_SONNET_5
         assert provider.temperature == ClaudeProvider.DEFAULT_TEMPERATURE
         assert provider.max_tokens == ClaudeProvider.DEFAULT_MAX_TOKENS
         assert provider.use_instructor is True
@@ -86,7 +86,7 @@ class TestClaudeProviderInitialization:
     @pytest.mark.parametrize(
         "param_name,param_value,expected_attr",
         [
-            ("model", ClaudeProvider.CLAUDE_35_OPUS, "model"),
+            ("model", ClaudeProvider.CLAUDE_OPUS_5, "model"),
             ("temperature", 0.5, "temperature"),
             ("max_tokens", 1000, "max_tokens"),
             ("max_retries", 5, "max_retries"),
@@ -133,17 +133,17 @@ class TestClaudeProviderProperties:
         """Test get_supported_models method."""
         models = claude_provider.get_supported_models()
 
-        assert ClaudeProvider.CLAUDE_35_SONNET in models
-        assert ClaudeProvider.CLAUDE_35_OPUS in models
-        assert ClaudeProvider.CLAUDE_35_HAIKU in models
-        assert "claude-3-5-sonnet-latest" in models
+        assert ClaudeProvider.CLAUDE_SONNET_5 in models
+        assert ClaudeProvider.CLAUDE_OPUS_5 in models
+        assert ClaudeProvider.CLAUDE_HAIKU_4_5 in models
+        assert "claude-sonnet-4-6" in models
 
     @pytest.mark.parametrize(
         "model,expected",
         [
-            (ClaudeProvider.CLAUDE_35_SONNET, True),
-            (ClaudeProvider.CLAUDE_35_OPUS, True),
-            ("claude-3-5-sonnet-latest", True),
+            (ClaudeProvider.CLAUDE_SONNET_5, True),
+            (ClaudeProvider.CLAUDE_OPUS_5, True),
+            ("claude-sonnet-4-6", True),
             ("gpt-4", False),
             ("invalid-model", False),
         ],

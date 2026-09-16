@@ -37,8 +37,8 @@ _MODEL_ENV_VARS: dict[ProviderName, str] = {
 
 _MODEL_FALLBACKS: dict[ProviderName, str] = {
     "openai": "gpt-4o-mini",
-    "anthropic": "claude-3-5-haiku-latest",
-    "claude": "claude-3-5-sonnet-20241022",
+    "anthropic": "claude-sonnet-5",
+    "claude": "claude-sonnet-5",
     "gemini": "gemini-2.0-flash-lite",
     "debug": "debug-model",
 }

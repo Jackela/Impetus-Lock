@@ -52,7 +52,7 @@ export const PROVIDER_METADATA: Record<LLMProviderName, ProviderMetadata> = {
   },
   anthropic: {
     label: "Anthropic Claude",
-    defaultModel: "claude-3-5-haiku-latest",
+    defaultModel: "claude-sonnet-5",
     docUrl: "https://docs.anthropic.com/claude/docs/intro-to-the-api",
     pricingHint: "Usage-based (~$3 per 1M input tokens)",
   },

@@ -254,7 +254,7 @@ def mock_claude_provider() -> Mock:
 
     mock = Mock(spec=ClaudeProvider)
     mock.provider_name = "claude"
-    mock.model = "claude-3-5-sonnet-20241022"
+    mock.model = "claude-sonnet-5"
     mock.temperature = 0.8
     mock.max_tokens = 400
     return mock

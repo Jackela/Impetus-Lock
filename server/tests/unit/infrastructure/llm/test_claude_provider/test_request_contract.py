@@ -73,7 +73,7 @@ def claude_provider(mock_api_key: str) -> ClaudeProvider:
     """Fixture for ClaudeProvider with raw API path and custom temperature."""
     return ClaudeProvider(
         api_key=mock_api_key,
-        model=ClaudeProvider.CLAUDE_35_SONNET,
+        model=ClaudeProvider.CLAUDE_SONNET_5,
         temperature=0.5,
         max_tokens=400,
         use_instructor=False,
@@ -147,7 +147,7 @@ class TestClaudeRawApiRequestContract:
             claude_provider._complete_with_raw_api("system prompt", "user message")
 
         kwargs = mock_create.call_args.kwargs
-        assert kwargs["model"] == ClaudeProvider.CLAUDE_35_SONNET
+        assert kwargs["model"] == ClaudeProvider.CLAUDE_SONNET_5
         assert kwargs["max_tokens"] == ClaudeProvider.DEFAULT_MAX_TOKENS
         assert kwargs["system"] == "system prompt"
         assert kwargs["messages"] == [

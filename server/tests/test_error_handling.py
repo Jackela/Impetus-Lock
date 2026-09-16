@@ -45,7 +45,7 @@ class TestRetryLogic:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -92,7 +92,7 @@ class TestRetryLogic:
 
         provider = ClaudeProvider(
             api_key="invalid-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -195,7 +195,7 @@ class TestNetworkFailureHandling:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -233,7 +233,7 @@ class TestNetworkFailureHandling:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -262,7 +262,7 @@ class TestNetworkFailureHandling:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -295,7 +295,7 @@ class TestErrorScenarios:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -333,7 +333,7 @@ class TestErrorScenarios:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -368,7 +368,7 @@ class TestErrorScenarios:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -412,7 +412,7 @@ class TestEdgeCases:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -474,7 +474,7 @@ class TestEdgeCases:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,
@@ -505,7 +505,7 @@ class TestEdgeCases:
 
         provider = ClaudeProvider(
             api_key="test-key",
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-5",
             temperature=0.8,
             max_tokens=400,
             use_instructor=False,

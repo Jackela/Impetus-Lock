@@ -22,7 +22,7 @@ class AnthropicLLMProvider(BasePromptLLMProvider):
     def __init__(
         self,
         api_key: str,
-        model: str = "claude-3-5-haiku-latest",
+        model: str = "claude-sonnet-5",
         temperature: float = 0.8,
     ) -> None:
         """Initialize the Anthropic Messages API client.

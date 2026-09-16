@@ -181,7 +181,7 @@ export function getLLMProviderLabel(provider: LLMProviderName): string {
  * @example
  * ```ts
  * getLLMRecommendedModel('openai'); // "gpt-4o-mini"
- * getLLMRecommendedModel('anthropic'); // "claude-3-5-haiku-latest"
+ * getLLMRecommendedModel('anthropic'); // "claude-sonnet-5"
  * ```
  */
 export function getLLMRecommendedModel(provider: LLMProviderName): string {
