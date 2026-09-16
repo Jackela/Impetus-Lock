@@ -14,13 +14,16 @@ export default defineConfig({
     exclude: ["tests/e2e/**", "node_modules"],
     coverage: {
       provider: "v8",
+      // Glob patterns (leading `**/`) are required: vitest 5 appends `/**` to
+      // non-glob patterns and treats them as directories, which would match
+      // nothing and let the lines threshold pass vacuously.
       include: [
-        "src/services/LockManager.ts",
-        "src/components/Editor/TransactionFilter.ts",
-        "src/services/ContentInjector.ts",
-        "src/utils/prosemirror-helpers.ts",
-        "src/utils/textRange.ts",
-        "src/utils/editorMarkdown.ts",
+        "**/src/services/LockManager.ts",
+        "**/src/components/Editor/TransactionFilter.ts",
+        "**/src/services/ContentInjector.ts",
+        "**/src/utils/prosemirror-helpers.ts",
+        "**/src/utils/textRange.ts",
+        "**/src/utils/editorMarkdown.ts",
       ],
       reporter: ["text", "json", "html"],
       thresholds: { lines: 80 },
