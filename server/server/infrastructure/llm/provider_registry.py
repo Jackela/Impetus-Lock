@@ -295,7 +295,9 @@ class ProviderRegistry:
         instance carries the model and credentials it was first built with.
         Requests carrying an api_key or model override therefore resolve
         with ``cacheable=False`` so they get a per-request instance
-        honoring the override.
+        honoring the override. (The debug provider is the one exception:
+        it reports cacheable unconditionally, which is inert because
+        debug instances are built with no model argument.)
         """
         override = overrides or ProviderOverride()
         normalized_provider = self._coerce_provider(override.provider or self.default_provider)

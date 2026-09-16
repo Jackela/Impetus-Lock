@@ -1,12 +1,12 @@
 /**
  * Characterization tests for utils/logger.
  *
- * These tests pin the module's ACTUAL semantics, including two quirks
+ * These tests pin the module's ACTUAL semantics, including three quirks
  * callers must not accidentally regress:
  * - The namespace gate is snapshotted when createLogger() runs; later
  *   configureLogger() calls only affect loggers created afterwards.
- * - The level threshold is read dynamically on every log call, and
- *   event() bypasses the level threshold entirely.
+ * - The level threshold is read dynamically on every log call.
+ * - event() bypasses the level threshold entirely.
  *
  * Order dependence: the module-level config has no reset API, so the
  * "default configuration" describe must stay the first to execute — every

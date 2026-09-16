@@ -200,7 +200,7 @@ CMD ["poetry", "run", "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port
 Create `client/Dockerfile`:
 
 ```dockerfile
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
