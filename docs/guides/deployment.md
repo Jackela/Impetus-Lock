@@ -142,6 +142,7 @@ ls -lh dist/
 ### Build Optimization
 
 The Vite build already includes:
+
 - Code splitting
 - Tree shaking
 - Minification
@@ -265,7 +266,7 @@ server {
 Create `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -335,20 +336,20 @@ docker-compose down
 
 ### Required Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
-| `ANTHROPIC_API_KEY` or `GOOGLE_API_KEY` | LLM provider key | `sk-ant-xxx...` |
-| `LLM_PROVIDER` | LLM provider to use | `anthropic` |
+| Variable                                | Description                  | Example                               |
+| --------------------------------------- | ---------------------------- | ------------------------------------- |
+| `DATABASE_URL`                          | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `ANTHROPIC_API_KEY` or `GOOGLE_API_KEY` | LLM provider key             | `sk-ant-xxx...`                       |
+| `LLM_PROVIDER`                          | LLM provider to use          | `anthropic`                           |
 
 ### Optional Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_API_URL` | Backend API URL | `/api` |
-| `ENABLE_METRICS` | Enable OpenTelemetry metrics | `false` |
-| `ENABLE_TRACING` | Enable OpenTelemetry tracing | `false` |
-| `IDEMPOTENCY_CACHE_TTL` | Cache duration (seconds) | `15` |
+| Variable                | Description                  | Default |
+| ----------------------- | ---------------------------- | ------- |
+| `VITE_API_URL`          | Backend API URL              | `/api`  |
+| `ENABLE_METRICS`        | Enable OpenTelemetry metrics | `false` |
+| `ENABLE_TRACING`        | Enable OpenTelemetry tracing | `false` |
+| `IDEMPOTENCY_CACHE_TTL` | Cache duration (seconds)     | `15`    |
 
 ### Security Best Practices
 
