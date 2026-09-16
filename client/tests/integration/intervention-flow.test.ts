@@ -54,12 +54,13 @@ type AIEditorView = {
   };
 };
 
-describe("Integration: API → Lock Application → Enforcement", () => {
-  beforeEach(() => {
-    // Clear locks before each test
-    lockManager.clear();
-  });
+// Clear singleton lock state before every test in this file so assertions
+// stay order-independent under --sequence.shuffle (tests leave locks behind).
+beforeEach(() => {
+  lockManager.clear();
+});
 
+describe("Integration: API → Lock Application → Enforcement", () => {
   /**
    * Test T039: Apply lock from API response.
    *

@@ -22,7 +22,7 @@ Production deployment instructions for Impetus Lock.
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 20+ (LTS)
+- Node.js 22.12+ (LTS)
 - PostgreSQL 16+
 - Anthropic API key or Google AI API key
 
@@ -200,7 +200,7 @@ CMD ["poetry", "run", "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port
 Create `client/Dockerfile`:
 
 ```dockerfile
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 

@@ -22,7 +22,7 @@ Impetus Lock 是一个 React + Vite 前端与 FastAPI 后端组成的创作工�
 ### 环境要求
 
 - Python 3.11+ 与 [Poetry](https://python-poetry.org/)。本机已用 Python 3.12 验证。
-- Node.js 24.x（与 CI 工具链一致）。仓库不额外声明 `engines` 支持区间。
+- Node.js 24.x（与 CI 工具链一致）；`client/package.json` 声明 `engines.node ">=22.12 <25"`。
 - Docker（使用便捷启动脚本时提供 PostgreSQL）。
 
 ### 便捷启动（Linux / WSL）

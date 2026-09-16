@@ -28,9 +28,9 @@ export default defineConfig({
       reporter: ["text", "json", "html"],
       thresholds: { lines: 80 },
     },
-    // Vitest 5 requires Node >= 22.12 for the dev toolchain (CI runs Node 24).
-    // The package `engines` field intentionally stays ">=20.19 <25" — the
-    // runtime/build floor is unchanged; this note is document-only.
+    // Vitest 5 requires Node >= 22.12 for the dev toolchain. The package
+    // `engines` field enforces that floor (">=22.12 <25"); CI and the Docker
+    // build stages run Node 24.
     //
     // Vitest 4 removed `poolOptions.{threads,forks}.single`; per-file
     // isolation in the standard pools replaces it (the old single-worker
