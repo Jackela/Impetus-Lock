@@ -22,7 +22,7 @@ Production deployment instructions for Impetus Lock.
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 20+ (LTS)
+- Node.js 22.12+ (LTS)
 - PostgreSQL 16+
 - Anthropic API key or Google AI API key
 
