@@ -84,3 +84,11 @@ Playwright E2E 8m41s).
 
 `npm-audit-triage-2026-09.md` "Remaining exposure" (GHSA-82fw on the
 frozen 4.0.18 chain) is now resolved — client audit is 0.
+
+> 2026-09-16 round 3b update: items 1–3 and 5 below were subsequently
+> closed by PR #166 — see [hardening-round3b.md](hardening-round3b.md)
+> (logger factory removed + victims pinned + upstream issue #11284 with a
+> minimal repro; shuffle flakes root-caused and fixed, 41+ shuffle runs
+> green; engines tightened to `>=22.12 <25`; coverage inflation reported
+> upstream as #11285). Item 4's docstring imprecision was also fixed
+> there. Still monitored: interventionClient BYOK signature (no repro).
