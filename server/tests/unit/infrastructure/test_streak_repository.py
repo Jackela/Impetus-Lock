@@ -27,7 +27,8 @@ from unittest.mock import create_autospec
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import Select, Update, event
+from sqlalchemy import Select, Update, delete, event
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from server.application.services.streak_service import StreakService
@@ -231,6 +232,54 @@ class TestUpsertWriteFirstShape:
         session.add.assert_called_once()
         session.refresh.assert_awaited_once_with(session.add.call_args.args[0])
         assert [name for name, _, _ in session.mock_calls] == ["add", "commit", "refresh"]
+
+
+class TestUpsertPostCommitVanish:
+    """upsert raises when the updated row vanishes before the post-commit read."""
+
+    async def test_row_deleted_after_commit_raises_invalid_request(
+        self,
+        session: AsyncSession,
+    ) -> None:
+        """A row deleted between commit and session.get raises InvalidRequestError.
+
+        The vanish is staged with a session ``after_commit`` event that
+        deletes the row through a separate connection on the same engine, so
+        the UPDATE commits successfully and the post-commit ``get`` is the
+        first statement to observe the missing row.
+        """
+        row_id, user_id = uuid4(), uuid4()
+        factory = async_sessionmaker(session.bind, class_=AsyncSession, expire_on_commit=False)
+        async with factory() as seed_session:
+            seed_session.add(User(id=user_id, email=f"{user_id}@example.com", password_hash="x"))
+            seed_session.add(
+                StreakModel(
+                    id=row_id,
+                    user_id=user_id,
+                    current_streak_days=3,
+                    longest_streak_days=3,
+                    streak_start_date=datetime.now(UTC) - timedelta(days=3),
+                    last_activity_date=datetime.now(UTC),
+                    grace_used=False,
+                )
+            )
+            await seed_session.commit()
+
+        def _delete_row_after_commit(sync_session: Any) -> None:
+            sync_engine = cast(Any, session.bind).sync_engine
+            with sync_engine.connect() as connection:
+                connection.execute(delete(StreakModel).where(StreakModel.id == row_id))
+                connection.commit()
+
+        event.listen(session.sync_session, "after_commit", _delete_row_after_commit)
+        try:
+            repository = PostgreSQLStreakRepository(session)
+            entity = _existing_entity(user_id, row_id, 4, 4, datetime.now(UTC))
+
+            with pytest.raises(InvalidRequestError, match=str(row_id)):
+                await repository.upsert(entity)
+        finally:
+            event.remove(session.sync_session, "after_commit", _delete_row_after_commit)
 
 
 class TestRecordActivityReadWriteShape:
