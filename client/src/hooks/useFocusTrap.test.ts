@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useFocusTrap } from "./useFocusTrap";
 
@@ -9,6 +9,13 @@ describe("useFocusTrap Hook", () => {
     // Create a fresh container for each test
     container = document.createElement("div");
     document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    // Remove this test's container so leftover elements with duplicate ids
+    // cannot shadow document.getElementById lookups in later tests
+    // (order-independent under --sequence.shuffle).
+    container.remove();
   });
 
   const createTestElements = () => {
