@@ -554,7 +554,11 @@ class ClaudeProvider(BasePromptLLMProvider):
         ]
 
     def validate_model(self, model: str) -> bool:
-        """Validate if a model is supported.
+        """Check whether a model identifier is a supported Claude model.
+
+        Accepts the curated supported list, any ``claude-`` prefixed
+        identifier (current-generation naming), and legacy
+        ``claude-3-5``/``claude-3-opus`` substrings.
 
         Args:
             model: Model identifier to validate.

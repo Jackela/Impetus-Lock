@@ -144,6 +144,8 @@ class TestClaudeProviderProperties:
             (ClaudeProvider.CLAUDE_SONNET_5, True),
             (ClaudeProvider.CLAUDE_OPUS_5, True),
             ("claude-sonnet-4-6", True),
+            ("claude-fable-5-1", True),
+            ("claude-3-5-sonnet-latest", True),
             ("gpt-4", False),
             ("invalid-model", False),
         ],
