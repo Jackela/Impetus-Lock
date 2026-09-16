@@ -19,6 +19,14 @@ import type { components } from "../../src/types/api.generated";
 import type { Transaction } from "@milkdown/prose/state";
 import type { Node as ProsemirrorNode } from "@milkdown/prose/model";
 
+// Pin the real LockManager for this file's module graph. App code used here
+// goes through the `lockManager` singleton; under the vmThreads pool the
+// partial LockManager factory registered by EditorCore.test.tsx or
+// prosemirror-helpers-lock-attributes.test.ts can leak here and break the
+// singleton's construction (vitest#11284 family, same pin idiom as the
+// round 3b logger/ContentInjector victims).
+vi.mock("../../src/services/LockManager", async (importOriginal) => await importOriginal());
+
 type InterventionResponse = components["schemas"]["InterventionResponse"];
 
 interface MockTransaction {

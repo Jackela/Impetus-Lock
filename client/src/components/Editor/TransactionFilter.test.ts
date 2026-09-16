@@ -16,6 +16,14 @@ import type { Transaction } from "@milkdown/prose/state";
 import type { Node as ProseMirrorNode } from "@milkdown/prose/model";
 import { LockManager } from "../../services/LockManager";
 
+// Pin the real LockManager for this file's module graph. This file
+// instantiates the real class directly; under the vmThreads pool the partial
+// LockManager factory registered by EditorCore.test.tsx or
+// prosemirror-helpers-lock-attributes.test.ts can leak here and make
+// `new LockManager()` blow up on missing members (vitest#11284 family,
+// same pin idiom as the round 3b logger/ContentInjector victims).
+vi.mock("../../services/LockManager", async (importOriginal) => await importOriginal());
+
 /**
  * Mock ProseMirror Transaction.
  */

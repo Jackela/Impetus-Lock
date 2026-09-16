@@ -13,6 +13,13 @@ import { EditorCore } from "./EditorCore";
 // the leaked entry and resolves the original module.
 vi.mock("../../services/ContentInjector", async (importOriginal) => await importOriginal());
 
+// Pin the real LockManager for this file's module graph. Under the vmThreads
+// pool the partial LockManager factory registered by EditorCore.test.tsx or
+// prosemirror-helpers-lock-attributes.test.ts can leak here and make
+// `new LockManager()` blow up on missing members (vitest#11284 family,
+// same pin idiom as the round 3b logger/ContentInjector victims).
+vi.mock("../../services/LockManager", async (importOriginal) => await importOriginal());
+
 afterEach(cleanup);
 
 describe("EditorCore persistence", () => {
