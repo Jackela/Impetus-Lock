@@ -10,7 +10,7 @@ import asyncio
 import contextlib
 import json
 from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, call, patch
 
 import pytest
 import pytest_asyncio
@@ -379,6 +379,85 @@ class TestRedisPubSubManagerListening:
             with contextlib.suppress(TimeoutError, asyncio.CancelledError):
                 await asyncio.wait_for(manager._listen(), timeout=1.0)
             # Should not raise - error is logged
+
+    @pytest.mark.asyncio
+    async def test_listen_none_message_yields_to_event_loop(
+        self,
+        mock_redis_client: Mock,
+    ) -> None:
+        """Test listener sleeps when get_message returns None.
+
+        With a mocked get_message that returns immediately, the None branch
+        must sleep so the listener cannot starve the event loop.
+        """
+        manager = RedisPubSubManager()
+
+        mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
+        mock_pubsub.get_message = AsyncMock(
+            side_effect=[None, None, None, asyncio.CancelledError()]
+        )
+        mock_redis_client.pubsub = Mock(return_value=mock_pubsub)
+
+        with (
+            patch("redis.asyncio.from_url", return_value=mock_redis_client),
+            patch(
+                "server.infrastructure.websocket.redis_pubsub.asyncio.sleep",
+                new_callable=AsyncMock,
+            ) as mock_sleep,
+        ):
+            await manager.connect()
+            manager._running = True
+            await manager._listen()
+
+        assert mock_sleep.await_count == 3
+        mock_sleep.assert_has_calls([call(0.05), call(0.05), call(0.05)])
+
+    @pytest.mark.asyncio
+    async def test_listen_non_message_frame_yields_to_event_loop(
+        self,
+        mock_redis_client: Mock,
+    ) -> None:
+        """Test listener sleeps on non-message frames without dispatching.
+
+        A non-None frame whose type is not "message" (e.g. a subscribe
+        confirmation) must not be dispatched to handlers and must still
+        sleep, so a mocked producer returning control frames immediately
+        cannot busy-spin the loop.
+        """
+        manager = RedisPubSubManager()
+        handler_calls: list[dict[str, Any]] = []
+
+        async def handler(data: dict[str, Any]) -> None:
+            handler_calls.append(data)
+
+        control_frame = {"type": "subscribe", "channel": "test_channel", "data": 1}
+        mock_pubsub = Mock()
+        mock_pubsub.subscribe = AsyncMock(return_value=None)
+        mock_pubsub.unsubscribe = AsyncMock(return_value=None)
+        mock_pubsub.aclose = AsyncMock(return_value=None)
+        mock_pubsub.get_message = AsyncMock(
+            side_effect=[control_frame, control_frame, control_frame, asyncio.CancelledError()]
+        )
+        mock_redis_client.pubsub = Mock(return_value=mock_pubsub)
+
+        with (
+            patch("redis.asyncio.from_url", return_value=mock_redis_client),
+            patch(
+                "server.infrastructure.websocket.redis_pubsub.asyncio.sleep",
+                new_callable=AsyncMock,
+            ) as mock_sleep,
+        ):
+            await manager.connect()
+            await manager.subscribe("test_channel", handler)
+            manager._running = True
+            await manager._listen()
+
+        assert handler_calls == []
+        assert mock_sleep.await_count == 3
+        mock_sleep.assert_has_calls([call(0.05), call(0.05), call(0.05)])
 
 
 class TestRedisPubSubManagerRoomOperations:

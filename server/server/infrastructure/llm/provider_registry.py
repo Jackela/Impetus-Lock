@@ -267,7 +267,10 @@ class ProviderRegistry:
 
         Returns:
             A cached or newly built provider instance, or None when
-            allow_blank is set and no configuration exists.
+            allow_blank is set and no configuration exists. The shared
+            cached instance is only used for requests without api_key or
+            model overrides; any api_key or model override gets a
+            per-request instance.
 
         Raises:
             LLMProviderError: If the provider is unsupported or unconfigured
@@ -285,6 +288,15 @@ class ProviderRegistry:
         *,
         allow_blank: bool = False,
     ) -> tuple[ProviderConfig, bool] | None:
+        """Resolve the effective config and whether it may use the shared cache.
+
+        Only requests without api_key or model override values are
+        cacheable: the cache key is the provider name alone, so a cached
+        instance carries the model and credentials it was first built with.
+        Requests carrying an api_key or model override therefore resolve
+        with ``cacheable=False`` so they get a per-request instance
+        honoring the override.
+        """
         override = overrides or ProviderOverride()
         normalized_provider = self._coerce_provider(override.provider or self.default_provider)
 
@@ -323,6 +335,10 @@ class ProviderRegistry:
 
         default_cfg = self._default_configs.get(normalized_provider)
         if default_cfg:
+            # Cache only pure-default requests. Any model override must build
+            # a per-request instance: the shared cached instance keeps the
+            # model it was first built with and would silently ignore the
+            # requested one (cache key is provider name only).
             model = model_override or default_cfg.model
             return (
                 ProviderConfig(
@@ -331,7 +347,7 @@ class ProviderRegistry:
                     model=model,
                     temperature=default_cfg.temperature,
                 ),
-                True,
+                model_override is None,
             )
 
         if allow_blank:
@@ -345,6 +361,12 @@ class ProviderRegistry:
         )
 
     def _build_provider(self, config: ProviderConfig, *, cacheable: bool) -> LLMProvider:
+        """Build (or reuse) a provider instance, caching only cacheable configs.
+
+        Cached instances are keyed by provider name and shared across
+        requests; ``cacheable=False`` configs always build a fresh
+        per-request instance whose model/credentials are honored.
+        """
         if cacheable:
             cached = self._default_instances.get(config.provider)
             if cached is not None:
