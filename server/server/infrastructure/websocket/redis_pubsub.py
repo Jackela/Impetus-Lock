@@ -136,9 +136,9 @@ class RedisPubSubManager:
     async def _listen(self) -> None:
         """Background task to listen for Redis messages.
 
-        Yields to the event loop when no message is available so that
-        mocked (non-blocking) ``get_message`` implementations cannot
-        starve other tasks.
+        Yields to the event loop when no message is available or when a
+        non-message control frame arrives, so that mocked (non-blocking)
+        ``get_message`` implementations cannot starve other tasks.
         """
         if not self._pubsub:
             return
@@ -168,6 +168,11 @@ class RedisPubSubManager:
                                 handler(data)
                         except Exception as e:
                             logger.error(f"Error in message handler: {e}")
+                else:
+                    # Non-message control frames must also yield, symmetric
+                    # with the None branch, so a producer returning such
+                    # frames immediately cannot starve the event loop.
+                    await asyncio.sleep(0.05)
             except asyncio.CancelledError:
                 break
             except Exception as e:
