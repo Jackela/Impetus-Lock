@@ -31,8 +31,9 @@ if TYPE_CHECKING:
 class ClaudeProvider(BasePromptLLMProvider):
     """Claude provider with Instructor integration for structured outputs.
 
-    Supports Claude 3.5 Sonnet and Opus models with configurable parameters,
-    Muse/Loki modes, and comprehensive error handling with retries.
+    Supports current-generation Claude Sonnet, Opus, and Haiku models with
+    configurable parameters, Muse/Loki modes, and comprehensive error handling
+    with retries.
 
     Features:
         - Muse mode: Provocative, encouraging tone
@@ -45,7 +46,7 @@ class ClaudeProvider(BasePromptLLMProvider):
     Example:
         >>> provider = ClaudeProvider(
         ...     api_key="sk-ant-...",
-        ...     model="claude-3-5-sonnet-20241022",
+        ...     model="claude-sonnet-5",
         ...     temperature=0.8,
         ... )
         >>> response = provider.generate_intervention(
@@ -59,9 +60,9 @@ class ClaudeProvider(BasePromptLLMProvider):
     provider_name = "claude"
 
     # Supported models
-    CLAUDE_35_SONNET = "claude-3-5-sonnet-20241022"
-    CLAUDE_35_OPUS = "claude-3-opus-20240229"
-    CLAUDE_35_HAIKU = "claude-3-5-haiku-20241022"
+    CLAUDE_SONNET_5 = "claude-sonnet-5"
+    CLAUDE_OPUS_5 = "claude-opus-5"
+    CLAUDE_HAIKU_4_5 = "claude-haiku-4-5"
 
     # Default configuration
     DEFAULT_MAX_TOKENS = 400
@@ -71,7 +72,7 @@ class ClaudeProvider(BasePromptLLMProvider):
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = CLAUDE_35_SONNET,
+        model: str = CLAUDE_SONNET_5,
         temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         max_retries: int = DEFAULT_MAX_RETRIES,
@@ -81,7 +82,7 @@ class ClaudeProvider(BasePromptLLMProvider):
 
         Args:
             api_key: Anthropic API key. If not provided, reads from ANTHROPIC_API_KEY env var.
-            model: Claude model to use (defaults to claude-3-5-sonnet-20241022).
+            model: Claude model to use (defaults to claude-sonnet-5).
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
             max_retries: Number of retries for transient errors.
@@ -546,12 +547,10 @@ class ClaudeProvider(BasePromptLLMProvider):
             List of model identifiers supported by this provider.
         """
         return [
-            self.CLAUDE_35_SONNET,
-            self.CLAUDE_35_OPUS,
-            self.CLAUDE_35_HAIKU,
-            "claude-3-5-sonnet-latest",
-            "claude-3-opus-latest",
-            "claude-3-5-haiku-latest",
+            self.CLAUDE_SONNET_5,
+            self.CLAUDE_OPUS_5,
+            self.CLAUDE_HAIKU_4_5,
+            "claude-sonnet-4-6",
         ]
 
     def validate_model(self, model: str) -> bool:
@@ -564,7 +563,11 @@ class ClaudeProvider(BasePromptLLMProvider):
             True if the model is supported, False otherwise.
         """
         supported = self.get_supported_models()
-        return model in supported or any(m in model for m in ["claude-3-5", "claude-3-opus"])
+        return (
+            model in supported
+            or model.startswith("claude-")
+            or any(m in model for m in ["claude-3-5", "claude-3-opus"])
+        )
 
 
 # Alias for backward compatibility with existing anthropic_provider imports

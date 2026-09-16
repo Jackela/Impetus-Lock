@@ -31,7 +31,7 @@ def claude_provider(mock_api_key: str) -> ClaudeProvider:
     """Fixture for ClaudeProvider instance."""
     return ClaudeProvider(
         api_key=mock_api_key,
-        model=ClaudeProvider.CLAUDE_35_SONNET,
+        model=ClaudeProvider.CLAUDE_SONNET_5,
         temperature=0.8,
         max_tokens=400,
         use_instructor=False,
