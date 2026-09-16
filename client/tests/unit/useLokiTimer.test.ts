@@ -162,7 +162,11 @@ describe("useLokiTimer", () => {
     expect(cryptoSpy).toHaveBeenCalled();
   });
 
-  it("should follow uniform distribution for 1000 triggers (SC-004)", () => {
+  // 1000 renderHook mount/unmount cycles run ~3x slower under vitest 5 +
+  // v8 coverage in-suite (observed 5.8-7.2s vs 1.6-2.8s on vitest 4, same
+  // machine), which overruns the 5s default testTimeout; the raised ceiling
+  // only tolerates that cost, a genuine hang still fails.
+  it("should follow uniform distribution for 1000 triggers (SC-004)", { timeout: 20_000 }, () => {
     // Test distribution uniformity per Success Criteria SC-004
     const intervals: number[] = [];
 
