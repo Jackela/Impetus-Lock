@@ -14,6 +14,7 @@ from server.infrastructure.llm.provider_registry import (
     ProviderFactory,
     ProviderOverride,
     ProviderRegistry,
+    close_provider,
 )
 from tests.utils.mock_factories import CloseSpyProvider
 
@@ -72,6 +73,35 @@ class TestProviderRegistry:
         )
 
         assert isinstance(provider, AnthropicLLMProvider)
+
+    def test_model_only_override_not_locked_to_first_cached_model(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Test that a model override without an api_key honors the requested model.
+
+        A model-only override must build a per-request instance; it must not
+        return (or populate) the shared cached instance, whose model was set
+        by whichever request built it first.
+        """
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-default")
+        registry = ProviderRegistry()
+        registry.reload()
+
+        first = registry.get_provider(
+            overrides=ProviderOverride(provider="anthropic", model="model-a"),
+            allow_blank=False,
+        )
+        second = registry.get_provider(
+            overrides=ProviderOverride(provider="anthropic", model="model-b"),
+            allow_blank=False,
+        )
+
+        assert first is not None
+        assert second is not None
+        assert first.model == "model-a"
+        assert second is not first
+        assert second.model == "model-b"
 
     def test_default_provider_cached(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that default provider is cached."""
@@ -209,3 +239,58 @@ class TestProviderLifecycle:
 
         assert byok is not None
         assert registry.is_cached(byok) is False
+
+    def test_model_only_override_leaves_default_cache_intact(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Pure-default requests must keep sharing the cache after a model-only override."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-default")
+        registry = ProviderRegistry()
+        registry.reload()
+
+        overridden = registry.get_provider(
+            overrides=ProviderOverride(provider="anthropic", model="model-x"),
+            allow_blank=False,
+        )
+        default = registry.get_provider(
+            overrides=ProviderOverride(provider="anthropic"),
+            allow_blank=False,
+        )
+        default_again = registry.get_provider(
+            overrides=ProviderOverride(provider="anthropic"),
+            allow_blank=False,
+        )
+
+        assert overridden is not None
+        assert default is not None
+        assert default_again is not None
+        assert default is default_again
+        assert overridden is not default
+        assert overridden.model == "model-x"
+        assert default.model != "model-x"
+        assert registry.is_cached(default) is True
+        assert registry.is_cached(overridden) is False
+
+    def test_close_provider_targets_model_only_override_instance(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The route-level close path must release model-only override instances."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-default")
+        registry = ProviderRegistry()
+        registry.reload()
+        spy = CloseSpyProvider()
+        monkeypatch.setattr(registry, "_instantiate", lambda config: spy)
+
+        per_request = registry.get_provider(
+            overrides=ProviderOverride(provider="anthropic", model="model-b"),
+            allow_blank=False,
+        )
+
+        assert per_request is spy
+        # Route parity: the intervention route's finally-guard closes exactly
+        # the instances that fail this identity check.
+        assert registry.is_cached(per_request) is False
+        close_provider(per_request)
+        assert spy.close_calls == 1
