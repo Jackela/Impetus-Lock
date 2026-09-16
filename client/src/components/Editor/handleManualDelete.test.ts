@@ -26,13 +26,26 @@ vi.mock("../../services/ContentInjector", () => ({
 }));
 
 // Mock logger (provide every export consumed via this module so the mock is
-// complete if other test files' imports resolve against it)
+// complete if other test files' imports resolve against it). `event` mirrors
+// the real console.info side effect so a leaked resolution stays non-fatal
+// for tests that assert on console output.
 vi.mock("../../utils/logger", () => ({
-  createLogger: vi.fn(() => ({
+  createLogger: vi.fn((namespace: string) => ({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    event: vi.fn((eventName: string, payload?: Record<string, unknown>) => {
+      console.info(
+        `[${namespace}]`,
+        JSON.stringify({
+          namespace,
+          event: eventName,
+          timestamp: new Date().toISOString(),
+          ...payload,
+        })
+      );
+    }),
   })),
   configureLogger: vi.fn(),
   LogLevel: { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3, NONE: 4 },
