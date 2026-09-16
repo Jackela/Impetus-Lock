@@ -39,6 +39,13 @@ Every batch received an independent fresh-context review (Spec + Standards axes,
 > [npm-audit-triage-2026-09.md](npm-audit-triage-2026-09.md). Still open from the
 > list below: client majors #126-#128 (recommended), #129 (engines policy), #141
 > (prettier split); vitest unfreeze target updated to ≥5.0.0 per the triage report.
+>
+> 2026-09-16 round 3 update: the "still open" line above was stale — majors
+> #126–#128 and the #141 group had already landed on 2026-09-15 (commits
+> `12bf650`/`40cc7c3`/`34a0f93`). Round 3 (PR #164) closed everything actually
+> remaining: #129 decided (@types/node 25, engines unchanged), vitest unfrozen
+> to ~5.0.1, streak raise-branch test, `_listen` yield, model-only override
+> cache fix. See [hardening-round3.md](hardening-round3.md).
 
 - csrf `generate_token` (random) vs `validate_token` (signed serializer) mismatch — pre-existing; docstrings describe actual behavior. Found during A13.
 - `TestCollaborationServiceRedisIntegration::test_handle_redis_message` busy-loop hang: `tests/conftest.py:28` REDIS_URL setdefault defeats its skipif (hangs on redis 5.3.1 and 7.4.1 alike). Found during #134 verification.

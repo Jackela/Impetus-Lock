@@ -74,3 +74,10 @@ lint/format/tsc/test ≥80%, openspec validate --all --strict, root npm audit = 
   together); waiting on 4.1.x is pointless.
 - Client Dependabot majors #126–#128 still recommended; #129 engines policy; #141
   prettier split — unchanged from round 1.
+
+> 2026-09-16 round 3 update: the line above was stale even when written — the
+> majors and the #141 group landed on 2026-09-15 (`12bf650`/`40cc7c3`/`34a0f93`).
+> Round 3 (PR #164) closed the rest: #129 (@types/node 25, engines unchanged),
+> vitest ~5.0.1 unfreeze (GHSA-82fw cleared), the streak raise-branch test, the
+> `_listen` non-message yield, and the model-only override cache fix — see
+> [hardening-round3.md](hardening-round3.md).
