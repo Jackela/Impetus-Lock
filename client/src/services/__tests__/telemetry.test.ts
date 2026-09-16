@@ -8,6 +8,14 @@ import {
 import { saveVaultConfig, setVaultMode, clearVault } from "../llmKeyVault";
 import { configureLogger, LogLevel } from "../../utils/logger";
 
+// Pin the real logger for this file's whole module graph. Under the
+// vmThreads pool another file's `vi.mock("../../utils/logger")` registry
+// entry can leak here: `configureLogger` becomes a no-op and the leaked
+// `event` implementation logs to the polluter's console, so the spy below
+// never fires. A file-local passthrough mock takes precedence over the
+// leaked entry and resolves the original module.
+vi.mock("../../utils/logger", async (importOriginal) => await importOriginal());
+
 const originalEnv = { ...import.meta.env };
 
 describe("telemetry", () => {

@@ -16,6 +16,13 @@ import type { EditorView } from "@milkdown/prose/view";
 import type { EditorState, Transaction } from "@milkdown/prose/state";
 import type { Schema } from "@milkdown/prose/model";
 
+// Pin the real module for this file's module graph. Under the vmThreads pool
+// another file's partial `vi.mock(".../services/ContentInjector")` registry
+// entry can leak here and replace the real exports with missing no-ops
+// (vitest#9957 family). A file-local passthrough mock takes precedence over
+// the leaked entry and resolves the original module.
+vi.mock("./ContentInjector", async (importOriginal) => await importOriginal());
+
 /**
  * Mock ProseMirror EditorView with typed structure.
  */

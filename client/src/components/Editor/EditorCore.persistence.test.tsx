@@ -6,6 +6,13 @@ import { injectLockedBlock, rewriteRangeWithLock } from "../../services/ContentI
 import { LockManager } from "../../services/LockManager";
 import { EditorCore } from "./EditorCore";
 
+// Pin the real module for this file's module graph. Under the vmThreads pool
+// another file's partial `vi.mock(".../services/ContentInjector")` registry
+// entry can leak here and replace the real exports with missing no-ops
+// (vitest#9957 family). A file-local passthrough mock takes precedence over
+// the leaked entry and resolves the original module.
+vi.mock("../../services/ContentInjector", async (importOriginal) => await importOriginal());
+
 afterEach(cleanup);
 
 describe("EditorCore persistence", () => {
