@@ -8,9 +8,11 @@
  * - The level threshold is read dynamically on every log call.
  * - event() bypasses the level threshold entirely.
  *
- * Order dependence: the module-level config has no reset API, so the
- * "default configuration" describe must stay the first to execute — every
- * test below it mutates the shared config via configureLogger().
+ * Order independence: the module-level config has no reset API, so the
+ * "default configuration" describe re-imports a pristine module instance
+ * per test via vi.resetModules() + dynamic import. The statically imported
+ * instance every other describe uses is unaffected — resetModules only
+ * influences future imports — so this file tolerates --sequence.shuffle.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from "vitest";
@@ -35,11 +37,23 @@ describe("utils/logger", () => {
   });
 
   describe("default configuration (pristine module state)", () => {
-    it("enables every namespace at DEBUG level under import.meta.env.DEV", () => {
+    /**
+     * Import a pristine logger module instance. Default-state assertions
+     * need an unmutated module-level config, which has no reset API —
+     * clearing the registry and re-importing yields a fresh one no matter
+     * when this test runs relative to the configureLogger() calls below.
+     */
+    const importPristineLogger = async (): Promise<typeof import("./logger")> => {
+      vi.resetModules();
+      return import("./logger");
+    };
+
+    it("enables every namespace at DEBUG level under import.meta.env.DEV", async () => {
       // Vitest runs with DEV=true, so the module default is enableAll + DEBUG.
       expect(import.meta.env.DEV).toBe(true);
 
-      const logger = createLogger("DefaultNS");
+      const { createLogger: createFreshLogger } = await importPristineLogger();
+      const logger = createFreshLogger("DefaultNS");
 
       logger.debug("d");
       logger.info("i");
@@ -52,8 +66,10 @@ describe("utils/logger", () => {
       expect(errorSpy).toHaveBeenCalledWith("[DefaultNS]", "e");
     });
 
-    it("emits structured events by default", () => {
-      createLogger("DefaultNS").event("boot");
+    it("emits structured events by default", async () => {
+      const { createLogger: createFreshLogger } = await importPristineLogger();
+
+      createFreshLogger("DefaultNS").event("boot");
 
       expect(infoSpy).toHaveBeenCalledOnce();
     });
