@@ -7,11 +7,11 @@
 
 ## 📦 Version Management Strategy
 
-### Dependencies Use Semver Ranges (`^`)
+### Manifests Define Ranges; Lock Files Pin Resolutions
 
 **Rationale:**
-- ✅ **Security patches auto-apply** (e.g., `^1.56.1` → `1.56.2`)
-- ✅ **Bug fixes auto-apply** (patch versions)
+- Manifest constraints are mixed: caret and tilde ranges, bounded ranges, and exact pins.
+- Allowed updates do not auto-apply to a locked install; review and commit the resolved lock-file changes.
 - ✅ **package-lock.json ensures reproducibility** (exact versions locked)
 - ✅ **Less manual maintenance** for MVP sprint
 - ✅ **Dependabot manages updates via PR** (not automatic merges)
@@ -19,7 +19,7 @@
 **Example:**
 ```json
 {
-  "@playwright/test": "^1.56.1"  // Allows 1.56.x, blocks 1.57.0
+  "@playwright/test": "^1.56.1"  // Illustrative: allows >=1.56.1 <2.0.0, including 1.57.0
 }
 ```
 
@@ -35,8 +35,10 @@
 **File:** `.github/dependabot.yml`
 
 ### Update Schedule
-- **Frequency:** Weekly (Mondays at 9:00 AM)
-- **Max PRs:** 5 (backend), 5 (frontend), 3 (actions), 2 (docker)
+- **Backend:** Weekly Monday, 09:00 Asia/Shanghai; limit 5 open PRs.
+- **Frontend:** Weekly Tuesday, 09:00 Asia/Shanghai; limit 8 open PRs.
+- **Actions and Docker:** Monthly, 09:00 Asia/Shanghai; limits 3 and 2 respectively.
+- The checked-in [Dependabot configuration](.github/dependabot.yml) is authoritative for schedules, grouping and ignore rules.
 
 ### Ecosystems Monitored
 1. **Python/Poetry** (`/server`) - Backend dependencies
@@ -45,7 +47,7 @@
 4. **Docker** (`/.github/workflows`) - Playwright container images
 
 ### PR Behavior
-- **Auto-created:** Yes (weekly batch)
+- **Auto-created:** According to each ecosystem schedule above
 - **Auto-merged:** No (requires CI pass + manual review)
 - **Labels:** `dependencies`, `backend`/`frontend`/`ci`/`docker`
 
@@ -55,21 +57,21 @@
 
 ### Playwright Version Lock
 
-**Problem:** Docker image must match package.json version.
+**Requirement:** The Playwright container image must match the resolved test package version; check the manifest, lock file and image together.
 
 **Solution:**
 ```yaml
 # .github/workflows/e2e.yml
 container:
-  image: mcr.microsoft.com/playwright:v1.56.1-noble  # Must match package.json
+  image: mcr.microsoft.com/playwright:v1.63.0-noble  # Current checked-in image
 
-# Automatic version verification step added (fails early on mismatch)
+# Also compare the image tag with the resolved @playwright/test version
 ```
 
-**Dependabot handles:**
-- Creates PR to update `package.json` → `@playwright/test: ^1.56.2`
-- Creates separate PR to update `e2e.yml` → `v1.56.2-noble`
-- CI validates both changes before merge
+**Review together:**
+- npm package/lock updates and the workflow image are separate files; do not assume an npm PR updates the image.
+- The current E2E workflow compares its declared package version with the installed Playwright CLI version. That check alone does not inspect the container image tag.
+- Validate the matched package/image combination with E2E before merging an update.
 
 ---
 
@@ -84,19 +86,19 @@ chore(deps): bump @playwright/test from 1.56.1 to 1.56.2
 - ✅ Lint (Ruff, ESLint)
 - ✅ Type-check (mypy, tsc)
 - ✅ Unit tests (pytest, Vitest)
-- ✅ E2E tests (Playwright)
+- Playwright runs in the separate E2E workflow; record its actual result rather than inferring it from unit checks.
 
 ### 3. Manual Review (Quick Check)
 - Review changelog (auto-linked by Dependabot)
 - Check for breaking changes
-- Merge if green ✅
+- Review applicable migration notes and actual checks before deciding to merge. A major dependency migration needs an approved OpenSpec proposal.
 
 ---
 
 ## 🛡️ Security Updates
 
 ### Automatic Alerts
-Dependabot creates **high-priority PRs** for:
+When repository security updates are enabled, Dependabot can create PRs for:
 - Known CVEs in dependencies
 - Security advisories from GitHub
 
@@ -130,12 +132,12 @@ ignore:
 ```bash
 # Backend
 cd server
-poetry audit
+# Poetry has no built-in audit command; use advisories or a separately installed Python auditor.
 
 # Frontend
 cd client
 npm audit
-npm audit fix  # Apply non-breaking fixes
+# Review the advisory and proposed dependency/lock changes before applying a fix.
 ```
 
 ### Outdated Dependencies
@@ -156,7 +158,7 @@ npm outdated
 cd server
 poetry add <package>          # Production dependency
 poetry add --group dev <pkg>  # Dev dependency
-poetry lock --no-update       # Update lock file only
+poetry lock                  # Refresh lock metadata with the current Poetry CLI
 ```
 
 ### Frontend (npm)
@@ -168,21 +170,21 @@ npm install -D <package>      # Dev dependency
 
 ### Constitutional Check (Article I: Simplicity)
 Before adding a new dependency, ask:
-1. ✅ Is it essential for P1 feature (un-deletable constraint)?
-2. ✅ Can we implement it ourselves in <50 LOC?
-3. ✅ Does it have active maintenance + good security track record?
+1. Is the package necessary for the accepted task?
+2. Can framework-native capabilities or an existing dependency solve it simply?
+3. Is it maintained and appropriate for the project?
 
-**If any answer is "No" → Reject the dependency.**
+Prefer framework-native capabilities; explain any new dependency and validate its manifest and lock-file changes. Feature priority and constitutional requirements remain governed by CLAUDE.md.
 
 ---
 
 ## 🎯 Post-MVP Enhancements
 
-### After 5-Day Sprint
-1. ✅ Review all `^` ranges → Consider stricter `~` for stability
-2. ✅ Remove React major version ignore rule
-3. ✅ Enable Dependabot auto-merge for patch updates
-4. ✅ Add Snyk or Dependabot security scanning dashboard
+### Historical Post-Sprint Suggestions (not approved or enabled)
+1. Review all `^` ranges → Consider stricter `~` for stability
+2. Remove React major version ignore rule
+3. Enable Dependabot auto-merge for patch updates
+4. Add Snyk or Dependabot security scanning dashboard
 
 ### Quarterly Reviews
 - Evaluate major version updates (React, FastAPI, etc.)
@@ -200,5 +202,4 @@ Before adding a new dependency, ask:
 
 ---
 
-**Last Updated:** 2025-11-06  
-**Status:** ✅ Dependabot active, version verification enabled
+**Configuration checked:** 2026-09-29. Current manifests, lock files and `.github/dependabot.yml` own the effective values; this guide does not approve upgrades or remote actions.

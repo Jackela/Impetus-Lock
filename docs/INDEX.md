@@ -56,9 +56,9 @@ Core project documentation remains in the root directory:
 - **TESTING.md** - Testing strategy and commands
 - **API_CONTRACT.md** - API endpoint specifications
 - **ARCHITECTURE_GUARDS.md** - Architecture enforcement rules
-- **DEPENDENCY_MANAGEMENT.md** - Dependency security and management
+- **[DEPENDENCY_MANAGEMENT.md](../DEPENDENCY_MANAGEMENT.md)** - Dependency constraints, lock files, and update schedule
 
-Historical root reports are in [archive/2026-09/](archive/2026-09/).
+Historical root reports and dated implementation guides are in [archive/2026-09/](archive/2026-09/); see its [archive guide](archive/2026-09/README.md) for status context.
 
 ## Historical Root Reports (archive/2026-09/)
 
@@ -75,6 +75,7 @@ The following reports retain their original facts and status as dated process re
 - [SESSION_SUMMARY.md](archive/2026-09/SESSION_SUMMARY.md) - Historical session summary
 - [TEST_SUITE_EXAMPLES.md](archive/2026-09/TEST_SUITE_EXAMPLES.md) - Lock storage test examples
 - [TEST_SUITE_SUMMARY.md](archive/2026-09/TEST_SUITE_SUMMARY.md) - Lock storage test suite summary
+- [LOCK_REFACTORING_TESTS_README.md](archive/2026-09/LOCK_REFACTORING_TESTS_README.md) - Historical lock storage refactoring test package guide
 
 ## Component Documentation (components/)
 

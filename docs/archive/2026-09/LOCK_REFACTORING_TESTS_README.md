@@ -1,5 +1,7 @@
 # Lock Storage Refactoring - Test Suite Package
 
+> Historical guide archived 2026-09. Test counts, readiness statements, and the proposed migration checklist below describe the guide's original status and have not been revalidated as current project status. For current test commands and validation scope, see [TESTING.md](../../../TESTING.md).
+
 ## Overview
 
 This package contains **comprehensive unit test suites** for the lock storage system refactoring in Impetus Lock. The migration moves from HTML comment-based lock storage to ProseMirror node attribute-based storage for improved performance and maintainability.
@@ -28,14 +30,14 @@ This package contains **comprehensive unit test suites** for the lock storage sy
 
 ### Documentation Files
 
-4. **[TEST_SUITE_SUMMARY.md](docs/archive/2026-09/TEST_SUITE_SUMMARY.md)** (12 KB)
+4. **[TEST_SUITE_SUMMARY.md](TEST_SUITE_SUMMARY.md)** (12 KB)
    - Detailed breakdown of all 89 test cases
    - Coverage statistics
    - Testing principles applied
    - Migration checklist
    - Running instructions
 
-5. **[TEST_SUITE_EXAMPLES.md](docs/archive/2026-09/TEST_SUITE_EXAMPLES.md)** (12 KB)
+5. **[TEST_SUITE_EXAMPLES.md](TEST_SUITE_EXAMPLES.md)** (12 KB)
    - Code examples from each test suite
    - Mock data structures
    - Key assertion patterns

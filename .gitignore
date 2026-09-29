@@ -72,6 +72,7 @@ server/.venv.windows/
 .coverage
 .coverage.*
 htmlcov/
+/server/coverage.json
 
 # Test results
 test-results/
@@ -84,6 +85,7 @@ demo-artifacts/*.mp4
 # Dev server pid files
 server/.backend.pid
 client/.frontend.pid
+scripts/ralph/.last-branch
 
 # Generated prompt artifacts
 server/server/infrastructure/llm/prompts/generated_templates.py
