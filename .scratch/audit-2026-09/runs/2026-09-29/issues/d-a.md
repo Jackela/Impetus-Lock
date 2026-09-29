@@ -13,3 +13,7 @@ Fix only verified active instruction/schema/path/tool-command errors. Read affec
 ## Verification
 
 Verify referenced files/commands/config facts, links and git diff --check; no artificial tests for prose. Read CLAUDE/OpenSpec. Depth1 no delegation. Work in assigned worktree only. Do not commit/change branches or touch remote; main integrates. Return changed paths, checks, remaining issues.
+
+## Integration follow-up (after R18/R19/R20)
+
+The same D-A batch must align TESTING/DEVELOPMENT/ARCHITECTURE_GUARDS with final effective compiler and per-file coverage commands. Document real local PostgreSQL prerequisite for the newly accepted concurrency/ownership/repository tests, the supplied default URL and unique test-owned schemas; do not claim these tests run solely on SQLite. Explain remaining Redis exclusions and that browser E2E is outside this run. Verify actual package scripts and CI source after implementation, preserve historical facts, and keep the same allowed document file set. No new docs batch or runtime changes.

@@ -215,9 +215,10 @@
       "R11"
     ],
     "file": "issues/r15-repair-editor-library-contracts-without-architecture-migration.md",
-    "status": "green-in-progress",
+    "status": "integrated-pending-review",
     "tier": 2,
-    "red_accepted": true
+    "red_accepted": true,
+    "commit": "1c58e4d"
   },
   {
     "id": "R16",
@@ -229,9 +230,11 @@
       "R11"
     ],
     "file": "issues/r16-repair-domain-and-service-strict-type-contracts.md",
-    "status": "green-in-progress",
+    "status": "integrated-pending-review",
     "tier": 2,
-    "red_accepted": true
+    "red_accepted": true,
+    "logger_boundary_red_accepted": true,
+    "commit": "3b778c6"
   },
   {
     "id": "R17",
@@ -244,8 +247,10 @@
       "R11"
     ],
     "file": "issues/r17-reconcile-client-dependency-and-supported-runtime-metadata.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "fc928bc"
   },
   {
     "id": "R18",
@@ -264,7 +269,7 @@
       "R17"
     ],
     "file": "issues/r18-enable-complete-client-type-checking.md",
-    "status": "specified",
+    "status": "red-in-progress",
     "tier": 2
   },
   {
@@ -280,9 +285,10 @@
       "R08"
     ],
     "file": "issues/r19-enforce-per-file-backend-critical-coverage.md",
-    "status": "green-in-progress",
+    "status": "integrated-pending-review",
     "tier": 2,
-    "red_accepted": true
+    "red_accepted": true,
+    "commit": "7e255be"
   },
   {
     "id": "R20",
@@ -294,8 +300,10 @@
       "R15"
     ],
     "file": "issues/r20-enforce-per-file-client-critical-coverage.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "b30d805"
   },
   {
     "id": "R21",
@@ -305,8 +313,10 @@
     ],
     "dependencies": [],
     "file": "issues/r21-keep-e2e-runtime-screenshots-outside-tracked-evidence.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "96b583c"
   },
   {
     "id": "D-A",
@@ -383,7 +393,8 @@
     ],
     "dependencies": [],
     "file": "issues/P-02-activity-tracking.md",
-    "status": "specified",
-    "tier": 3
+    "status": "integrated-pending-review",
+    "tier": 3,
+    "commit": "4bfbf69"
   }
 ]

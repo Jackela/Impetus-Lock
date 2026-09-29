@@ -1,19 +1,18 @@
 {
   "active": [
     {
-      "ticket": "R19",
-      "role": "implementer",
-      "session": 45276
-    },
-    {
-      "ticket": "R15",
-      "role": "implementer",
-      "session": 45772
-    },
-    {
-      "ticket": "R16",
-      "role": "implementer",
-      "session": 33932
+      "ticket": "R18",
+      "role": "test-writer",
+      "session": 74710
     }
-  ]
+  ],
+  "idle_lanes": [
+    "client",
+    "docs"
+  ],
+  "remaining_wave4": [
+    "R18 implementer after accepted RED and fast-forward to integrated R20/R21",
+    "D-A final integration documentation follow-up"
+  ],
+  "reviews": "not started: Wave4 must complete"
 }

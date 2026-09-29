@@ -86,3 +86,29 @@ TDD skill public-interface seams are approved in the plan and fixed in each read
 - R09 integrated:19realPG ownership/lifecycle/pagination/auth tests,42focused/719fullserver; allgatespassed. Main checked all8 protected operations, scoped ID queries/deletes, real no-mutation checks, and kept older algorithm/no-session assertions with ownedidentity. Existing empty security placeholder skips remain historical non-evidence (new real auth tests provide actual evidence); no claim of standalone lockpermission API. R19 per-file coverage RED next.
 
 - R09 integration API drift caught: get_current_user exposes8existing access_token cookies plusupdateddocstrings. Main regenerated authoritativeartifact, inspectedall41changedlines, api:check/test:api-types+allclientdeclaredgatespassed (610tests). Amended only latest local integration R09 commit `dcd3bd8`→`a024c9b` to include generatedtypes; workerR19 base remainsold content-equivalentserver snapshot. No publicpath/businessfield change. R19 RED accepted: fixedfixturebase_provider50%,aggregate96.67%,actualoldCLIexit0; expectedreject. Not productcoverage.
+
+- R16 main review withholdsGREEN for unsafe narrowed loggerenv key assertion. Actual numeric reverse key string0 yields stringDEBUG, contradicting numeric logger level and existing fallback intent. Other21file changes preserved; fresh additional RED worker on publiclogger seam before minimal guardedlookup repair.
+
+- R15 main reviewed native Plugin/filter integration, real undo/metadata/multi-step tests and additional RED evidence; integrated 1c58e4d. Placeholder remains unmounted in production; full client 616 passed/4 skipped, actual compiler 165+1 with new 0, pending R18.
+- R16 logger numeric-key RED accepted: 17 pass/1 fail; fresh implementer repairing verified lookup while preserving reverse enum export.
+
+- R19 integrated 7e255be: main reviewed 43-line guard, independent inventory fixtures, real database schema isolation and provider error/retry tests. 736 passed/6 skipped; all 16 critical files >=80, minimum87.91, report95.40%; server-wide79.44 is separate. Pending independent review.
+
+- R17 runtime Node22.12/23 acceptance defect reproduced with public semver boundary assertions. Main accepted RED; fresh implementer will reconcile declarations and source dependency imports, without mounting new authentication UI.
+
+- R16 integrated 3b778c6: main accepted final verified logger name/numeric lookup with no assertion; forward/reverse enum behavior retained. Six finite seeds each30pass, full624pass/4skip in lane; app146+node1/new0. Prior19 files preserved. R20 fresh test-writer starts from integrated R15/R16 state.
+
+- R20 public reporter RED accepted: six synthetic expected files measured, total>=80 while ContentInjector<80, production policy incorrectly exits0. Preserve initial fixture path error separately. Fresh implementer requested actual wrapper/pool and missing/unexecuted inventory proof.
+
+- R17 integrated fc928bc: compatible direct axios/router declarations, semver explicit dev dependency for runtime boundary test, no existing lock version changes. Actual engine boundary test green, client616pass/4skip, app156+node1/new0 in lane. Main checked removed exports have no consumers. Current Node24 executed; Node22 only metadata verified.
+
+- Root integration compiler fc928bc: app114/node1. Seven diagnostics in six production files were not covered by prior per-area repairs; R18 explicitly extended only for their type/import/timer/buffer guards. Remaining TypeScript test/config diagnostics stay R18 scope.
+- R21 RED accepted:14 real screenshot call sites across5 specs target tracked directories; no assets or production files modified.
+
+- P-02 integrated 4bfbf69: five proposed docs and appended index, 16 unchecked tasks,8 added delta requirements. Main read full draft/specs and preserved explicit unsupported streak/Special dependencies; no implementation/approval. Changed worktree-specific links to portable repository links and reran fixed0.23.0 strict validation successfully. Worker appended index in central run as its explicit ticket allowed; main included it in the single integration commit.
+
+- R18 test-writer starts isolated compiler/probe evidence on former server lane from4bfbf69; all declared R12–17 dependencies integrated. Linked only ignored node_modules to client-owned installed dependencies, preserving original packages. Implementation waits for R20/R21 to avoid shared config/test edits.
+
+- R21 integrated 96b583c: main reviewed all14 calls and preserved names/fullPage/conditions/assets. Node static regression1pass,5Playwright specs13tests collection-only and strict selected compile pass; fullclient630pass/4skip, actualapp114/node1 unchanged. No browser launched.
+
+- R20 integrated b30d805: native perFile80 plus minimal fixed inventory reporter; five real reporter fixtures prove low/missing/unexecuted reject and80/100 pass. Real PM operation tests leave production behavior unchanged. Full655pass/4skip, all6critical89.28–100%, ContentInjector98.95%. Sixfinite seeds each85pass; changedfile diagnostics0. Main reviewed real state/metadata/invalid-throttle assertions and corrected stale engine comment after R17.

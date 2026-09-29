@@ -37,12 +37,12 @@
 
 ## 待审批架构债、依赖与限制
 
-P-01 已形成5份未批准提案，见 `proposal-index.md`。追加发现的统计与成就写入缺口进入 P-02，仍待起草。只读 Dependabot 快照见 `dependabot.md`，交付前再核对开放清单。所有 major PR 只给处理建议，不合并、不关闭。
+P-01/P-02 已形成6份未批准提案，见 [提案索引](proposal-index.md)。统计与成就草案明确保留 streak/Special 的独立审批缺项。只读 Dependabot 快照见 `dependabot.md`，交付前再核对开放清单。所有 major PR 只给处理建议，不合并、不关闭。
 
 <!-- DISPOSITION:START -->
 ## 逐票处置（实施中）
 
-当前21张 Tier2 票中，14张已本地集成、7张仍在实施或排队；所有票据均等待独立复核和最终门禁。
+当前21张 Tier2 票中，20张已本地集成；所有票据均等待独立复核和最终门禁。
 
 | 票据 | 发现 | Tier | 处理 | 本地提交 |
 | --- | --- | --- | --- | --- |
@@ -60,16 +60,16 @@ P-01 已形成5份未批准提案，见 `proposal-index.md`。追加发现的统
 | [R12](issues/r12-preserve-task-mutation-callbacks.md) Preserve task mutation callbacks | F05 | 2 | 已集成，待复核 | d663fa6 |
 | [R13](issues/r13-preserve-drafts-through-task-synchronization-races.md) Preserve drafts through task synchronization races | F06, F07, F08 | 2 | 已集成，待复核 | 380c9bc |
 | [R14](issues/r14-repair-react-component-strict-type-contracts.md) Repair React component strict type contracts | F13 | 2 | 已集成，待复核 | bdfda4b |
-| [R15](issues/r15-repair-editor-library-contracts-without-architecture-migration.md) Repair editor library contracts without architecture migration | F14 | 2 | 实现或检查中 | — |
-| [R16](issues/r16-repair-domain-and-service-strict-type-contracts.md) Repair domain and service strict type contracts | F15 | 2 | 实现或检查中 | — |
-| [R17](issues/r17-reconcile-client-dependency-and-supported-runtime-metadata.md) Reconcile client dependency and supported-runtime metadata | F11, F12 | 2 | 已拆票，待实施 | — |
-| [R18](issues/r18-enable-complete-client-type-checking.md) Enable complete client type checking | F01, F16, F17 | 2 | 已拆票，待实施 | — |
-| [R19](issues/r19-enforce-per-file-backend-critical-coverage.md) Enforce per-file backend critical coverage | B12 | 2 | 实现或检查中 | — |
-| [R20](issues/r20-enforce-per-file-client-critical-coverage.md) Enforce per-file client critical coverage | F10 | 2 | 已拆票，待实施 | — |
-| [R21](issues/r21-keep-e2e-runtime-screenshots-outside-tracked-evidence.md) Keep E2E runtime screenshots outside tracked evidence | H01 | 2 | 已拆票，待实施 | — |
+| [R15](issues/r15-repair-editor-library-contracts-without-architecture-migration.md) Repair editor library contracts without architecture migration | F14 | 2 | 已集成，待复核 | 1c58e4d |
+| [R16](issues/r16-repair-domain-and-service-strict-type-contracts.md) Repair domain and service strict type contracts | F15 | 2 | 已集成，待复核 | 3b778c6 |
+| [R17](issues/r17-reconcile-client-dependency-and-supported-runtime-metadata.md) Reconcile client dependency and supported-runtime metadata | F11, F12 | 2 | 已集成，待复核 | fc928bc |
+| [R18](issues/r18-enable-complete-client-type-checking.md) Enable complete client type checking | F01, F16, F17 | 2 | 记录失败证据中 | — |
+| [R19](issues/r19-enforce-per-file-backend-critical-coverage.md) Enforce per-file backend critical coverage | B12 | 2 | 已集成，待复核 | 7e255be |
+| [R20](issues/r20-enforce-per-file-client-critical-coverage.md) Enforce per-file client critical coverage | F10 | 2 | 已集成，待复核 | b30d805 |
+| [R21](issues/r21-keep-e2e-runtime-screenshots-outside-tracked-evidence.md) Keep E2E runtime screenshots outside tracked evidence | H01 | 2 | 已集成，待复核 | 96b583c |
 | [D-A](issues/d-a.md) Correct active API and testing documentation | D01, D02, D03, D04, D05, D07, C05 | 1 | 已集成，待复核 | 882017e |
 | [D-B](issues/d-b.md) Preserve evidence and clean generated-state tracking | D04, D06, H02, H03, H04 | 1 | 已集成，待复核 | 590638e |
 | [D-C](issues/d-c.md) Clarify active collaboration instructions | C01, C02, C03, C04 | 1 | 已集成，待复核 | de76d15 |
 | [P-01](issues/P-01-proposals.md) Tier3 proposals | B13, B14, H05, H06, H07, F12-boundary | 3 | 已集成，待复核 | e8bc6d4 |
-| [P-02](issues/P-02-activity-tracking.md) Draft missing writing activity statistics and milestone tracking | B15, B16 | 3 | 已拆票，待实施 | — |
+| [P-02](issues/P-02-activity-tracking.md) Draft missing writing activity statistics and milestone tracking | B15, B16 | 3 | 已集成，待复核 | 4bfbf69 |
 <!-- DISPOSITION:END -->
