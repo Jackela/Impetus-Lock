@@ -95,11 +95,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Local CI Validation (Act CLI)
 
-**The ONLY recommended way to validate locally before pushing:**
+**Act is an optional local runner for the GitHub Actions workflow. GitHub Actions results remain authoritative.** Act runs workflow steps in containers, but does not reproduce the hosted runner exactly; service-container behavior and other environment differences can affect results.
 
 ```bash
-# Test entire CI pipeline (all 4 jobs)
-act
+# Run all four jobs defined in .github/workflows/ci.yml
+act -W .github/workflows/ci.yml
 
 # Test specific job
 act -j lint                # Linting only
@@ -113,32 +113,24 @@ act -l
 # Dry run (see what would execute)
 act -n
 
-# Use specific Docker image
+# Use the image configured in .actrc (optional override)
 act -P ubuntu-latest=catthehacker/ubuntu:act-latest
 ```
 
-**Why Act CLI instead of shell scripts?**
-- ✅ Uses Docker to simulate exact GitHub Actions environment
-- ✅ 100% consistent with CI (same image, same steps)
-- ✅ No hanging issues (containerized isolation)
-- ✅ Can test individual jobs quickly
-- ✅ Works identically on Windows/macOS/Linux
-
-**Configuration:** `.actrc` is pre-configured for optimal performance.
+**Configuration:** `.actrc` selects the Ubuntu-compatible image and `linux/amd64` architecture. Install Act and Docker before using these commands.
 
 **Known Limitations:**
-- ⚠️ Act CLI has partial service container support (PostgreSQL networking may differ from GitHub Actions)
-- ✅ Use Docker Compose for full backend + PostgreSQL integration testing
-- ✅ Act CLI is reliable for syntax validation and individual jobs (lint, type-check)
+- Act does not guarantee parity with GitHub-hosted runners. In particular, service-container networking can differ.
+- The current backend CI job uses Redis as a service. Review local Act results against `.github/workflows/ci.yml` and confirm the final result in GitHub Actions.
 
-**Full E2E Validation (Alternative to Act CLI):**
-See `specs/004-fix-e2e-workflow/quickstart.md` for Docker Compose integration testing guide.
+**Separate local E2E guide (Feature 004):**
+`specs/004-fix-e2e-workflow/quickstart.md` documents that feature’s Docker Compose workflow. It is a separate guide and does not represent an additional job in the current CI workflow.
 
-**Quick Quality Check (without full CI):**
+**Focused local checks (run from the indicated directory):**
 
 ```bash
 # Backend (lint + type-check only, fast)
-cd server && poetry run ruff check . && poetry run mypy .
+cd server && poetry run ruff check . && poetry run mypy . --no-site-packages --ignore-missing-imports
 
 # Frontend (lint + type-check only, fast)
 cd client && npm run lint && npm run type-check
@@ -252,8 +244,8 @@ poetry run ruff format .             # Format
 poetry run ruff check --fix .        # Auto-fix linting issues
 
 # Type Checking (mypy strict mode - MANDATORY)
-poetry run mypy .                    # Type check all files
-poetry run mypy server/api/main.py   # Type check specific file
+poetry run mypy . --no-site-packages --ignore-missing-imports                    # Type check all files
+poetry run mypy server/api/main.py --no-site-packages --ignore-missing-imports   # Type check specific file
 ```
 
 **Backend Quality Gates**:
@@ -450,14 +442,9 @@ poetry run pytest tests/test_task_lock.py  # Still passes
 - Small, frequent PRs with screenshots or logs for UI changes
 - All PRs must pass CI (lint, type-check, tests) before merge
 
-## Speckit Templates
+## OpenSpec Changes
 
-Feature development follows `.specify/templates/`:
-- **plan-template.md**: Implementation plan with Constitution Check
-- **spec-template.md**: Feature specification with P1/P2 prioritization
-- **tasks-template.md**: Task list with TDD requirements
-
-**Constitutional gates are embedded in templates** — follow them strictly.
+Use `openspec/AGENTS.md` for the proposal and validation workflow and `openspec/project.md` for project conventions. OpenSpec instructions are also included in the managed block at the top of this file. The former `.specify/templates/` directory is not present in this checkout.
 
 ## Common Pitfalls to Avoid
 
@@ -470,7 +457,9 @@ Feature development follows `.specify/templates/`:
 ❌ Using `npm install` instead of `npm ci` (breaks reproducibility)  
 ❌ Skipping type checks to save time (mypy strict + tsc strict are mandatory)
 
-## Current Project Status (2025-11-09)
+## Historical project snapshot (2025-11-09)
+
+The records in this section describe the project as documented on 2025-11-09. They preserve the original dates and reported results; they do not describe current branch, implementation, or validation status.
 
 ### ✅ COMPLETE - Phase 7: Markdown Toolbar (Feature 005) **P4 FOUNDATIONAL FEATURE**
 
@@ -604,8 +593,8 @@ The following dated notes are retained as project history. They are not the curr
 
 **Documentation**: 
 - See `specs/003-vibe-completion/` for P3 implementation details
-- See `PHASE5_COMPLETE.md` for Phase 5 integration
-- See `PHASE3_COMPLETE.md` for React 19 fixes
+- See `docs/process/PHASE_5_INTEGRATION_COMPLETE.md` for the historical Phase 5 integration record.
+- `PHASE3_COMPLETE.md` is not available in this checkout; no Phase 3 source document was verified.
 
 ---
 
