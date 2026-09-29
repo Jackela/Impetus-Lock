@@ -1,15 +1,18 @@
 {
-  "wave4": "complete; initial snapshot de4dbe5",
-  "wave5": "repair/re-review",
-  "active": [
-    {
-      "id": "R13",
-      "role": "unknown-version test-writer",
-      "session": 50888
-    }
-  ],
-  "held": {},
-  "integrated": "R12/R13/R22 and D-A review repairs integrated; independent rechecks pending",
-  "reviews": "V01/V02/V04/V05/V06 clear; V03 recheck has confirmedV03-06 P1 underrepair",
-  "gates": "d528e0e client696/4,241inputs,6seeds and allgatespassed; R13newrepairwillrequireaffectedgates"
+  "wave4": "complete",
+  "wave5": "complete",
+  "active": [],
+  "accepted_product_head": "fb797ff52512e8c1de89a2b990edd4d717c487e5",
+  "integrator_branch": "codex/audit-2026-09-29",
+  "tier1_batches": 3,
+  "tier2_tickets": 22,
+  "tier3_proposals": 6,
+  "tier3_approval": "not-approved",
+  "gates": {
+    "server": "736 passed,6 skipped; source unchanged since final gate",
+    "client": "707 passed,4 skipped;242 TS/TSX inputs;6 full wrapper seeds pass",
+    "openspec": "0.23.0 strict:23 passed"
+  },
+  "remote_actions": "read-only gh; no push or remote mutation",
+  "original_main": "31b0e3f011313e73cf56fc2756f3fb2be2e6b63e"
 }

@@ -1,13 +1,13 @@
 # Impetus-Lock — 2026-09-29 审查与清偿报告
 
-修复与独立复审仍在进行；R13 的首次加载失败路径需补修，暂不标记清偿完成。
+本轮确认的 Tier 1/2 已全部修复并通过本地验收；6 份 Tier 3 提案仍待审批。
 
 ## 范围与保存位置
 
 - 基点：`main@31b0e3f011313e73cf56fc2756f3fb2be2e6b63e`。交付分支为本地 `codex/audit-2026-09-29`，工作区 `/Users/jackela/.codex/worktrees/impetus-audit-2026-09-29/Impetus-Lock`。
 - 原 checkout 的 main、未跟踪 `.zcode/`、既有环境和数据保留；没有 push、合入 main 或写远端 Issue、PR、标签。
 - 主代理负责裁决和集成。子任务为 fresh context、depth1、禁止再委派；审查只读，最多并发3个子任务。运行中内置代理生命周期额度用尽后，改用相同型号/推理等级的临时 CLI 子代理，证据连续保留。
-- [findings](../../findings.md)保留历史并追加本轮结果；[tickets.json](tickets.json)记录逐票状态；[RED/GREEN 索引](evidence.md)链接原始证据。日志在本工作区 `logs/` 本地保留且按仓库规则忽略，未伪装成已提交或远端证据。
+- [findings](../../findings.md)保留历史并追加本轮结果；[tickets.json](tickets.json)记录逐票状态；[RED/GREEN 索引](evidence.md)链接原始证据。原始日志保存在本工作区的 `logs/`，按仓库规则忽略，没有提交或发布。
 
 ## 按 wave 的结果
 
@@ -15,7 +15,7 @@
 2. 五个只读 charter 在同一逻辑 wave 分两批完成，覆盖文档、后端、前端、卫生依赖、协作配置；全部结束后才汇总。已完成的历史 seed 不重复开票。
 3. 主代理合并裁决：3批 Tier1、初始21张 Tier2；复审发现编辑器加载遗漏，新增R22。Tier3整理成6份未批准提案。
 4. 单票独立分支实施；测试代理先保存真实 RED，主代理核对后由新实现代理接手。实现不修改验收条件，越界和失败先保存证据。
-5. 六组独立审查覆盖 commit、staged、unstaged、untracked。V03发现4项原票缺口，V06发现3项文档缺口；修复时另复现R22，并在文档再次复审中修正1处JSON遗漏。后续修复均保留单独提交和复审证据。
+5. 六组独立审查覆盖 commit、staged、unstaged、untracked。V03发现4项原票缺口，V06发现3项文档缺口；修复时另复现R22，并在文档再次复审中修正1处JSON遗漏。代码再次复审又确认R13首次加载失败后使用占位版本0写入，以及重启成功加载时覆盖本地草稿的问题，分别作为V03-06/07在原票内修复。后续修复均保留单独提交和复审证据。
 
 ## 每项发现的处置
 
@@ -35,7 +35,7 @@
 | [R10](issues/r10-unify-collaboration-room-manager-dependency.md) / B09 | 复用现有协作房间 manager；未新增权限持久化 | `893148e` |
 | [R11](issues/r11-restore-authoritative-client-type-sources.md) / F02, F03 | 移除遮蔽声明，从权威 OpenAPI 生成并核验客户端类型 | `a8a62ee` |
 | [R12](issues/r12-preserve-task-mutation-callbacks.md) / F05 | 保留 mutation 回调，实际 App 创建后选择并打开新任务 | `d663fa6`、`d528e0e` |
-| [R13](issues/r13-preserve-drafts-through-task-synchronization-races.md) / F06, F07, F08 | 串行保存，保留加载中、切换、离线恢复和冲突草稿 | `380c9bc`、`92e8efe` |
+| [R13](issues/r13-preserve-drafts-through-task-synchronization-races.md) / F06, F07, F08 | 串行保存，保留加载中、切换、离线恢复和冲突草稿 | `380c9bc`、`92e8efe`、`3557352`、`fb797ff` |
 | [R14](issues/r14-repair-react-component-strict-type-contracts.md) / F13 | 按 React19 真实公共类型修正组件与 ref；保留动画行为 | `bdfda4b` |
 | [R15](issues/r15-repair-editor-library-contracts-without-architecture-migration.md) / F14 | 修复编辑器插件契约，保留原生锁过滤、多步位置和撤销语义 | `1c58e4d` |
 | [R16](issues/r16-repair-domain-and-service-strict-type-contracts.md) / F15 | 修正严格类型与可擦除语法，保留枚举值及日志反向映射 | `3b778c6` |
@@ -51,7 +51,7 @@
 | [P-02](issues/P-02-activity-tracking.md) / B15, B16 | 1份写作活动/成就草案；未知历史和待决政策保持明确 | `4bfbf69` |
 | [R22](issues/r22-synchronize-editor-content-after-initialization.md) / V03-05 | 编辑器就绪时加载最新受控内容，支持版本0并避免重复保存通知 | `5d5d6b8` |
 
-复核补充的 V03-01/02/03 由R13处理，V03-04由R12处理，V03-05由R22处理；V06-01/02/03及其JSON修复遗漏由D-A处理。文档归档和卫生操作没有删除用户环境、数据库或图片；本轮仅取消跟踪已确认的 `scripts/ralph/.last-branch`，操作前保存了精确清单与字节证据。
+复核补充的 V03-01/02/03/06/07 由R13处理，V03-04由R12处理，V03-05由R22处理；V06-01/02/03及其JSON修复遗漏由D-A处理。文档归档和卫生操作没有删除用户环境、数据库或图片；本轮仅取消跟踪已确认的 `scripts/ralph/.last-branch`，操作前保存了精确清单与字节证据。
 
 ## 独立复核
 
@@ -59,29 +59,29 @@
 |---|---|---|
 | V01 | R01/R02/R05/R06/R08 | [初审0项](reviews/v01-initial.md) |
 | V02 | R04/R07/R09/R10/R19 | [初审0项](reviews/v02-initial.md) |
-| V03 | R03/R12/R13 | [初审](reviews/v03-initial.md)；复审待返回 |
-| V04 | R11/R14/R15/R16/R22 | [原批次初审0项](reviews/v04-initial.md)；新增R22复审待返回 |
+| V03 | R03/R12/R13 | [初审](reviews/v03-initial.md)、[再审](reviews/v03-recheck.md)、[版本/缓存复审](reviews/v03-version-recheck.md)、[最终0项](reviews/v03-final.md) |
+| V04 | R11/R14/R15/R16/R22 | [初审](reviews/v04-initial.md)、[新增R22复审](reviews/v04-recheck.md) |
 | V05 | R17/R18/R20/R21 | [初审0项](reviews/v05-initial.md) |
 | V06 | 文档、配置、提案 | [初审](reviews/v06-initial.md)、[再次复审](reviews/v06-recheck.md)、[最终0项](reviews/v06-final.md) |
 
 ## 最终本地门禁
 
-后端/OpenSpec检查在 `de4dbe5` 通过，之后对应源码、配置和规格未变化；前端在最终产品快照 `d528e0e` 重新全量验证。环境为 Poetry Python3.12、Node24.19.0/npm11.17.0。
+后端/OpenSpec检查在 `de4dbe5` 通过，之后对应源码、配置和规格未变化；前端在最终产品快照 `fb797ff` 重新全量验证。环境为 Poetry Python3.12、Node24.19.0/npm11.17.0。
 
 | 检查 | 结果 |
 |---|---|
 | Ruff check、Ruff format、import-linter、mypy、pydocstyle | 全部通过，保留3项依赖方向约束 |
 | pytest tests/ -n auto，排除 RedisIntegration/redis_pubsub | **736 passed、6 skipped** |
-| ESLint、Prettier、有效 TypeScript 检查 | 全部通过；**241个 TS/TSX 文件，0遗漏、0诊断** |
-| Vitest（实际 npm wrapper / vmThreads） | **696 passed、4 skipped，70个测试文件** |
-| 六个既有顺序种子5/12/25/29/32/41 | 每次完整套件均696通过、4跳过；6/6通过 |
+| ESLint、Prettier、有效 TypeScript 检查 | 全部通过；**242个 TS/TSX 文件，0遗漏、0诊断** |
+| Vitest（实际 npm wrapper / vmThreads） | **707 passed、4 skipped，71个测试文件** |
+| 六个既有顺序种子5/12/25/29/32/41 | 每次完整套件均707通过、4跳过；6/6通过 |
 | 客户端生产构建、API生成漂移检查 | 全部通过 |
 | API类型、运行环境、截图路径 Node检查 | 4项通过 |
 | 固定 OpenSpec0.23.0严格验证 | **23项通过、0失败**，包含6份新草案 |
 
-权限回归关闭了 TESTING 绕过；版本并发使用真实 PostgreSQL 的独立 session；请求体验证保留真实 API 客户端；编辑器用真实 Milkdown/ProseMirror 状态。顺序验证使用实际 npm wrapper 和既有复现 seeds，只做有限轮验证。
+权限回归关闭了 TESTING 绕过；版本并发使用真实 PostgreSQL 的独立 session；请求体测试使用真实 API 客户端；编辑器用真实 Milkdown/ProseMirror 状态。顺序验证使用实际 npm wrapper 和既有复现 seeds，只做有限轮验证。
 
-后端16个、前端6个关键文件分别达到行覆盖率≥80%，未执行或缺失文件不能消失。后端整体79.42%是另一统计口径，未将它表述成≥80%。
+后端16个、前端6个关键文件分别达到行覆盖率≥80%，未执行或缺失文件不能消失。后端整体行覆盖率为79.42%；80%门禁适用于上述关键文件。
 
 | 后端关键文件（相对 server/） | 行覆盖率 |
 | --- | ---: |
@@ -110,13 +110,11 @@
 | `src/utils/editorMarkdown.ts` | 100.00% |
 | `src/utils/prosemirror-helpers.ts` | 97.87% |
 | `src/utils/textRange.ts` | 89.28% |
-
-
-证据：[后端命令/退出码](logs/final-server-initial.json)、[前端命令/退出码](logs/final-client-accepted.json)、[实际编译输入](logs/final-client-accepted-inputs.json)、[逐文件前端行数](logs/final-client-accepted-lines.json)、[6种子结果](logs/final-client-accepted-seeds.json)、[OpenSpec](logs/final-openspec-initial.json)。每个JSON均指向同目录的完整命令日志。
+证据：[后端命令/退出码](logs/final-server-initial.json)、[前端命令/退出码](logs/final-client-closeout.json)、[实际编译输入](logs/final-client-closeout-inputs.json)、[逐文件前端行数](logs/final-client-closeout-lines.json)、[6种子结果](logs/final-client-closeout-seeds.json)、[OpenSpec](logs/final-openspec-initial.json)。每个JSON均指向同目录的完整命令日志。
 
 ## 剩余架构债、依赖与验证边界
 
-本轮确认的 Tier1/2 是否已完成，以报告首段及tickets状态为准。未批准的架构债继续开放，不等同未修复代码票被改名为待办：
+本轮确认的 Tier1/2（含P2）无未关闭项。下列架构债仍待审批：
 
 - `complete-collaboration-authorization`：权限持久化和读写授权。
 - `refactor-remaining-route-service-boundaries`：剩余路由职责划分。
@@ -185,5 +183,8 @@ Playwright浏览器E2E、真实付费模型及远端CI未执行；仅对相关Pl
 - `60eb094` docs: align delete response with verified example range
 - `5d5d6b8` fix: reconcile loaded editor content after initialization
 - `d528e0e` fix: open newly created tasks in the actual editor flow
+- `53e8cd5` docs: preserve review repairs and remaining version-safety finding
+- `3557352` fix: keep unknown task versions from authorizing writes
+- `fb797ff` fix: restore pending unknown-version drafts across restart
 
-报告与证据索引的最后收尾提交以交付分支HEAD为准。所有产品改动均已按票/批次独立提交，最终diff可由 `git diff 31b0e3f..codex/audit-2026-09-29` 审阅。
+[全部本地提交（含报告收尾提交）](logs/closeout-commits.json)另存为清单。所有产品改动均已按票/批次独立提交，最终diff可由 `git diff 31b0e3f..codex/audit-2026-09-29` 审阅。

@@ -42,3 +42,13 @@ R18 main rejected a fabricated required browser global, then removed newly inven
 | D-A examples and browser prerequisites | [V06 initial](reviews/v06-initial.md), [JSON omission recheck](reviews/v06-recheck.md) | [first correction checks](logs/D-A-review-repair-GREEN.md), [final extracted example](logs/D-A-review-example.green-v06-json-anchor.txt);666a3fb/60eb094 |
 
 R22 root narrowed an overreaching draft test before implementation: supplied-content loading must not grant new authority to delete protected blocks. Final controlled-after-readiness tests use unlocked content; separate real native-filter assertions retain protected-block rejection. R12 fixture uses actual task-create version0. Neither fix replaces real editor/API behavior with whole-module mocks.
+
+R13 V03-06 final loading-failure repair: [8-case RED](logs/R13-unknown-version-red-red.log) used actual hook/taskClient/stateful HTTP; six negative cases failed and legitimateversion0/offlinecreation controls passed. [Implementation focused GREEN](logs/R13-unknown-version-green-focused-green.log) is88passed; [full package tests](logs/R13-unknown-version-green-test-green.log) are704passed4skipped. The initial format gate failed on the new test file and is retained separately; it is not a complete package GREEN until main formats that file without semantic changes and reruns gates.
+
+R13 final package GREEN: [main full gates](logs/R13-main-final-layer-green.log), [format semantics check](logs/R13-main-format-semantics.log). First raw-text/token comparison failures were checking-method limitations; normalized TypeScript AST comparison confirmed identical executable assertions.
+
+R13 V03-07: [review](reviews/v03-version-recheck.md), [producer/cache RED](logs/R13-cache-restart-red-red.log)2fail9pass, [GREEN](logs/R13-cache-restart-green-green.log)11targeted/91focused/707full4skip, allclientgatespass. Testsincludeuneditedplaceholdercontrol andbackgroundB isolation.
+
+## Final acceptance evidence
+
+All six review batches are clear; [V03 final](reviews/v03-final.md), [V04 recheck](reviews/v04-recheck.md), [V06 final](reviews/v06-final.md) close their repair loops. Main accepted the final product snapshotfb797ff. [Final client commands](logs/final-client-closeout.json), [compiler scope](logs/final-client-closeout-inputs.json), [six complete seed runs](logs/final-client-closeout-seeds.json), [backend](logs/final-server-initial.json) and [OpenSpec](logs/final-openspec-initial.json) contain actual command/exit records. Server/OpenSpec inputs did not change after their successful final gate. Final status and limitations are in[report.md](report.md).

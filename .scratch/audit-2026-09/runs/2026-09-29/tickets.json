@@ -7,11 +7,12 @@
     ],
     "dependencies": [],
     "file": "issues/r01-expire-unvisited-idempotency-cache-entries.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "3cd8625",
-    "review_status": "clear-v01-initial"
+    "review_status": "clear-v01-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R02",
@@ -21,11 +22,12 @@
     ],
     "dependencies": [],
     "file": "issues/r02-make-debug-action-identities-persistable.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "79ed45a",
-    "review_status": "clear-v01-initial"
+    "review_status": "clear-v01-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R03",
@@ -35,10 +37,12 @@
     ],
     "dependencies": [],
     "file": "issues/r03-restore-task-sync-request-bodies.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
-    "commit": "eddbe65"
+    "commit": "eddbe65",
+    "review_status": "clear-v03-final",
+    "accepted_by": "main"
   },
   {
     "id": "R04",
@@ -49,12 +53,13 @@
     ],
     "dependencies": [],
     "file": "issues/r04-restore-mounted-authentication-and-client-csrf-contract.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "boundary_red_accepted": true,
     "commit": "8fbf6cf",
-    "review_status": "clear-v02-initial"
+    "review_status": "clear-v02-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R05",
@@ -66,11 +71,12 @@
       "R04"
     ],
     "file": "issues/r05-enforce-intervention-task-ownership.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "2a0be77",
-    "review_status": "clear-v01-initial"
+    "review_status": "clear-v01-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R06",
@@ -84,11 +90,12 @@
       "R05"
     ],
     "file": "issues/r06-scope-and-serialize-idempotent-interventions.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "5b030ad",
-    "review_status": "clear-v01-initial"
+    "review_status": "clear-v01-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R07",
@@ -98,13 +105,14 @@
     ],
     "dependencies": [],
     "file": "issues/r07-make-task-version-updates-atomic.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "in_memory_red_accepted": true,
     "red_accepted": true,
     "postgres_red_accepted": true,
     "commit": "700b36e",
-    "review_status": "clear-v02-initial"
+    "review_status": "clear-v02-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R08",
@@ -114,11 +122,12 @@
     ],
     "dependencies": [],
     "file": "issues/r08-keep-synchronous-model-generation-off-event-loop.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "ff0d92a",
-    "review_status": "clear-v01-initial"
+    "review_status": "clear-v01-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R09",
@@ -131,11 +140,12 @@
       "R04"
     ],
     "file": "issues/r09-enforce-style-profile-and-history-ownership.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "a024c9b",
-    "review_status": "clear-v02-initial"
+    "review_status": "clear-v02-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R10",
@@ -145,11 +155,12 @@
     ],
     "dependencies": [],
     "file": "issues/r10-unify-collaboration-room-manager-dependency.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "893148e",
-    "review_status": "clear-v02-initial"
+    "review_status": "clear-v02-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R11",
@@ -160,12 +171,13 @@
     ],
     "dependencies": [],
     "file": "issues/r11-restore-authoritative-client-type-sources.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "schema_red_accepted": true,
     "commit": "a8a62ee",
-    "review_status": "clear-v04-recheck"
+    "review_status": "clear-v04-recheck",
+    "accepted_by": "main"
   },
   {
     "id": "R12",
@@ -177,15 +189,16 @@
       "R11"
     ],
     "file": "issues/r12-preserve-task-mutation-callbacks.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "d663fa6",
-    "review_status": "awaiting-recheck",
+    "review_status": "clear-v03-final",
     "commits": [
       "d663fa6",
       "d528e0e"
-    ]
+    ],
+    "accepted_by": "main"
   },
   {
     "id": "R13",
@@ -199,15 +212,18 @@
       "R03"
     ],
     "file": "issues/r13-preserve-drafts-through-task-synchronization-races.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "380c9bc",
-    "review_status": "repair-required",
+    "review_status": "clear-v03-final",
     "commits": [
       "380c9bc",
-      "92e8efe"
-    ]
+      "92e8efe",
+      "3557352",
+      "fb797ff"
+    ],
+    "accepted_by": "main"
   },
   {
     "id": "R14",
@@ -219,12 +235,13 @@
       "R11"
     ],
     "file": "issues/r14-repair-react-component-strict-type-contracts.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "motion_repair_reviewed": true,
     "commit": "bdfda4b",
-    "review_status": "clear-v04-recheck"
+    "review_status": "clear-v04-recheck",
+    "accepted_by": "main"
   },
   {
     "id": "R15",
@@ -236,11 +253,12 @@
       "R11"
     ],
     "file": "issues/r15-repair-editor-library-contracts-without-architecture-migration.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "1c58e4d",
-    "review_status": "clear-v04-recheck"
+    "review_status": "clear-v04-recheck",
+    "accepted_by": "main"
   },
   {
     "id": "R16",
@@ -252,12 +270,13 @@
       "R11"
     ],
     "file": "issues/r16-repair-domain-and-service-strict-type-contracts.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "logger_boundary_red_accepted": true,
     "commit": "3b778c6",
-    "review_status": "clear-v04-recheck"
+    "review_status": "clear-v04-recheck",
+    "accepted_by": "main"
   },
   {
     "id": "R17",
@@ -270,11 +289,12 @@
       "R11"
     ],
     "file": "issues/r17-reconcile-client-dependency-and-supported-runtime-metadata.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "fc928bc",
-    "review_status": "clear-v05-initial"
+    "review_status": "clear-v05-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R18",
@@ -293,12 +313,13 @@
       "R17"
     ],
     "file": "issues/r18-enable-complete-client-type-checking.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "632886b",
     "boundary_repair_reviewed": true,
-    "review_status": "clear-v05-initial"
+    "review_status": "clear-v05-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R19",
@@ -313,11 +334,12 @@
       "R08"
     ],
     "file": "issues/r19-enforce-per-file-backend-critical-coverage.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "7e255be",
-    "review_status": "clear-v02-initial"
+    "review_status": "clear-v02-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R20",
@@ -329,11 +351,12 @@
       "R15"
     ],
     "file": "issues/r20-enforce-per-file-client-critical-coverage.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "b30d805",
-    "review_status": "clear-v05-initial"
+    "review_status": "clear-v05-initial",
+    "accepted_by": "main"
   },
   {
     "id": "R21",
@@ -343,11 +366,12 @@
     ],
     "dependencies": [],
     "file": "issues/r21-keep-e2e-runtime-screenshots-outside-tracked-evidence.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_accepted": true,
     "commit": "96b583c",
-    "review_status": "clear-v05-initial"
+    "review_status": "clear-v05-initial",
+    "accepted_by": "main"
   },
   {
     "id": "D-A",
@@ -363,7 +387,7 @@
     ],
     "dependencies": [],
     "file": "issues/d-a.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 1,
     "commit": "882017e",
     "commits": [
@@ -372,7 +396,8 @@
       "666a3fb",
       "60eb094"
     ],
-    "review_status": "clear-v06-final"
+    "review_status": "clear-v06-final",
+    "accepted_by": "main"
   },
   {
     "id": "D-B",
@@ -386,10 +411,11 @@
     ],
     "dependencies": [],
     "file": "issues/d-b.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 1,
     "commit": "590638e",
-    "review_status": "clear-v06-final"
+    "review_status": "clear-v06-final",
+    "accepted_by": "main"
   },
   {
     "id": "D-C",
@@ -402,14 +428,15 @@
     ],
     "dependencies": [],
     "file": "issues/d-c.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 1,
     "commit": "de76d15",
     "commits": [
       "de76d15",
       "e6acabc"
     ],
-    "review_status": "clear-v06-final"
+    "review_status": "clear-v06-final",
+    "accepted_by": "main"
   },
   {
     "id": "P-01",
@@ -424,10 +451,13 @@
     ],
     "dependencies": [],
     "file": "issues/P-01-proposals.md",
-    "status": "integrated-pending-review",
+    "status": "proposal-draft-accepted",
     "tier": 3,
     "commit": "e8bc6d4",
-    "review_status": "clear-v06-final"
+    "review_status": "clear-v06-final",
+    "approval_status": "not-approved",
+    "implementation_status": "not-implemented",
+    "accepted_by": "main"
   },
   {
     "id": "P-02",
@@ -438,10 +468,13 @@
     ],
     "dependencies": [],
     "file": "issues/P-02-activity-tracking.md",
-    "status": "integrated-pending-review",
+    "status": "proposal-draft-accepted",
     "tier": 3,
     "commit": "4bfbf69",
-    "review_status": "clear-v06-final"
+    "review_status": "clear-v06-final",
+    "approval_status": "not-approved",
+    "implementation_status": "not-implemented",
+    "accepted_by": "main"
   },
   {
     "id": "R22",
@@ -454,11 +487,12 @@
       "R18"
     ],
     "file": "issues/r22-synchronize-editor-content-after-initialization.md",
-    "status": "integrated-pending-review",
+    "status": "accepted",
     "tier": 2,
     "red_evidence": "logs/R22-main-scoped-red.log",
     "review_status": "clear-v04-recheck",
     "red_accepted": true,
-    "commit": "5d5d6b8"
+    "commit": "5d5d6b8",
+    "accepted_by": "main"
   }
 ]

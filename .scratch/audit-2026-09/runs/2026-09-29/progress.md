@@ -138,3 +138,17 @@ R22 root reviewed actual diff: controlled props reconcile at readiness, native l
 R12 actual App creation flow passed after R22 integration with real backendversion0 fixture; no assertions weakened. Main inspected App/AppModals wiring and actualfetch/realMilkdown test, ran fullclient lint/format/typecheck/test:696passed4skipped. Integrated R12 reviewrepair; fresh V03/V04 now dispatched.
 
 V03 recheck closed originalfour but reproduced newP1 unknownversion0 write afterfailedload. Main verifiedpersistguard currentlyonlystatusloading and acceptedV03-06; sameR13 boundedreadyrepair extended to unknownversion/cache preservation with known0/offlinecreation controls. V04 recheck0findings includingR22. Finalclient696/4 and6seeds passed but acceptance remainsblocked on thisconfirmeddefect.
+
+R13 second-review RED accepted:6fail/2pass viaactualhook/taskClient/statefulHTTP. Unknown0 overwritesoriginal/locks after503, debounce/switch/unmount/cache; known0 andofflinecreatepositivecontrols pass. Productionunchanged, freshimplementerdispatched.
+
+R13 V03-06 rootreview:27line hookdiff adds privateversionKnown, cachesunknownnull, blocksPUTwithoutknownversion and retriesunknown retaineddraft onreturn. Eighttests6RED/2controls nowgreen; existingtask/App/editorfocused88passed. Workerfull704/4 butnewtestformatfailed, rootappliedonlyPrettier; normalizedTypeScriptASTequals recordedoriginaltest. Rawtext/tokencomparisons were unsuitable forformat/trailingcommadifferences and failed asverificationmethods, notproductdefects. Rootre-ranlint/format/typecheck/test allgreen704/4. Committedand integrated; freshV03finalreview dispatched.
+
+V03 final review reproduced V03-07: unknownversioncache survivesfailedbootstrap but is overwritten on successfulrestartGET becausedirtyfalse. Main independently traced samebootstrap/adoptpath andaccepts originalscope defect. Added boundedreadycriteria forpendingintent/locks and no-editfailedload discriminator; freshTDDcontinues. Existing704/4+242inputs+6seeds green is retained but not acceptance.
+
+V03-07 RED accepted:3addedactualproducer/cachetests,2fail/9pass. Successrestartlosescontent+locks+pending; repeatfailureloseslocks/pending; no-editcontrolpasses. BackgroundBisolationassertionsretained. Productionunchanged, freshimplementer nowdispatched.
+
+V03-07 rootacceptedcandidate:privateunknowncache records pendingLockIds onlywhenactualpendingexists;onChange setsqueuebeforecache;bootstraprestorescontent/locks/pending beforeGETadopt. No-editfallbackdirtyflagalone cannotauthorizequeue. Hook24add/3remove; accepted3tests189linesunchanged;11targeted/91focused/707full4skip andallclientgatespass. Integrated pendingfreshindependentreview.
+
+## Main acceptance — completed
+
+V03 cache-final independentreview returnedSpec0/Standards0, closingV03-07. Otherfivebatchreviewsalreadyclear andrelatedsourcesunchanged. Main inspectedintegrationdifferences, acceptedall22Tier2tickets and3Tier1batches;6Tier3draftsacceptedonlyasdocuments, notapproved/implemented. Finalproductfb797ff:client707/4,242compilerinputsnoomissions/diagnostics,9gatesand6existingvmThreadsseedsallpass. Server736/6 andOpenSpec23 strictpass retainedwithsourceidentityverified. EightDependabotPRs read-onlyrefreshed13:11:18UTC. Originalmain31b,.zcode,media/environment/data preserved; no remote mutation. Finalreport/ledger/evidenceclosureprepared.
