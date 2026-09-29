@@ -49,3 +49,7 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 ## Local-only audit exception
 
 For the September 2026 audit, tickets and evidence are limited to `.scratch/audit-2026-09/` and remote access is read-only. Do not publish issues, change labels, comment, close items, or push. This local-only exception takes precedence over the generic publish/claim/resolve routes for this audit and does not change the long-term GitHub tracker choice.
+
+### 2026-09-29 continuation
+
+The new audit starts at `31b0e3f` and records tickets, logs, reviews and its report in `.scratch/audit-2026-09/runs/2026-09-29/`. Append dated findings to the existing audit ledger without rewriting earlier conclusions. Work stays on local `codex/audit-2026-09-29`; do not merge into `main` or write to GitHub. The owner approved all confirmed Tier 1/2 findings, including P2, for remediation; Tier 3 remains proposal-only. Historical follow-up PRs do not authorize remote writes in this run.
