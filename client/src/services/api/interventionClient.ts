@@ -14,6 +14,7 @@
 import type { components } from "../../types/api.generated";
 import { getVaultCache } from "../llmKeyVault";
 import { emitTelemetry } from "../telemetry";
+import { cookieAuthOptions } from "./cookieAuth";
 
 type InterventionRequest = components["schemas"]["InterventionRequest"];
 type InterventionResponse = components["schemas"]["InterventionResponse"];
@@ -134,17 +135,20 @@ export async function generateIntervention(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE_URL}/impetus/generate-intervention`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKey,
-          "X-Contract-Version": CONTRACT_VERSION,
-          ...buildLLMHeaders(),
-        },
-        body: JSON.stringify(request),
-        signal: options?.signal,
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/impetus/generate-intervention`,
+        cookieAuthOptions({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+            "X-Contract-Version": CONTRACT_VERSION,
+            ...buildLLMHeaders(),
+          },
+          body: JSON.stringify(request),
+          signal: options?.signal,
+        })
+      );
 
       let data: unknown;
       try {

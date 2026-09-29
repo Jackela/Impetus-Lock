@@ -1,3 +1,5 @@
+import { cookieAuthOptions } from "./cookieAuth";
+
 /**
  * Achievement API Client
  */
@@ -42,7 +44,10 @@ export async function fetchAchievements(): Promise<{
   achievements: AchievementRecord[];
   total: number;
 }> {
-  const res = await fetch(`${API_BASE_URL}/achievements/`, { credentials: "include" });
+  const res = await fetch(
+    `${API_BASE_URL}/achievements/`,
+    cookieAuthOptions({ credentials: "include" })
+  );
   if (!res.ok) throw new AchievementAPIError(res.status, "Failed to fetch achievements");
   return res.json();
 }
@@ -55,7 +60,10 @@ export async function fetchAchievements(): Promise<{
 export async function fetchAchievementDefinitions(): Promise<{
   achievements: AchievementDefinition[];
 }> {
-  const res = await fetch(`${API_BASE_URL}/achievements/definitions`, { credentials: "include" });
+  const res = await fetch(
+    `${API_BASE_URL}/achievements/definitions`,
+    cookieAuthOptions({ credentials: "include" })
+  );
   if (!res.ok) throw new AchievementAPIError(res.status, "Failed to fetch definitions");
   return res.json();
 }

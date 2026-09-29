@@ -1,3 +1,5 @@
+import { cookieAuthOptions } from "./cookieAuth";
+
 /**
  * Stats API Client
  */
@@ -37,7 +39,7 @@ export class StatsAPIError extends Error {
  * @returns The stats record
  */
 export async function fetchStats(): Promise<StatsRecord> {
-  const res = await fetch(`${API_BASE_URL}/stats/`, { credentials: "include" });
+  const res = await fetch(`${API_BASE_URL}/stats/`, cookieAuthOptions({ credentials: "include" }));
   if (!res.ok) throw new StatsAPIError(res.status, "Failed to fetch stats");
   return res.json();
 }
@@ -48,7 +50,10 @@ export async function fetchStats(): Promise<StatsRecord> {
  * @returns The intervention count breakdown
  */
 export async function fetchInterventionBreakdown(): Promise<InterventionBreakdown> {
-  const res = await fetch(`${API_BASE_URL}/stats/breakdown`, { credentials: "include" });
+  const res = await fetch(
+    `${API_BASE_URL}/stats/breakdown`,
+    cookieAuthOptions({ credentials: "include" })
+  );
   if (!res.ok) throw new StatsAPIError(res.status, "Failed to fetch breakdown");
   return res.json();
 }

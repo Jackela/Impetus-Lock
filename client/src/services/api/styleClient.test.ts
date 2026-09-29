@@ -70,6 +70,8 @@ describe("styleClient", () => {
 
       expect(fetchSpy).toHaveBeenCalledWith(`${API_BASE_URL}/style/analyze`, {
         method: "POST",
+        credentials: "include",
+        signal: undefined,
         headers: {
           "Content-Type": "application/json",
         },
@@ -187,6 +189,8 @@ describe("styleClient", () => {
 
       expect(fetchSpy).toHaveBeenCalledWith(`${API_BASE_URL}/style/apply`, {
         method: "POST",
+        credentials: "include",
+        signal: undefined,
         headers: {
           "Content-Type": "application/json",
         },

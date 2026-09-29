@@ -1,3 +1,5 @@
+import { cookieAuthOptions } from "./cookieAuth";
+
 /**
  * Style Comparison API Client
  *
@@ -123,17 +125,20 @@ export async function compareStyles(
   vector2: StyleVector,
   options?: StyleComparisonOptions
 ): Promise<StyleComparisonResponse> {
-  const response = await fetch(`${API_BASE_URL}/style/compare`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      vector1,
-      vector2,
-    }),
-    signal: options?.signal,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/style/compare`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        vector1,
+        vector2,
+      }),
+      signal: options?.signal,
+    })
+  );
 
   let data: unknown;
   try {

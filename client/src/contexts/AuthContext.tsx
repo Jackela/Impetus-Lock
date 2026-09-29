@@ -7,6 +7,8 @@
  * @module contexts/AuthContext
  */
 
+import { cookieAuthOptions } from "../services/api/cookieAuth";
+
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -72,9 +74,12 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   const checkAuth = async (): Promise<void> => {
     try {
-      const response = await fetch(`${API_URL}/auth/me`, {
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${API_URL}/auth/me`,
+        cookieAuthOptions({
+          credentials: "include",
+        })
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -94,12 +99,15 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        `${API_URL}/auth/login`,
+        cookieAuthOptions({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        })
+      );
 
       if (!response.ok) {
         const data = await response.json();
@@ -122,12 +130,15 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        `${API_URL}/auth/register`,
+        cookieAuthOptions({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password }),
+        })
+      );
 
       if (!response.ok) {
         const data = await response.json();
@@ -150,10 +161,13 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     setIsLoading(true);
 
     try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
+      await fetch(
+        `${API_URL}/auth/logout`,
+        cookieAuthOptions({
+          method: "POST",
+          credentials: "include",
+        })
+      );
       setUser(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Logout failed";

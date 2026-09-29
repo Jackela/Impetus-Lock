@@ -2,6 +2,7 @@
 
 import os
 from collections.abc import Awaitable, Callable
+from uuid import UUID
 
 import jwt
 from fastapi import Request
@@ -45,11 +46,21 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
         try:
             payload = JWTHandler.verify_token(token)
-            request.state.user_id = payload["sub"]
-        except jwt.InvalidTokenError:
+        except (jwt.InvalidTokenError, TypeError, ValueError, OverflowError):
             return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+        # Existing JWTHandler tokens omit type; reject an explicitly invalid type.
+        if "type" in payload and payload["type"] != "access":
+            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+        subject = payload.get("sub")
+        if not isinstance(subject, str):
+            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+        try:
+            UUID(subject)
+        except ValueError:
+            return JSONResponse(status_code=401, content={"detail": "Invalid token"})
+        request.state.user_id = payload["sub"]
 
-        if request.method != "GET":
+        if request.method not in {"GET", "HEAD", "OPTIONS"}:
             csrf_header = request.headers.get("X-CSRF-Token")
             csrf_cookie = request.cookies.get("csrf_token")
             if not csrf_header or not csrf_cookie or csrf_header != csrf_cookie:

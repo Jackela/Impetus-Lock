@@ -1,3 +1,5 @@
+import { cookieAuthOptions } from "./cookieAuth";
+
 /**
  * Streak API Client
  */
@@ -30,7 +32,10 @@ export class StreakAPIError extends Error {
  * @returns The streak record
  */
 export async function fetchStreak(): Promise<StreakRecord> {
-  const res = await fetch(`${API_BASE_URL}/streaks/`, { credentials: "include" });
+  const res = await fetch(
+    `${API_BASE_URL}/streaks/`,
+    cookieAuthOptions({ credentials: "include" })
+  );
   if (!res.ok) throw new StreakAPIError(res.status, "Failed to fetch streak");
   return res.json();
 }
@@ -41,12 +46,15 @@ export async function fetchStreak(): Promise<StreakRecord> {
  * @returns The updated streak record
  */
 export async function updateStreak(): Promise<StreakRecord> {
-  const res = await fetch(`${API_BASE_URL}/streaks/update`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({}),
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/streaks/update`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({}),
+    })
+  );
   if (!res.ok) throw new StreakAPIError(res.status, "Failed to update streak");
   return res.json();
 }

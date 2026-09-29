@@ -1,3 +1,5 @@
+import { cookieAuthOptions } from "./cookieAuth";
+
 /**
  * Style Learning API Client
  *
@@ -93,17 +95,20 @@ export async function analyzeStyle(
   userId: string,
   options?: StyleClientOptions
 ): Promise<StyleAnalysisResponse> {
-  const response = await fetch(`${API_BASE_URL}/style/analyze`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      text,
-      user_id: userId,
-    }),
-    signal: options?.signal,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/style/analyze`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        user_id: userId,
+      }),
+      signal: options?.signal,
+    })
+  );
 
   let data: unknown;
   try {
@@ -164,18 +169,21 @@ export async function applyStyle(
   intensity: number = 1.0,
   options?: StyleClientOptions
 ): Promise<StyleApplyResponse> {
-  const response = await fetch(`${API_BASE_URL}/style/apply`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      text,
-      user_id: userId,
-      intensity,
-    }),
-    signal: options?.signal,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/style/apply`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        user_id: userId,
+        intensity,
+      }),
+      signal: options?.signal,
+    })
+  );
 
   let data: unknown;
   try {

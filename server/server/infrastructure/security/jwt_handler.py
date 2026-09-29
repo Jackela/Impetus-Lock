@@ -61,4 +61,8 @@ class JWTHandler:
         secret = os.getenv("JWT_SECRET")
         if not secret:
             raise ValueError("JWT_SECRET not set")
-        return dict(jwt.decode(token, secret, algorithms=[cls.ALGORITHM]))
+        return dict(
+            jwt.decode(
+                token, secret, algorithms=[cls.ALGORITHM], options={"require": ["sub", "exp"]}
+            )
+        )
