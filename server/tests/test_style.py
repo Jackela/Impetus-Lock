@@ -10,8 +10,10 @@ from fastapi.testclient import TestClient
 
 from server.api.main import app
 from server.api.routes import style as style_module
+from server.models.user import User
 
 client = TestClient(app)
+TEST_USER_ID = "12345678-1234-1234-1234-123456789abc"
 
 # Sample text with > 500 words for testing
 SAMPLE_WRITING_TEXT = """
@@ -81,7 +83,7 @@ what matters to us rather than what we imagine others want to hear.
 
 
 @pytest.fixture(autouse=True)
-def use_in_memory_session() -> Generator[None, None, None]:
+def use_in_memory_session(mock_auth_user: User) -> Generator[None, None, None]:
     """Override session dependency to use in-memory mode for testing."""
     # Store original dependency
 
@@ -103,7 +105,7 @@ class TestStyleAnalysis:
             "/style/analyze",
             json={
                 "text": SAMPLE_WRITING_TEXT,
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
             },
         )
 
@@ -112,7 +114,7 @@ class TestStyleAnalysis:
 
         assert "style_vector" in data
         assert "samples_count" in data
-        assert data["user_id"] == "test_user_123"
+        assert data["user_id"] == TEST_USER_ID
         assert data["samples_count"] == 1
 
     def test_analyze_style_returns_valid_vector(self) -> None:
@@ -121,7 +123,7 @@ class TestStyleAnalysis:
             "/style/analyze",
             json={
                 "text": SAMPLE_WRITING_TEXT,
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
             },
         )
 
@@ -148,7 +150,7 @@ class TestStyleAnalysis:
             "/style/analyze",
             json={
                 "text": short_text,
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
             },
         )
 
@@ -169,7 +171,7 @@ class TestStyleAnalysis:
             "/style/analyze",
             json={
                 "text": "",
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
             },
         )
 
@@ -185,7 +187,7 @@ class TestStyleApplication:
             "/style/apply",
             json={
                 "text": "This is some AI generated text.",
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
                 "intensity": 0.7,
             },
         )
@@ -206,7 +208,7 @@ class TestStyleApplication:
             "/style/apply",
             json={
                 "text": original,
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
             },
         )
 
@@ -219,7 +221,7 @@ class TestStyleApplication:
             "/style/apply",
             json={
                 "text": "Test text.",
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
             },
         )
 
@@ -231,7 +233,7 @@ class TestStyleApplication:
             "/style/apply",
             json={
                 "text": "Test text.",
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
                 "intensity": 1.5,
             },
         )
@@ -244,7 +246,7 @@ class TestStyleApplication:
             "/style/apply",
             json={
                 "text": "Test text.",
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
                 "intensity": -0.5,
             },
         )
@@ -257,7 +259,7 @@ class TestStyleApplication:
             "/style/apply",
             json={
                 "text": "",
-                "user_id": "test_user_123",
+                "user_id": TEST_USER_ID,
             },
         )
 
@@ -269,13 +271,13 @@ class TestStyleProfileEndpoints:
 
     def test_get_profile_no_database_returns_503(self) -> None:
         """Test that getting profile without database returns 503."""
-        response = client.get("/style/profile/test_user_123")
+        response = client.get(f"/style/profile/{TEST_USER_ID}")
 
         assert response.status_code == 503
 
     def test_delete_profile_no_database_returns_503(self) -> None:
         """Test that deleting profile without database returns 503."""
-        response = client.delete("/style/profile/test_user_123")
+        response = client.delete(f"/style/profile/{TEST_USER_ID}")
 
         assert response.status_code == 503
 

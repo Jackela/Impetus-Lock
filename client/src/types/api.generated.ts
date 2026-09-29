@@ -400,6 +400,7 @@ export interface paths {
          *
          *     Raises:
          *         HTTPException 422: If contract_version mismatch or validation fails.
+         *         HTTPException 404: If the supplied task is missing or owned by another user.
          *         HTTPException 500: If LLM provider fails.
          *
          *     Example:
@@ -557,6 +558,7 @@ export interface paths {
          *
          *     Args:
          *         request: Style analysis request with text sample and user_id.
+         *         current_user: Authenticated owner of the profile.
          *         session: Database session (injected, optional for testing).
          *
          *     Returns:
@@ -598,6 +600,7 @@ export interface paths {
          *
          *     Args:
          *         request: Style application request with text and user_id.
+         *         current_user: Authenticated owner of the profile.
          *         session: Database session (injected, optional for testing).
          *
          *     Returns:
@@ -663,6 +666,7 @@ export interface paths {
          *
          *     Args:
          *         request: Style history data
+         *         current_user: Authenticated owner of the history
          *         repo: Repository instance
          *
          *     Returns:
@@ -693,6 +697,7 @@ export interface paths {
          *         user_id: User identifier
          *         limit: Maximum records to return (default 10)
          *         offset: Records to skip (default 0)
+         *         current_user: Authenticated owner of the history
          *         repo: Repository instance
          *
          *     Returns:
@@ -720,6 +725,7 @@ export interface paths {
          *
          *     Args:
          *         history_id: History record UUID
+         *         current_user: Authenticated owner of the history
          *         repo: Repository instance
          *
          *     Returns:
@@ -737,6 +743,7 @@ export interface paths {
          *
          *     Args:
          *         history_id: History record UUID to delete
+         *         current_user: Authenticated owner of the history
          *         repo: Repository instance
          *
          *     Raises:
@@ -761,6 +768,7 @@ export interface paths {
          *
          *     Args:
          *         user_id: User identifier.
+         *         current_user: Authenticated owner of the profile.
          *         session: Database session (injected, optional for testing).
          *
          *     Returns:
@@ -783,6 +791,7 @@ export interface paths {
          *
          *     Args:
          *         user_id: User identifier.
+         *         current_user: Authenticated owner of the profile.
          *         session: Database session (injected, optional for testing).
          *
          *     Raises:
@@ -2780,7 +2789,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2813,7 +2824,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2879,7 +2892,9 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody: {
             content: {
@@ -2919,7 +2934,9 @@ export interface operations {
             path: {
                 user_id: string;
             };
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2950,7 +2967,9 @@ export interface operations {
             path: {
                 history_id: string;
             };
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2981,7 +3000,9 @@ export interface operations {
             path: {
                 history_id: string;
             };
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -3010,7 +3031,9 @@ export interface operations {
             path: {
                 user_id: string;
             };
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -3041,7 +3064,9 @@ export interface operations {
             path: {
                 user_id: string;
             };
-            cookie?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
