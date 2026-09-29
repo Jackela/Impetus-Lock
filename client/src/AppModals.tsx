@@ -28,7 +28,7 @@ interface AppModalsProps {
 
   showCreateTaskModal: boolean;
   onCloseCreateTaskModal: () => void;
-  onTaskCreated: () => void;
+  onTaskCreated: (task: { id: string; title: string }) => void;
 
   currentProvider?: string | null;
 }

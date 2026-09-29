@@ -28,7 +28,7 @@ function App() {
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<TaskRecord | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Pick<TaskRecord, "id" | "title"> | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
 
@@ -114,7 +114,7 @@ function App() {
     showFeedback("LLM key cleared");
   }, [clearConfig, showFeedback]);
 
-  const handleTaskClick = useCallback((task: TaskRecord) => {
+  const handleTaskClick = useCallback((task: Pick<TaskRecord, "id" | "title">) => {
     setSelectedTask(task);
     setEditingTaskId(task.id);
   }, []);
@@ -207,7 +207,10 @@ function App() {
         onLock={lock}
         showCreateTaskModal={showCreateTaskModal}
         onCloseCreateTaskModal={() => setShowCreateTaskModal(false)}
-        onTaskCreated={refetch}
+        onTaskCreated={(task) => {
+          handleTaskClick(task);
+          void refetch();
+        }}
         currentProvider={llmConfig?.provider ?? null}
       />
     </>
