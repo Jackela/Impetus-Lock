@@ -6,6 +6,21 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
+class TaskVersionConflictError(ValueError):
+    """A task snapshot no longer matches the persisted version."""
+
+    def __init__(self, expected: int, actual: int) -> None:
+        """Record the expected and current versions for service translation.
+
+        Args:
+            expected: Version on which the write was based.
+            actual: Current persisted version.
+        """
+        self.expected = expected
+        self.actual = actual
+        super().__init__(f"Version mismatch: expected {expected}, got {actual}")
+
+
 class LLMProviderError(RuntimeError):
     """Represents an expected provider/configuration failure.
 

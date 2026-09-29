@@ -13,11 +13,12 @@ from datetime import datetime
 from typing import Literal, cast
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
+from server.domain.errors import TaskVersionConflictError
 from server.domain.repositories.task_repository import TaskRepository
 from server.infrastructure.persistence.models import (
     InterventionActionModel,
@@ -99,25 +100,36 @@ class PostgreSQLTaskRepository(TaskRepository):
             await session.commit()
             ```
         """
-        # Fetch current model
-        result = await self._session.execute(select(TaskModel).where(TaskModel.id == task.id))
+        # Entity.update() has already advanced the candidate version once.
+        expected_version = task.version - 1
+        result = await self._session.execute(
+            update(TaskModel)
+            .where(TaskModel.id == task.id, TaskModel.version == expected_version)
+            .values(
+                content=task.content,
+                lock_ids=task.lock_ids,
+                title=task.title,
+                category=task.category,
+                priority=task.priority,
+                due_date=task.due_date,
+                word_count=task.word_count,
+                updated_at=task.updated_at,
+                version=task.version,
+            )
+            .returning(TaskModel)
+            .execution_options(synchronize_session=False, populate_existing=True)
+        )
         model = result.scalar_one_or_none()
 
-        if not model:
-            raise ValueError(f"Task {task.id} not found")
-
-        # Update model fields (version already validated and incremented by entity)
-        model.content = task.content
-        model.lock_ids = task.lock_ids
-        model.title = task.title
-        model.category = task.category
-        model.priority = task.priority
-        model.due_date = task.due_date
-        model.word_count = task.word_count
-        model.updated_at = task.updated_at
-        model.version = task.version
-
-        await self._session.flush()
+        if model is None:
+            # Read the scalar column directly to avoid a stale identity-map snapshot.
+            current = await self._session.execute(
+                select(TaskModel.version).where(TaskModel.id == task.id)
+            )
+            actual_version = current.scalar_one_or_none()
+            if actual_version is None:
+                raise ValueError(f"Task {task.id} not found")
+            raise TaskVersionConflictError(expected_version, actual_version)
 
         return self._to_entity(model)
 
