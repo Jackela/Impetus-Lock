@@ -335,4 +335,193 @@ describe("useTaskSync unknown server version", () => {
     expect(result.current.version).toBe(0);
     expect(result.current.error).toBeNull();
   });
+
+  it("restores edited unknown cache and locks across restart, then saves only after a trusted version 0 GET", async () => {
+    const http = httpBoundary();
+    const producer = renderHook(() => useTaskSync("# Default", { externalTaskId: "A" }), {
+      reactStrictMode: true,
+    });
+    await advance();
+    expect(producer.result.current.error).toBe(TaskSyncErrorMessages.SERVER_ERROR);
+    act(() => producer.result.current.onChange("# Unsaved restart A", ["lock-restart-A"]));
+    producer.unmount();
+    await advance();
+    expect(http.puts).toEqual([]);
+    expect(localStorage.getItem("impetus.task.cache")).toBe("# Unsaved restart A");
+    expect(JSON.parse(localStorage.getItem("impetus.task.meta")!)).toMatchObject({
+      taskId: "A",
+      version: null,
+    });
+
+    http.failA = false;
+    const recovery = deferred<Response>();
+    http.nextAGet = recovery.promise;
+    const restored = renderHook(() => useTaskSync("# Default", { externalTaskId: null }), {
+      reactStrictMode: true,
+    });
+    await advance(1600);
+    expect(http.gets).toEqual(["A", "A"]);
+    expect(http.puts).toEqual([]);
+    expect.soft(restored.result.current.content).toBe("# Unsaved restart A");
+    expect.soft(restored.result.current.lockIds).toEqual(["lock-restart-A"]);
+    expect(localStorage.getItem("impetus.task.cache")).toBe("# Unsaved restart A");
+
+    await act(async () =>
+      recovery.resolve(response(task("A", "# Original server A", 0, ["lock-server-A"])))
+    );
+    await advance(800);
+    expect
+      .soft(http.puts, "Restart must resume the original pending edit without new typing")
+      .toEqual([
+        {
+          path: "/tasks/A",
+          body: { content: "# Unsaved restart A", lock_ids: ["lock-restart-A"], version: 0 },
+        },
+      ]);
+    expect
+      .soft({
+        content: restored.result.current.content,
+        locks: restored.result.current.lockIds,
+        version: restored.result.current.version,
+        status: restored.result.current.status,
+        error: restored.result.current.error,
+      })
+      .toEqual({
+        content: "# Unsaved restart A",
+        locks: ["lock-restart-A"],
+        version: 1,
+        status: "ready",
+        error: null,
+      });
+    expect.soft(localStorage.getItem("impetus.task.cache")).toBe("# Unsaved restart A");
+    const saved = await fetchTask("A");
+    expect.soft({ content: saved.content, locks: saved.lock_ids, version: saved.version }).toEqual({
+      content: "# Unsaved restart A",
+      locks: ["lock-restart-A"],
+      version: 1,
+    });
+  });
+
+  it("does not queue untouched failed-load placeholder content when restart GET succeeds", async () => {
+    const http = httpBoundary();
+    const producer = renderHook(() => useTaskSync("# Default", { externalTaskId: "A" }), {
+      reactStrictMode: true,
+    });
+    await advance();
+    expect(producer.result.current.error).toBe(TaskSyncErrorMessages.SERVER_ERROR);
+    expect(producer.result.current.content).toBe("# Default");
+    producer.unmount();
+    await advance();
+    expect(localStorage.getItem("impetus.task.cache")).toBe("# Default");
+    expect(JSON.parse(localStorage.getItem("impetus.task.meta")!)).toMatchObject({
+      taskId: "A",
+      version: null,
+    });
+
+    http.failA = false;
+    const restored = renderHook(() => useTaskSync("# Default", { externalTaskId: null }), {
+      reactStrictMode: true,
+    });
+    await advance(1600);
+    expect(restored.result.current.content).toBe("# Original server A");
+    expect(restored.result.current.lockIds).toEqual(["lock-server-A"]);
+    expect(restored.result.current.version).toBe(0);
+    expect(restored.result.current.error).toBeNull();
+    restored.unmount();
+    await advance(1600);
+    expect(http.puts).toEqual([]);
+    expect(http.posts).toEqual([]);
+    expect(http.gets).toEqual(["A", "A"]);
+    const unchanged = await fetchTask("A");
+    expect({
+      content: unchanged.content,
+      locks: unchanged.lock_ids,
+      version: unchanged.version,
+    }).toEqual({
+      content: "# Original server A",
+      locks: ["lock-server-A"],
+      version: 0,
+    });
+  });
+
+  it("retains restored pending intent through another bootstrap failure and saves A in the background without new edits", async () => {
+    const http = httpBoundary();
+    const producer = renderHook(() => useTaskSync("# Default", { externalTaskId: "A" }), {
+      reactStrictMode: true,
+    });
+    await advance();
+    act(() => producer.result.current.onChange("# Twice offline A", ["lock-twice-A"]));
+    await advance(800);
+    producer.unmount();
+    await advance();
+    expect(http.puts).toEqual([]);
+    expect(localStorage.getItem("impetus.task.cache")).toBe("# Twice offline A");
+    expect(JSON.parse(localStorage.getItem("impetus.task.meta")!)).toMatchObject({
+      taskId: "A",
+      version: null,
+    });
+
+    const restored = renderHook(({ id }) => useTaskSync("# Default", { externalTaskId: id }), {
+      initialProps: { id: null as string | null },
+      reactStrictMode: true,
+    });
+    await advance(1600);
+    expect(restored.result.current.taskId).toBe("A");
+    expect(restored.result.current.content).toBe("# Twice offline A");
+    expect.soft(restored.result.current.lockIds).toEqual(["lock-twice-A"]);
+    expect(restored.result.current.error).toBe(TaskSyncErrorMessages.API_UNAVAILABLE);
+    expect(http.puts).toEqual([]);
+
+    restored.rerender({ id: "B" });
+    await advance();
+    expect(restored.result.current.content).toBe("# Selected B");
+    http.failA = false;
+    const recovery = deferred<Response>();
+    http.nextAGet = recovery.promise;
+    restored.rerender({ id: "A" });
+    await advance();
+    expect(http.gets).toEqual(["A", "A", "B", "A"]);
+    expect(restored.result.current.content).toBe("# Twice offline A");
+    expect.soft(restored.result.current.lockIds).toEqual(["lock-twice-A"]);
+    expect(http.puts).toEqual([]);
+    restored.rerender({ id: "B" });
+    await advance();
+
+    await act(async () =>
+      recovery.resolve(response(task("A", "# Original server A", 0, ["lock-server-A"])))
+    );
+    await advance(800);
+    expect.soft(http.puts, "A second failure must retain the pre-restart queued edit").toEqual([
+      {
+        path: "/tasks/A",
+        body: { content: "# Twice offline A", lock_ids: ["lock-twice-A"], version: 0 },
+      },
+    ]);
+    expect({
+      taskId: restored.result.current.taskId,
+      content: restored.result.current.content,
+      locks: restored.result.current.lockIds,
+      version: restored.result.current.version,
+      status: restored.result.current.status,
+      error: restored.result.current.error,
+    }).toEqual({
+      taskId: "B",
+      content: "# Selected B",
+      locks: ["lock-B"],
+      version: 4,
+      status: "ready",
+      error: null,
+    });
+    expect(localStorage.getItem("impetus.task.cache")).toBe("# Selected B");
+    expect(JSON.parse(localStorage.getItem("impetus.task.meta")!)).toMatchObject({
+      taskId: "B",
+      version: 4,
+    });
+    const saved = await fetchTask("A");
+    expect.soft({ content: saved.content, locks: saved.lock_ids, version: saved.version }).toEqual({
+      content: "# Twice offline A",
+      locks: ["lock-twice-A"],
+      version: 1,
+    });
+  });
 });

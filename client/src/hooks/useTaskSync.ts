@@ -228,6 +228,9 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
           JSON.stringify({
             taskId: draft.taskId,
             version: draft.versionKnown ? draft.version : null,
+            ...(!draft.versionKnown && draft.pending
+              ? { pendingLockIds: draft.pending.lockIds }
+              : {}),
           })
         );
       }
@@ -405,7 +408,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       cachedContent = localStorage.getItem(LOCAL_CACHE_KEY);
       const cachedMetaRaw = localStorage.getItem(LOCAL_META_KEY);
       const cachedMeta = cachedMetaRaw
-        ? (JSON.parse(cachedMetaRaw) as { taskId?: string; version?: number | null })
+        ? (JSON.parse(cachedMetaRaw) as {
+            taskId?: string;
+            version?: number | null;
+            pendingLockIds?: string[];
+          })
         : null;
       if (cachedMeta?.taskId) {
         draft.taskId = cachedMeta.taskId;
@@ -414,6 +421,20 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
           typeof cachedMeta.version === "number" &&
           Number.isInteger(cachedMeta.version) &&
           cachedMeta.version >= 0;
+        // Only a recorded edit authorizes restoring a queue; a failed load's
+        // untouched placeholder must yield to the eventual server response.
+        if (
+          !draft.versionKnown &&
+          cachedContent !== null &&
+          Array.isArray(cachedMeta.pendingLockIds) &&
+          cachedMeta.pendingLockIds.every((id) => typeof id === "string")
+        ) {
+          draft.content = cachedContent;
+          draft.lockIds = cachedMeta.pendingLockIds;
+          draft.dirty = true;
+          draft.pending = { content: cachedContent, lockIds: draft.lockIds };
+          showDraft(draft);
+        }
         drafts.current.set(cachedMeta.taskId, draft);
       }
       const record = cachedMeta?.taskId
@@ -425,7 +446,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       draft.status = "error";
       loadFromCache(draft, cachedContent);
     }
-  }, [adoptTask, defaultContent, loadFromCache]);
+  }, [adoptTask, defaultContent, loadFromCache, showDraft]);
 
   useEffect(() => {
     mounted.current = true;
@@ -451,8 +472,8 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       draft.dirty = true;
       setContent(markdown);
       setLockIds(draft.lockIds);
-      cacheDraft(draft);
       draft.pending = { content: markdown, lockIds: draft.lockIds };
+      cacheDraft(draft);
       if (draft.timer) window.clearTimeout(draft.timer);
       draft.timer = window.setTimeout(() => {
         draft.timer = null;
