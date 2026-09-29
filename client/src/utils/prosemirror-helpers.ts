@@ -11,7 +11,8 @@
  * @module prosemirror-helpers
  */
 
-import type { EditorState, MarkType, Node } from "@milkdown/prose/model";
+import type { MarkType, Node } from "@milkdown/prose/model";
+import type { EditorState } from "@milkdown/prose/state";
 import type { AgentSource } from "../types/mode";
 import type { LockManager } from "../services/LockManager";
 
@@ -30,7 +31,7 @@ import type { LockManager } from "../services/LockManager";
  * const isBold = hasMark(state, strongType);
  * ```
  */
-export function hasMark(state: EditorState, markType: MarkType): boolean {
+export function hasMark(state: EditorState, markType: MarkType | null | undefined): boolean {
   if (!markType) return false;
   const { from, $from, to, empty } = state.selection;
 

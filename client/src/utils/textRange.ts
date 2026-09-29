@@ -13,7 +13,7 @@ function sliceSentences(text: string): string[] {
   let start = 0;
 
   for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
+    const char = text.charAt(i);
     if (SENTENCE_BOUNDARY.test(char) || char === "\n") {
       const fragment = text.slice(start, i + 1);
       if (fragment.trim()) {
@@ -39,15 +39,15 @@ function computeStartOffset(text: string): number {
   }
 
   const fragments = sliceSentences(text);
-  if (fragments.length === 0) {
+  const lastFragment = fragments.at(-1);
+  if (!lastFragment) {
     return Math.max(0, text.length - MIN_SENTENCE_LENGTH);
   }
 
-  const lastFragment = fragments[fragments.length - 1];
   const rawOffset = text.length - lastFragment.length;
 
   let offset = rawOffset;
-  while (offset < text.length && /\s/.test(text[offset])) {
+  while (offset < text.length && /\s/.test(text.charAt(offset))) {
     offset += 1;
   }
 

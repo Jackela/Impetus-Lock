@@ -14,7 +14,7 @@ import { preserveLockMarkers, restoreLockMarkers } from "../../utils/editorMarkd
 import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
-import type { Node as ProseMirrorNode } from "@milkdown/prose/model";
+import { Plugin } from "@milkdown/prose/state";
 import { useLockManager, LockManagerProvider } from "../../contexts/LockManagerContext";
 import type { LockManager } from "../../services/LockManager";
 import { createLockTransactionFilter } from "./TransactionFilter";
@@ -67,6 +67,7 @@ declare global {
     insertLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
     rewriteLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
     triggerManualDeleteForTest?: () => void;
+    triggerMuseRewriteForTest?: () => void;
   }
 }
 
@@ -191,6 +192,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       if (currentContent !== initialContent) {
         const tr = view.state.tr;
         const document = ctx.get(parserCtx)(preserveLockMarkers(initialContent || "", ctx.get(remarkCtx)));
+        if (!document) return;
         tr.replaceWith(0, view.state.doc.content.size, document.content);
         view.dispatch(tr);
       }
@@ -200,7 +202,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   }, [contentVersion, initialContent]);
 
   // Animation durations from centralized config
-  const actionResetTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const actionResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showSensoryAction = useCallback(
     (
@@ -605,16 +607,11 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           showSensoryAction(AIActionType.REJECT, { duration: REJECTION_FEEDBACK_DURATION_MS });
         });
 
-        const existingFilter = view.props.filterTransaction;
-
-        view.setProps({
-          filterTransaction: (tr, state) => {
-            if (!lockFilter(tr, state)) {
-              return false;
-            }
-            return existingFilter ? existingFilter(tr, state) : true;
-          },
-        });
+        view.updateState(
+          view.state.reconfigure({
+            plugins: [...view.state.plugins, new Plugin({ filterTransaction: lockFilter })],
+          })
+        );
       });
 
       // Extract locks from initial content
@@ -629,14 +626,11 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         const originalDispatchTransaction = view.dispatch.bind(view);
 
         view.dispatch = (tr) => {
-          // CRITICAL: Call filterTransaction BEFORE processing to allow blocking
-          // This must be done manually since we override dispatch
-          if (view.props.filterTransaction) {
-            const allowed = view.props.filterTransaction(tr, view.state);
-            if (!allowed) {
-              return; // Block the transaction
-            }
-          }
+          // Let every installed state plugin filter the transaction before
+          // reporting input or persistence changes for an accepted edit.
+          const previousState = view.state;
+          originalDispatchTransaction(tr);
+          if (view.state === previousState) return;
 
           if (tr.docChanged) {
             setDocVersion((v) => v + 1);
@@ -646,21 +640,19 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
             onInputRef.current();
 
             // Auto-detect and register locks from content changes
-            // CRITICAL: Scan BEFORE originalDispatchTransaction to ensure locks are registered
-            // before TransactionFilter checks them on the NEXT transaction (e.g., deletion).
+            // Register accepted locks before the NEXT transaction (e.g., deletion).
             // Uses same pattern as LockDecorations (which successfully detects locks).
-            tr.doc.descendants((node) => {
-              const metadata = extractLockAttributes(node as ProseMirrorNode, lockManager);
+            view.state.doc.descendants((node) => {
+              const metadata = extractLockAttributes(node, lockManager);
               if (metadata?.lockId && !lockManager.hasLock(metadata.lockId)) {
                 lockManager.applyLock(metadata.lockId, { source: metadata.source });
                 refreshLockDecorations(view);
               }
             });
 
-            const markdown = restoreLockMarkers(ctx.get(serializerCtx)(tr.doc), ctx.get(remarkCtx));
+            const markdown = restoreLockMarkers(ctx.get(serializerCtx)(view.state.doc), ctx.get(remarkCtx));
             onChangeRef.current?.(markdown, lockManager.getAllLocks());
           }
-          originalDispatchTransaction(tr);
         };
       });
 
