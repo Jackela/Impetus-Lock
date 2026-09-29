@@ -172,34 +172,62 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   // Track if delete is currently executing (separate from trigger processing)
   const isDeletingRef = useRef(false);
 
-  // Track last processed content version to avoid duplicate updates
-  const lastContentVersionRef = useRef(contentVersion);
+  // Uncontrolled content/locks are a mount-time value, even if props arrive later.
+  const initialDocumentRef = useRef({ initialContent, initialLocks });
+  const lastLoadedContentRef = useRef<{
+    content: string;
+    version: number;
+    locks: string[];
+  } | null>(null);
 
-  // Handle content version changes - update editor content without remounting
-  useEffect(() => {
-    if (contentVersion === undefined) return;
-    if (lastContentVersionRef.current === contentVersion) return;
-
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    // Update the editor content when contentVersion changes
-    editor.action((ctx) => {
-      const view = ctx.get(editorViewCtx);
-      const currentContent = restoreLockMarkers(ctx.get(serializerCtx)(view.state.doc), ctx.get(remarkCtx));
-
-      // Only update if content actually changed
-      if (currentContent !== initialContent) {
-        const tr = view.state.tr;
-        const document = ctx.get(parserCtx)(preserveLockMarkers(initialContent || "", ctx.get(remarkCtx)));
-        if (!document) return;
-        tr.replaceWith(0, view.state.doc.content.size, document.content);
-        view.dispatch(tr);
+  const reconcileContent = useCallback(
+    (editor: Editor) => {
+      if (contentVersion === undefined) return;
+      const locks = initialLocks ?? [];
+      const previous = lastLoadedContentRef.current;
+      if (
+        previous?.version === contentVersion &&
+        previous.content === initialContent &&
+        previous.locks.length === locks.length &&
+        previous.locks.every((lock, index) => lock === locks[index])
+      ) {
+        return;
       }
-    });
 
-    lastContentVersionRef.current = contentVersion;
-  }, [contentVersion, initialContent]);
+      editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        const currentContent = restoreLockMarkers(ctx.get(serializerCtx)(view.state.doc), ctx.get(remarkCtx));
+        if (currentContent !== initialContent) {
+          const document = ctx.get(parserCtx)(preserveLockMarkers(initialContent, ctx.get(remarkCtx)));
+          if (!document) return;
+          const before = view.state.doc;
+          view.dispatch(
+            view.state.tr
+              .replaceWith(0, before.content.size, document.content)
+              .setMeta("loadedContent", true)
+              .setMeta("addToHistory", false)
+          );
+          // Native filters still decide whether the replacement is permitted.
+          if (view.state.doc === before) return;
+        }
+        locks.forEach((lockId) => lockManager.applyLock(lockId));
+        lockManager.extractLockEntriesFromMarkdown(initialContent).forEach(({ lockId, source }) =>
+          lockManager.applyLock(lockId, { source })
+        );
+        refreshLockDecorations(view);
+      });
+
+      lastLoadedContentRef.current = { content: initialContent, version: contentVersion, locks: [...locks] };
+    },
+    [contentVersion, initialContent, initialLocks, lockManager]
+  );
+
+  // The asynchronous initializer must reconcile the latest committed props.
+  const reconcileContentRef = useRef(reconcileContent);
+  useEffect(() => {
+    reconcileContentRef.current = reconcileContent;
+    if (editorInstance) reconcileContent(editorInstance);
+  }, [reconcileContent, editorInstance]);
 
   // Animation durations from centralized config
   const actionResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -594,9 +622,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       // T008: Apply lock content decorations for visual styling FIRST
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-        if (initialLocks && initialLocks.length > 0) {
-          initialLocks.forEach((lockId) => lockManager.applyLock(lockId));
-        }
+        initialDocumentRef.current.initialLocks?.forEach((lockId) => lockManager.applyLock(lockId));
         applyLockDecorations(view, lockManager);
       });
 
@@ -615,22 +641,32 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       });
 
       // Extract locks from initial content
-      if (initialContent) {
-        const entries = lockManager.extractLockEntriesFromMarkdown(initialContent);
+      if (initialDocumentRef.current.initialContent) {
+        const entries = lockManager.extractLockEntriesFromMarkdown(initialDocumentRef.current.initialContent);
         entries.forEach(({ lockId, source }) => lockManager.applyLock(lockId, { source }));
       }
+
+      reconcileContentRef.current(editor);
 
       // Add listener for user input
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
         const originalDispatchTransaction = view.dispatch.bind(view);
+        let dispatchDepth = 0;
 
         view.dispatch = (tr) => {
           // Let every installed state plugin filter the transaction before
           // reporting input or persistence changes for an accepted edit.
           const previousState = view.state;
-          originalDispatchTransaction(tr);
-          if (view.state === previousState) return;
+          dispatchDepth++;
+          try {
+            originalDispatchTransaction(tr);
+          } finally {
+            dispatchDepth--;
+          }
+          // Commonmark updates heading IDs via a nested dispatch. Report the
+          // final document once for the outer edit, including those updates.
+          if (dispatchDepth > 0 || view.state === previousState || tr.getMeta("loadedContent")) return;
 
           if (tr.docChanged) {
             setDocVersion((v) => v + 1);
@@ -670,7 +706,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     return () => {
       mounted = false;
     };
-  }, [initialContent, initialLocks, lockManager, showSensoryAction]);
+  }, [lockManager, showSensoryAction]);
 
   // Always render immediately - no loading state
   return (
