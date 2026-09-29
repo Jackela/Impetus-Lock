@@ -18,11 +18,12 @@ export interface TemplateRecord {
 
 /** Error thrown when a templates API request fails. */
 export class TemplateAPIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  /** HTTP status code. */
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "TemplateAPIError";
   }
 }

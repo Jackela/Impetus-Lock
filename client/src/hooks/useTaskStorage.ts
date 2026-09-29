@@ -14,7 +14,7 @@ import type {
   TaskStorageState,
   TaskStorageActions,
 } from "../types/task";
-import { StorageError } from "../types/task";
+import { StorageError, TaskCategory, TaskPriority } from "../types/task";
 
 const STORAGE_KEY = "impetus_tasks_v1";
 const SAVE_DEBOUNCE_MS = 500;
@@ -119,6 +119,10 @@ export function useTaskStorage(): TaskStorageState {
       title: extractTitle(content),
       content,
       lockIds: lockIds ?? [],
+      category: TaskCategory.WRITING,
+      priority: TaskPriority.MEDIUM,
+      dueDate: null,
+      wordCount: 0,
       createdAt: now,
       updatedAt: now,
     };

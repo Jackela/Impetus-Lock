@@ -11,7 +11,7 @@ const STORAGE_KEY = "impetus_tasks_v1";
 
 const mockLocalStorage = {
   getItem: vi.fn(),
-  setItem: vi.fn(),
+  setItem: vi.fn<(key: string, value: string) => void>(),
   removeItem: vi.fn(),
 };
 
@@ -40,7 +40,18 @@ describe("useTaskStorage", () => {
       const stored: TaskStorage = {
         version: 1,
         tasks: [
-          { id: "t1", title: "Test", content: "# Test", lockIds: [], createdAt: 1, updatedAt: 2 },
+          {
+            id: "t1",
+            title: "Test",
+            content: "# Test",
+            lockIds: [],
+            category: "WRITING",
+            priority: "MEDIUM",
+            dueDate: null,
+            wordCount: 0,
+            createdAt: 1,
+            updatedAt: 2,
+          },
         ],
         currentTaskId: "t1",
       };
@@ -73,6 +84,26 @@ describe("useTaskStorage", () => {
   describe("CRUD operations", () => {
     beforeEach(() => mockLocalStorage.getItem.mockReturnValue(null));
 
+    it("creates and persists the required default task metadata", async () => {
+      const { result } = renderHook(() => useTaskStorage());
+      await waitFor(() => expect(result.current.status).toBe("ready"));
+      act(() => {
+        result.current.actions.addTask("New task");
+      });
+      const metadata = {
+        category: "WRITING",
+        priority: "MEDIUM",
+        dueDate: null,
+        wordCount: 0,
+      };
+      expect(result.current.tasks[0]).toMatchObject(metadata);
+      await waitFor(() => expect(mockLocalStorage.setItem).toHaveBeenCalled(), { timeout: 1000 });
+      const call = mockLocalStorage.setItem.mock.lastCall;
+      if (!call) throw new Error("Expected task storage to be saved");
+      const saved = JSON.parse(call[1]);
+      expect(saved.tasks[0]).toMatchObject(metadata);
+    });
+
     it("addTask creates task with correct properties", async () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
@@ -91,7 +122,9 @@ describe("useTaskStorage", () => {
       await waitFor(() => expect(result.current.status).toBe("ready"));
       act(() => result.current.actions.addTask("Save Me"));
       await waitFor(() => expect(mockLocalStorage.setItem).toHaveBeenCalled(), { timeout: 1000 });
-      const saved = JSON.parse(mockLocalStorage.setItem.mock.calls[0][1]);
+      const call = mockLocalStorage.setItem.mock.calls[0];
+      if (!call) throw new Error("Expected task storage to be saved");
+      const saved = JSON.parse(call[1]);
       expect(saved.version).toBe(1);
       expect(saved.tasks[0].title).toBe("Save Me");
     });
@@ -99,7 +132,7 @@ describe("useTaskStorage", () => {
     it("updateTask modifies task and updates updatedAt", async () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
-      let taskId: string;
+      let taskId = "";
       act(() => {
         taskId = result.current.actions.addTask("Original").id;
       });
@@ -113,7 +146,7 @@ describe("useTaskStorage", () => {
     it("deleteTask removes task from list", async () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
-      let taskId: string;
+      let taskId = "";
       act(() => {
         taskId = result.current.actions.addTask("Delete Me").id;
       });
@@ -145,7 +178,7 @@ describe("useTaskStorage", () => {
     it("resets currentTaskId to null when current task is deleted", async () => {
       const { result } = renderHook(() => useTaskStorage());
       await waitFor(() => expect(result.current.status).toBe("ready"));
-      let taskId: string;
+      let taskId = "";
       act(() => {
         taskId = result.current.actions.addTask("Current").id;
       });

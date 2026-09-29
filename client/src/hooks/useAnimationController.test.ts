@@ -52,9 +52,10 @@ describe("useAnimationController", () => {
    * - Enables Framer Motion's cancel-and-replace via AnimatePresence
    */
   it("generates unique key for each action type", () => {
+    const initialProps: { actionType: AIActionType } = { actionType: AIActionType.PROVOKE };
     const { result, rerender } = renderHook(
       ({ actionType }) => useAnimationController(actionType),
-      { initialProps: { actionType: AIActionType.PROVOKE } }
+      { initialProps }
     );
 
     const firstKey = result.current.animationKey;
@@ -162,9 +163,10 @@ describe("useAnimationController", () => {
    * - Mounts new animation with different variants
    */
   it("changes key when action type changes (cancel-and-replace)", () => {
+    const initialProps: { actionType: AIActionType } = { actionType: AIActionType.PROVOKE };
     const { result, rerender } = renderHook(
       ({ actionType }) => useAnimationController(actionType),
-      { initialProps: { actionType: AIActionType.PROVOKE } }
+      { initialProps }
     );
 
     const provokeKey = result.current.animationKey;

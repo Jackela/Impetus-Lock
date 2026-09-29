@@ -64,7 +64,7 @@ export type AgentSource = Exclude<AgentMode, "off">;
  * ```
  */
 export function isAgentMode(mode: unknown): mode is AgentMode {
-  return ["muse", "loki", "off"].includes(mode);
+  return typeof mode === "string" && ["muse", "loki", "off"].includes(mode);
 }
 
 /**

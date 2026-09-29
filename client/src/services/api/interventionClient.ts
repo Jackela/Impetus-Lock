@@ -67,13 +67,18 @@ function generateIdempotencyKey(): string {
  * Wraps HTTP errors with status code and error details.
  */
 export class InterventionAPIError extends Error {
-  constructor(
-    public status: number,
-    public errorCode: string,
-    message: string,
-    public details?: unknown
-  ) {
+  /** HTTP status code. */
+  status: number;
+  /** API error code. */
+  errorCode: string;
+  /** Additional error details. */
+  details?: unknown;
+
+  constructor(status: number, errorCode: string, message: string, details?: unknown) {
     super(message);
+    this.status = status;
+    this.errorCode = errorCode;
+    this.details = details;
     this.name = "InterventionAPIError";
   }
 }

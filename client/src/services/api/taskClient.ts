@@ -50,6 +50,11 @@ type ApiTaskResponse = components["schemas"]["TaskResponse"];
  * Includes HTTP status code and optional error code.
  */
 export class TaskAPIError extends Error {
+  /** HTTP status code. */
+  status: number;
+  /** Optional API error code. */
+  code?: string;
+
   /**
    * Creates a new TaskAPIError.
    *
@@ -57,12 +62,10 @@ export class TaskAPIError extends Error {
    * @param message - Error message
    * @param code - Optional error code (e.g., "version_conflict")
    */
-  constructor(
-    public status: number,
-    message: string,
-    public code?: string
-  ) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
+    this.status = status;
+    this.code = code;
     this.name = "TaskAPIError";
   }
 }

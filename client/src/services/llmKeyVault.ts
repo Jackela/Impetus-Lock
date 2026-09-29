@@ -173,7 +173,7 @@ function encode(buffer: ArrayBuffer | Uint8Array): string {
  * @param value - Base64-encoded string
  * @returns Decoded Uint8Array bytes
  */
-function decode(value: string): Uint8Array {
+function decode(value: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(window.atob(value), (c) => c.charCodeAt(0));
 }
 
@@ -185,7 +185,7 @@ function decode(value: string): Uint8Array {
  *
  * @returns 16-byte salt as Uint8Array
  */
-function ensureSalt(): Uint8Array {
+function ensureSalt(): Uint8Array<ArrayBuffer> {
   const raw = window.localStorage.getItem(SALT_KEY);
   if (raw) return decode(raw);
   const salt = window.crypto.getRandomValues(new Uint8Array(16));
@@ -203,7 +203,7 @@ function ensureSalt(): Uint8Array {
  * @param salt - 16-byte salt for key derivation
  * @returns Derived AES-GCM CryptoKey for encryption/decryption
  */
-async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(passphrase: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const passKey = await window.crypto.subtle.importKey(
     "raw",

@@ -84,5 +84,5 @@ export type WritingEvent =
  * @returns True if state is valid
  */
 export function isWritingState(state: unknown): state is WritingState {
-  return ["WRITING", "IDLE", "STUCK"].includes(state);
+  return typeof state === "string" && ["WRITING", "IDLE", "STUCK"].includes(state);
 }

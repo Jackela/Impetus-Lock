@@ -61,7 +61,7 @@ function getRandomInterval(min: number, max: number): number {
   crypto.getRandomValues(randomBuffer);
 
   // Convert to range [min, max]
-  const randomFloat = randomBuffer[0] / (0xffffffff + 1); // Normalize to [0, 1)
+  const randomFloat = (randomBuffer[0] ?? 0) / (0xffffffff + 1); // Normalize to [0, 1)
   return Math.floor(randomFloat * (max - min + 1)) + min;
 }
 

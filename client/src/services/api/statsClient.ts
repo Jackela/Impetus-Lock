@@ -24,11 +24,12 @@ export interface InterventionBreakdown {
 
 /** Error thrown when a stats API request fails. */
 export class StatsAPIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  /** HTTP status code. */
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "StatsAPIError";
   }
 }

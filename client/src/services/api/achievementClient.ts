@@ -26,11 +26,12 @@ export interface AchievementDefinition {
 
 /** Error thrown when an achievements API request fails. */
 export class AchievementAPIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  /** HTTP status code. */
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "AchievementAPIError";
   }
 }

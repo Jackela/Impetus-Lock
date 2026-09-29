@@ -17,11 +17,12 @@ export interface StreakRecord {
 
 /** Error thrown when a streak API request fails. */
 export class StreakAPIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  /** HTTP status code. */
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "StreakAPIError";
   }
 }
