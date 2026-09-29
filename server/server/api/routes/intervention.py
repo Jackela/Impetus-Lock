@@ -18,8 +18,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from server.api.dependencies import get_task_repository
+from server.api.dependencies import get_task_repository, get_task_service
 from server.application.services.intervention_service import InterventionService
+from server.application.services.task_service import TaskNotFoundError, TaskService
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
 from server.domain.models.intervention import InterventionRequest, InterventionResponse
@@ -96,6 +97,7 @@ async def generate_intervention(
     provider_registry: ProviderRegistry = Depends(get_provider_registry),
     idempotency_cache: AsyncIdempotencyCache = Depends(get_idempotency_cache),
     service: InterventionService = Depends(get_intervention_service),
+    task_service: TaskService = Depends(get_task_service),
 ) -> InterventionResponse | JSONResponse:
     """Generate AI intervention action based on context and mode.
 
@@ -113,6 +115,7 @@ async def generate_intervention(
 
     Raises:
         HTTPException 422: If contract_version mismatch or validation fails.
+        HTTPException 404: If the supplied task is missing or owned by another user.
         HTTPException 500: If LLM provider fails.
 
     Example:
@@ -141,6 +144,17 @@ async def generate_intervention(
                 "server_version": SERVER_CONTRACT_VERSION,
             },
         )
+
+    # Authorize the supplied task even when an idempotent response is cached.
+    task_id = _safe_uuid(task_id_header)
+    if task_id is not None:
+        user_id = _safe_uuid(getattr(http_request.state, "user_id", None))
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        try:
+            await task_service.get_task_for_user(user_id, task_id)
+        except TaskNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     # Check idempotency cache
     cached_response = await idempotency_cache.get(idempotency_key)
@@ -187,7 +201,7 @@ async def generate_intervention(
         # Delegate to service layer (SRP - endpoint handles HTTP only)
         intervention_response = await service.generate_intervention_async(
             request,
-            task_id=_safe_uuid(task_id_header),
+            task_id=task_id,
             repository=repository,
             llm_override=provider,
         )

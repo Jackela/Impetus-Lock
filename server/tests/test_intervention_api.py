@@ -15,12 +15,13 @@ from contextlib import ExitStack
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from server.api.main import app
-from server.api.routes import intervention as intervention_module
 from server.domain.errors import LLMProviderError
 from server.domain.models.anchor import AnchorPos, AnchorRange
 from server.domain.models.intervention import InterventionResponse
@@ -394,41 +395,40 @@ class TestInterventionAPIContract:
         monkeypatch.setenv("OPENAI_API_KEY", "test-key-for-unit-tests")
         app.state.provider_registry = ProviderRegistry()
 
-    def test_persists_action_when_repository_available(self) -> None:
-        """Intervention responses should be persisted when repo is available."""
-
-        from server.infrastructure.persistence.in_memory_task_repository import (
-            InMemoryTaskRepository,
-        )
-
-        captured_repo = InMemoryTaskRepository()
-
-        async def override_repo() -> InMemoryTaskRepository:
-            return captured_repo
-
-        app.dependency_overrides[intervention_module.get_task_repository] = override_repo
-
-        headers = {
-            **REQUIRED_HEADERS,
-            "X-Task-Id": "550e8400-e29b-41d4-a716-446655440000",
-            "Idempotency-Key": "task-persistence-unique",
-        }
-
-        response = client.post(
-            "/impetus/generate-intervention",
-            json=VALID_MUSE_REQUEST,
-            headers=headers,
-        )
-
-        assert response.status_code == 200
-
-        actions = captured_repo._actions  # noqa: SLF001
-        assert len(actions) == 1
-        stored_actions = list(actions.values())[0]
-        assert len(stored_actions) == 1
-        assert stored_actions[0].task_id.hex == "550e8400e29b41d4a716446655440000"
-
-        app.dependency_overrides.pop(intervention_module.get_task_repository, None)
+    async def test_persists_action_when_repository_available(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """An authenticated owner's intervention is retrievable in task history."""
+        monkeypatch.delenv("TESTING", raising=False)
+        monkeypatch.setenv("JWT_SECRET", "r05-task-ownership-test-secret-only")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as owner:
+            registered = await owner.post(
+                "/auth/register",
+                json={"email": f"r05-{uuid4()}@example.com", "password": "securePassword123"},
+            )
+            assert registered.status_code == 201
+            owner.headers["X-CSRF-Token"] = owner.cookies["csrf_token"]
+            created = await owner.post(
+                "/tasks/", json={"content": "The door opened.", "lock_ids": []}
+            )
+            assert created.status_code == 201
+            task_id = created.json()["id"]
+            response = await owner.post(
+                "/impetus/generate-intervention",
+                json=VALID_MUSE_REQUEST,
+                headers={
+                    **REQUIRED_HEADERS,
+                    "X-Task-Id": task_id,
+                    "Idempotency-Key": str(uuid4()),
+                },
+            )
+            assert response.status_code == 200
+            history = await owner.get(f"/tasks/{task_id}/actions")
+            assert history.status_code == 200
+            assert history.json()["total"] == 1
+            action = history.json()["actions"][0]
+            assert action["task_id"] == task_id
+            assert action["action_id"] == response.json()["action_id"]
 
 
 class TestProviderTeardown:
