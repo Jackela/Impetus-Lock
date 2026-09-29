@@ -8,7 +8,7 @@ R04
 
 ## Allowed scope
 
-server/server/api/routes/style.py; server/server/api/routes/style_history.py; server/server/infrastructure/persistence/style_history_repository.py; directly needed style service/repository methods; focused style HTTP/repository tests
+server/server/api/routes/style.py; server/server/api/routes/style_history.py; server/server/infrastructure/persistence/style_history_repository.py; directly needed style service/repository methods; focused style HTTP/repository tests; deterministic regeneration of client/src/types/api.generated.ts after schema metadata changes
 
 ## Pre-approved test seam
 

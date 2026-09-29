@@ -8,7 +8,7 @@ R11
 
 ## Allowed scope
 
-client/src/App.tsx; client/src/AppLayout.tsx; client/src/AppModals.tsx; client/src/components/{Auth,StyleLearning,Task,Skeleton,SensoryFeedback,TimerIndicator}/**; client/src/hooks/useFocusTrap.ts; directly corresponding tests
+client/src/App.tsx; client/src/AppLayout.tsx; client/src/AppModals.tsx; client/src/components/{Auth,StyleLearning,Task,Skeleton,SensoryFeedback,TimerIndicator}/**; client/src/hooks/useFocusTrap.ts; type-only return-contract correction in client/src/hooks/useAnimationController.ts; minimal ref-type wiring in its sole production consumer client/src/components/CreateTaskModal/CreateTaskModal.tsx; directly corresponding tests
 
 ## Pre-approved test seam
 
@@ -27,3 +27,7 @@ Resolve actual React19 JSX/ref/nullable/prop/formatter diagnostics using public 
 - Use installed Poetry Python3.12 and Node dependencies; no environment rediagnosis. Server gate: poetry run ruff check .; poetry run ruff format --check .; poetry run lint-imports; poetry run mypy . --no-site-packages --ignore-missing-imports; poetry run pydocstyle server/; poetry run pytest tests/ -n auto -k "not RedisIntegration and not redis_pubsub". Client gate: npm run lint; npm run format; npm run type-check; npm run test. Actual app/tool compiler diagnostics are known baseline until R18: report counts and new errors honestly, do not claim empty root check validates source.
 - Run relevant focused checks during work and package gates once at end; preserve the logs and final result. No Playwright/browser E2E, paid model calls, remote CI, or external mutations.
 - API public paths/fields/status semantics stay stable. New architecture, shared store, permission schema or major migration -> main for Tier3 proposal.
+
+## Scope clarification
+
+Named component families include existing same-name `.tsx` files as well as directories (for example `TimerIndicator.tsx`). `Task/index.ts` missing-module exports and missing react-router-dom stay owned by R17; do not fix dependency metadata here. The existing useFocusTrap consumer may receive a narrow generic/ref-type correction if needed; no modal redesign.

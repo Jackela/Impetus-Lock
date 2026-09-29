@@ -1,3 +1,9 @@
+Exact generated-state inventory, 2026-09-29
+
+APPROVED INDEX REMOVAL (retain local file bytes):
+scripts/ralph/.last-branch
+
+PRESERVE TRACKED EVIDENCE (change future E2E output paths under R21; no deletion authorized by this list):
 client/audit-screenshots/01-first-load.png
 client/audit-screenshots/02-welcome-modal.png
 client/audit-screenshots/03-main-ui.png
@@ -14,4 +20,5 @@ client/e2e-results/ux-003-task-list-hidden-browser.png
 client/e2e-results/ux-003-task-list-hidden.png
 client/e2e-results/ux-003-task-list-integration-browser.png
 client/e2e-results/ux-003-task-list-integration.png
-scripts/ralph/.last-branch
+
+NEW GENERATED REPORT IGNORE ONLY: /server/coverage.json

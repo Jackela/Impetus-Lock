@@ -8,7 +8,7 @@ R12, R13, R14, R15, R16, R17
 
 ## Allowed scope
 
-client/package.json; client/tsconfig*.json; client/vite.config.ts; client/vitest.config.ts; client/vitest.setup.ts; client/playwright*.ts if included; remaining client **/*.test.ts(x) and tests/** type repairs
+client/package.json; client/tsconfig*.json; client/vite.config.ts; client/vitest.config.ts; client/vitest.setup.ts; client/playwright*.ts if included; remaining client **/*.test.ts(x), tests/** and e2e/** type repairs
 
 ## Pre-approved test seam
 
@@ -16,7 +16,7 @@ Public tsc app/tool/test configs plus an isolated known-invalid source proving c
 
 ## Acceptance criteria
 
-Zero diagnostics across application, all unit/integration tests and tooling configs. Check actual referenced projects, not empty solution root. Remove duplicate invalid Vite test configuration in favor of existing Vitest config. Include tests outside src via appropriate explicit config; do not exclude existing source, relax strict/erasable flags or use blanket assertions/ignore directives. Fix incomplete mocks by actual interface fixtures, preserving behavioral tests. CLI must fail on an isolated genuine type error and pass clean actual tree.
+Zero diagnostics across application, all unit/integration/E2E test sources (compilation only) and tooling configs. Check actual referenced projects, not empty solution root. Remove duplicate invalid Vite test configuration in favor of existing Vitest config. Include tests outside src via appropriate explicit config; do not exclude existing source, relax strict/erasable flags or use blanket assertions/ignore directives. Fix incomplete mocks by actual interface fixtures, preserving behavioral tests. CLI must fail on an isolated genuine type error and pass clean actual tree.
 
 ## Global execution contract
 

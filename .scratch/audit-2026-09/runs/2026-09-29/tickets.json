@@ -7,8 +7,10 @@
     ],
     "dependencies": [],
     "file": "issues/r01-expire-unvisited-idempotency-cache-entries.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "3cd8625"
   },
   {
     "id": "R02",
@@ -18,8 +20,10 @@
     ],
     "dependencies": [],
     "file": "issues/r02-make-debug-action-identities-persistable.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "79ed45a"
   },
   {
     "id": "R03",
@@ -29,8 +33,10 @@
     ],
     "dependencies": [],
     "file": "issues/r03-restore-task-sync-request-bodies.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "eddbe65"
   },
   {
     "id": "R04",
@@ -41,8 +47,11 @@
     ],
     "dependencies": [],
     "file": "issues/r04-restore-mounted-authentication-and-client-csrf-contract.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "boundary_red_accepted": true,
+    "commit": "8fbf6cf"
   },
   {
     "id": "R05",
@@ -54,8 +63,10 @@
       "R04"
     ],
     "file": "issues/r05-enforce-intervention-task-ownership.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "2a0be77"
   },
   {
     "id": "R06",
@@ -69,8 +80,10 @@
       "R05"
     ],
     "file": "issues/r06-scope-and-serialize-idempotent-interventions.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "5b030ad"
   },
   {
     "id": "R07",
@@ -80,8 +93,12 @@
     ],
     "dependencies": [],
     "file": "issues/r07-make-task-version-updates-atomic.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "in_memory_red_accepted": true,
+    "red_accepted": true,
+    "postgres_red_accepted": true,
+    "commit": "700b36e"
   },
   {
     "id": "R08",
@@ -91,8 +108,10 @@
     ],
     "dependencies": [],
     "file": "issues/r08-keep-synchronous-model-generation-off-event-loop.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "ff0d92a"
   },
   {
     "id": "R09",
@@ -105,8 +124,10 @@
       "R04"
     ],
     "file": "issues/r09-enforce-style-profile-and-history-ownership.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "a024c9b"
   },
   {
     "id": "R10",
@@ -116,8 +137,10 @@
     ],
     "dependencies": [],
     "file": "issues/r10-unify-collaboration-room-manager-dependency.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "893148e"
   },
   {
     "id": "R11",
@@ -128,8 +151,11 @@
     ],
     "dependencies": [],
     "file": "issues/r11-restore-authoritative-client-type-sources.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "schema_red_accepted": true,
+    "commit": "a8a62ee"
   },
   {
     "id": "R12",
@@ -141,8 +167,10 @@
       "R11"
     ],
     "file": "issues/r12-preserve-task-mutation-callbacks.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "d663fa6"
   },
   {
     "id": "R13",
@@ -156,8 +184,10 @@
       "R03"
     ],
     "file": "issues/r13-preserve-drafts-through-task-synchronization-races.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "380c9bc"
   },
   {
     "id": "R14",
@@ -169,8 +199,11 @@
       "R11"
     ],
     "file": "issues/r14-repair-react-component-strict-type-contracts.md",
-    "status": "specified",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "motion_repair_reviewed": true,
+    "commit": "bdfda4b"
   },
   {
     "id": "R15",
@@ -182,8 +215,9 @@
       "R11"
     ],
     "file": "issues/r15-repair-editor-library-contracts-without-architecture-migration.md",
-    "status": "specified",
-    "tier": 2
+    "status": "green-in-progress",
+    "tier": 2,
+    "red_accepted": true
   },
   {
     "id": "R16",
@@ -195,8 +229,9 @@
       "R11"
     ],
     "file": "issues/r16-repair-domain-and-service-strict-type-contracts.md",
-    "status": "specified",
-    "tier": 2
+    "status": "green-in-progress",
+    "tier": 2,
+    "red_accepted": true
   },
   {
     "id": "R17",
@@ -245,8 +280,9 @@
       "R08"
     ],
     "file": "issues/r19-enforce-per-file-backend-critical-coverage.md",
-    "status": "specified",
-    "tier": 2
+    "status": "green-in-progress",
+    "tier": 2,
+    "red_accepted": true
   },
   {
     "id": "R20",
@@ -286,8 +322,9 @@
     ],
     "dependencies": [],
     "file": "issues/d-a.md",
-    "status": "specified",
-    "tier": 1
+    "status": "integrated-pending-review",
+    "tier": 1,
+    "commit": "882017e"
   },
   {
     "id": "D-B",
@@ -301,8 +338,9 @@
     ],
     "dependencies": [],
     "file": "issues/d-b.md",
-    "status": "specified",
-    "tier": 1
+    "status": "integrated-pending-review",
+    "tier": 1,
+    "commit": "590638e"
   },
   {
     "id": "D-C",
@@ -315,8 +353,9 @@
     ],
     "dependencies": [],
     "file": "issues/d-c.md",
-    "status": "specified",
-    "tier": 1
+    "status": "integrated-pending-review",
+    "tier": 1,
+    "commit": "de76d15"
   },
   {
     "id": "P-01",
@@ -331,6 +370,19 @@
     ],
     "dependencies": [],
     "file": "issues/P-01-proposals.md",
+    "status": "integrated-pending-review",
+    "tier": 3,
+    "commit": "e8bc6d4"
+  },
+  {
+    "id": "P-02",
+    "title": "Draft missing writing activity statistics and milestone tracking",
+    "findings": [
+      "B15",
+      "B16"
+    ],
+    "dependencies": [],
+    "file": "issues/P-02-activity-tracking.md",
     "status": "specified",
     "tier": 3
   }

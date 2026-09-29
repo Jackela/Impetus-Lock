@@ -156,3 +156,17 @@ Current run: [progress](runs/2026-09-29/progress.md), [ready tickets](runs/2026-
 See [C01–C05](runs/2026-09-29/reviews/workflow-audit.md). All P2/Tier1, consolidated with documentation to avoid duplicate repairs.
 
 All findings above are open at wave3. Closure and evidence will be appended after acceptance; historical sections remain unchanged.
+
+### 2026-09-29 实施取证补充
+
+- F02/F03（R11）：实际 app 编译首先复现15条 TanStack公共导出缺失；去掉遮蔽声明后该组清零。进一步用实际端点的原始 `app.openapi()` 与模型序列化比较，确认 `InterventionResponse.issued_at` 和三个 Anchor 的 `type` 总会输出，但响应 schema 未列为必填。该差异归入同票的服务端序列化描述修复；不得在生成器内静默补写必填语义。RED与保持输入默认值的检查见本轮日志。
+- D-A/D-B/D-C：主 agent 核对并修正了文档 worker 漏项，保留依赖指南结构、历史命令正文、准确 Phase5来源、宪法与OpenSpec托管块。集成状态仍须等待 Wave5独立复核。
+
+| 编号 | 严重度 | 文件:行 | 可验证事实 | 建议动作 | Tier |
+|---|---|---|---|---|---|
+| B15 | P2 | server/server/api/routes/stats.py:76 | period分支固定返回零，UserStats在生产代码只有模型和读取路径，未记录写作活动 | P-02明确日期口径、写作时间证据与最小持久化方案，待审批 | 3 |
+| B16 | P2 | server/server/models/achievement.py:16 | 模型、定义与读取存在，但生产代码无成就授予写入路径，当前规范要求里程碑授予 | P-02明确指标来源、幂等授予及历史处理，待审批 | 3 |
+
+B15/B16为提案来源核对中的追加发现。现有规范没有时间窗口、写作时长采集、回填及完整授予政策；清偿要求需要数据/行为选择，不能把字面零值或不存在的历史当作正确结果。当前不实施、不修改正式规范。
+
+- F14（R15）补充：真实 Milkdown 初始化测试在当前 placeholder `$prose` 回调返回形状处失败（读取 undefined.state）；不是仅有静态诊断。首个有效 RED 见 `runs/2026-09-29/logs/R15-test-writer-02-red.log`。该插件当前未被 EditorCore 导入或挂载，因此这是导出插件的可复现契约缺陷，不能据此断言当前主编辑器启动失败。归入既有 P2 编辑器契约票，保持现有挂载范围和状态语义，尚待完成修复与复核。

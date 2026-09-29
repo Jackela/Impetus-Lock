@@ -30,3 +30,59 @@ Base: `31b0e3f011313e73cf56fc2756f3fb2be2e6b63e`. Integration branch: `codex/aud
 Built-in collaboration spawn reached its per-session agent-thread limit after the planning/audit children. Further workers use fresh `codex --no-daemon ... exec --ephemeral` contexts, explicit gpt-6 model/effort, depth1/no delegation, max3 simultaneous workers. The first read-only CLI audit completed successfully with gpt-6-sol/high; transcript retained in logs/workflow-session.log.
 
 TDD skill public-interface seams are approved in the plan and fixed in each ready ticket. Main accepts RED before fresh implementer dispatch; no agent changes acceptance. Main commits/integrates path-scoped results.
+
+- Integrated R01 `3cd8625` and R03 `eddbe65` after reviewing actual diffs and RED/GREEN evidence. Independent review pending. R02/R11 RED workers started; D-A omissions returned for repair.
+
+- D-A integrated as `882017e`; final main corrections removed absent quick-validate path and unspecified OpenAPI version claim. R02 RED accepted: actual history uniqueness collision on act_debug. R11 RED accepted:15 TanStack missing-export diagnostics within245 total. Fresh implementers started.
+
+- Integrated R02 `79ed45a` (22 focused tests,652 server tests) and D-B `590638e`. Main narrowed the dependency-guide rewrite to evidence-based edits preserving its structure and restored historical command text. Sole index removal .last-branch; original bytes retained in docs and integration worktrees; screenshots untouched. R04 RED and D-C started.
+
+- R11 main review found generator-local schema required-field additions. Native Pydantic serialization metadata can describe existing output without changing validation defaults: isolated subclass check confirmed issued_at remains defaulted for validation and required for serialization. R11 scope clarified for metadata repair and new raw-schema RED; do not accept hidden schema normalization in generator.
+
+- Integrated D-C `de76d15` after main corrected actual Phase5 path, all active mypy commands and Act workflow selection. Constitutional articles and managed OpenSpec block compared unchanged; Agent skills section remains unique. P-01 drafting started. R04 RED accepted using actual mounted app with TESTING unset; fresh implementation started.
+
+- R11 additional RED accepted: raw actual endpoint OpenAPI omits issued_at and three anchor discriminants while actual model serialization includes them; input defaulting/invalid-discriminant checks pass. Fresh implementer assigned native schema metadata repair.
+
+- R11 integrated `a8a62ee`: authoritative raw response schema, unchanged input validation, pinned repeatable generation/check;2 generator checks,32 related server tests and both package gates passed. Client-owned node_modules used by integration via ignored symlink; original dependencies unchanged. R13 save-race RED worker started.
+
+- R04 first GREEN withheld by main: candidate allows fallback-secret protected authentication and changes existing token compatibility. Existing cookie/client work preserved. Fresh boundary RED worker dispatched. Around09:44UTC a P-01 worker connection retry was observed after a host-time gap; no assumptions about cause; evidence retained.
+
+- R13 RED accepted:409 response overwrites latest local draft/locks with remote data in actual hook+client underStrictMode, despite local cache retaining draft. Fresh implementer assigned remaining race slices and package gates.
+
+- R04 boundary RED accepted:2 failures +10 invalid-claim cases passing. Candidate permits fallback-secret read/write (200/204 instead of401), and rejects existing unaugmented JWTHandler-issued UUID token (401 instead of router405/logout204). Fresh implementer must repair both without weakening invalid-identity checks.
+
+- R04 integrated `8fbf6cf`: 66 server/38 client focused tests;667 server and582 client full tests; all declared gates green. Root reviewed configured-secret and legacy-token correction, shared request helper and frontend callsite diff. P-01 integrated `e8bc6d4`:5 strict-valid drafts. Main removed normative zero-stub preservation and recorded B15/B16 as P-02 pending data/behavior proposal. R05/R07 RED workers started on fresh branches from integrated e8bc6d4.
+
+- R05 RED accepted: actual auth/CSRF + repository yields foreign intervention200,1 provider call,1 foreign history; expected404/0/0. R07 memory parity RED accepted; before implementation a fresh worker is assigned the real PostgreSQL RED with the explicit user-providedURL (missing from initial worker environment handoff). Integration cross-check afterR04/R11:16 focused tests and api:check passed.
+
+- R13 integrated `380c9bc`:16 race tests,25 focused and577 full client tests passed; actual compiler new diagnostics0. Main checked per-task queue, stale response guards, conflict retention and StrictMode lifecycle. R07 real PostgreSQL RED accepted:2 successes/0 conflicts from independent sessions; expected1/1. Colima/Postgres were stopped, started per supplied instructions; first connection error retained, behavioral RED in R07-main-postgres-red.log.
+
+- R12 RED accepted: actual QueryClient/hook/modal receives201 but caller-selected task stays empty; close assertion not reached. Main reviewed fetch-boundary test; fresh implementer assigned.
+
+- R07 `700b36e` integrated:99 focused/678 full tests,4 actualPG tests; atomic CAS, in-memory independent snapshots, legacy/scoped service translation. Main adds health-checked PostgreSQL16 to existing backend CI job because its real regression now requires PostgreSQL; YAML parsed,4PG tests rerunpassed, remoteCI unrun. R05 `2a0be77`:44focused/676full, allgatespass; old commit-fault fixtures now use realauthandownedDBboundary, no assertions dropped. R12 `d663fa6`:41focused/601full, allgatespass;actualapp220/node1,new0. All three waitWave5review. Fresh R06/R08/R14 RED workers next.
+
+- Integration check R05+R07:22passed in main-r05-r07-integration.log. R14 compiler evidence received, scope clarified for the existing focus-hook consumer only; no acceptance change.
+
+- R06 RED accepted: overlapping same-user/task/key requests yield different responses and2generations/2commits/2historywrites, expectedoneeach. R08 RED accepted: event-loop heartbeat cannot release blocked synchronous provider before deadline escape; event ordering, not timing threshold, provesfailure. R14 compiler RED220diagnostics accepted;5missing-module diagnostics belongR17. All fresh implementers active.
+
+- Integration documentation follow-up for D-A after R18/R19/R20: active testing guides must state the now-required local PostgreSQL concurrency test prerequisite (same user-provided default URL; test-owned schemas only) and final effective type/per-file coverage commands. README already explains PostgreSQL setup, but TESTING currently has no database prerequisite. Reuse D-A documentation batch, not a fourth Tier1 batch.
+
+- Planned conflict-free remaining lanes: server R06→R09→R19 (afterR08); floating R08→R10→R16→R21/R20; client R14→R15→R17→R18. Run R18 after R20/R21 if they touch compiler-covered test/config files, to avoid reintroducing diagnostics. Floating client work needs isolated owned node_modules or stable dependency ownership; do not mutate original environment. P-02 and D-A integration doc follow-up still required before Wave5.
+
+- R06 `5b030ad` integrated:63focused/697full, allservergatespass; scoped JSONkey, per-key lock referencecounts with cancellationcleanup, first-resultTTL preserved, noBYOKkey retained. Main corrected cache docstring toscopedidentity. R08 `ff0d92a`:47focused/689full, allservergatespass; native thread offload with repeated-cancellation draining beforeprovidercleanup. Fresh R09/R10 RED next.
+
+- R06/R08 integration:42tests passed, main-r06-r08-integration.log. R14 main review withholds finalGREEN for needless runtime animation normalization caused by widened string typing; permit type-only producer contract correction in existing useAnimationController, preserve direct variants and existing supported behavior. Fresh minimal-repair worker after original exits.
+
+- R09 RED accepted: actual mounted auth/CSRF with TESTING off and two registered users in isolatedPGschema; foreign profile GET200 rather than404. Owner create/read established, owner state unchanged. R10 RED accepted: actual route factory/service/REST sees separate managers, empty members/no broadcast instead of2members andpeer awareness event. No productionpermission bypass or approval implied; externalRedis only mocked. Fresh implementers active.
+
+- R14 final GREEN after main simplification:105focused/610full clienttests; gatespass; actual app220→188/node1,new0. Public Easing plus object type alias replaces runtime normalization; emitted hookJS unchanged. Null/ref/style guards have realDOM tests. Integrated commit recorded in tickets next checkpoint. R15 compiler/editor RED worker dispatched with explicit warning that current manual filterTransaction must remain enforced.
+
+- R10 `893148e` integrated:83collaboration/701fullservertests, allgatespassed. Minimalfactoryreturnexistingmanager; lifecycle/permission behavior untouched. Floating lane switched R16 and detached only its ignored node_modules symlink to original; npmci installs owned dependency copy for parallel frontend compiler/test work. Original dependencies retained.
+
+- R15 meaningful RED accepted (02-red log): real Milkdown editor creation with placeholder plugin fails at EditorState.create reading undefined.state; first cleanup-timeout log retained, corrected test avoids infinite destroy retry after failed create. Main inspected real initialization and PM edit/delete assertions, nointernalmocks. R16 compiler RED accepted:188actualapp diagnostics,24ticket-group errors coveringerasablesyntax, guards, storage andcrypto; owneddependencies installed639packages withoutoriginalmutation. Fresh implementers next.
+
+- R15 main source check: PlaceholderPlugin is not currently imported/mounted by EditorCore. Its real-editor regression proves the exported plugin contract fails when used, NOT that the current main editor cannot initialize. F14 severity remainsP2; do not mount this plugin as part of repair.
+
+- R09 integrated:19realPG ownership/lifecycle/pagination/auth tests,42focused/719fullserver; allgatespassed. Main checked all8 protected operations, scoped ID queries/deletes, real no-mutation checks, and kept older algorithm/no-session assertions with ownedidentity. Existing empty security placeholder skips remain historical non-evidence (new real auth tests provide actual evidence); no claim of standalone lockpermission API. R19 per-file coverage RED next.
+
+- R09 integration API drift caught: get_current_user exposes8existing access_token cookies plusupdateddocstrings. Main regenerated authoritativeartifact, inspectedall41changedlines, api:check/test:api-types+allclientdeclaredgatespassed (610tests). Amended only latest local integration R09 commit `dcd3bd8`→`a024c9b` to include generatedtypes; workerR19 base remainsold content-equivalentserver snapshot. No publicpath/businessfield change. R19 RED accepted: fixedfixturebase_provider50%,aggregate96.67%,actualoldCLIexit0; expectedreject. Not productcoverage.
