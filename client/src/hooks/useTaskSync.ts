@@ -236,7 +236,8 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
 
   const persist = useCallback(
     async (draft: TaskDraft) => {
-      if (draft.saving || !draft.pending) return;
+      // Loading must establish the actual identity/version before any write.
+      if (draft.status === "loading" || draft.saving || !draft.pending) return;
       draft.saving = true;
       const visible = () => mounted.current && active.current === draft;
       if (visible()) setIsSaving(true);
@@ -316,25 +317,26 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       Object.assign(draft, {
         taskId: record.id,
         version: record.version,
-        content: record.content,
-        lockIds: record.lock_ids || [],
-        dirty: false,
+        content: draft.dirty ? draft.content : record.content,
+        lockIds: draft.dirty ? draft.lockIds : record.lock_ids || [],
         status: "ready",
         error: null,
       });
       drafts.current.set(record.id, draft);
       showDraft(draft);
+      // A due save (including switch/unmount cleanup) resumes after loading.
+      // A still-running debounce must keep its original deadline.
+      if (draft.timer === null) void persist(draft);
     },
-    [showDraft]
+    [persist, showDraft]
   );
 
   const loadFromCache = useCallback(
-    (draft: TaskDraft) => {
-      try {
-        const cachedContent = localStorage.getItem(LOCAL_CACHE_KEY);
-        if (cachedContent !== null) draft.content = cachedContent;
-      } catch {
-        // Ignore cache failures.
+    (draft: TaskDraft, cachedContent: string | null) => {
+      if (!draft.dirty && cachedContent !== null) {
+        draft.content = cachedContent;
+        // Retain recovered content across selection changes without queuing a write.
+        draft.dirty = true;
       }
       showDraft(draft);
     },
@@ -346,6 +348,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       if (active.current.taskId === id) return;
       const previous = active.current;
       if (previous.timer) window.clearTimeout(previous.timer);
+      previous.timer = null;
       void persist(previous);
       const cached = drafts.current.get(id);
       const retained =
@@ -368,7 +371,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       if (retained) return;
       try {
         const record = await fetchTask(id);
-        if (mounted.current) adoptTask(record, draft);
+        adoptTask(record, draft);
       } catch (err) {
         draft.error = getErrorMessage(err, { operation: "load" });
         draft.status = "error";
@@ -383,7 +386,10 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     bootstrapStarted.current = true;
     const draft = active.current;
     setStatus("loading");
+    let cachedContent: string | null = null;
     try {
+      // Capture content with its metadata before another selection changes storage.
+      cachedContent = localStorage.getItem(LOCAL_CACHE_KEY);
       const cachedMetaRaw = localStorage.getItem(LOCAL_META_KEY);
       const cachedMeta = cachedMetaRaw
         ? (JSON.parse(cachedMetaRaw) as { taskId?: string; version?: number })
@@ -396,13 +402,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       const record = cachedMeta?.taskId
         ? await fetchTask(cachedMeta.taskId)
         : await createTask({ content: defaultContent, lockIds: [] });
-      if (mounted.current && active.current === draft) adoptTask(record, draft);
+      adoptTask(record, draft);
     } catch {
-      if (mounted.current && active.current === draft) {
-        draft.error = TaskSyncErrorMessages.API_UNAVAILABLE;
-        draft.status = "error";
-        loadFromCache(draft);
-      }
+      draft.error = TaskSyncErrorMessages.API_UNAVAILABLE;
+      draft.status = "error";
+      loadFromCache(draft, cachedContent);
     }
   }, [adoptTask, defaultContent, loadFromCache]);
 
@@ -412,6 +416,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       mounted.current = false;
       const draft = active.current;
       if (draft.timer) window.clearTimeout(draft.timer);
+      draft.timer = null;
       void persist(draft);
     };
   }, [persist]);
@@ -433,6 +438,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       draft.pending = { content: markdown, lockIds: draft.lockIds };
       if (draft.timer) window.clearTimeout(draft.timer);
       draft.timer = window.setTimeout(() => {
+        draft.timer = null;
         void persist(draft);
       }, 800);
     },
