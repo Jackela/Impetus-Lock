@@ -70,7 +70,7 @@ Development: http://127.0.0.1:8000/
 | `X-Contract-Version` | ✅ | string | 客户端契约版本（必须等于 "2.0.0"） |
 | `Content-Type` | ✅ | string | 必须为 `application/json` |
 
-**认证前提:** 除健康检查、登录、注册和文档/OpenAPI 路径外，API 由认证中间件保护。调用此 POST 前需携带有效 `access_token` cookie，并在 `csrf_token` cookie 与 `X-CSRF-Token` 请求头中提供相同值；否则分别返回 401 或 403。下方 `curl` 示例省略了这些凭据，请在已完成登录后补入。
+**认证前提:** 除健康检查、`POST /auth/login`、`POST /auth/register` 和文档/OpenAPI 路径外，API 由认证中间件保护。调用此 POST 前需携带有效 `access_token` cookie，并在 `csrf_token` cookie 与 `X-CSRF-Token` 请求头中提供相同值；否则分别返回 401 或 403。后端须配置 `JWT_SECRET` 才能签发和验证会话令牌。浏览器测试可使用已有本地账号，通过 `http://localhost:5173` 页面中的开发者工具向 `http://localhost:8000/auth/login` 发送 `{"email":"账号邮箱","password":"账号密码"}` JSON，并启用 `credentials: "include"`；登录响应会设置两个 cookie。读取可由页面访问的 `csrf_token` cookie，并将其同时作为 `X-CSRF-Token` 请求头发送；HTTP-only 的 `access_token` 由浏览器随凭据自动发送。下方 `curl` 示例省略了这些凭据，请在已完成登录后补入。`/auth/me` 是受保护的会话检查端点。`localhost` 与 `127.0.0.1` 是不同的 cookie 主机，前后端示例须始终使用同一主机名。
 
 **Idempotency-Key 规范:**
 - 格式：UUID v4 (例如 `550e8400-e29b-41d4-a716-446655440000`)
@@ -430,13 +430,16 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 660e8400-e29b-41d4-a716-446655440001" \
   -H "X-Contract-Version: 2.0.0" \
   -d '{
-    "context": "他打开门,犹豫着要不要进去。突然,门后传来脚步声。",
+    "context": "他打开门，犹豫着要不要进去。突然，门后传来脚步声。屋里一直没有灯光。他屏住呼吸，缓缓靠近那扇半开的门。",
     "mode": "loki",
     "client_meta": {"doc_version": 42, "selection_from": 1310, "selection_to": 1310}
   }'
 ```
 
-**Expected Response (200 OK):**
+**Expected Response (200 OK; assuming the configured provider selects `delete`):**
+
+请求上下文包含 51 个 Unicode 字符（Python `len`），因此满足服务端至少 50 字符的删除护栏。光标位于绝对位置 1310，示例删除范围 `1293–1310` 对应光标前最后一句 17 个字符。provider 可能选择其他合法行动；只有其选择 `delete` 时才会得到下列响应。
+
 ```json
 {
   "action": "delete",

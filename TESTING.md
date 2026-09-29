@@ -391,7 +391,7 @@ npm run test:e2e                     # Headless
 npx playwright test --ui             # Interactive
 npx playwright test --headed         # Show browser
 npx playwright test --debug          # Debug mode
-npx playwright test e2e/task-lock.spec.ts  # Specific file
+npx playwright test e2e/lock-rejection-feedback.spec.ts  # Specific lock enforcement file
 
 # Install browsers (first time)
 npx playwright install --with-deps

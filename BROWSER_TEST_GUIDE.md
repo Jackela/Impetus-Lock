@@ -15,8 +15,36 @@
    ```
 
 3. **LLM provider configured**: Configure a provider in the app's LLM Settings before triggering an intervention. This guide does not assume a key is stored in the repository `.env`.
+4. **JWT configured**: Set a local `JWT_SECRET` in the backend environment. The authentication middleware cannot verify session cookies without it.
+5. **Authenticated browser session**: The app currently has no mounted login UI. Use an existing local account; do not expect a login screen in the app. Keep both services on the `localhost` hostname (`http://localhost:5173` and `http://localhost:8000`) so the browser sends the backend cookies to the API. Do not mix `localhost` and `127.0.0.1`.
 
-> These are manual browser procedures. Passing local lint, type-check, or unit-test gates does not establish Playwright E2E or production validation. Avoid sending real provider requests unless you intend to exercise the configured LLM.
+From the browser page at `http://localhost:5173`, open DevTools Console and obtain a local session through the mounted `/auth` API. Substitute an existing local account's credentials; this request does not create an account:
+
+```js
+const login = await fetch("http://localhost:8000/auth/login", {
+  method: "POST",
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: "local-account@example.com", password: "your-local-password" }),
+});
+if (!login.ok) throw new Error(`Login failed: ${login.status}`);
+
+const csrfToken = document.cookie
+  .split("; ")
+  .find((cookie) => cookie.startsWith("csrf_token="))
+  ?.split("=")[1];
+if (!csrfToken) throw new Error("csrf_token cookie was not set");
+
+const session = await fetch("http://localhost:8000/auth/me", {
+  credentials: "include",
+});
+if (!session.ok) throw new Error(`Session check failed: ${session.status}`);
+console.log("Authenticated as", await session.json());
+```
+
+For unsafe API calls such as `POST /impetus/generate-intervention`, continue using `credentials: "include"` and send the same CSRF value in `X-CSRF-Token`; the browser attaches the HTTP-only `access_token` cookie automatically. `/auth/me` is a GET session check and needs no CSRF header. The `/auth/login` response sets `access_token` and `csrf_token` cookies; login is a backend API flow, not an app UI.
+
+> These are manual browser procedures. Passing local lint, type-check, or unit-test gates does not establish Playwright E2E or production validation. Avoid sending real provider requests unless you intend to exercise the configured LLM. An in-app login screen is not implemented; adding one is an unapproved proposal, not part of this guide or current UI.
 
 ---
 
