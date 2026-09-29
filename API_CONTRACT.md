@@ -22,7 +22,7 @@
    所有响应通过 Pydantic + Instructor 生成，无原始字符串
 
 4. **版本化契约 | Versioned Contract**  
-   通过 `X-Contract-Version` header 支持灰度发布和回滚
+   通过 `X-Contract-Version` header 校验客户端契约版本
 
 ---
 
@@ -70,6 +70,8 @@ Development: http://127.0.0.1:8000/
 | `X-Contract-Version` | ✅ | string | 客户端契约版本（必须等于 "2.0.0"） |
 | `Content-Type` | ✅ | string | 必须为 `application/json` |
 
+**认证前提:** 除健康检查、登录、注册和文档/OpenAPI 路径外，API 由认证中间件保护。调用此 POST 前需携带有效 `access_token` cookie，并在 `csrf_token` cookie 与 `X-CSRF-Token` 请求头中提供相同值；否则分别返回 401 或 403。下方 `curl` 示例省略了这些凭据，请在已完成登录后补入。
+
 **Idempotency-Key 规范:**
 - 格式：UUID v4 (例如 `550e8400-e29b-41d4-a716-446655440000`)
 - 长度：8-64 字符
@@ -85,7 +87,6 @@ Development: http://127.0.0.1:8000/
 {
   "context": "他打开门,犹豫着要不要进去。",
   "mode": "muse",
-  "mock": false,
   "client_meta": {
     "doc_version": 42,
     "selection_from": 1234,
@@ -100,7 +101,6 @@ Development: http://127.0.0.1:8000/
 |-------|------|----------|-------------|
 | `context` | string | ✅ | 光标前最后 N 句话。服务端不持久化原文 |
 | `mode` | enum | ✅ | `"muse"` 或 `"loki"` |
-| `mock` | boolean | ❌ | 是否使用模拟数据（用于测试），默认 `false` |
 | `client_meta` | object | ✅ | 客户端编辑器的当前状态，用于后端决策 |
 | `client_meta.doc_version` | integer | ✅ | ProseMirror 文档版本号 (≥0) |
 | `client_meta.selection_from` | integer | ✅ | 选区起始位置 (≥0) |
@@ -141,7 +141,7 @@ Development: http://127.0.0.1:8000/
 | `action_id` | string | ✅ | 服务端生成的行动唯一 ID (UUID)，用于幂等和审计 |
 | `issued_at` | string (ISO 8601) | ✅ | 行动发出时间 |
 | `lock_id` | string | ⚠️ | 锁 ID (UUID)，用于前端事务拦截（仅 `provoke`/`rewrite` 时存在） |
-| `anchor` | object | ⚠️ | 目标锚点（`delete`/`rewrite` 必填，`provoke` 可选） |
+| `anchor` | object | ✅ | 目标锚点。所有行动均必填；`delete`/`rewrite` 必须为 `range` 类型 |
 
 **Response Headers:**
 
@@ -164,7 +164,8 @@ Development: http://127.0.0.1:8000/
   "source": "muse",
   "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8a",
   "issued_at": "2025-01-15T10:30:45.123Z",
-  "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8b"
+  "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8b",
+  "anchor": {"type": "pos", "from": 1234}
 }
 ```
 
@@ -221,6 +222,8 @@ Development: http://127.0.0.1:8000/
   "content": "他所有的技能其实来自名为“洛基”的黑客。",
   "source": "loki",
   "lock_id": "lock_rewrite_01xx",
+  "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8c",
+  "issued_at": "2025-01-15T10:32:12.456Z",
   "anchor": {
     "type": "range",
     "from": 1380,
@@ -391,6 +394,7 @@ ProseMirror 文档是**可变的**（用户不断编辑），绝对位置（如 
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "X-Contract-Version: 2.0.0" \
   -d '{
     "context": "他打开门,犹豫着要不要进去。",
     "mode": "muse",
@@ -424,9 +428,11 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: 660e8400-e29b-41d4-a716-446655440001" \
+  -H "X-Contract-Version: 2.0.0" \
   -d '{
     "context": "他打开门,犹豫着要不要进去。突然,门后传来脚步声。",
-    "mode": "loki"
+    "mode": "loki",
+    "client_meta": {"doc_version": 42, "selection_from": 1310, "selection_to": 1310}
   }'
 ```
 
@@ -459,7 +465,8 @@ X-Cooldown-Seconds: <30-120 derived from Idempotency-Key>
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 770e8400-e29b-41d4-a716-446655440002" \
   -H "Content-Type: application/json" \
-  -d '{"context": "测试", "mode": "muse"}'
+  -H "X-Contract-Version: 2.0.0" \
+  -d '{"context": "测试", "mode": "muse", "client_meta": {"doc_version": 1, "selection_from": 1, "selection_to": 1}}'
 ```
 
 **Request 2 (15 秒内，相同 Idempotency-Key):**
@@ -467,7 +474,8 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 770e8400-e29b-41d4-a716-446655440002" \
   -H "Content-Type: application/json" \
-  -d '{"context": "测试", "mode": "muse"}'
+  -H "X-Contract-Version: 2.0.0" \
+  -d '{"context": "测试", "mode": "muse", "client_meta": {"doc_version": 1, "selection_from": 1, "selection_to": 1}}'
 ```
 
 **Expected Behavior:**  
@@ -482,7 +490,8 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 880e8400-e29b-41d4-a716-446655440003" \
   -H "Content-Type: application/json" \
-  -d '{"context": "测试", "mode": "chaos"}'
+  -H "X-Contract-Version: 2.0.0" \
+  -d '{"context": "测试", "mode": "chaos", "client_meta": {"doc_version": 1, "selection_from": 1, "selection_to": 1}}'
 ```
 
 **Expected Response (422):**
@@ -517,9 +526,7 @@ curl -H "X-Contract-Version: 2.0.0" ...
 ```
 
 **服务端行为:**
-- 如果客户端版本 < 服务端最低支持版本 → 返回 `426 Upgrade Required`
-- 如果客户端版本 > 服务端版本 → 返回 `200` 并使用当前版本
-- 如果未提供版本 → 默认使用最新版本
+- 仅接受 `2.0.0`；缺失或不匹配均返回 `422 Unprocessable Entity`（`ContractVersionMismatch`）。
 
 ---
 
@@ -595,21 +602,14 @@ curl -H "X-Contract-Version: 2.0.0" ...
 
 ## 📝 附录 | Appendix
 
-### OpenAPI 3.0.3 完整规范
+### 运行时 OpenAPI 完整规范
 
-完整的 OpenAPI YAML 规范存储在 `.specify/openapi.yaml`，可用于：
-- 自动生成 FastAPI Pydantic 模型
-- 生成客户端 SDK (TypeScript, Python)
-- Postman/Insomnia 导入
-- API 文档自动生成
+FastAPI 在运行时从当前路由和 Pydantic 模型生成 OpenAPI JSON，权威地址为 `/openapi.json`。仓库中的 `specs/001-impetus-core/contracts/intervention.yaml` 是历史契约文件，不代表当前完整运行时 schema。
 
-**导出命令:**
+**导出当前 schema:**
 ```bash
-# 从 FastAPI 自动生成 OpenAPI JSON
-curl http://localhost:8000/openapi.json > .specify/openapi.json
-
-# 使用 yq 转换为 YAML
-yq -P '.specify/openapi.json' > .specify/openapi.yaml
+# 服务启动后，从仓库根目录导出运行时生成的 OpenAPI JSON
+curl http://localhost:8000/openapi.json -o /tmp/impetus-openapi.json
 ```
 
 ---

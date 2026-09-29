@@ -2,21 +2,21 @@
 
 ## Prerequisites
 
-1. **Backend Server Running** (Windows Command Prompt):
+1. **Backend Server Running** (from the repository root):
    ```cmd
-   cd D:\Code\Impetus-Lock\server
-   .venv\Scripts\python.exe -m uvicorn server.api.main:app --reload --host 0.0.0.0 --port 8000
+   cd server
+   poetry run uvicorn server.api.main:app --reload --host 127.0.0.1 --port 8000
    ```
 
-2. **Frontend Server Running** (WSL or Windows):
+2. **Frontend Server Running**:
    ```bash
-   cd /mnt/d/Code/Impetus-Lock/client
+   cd client
    npm run dev
    ```
 
-3. **OpenAI API Key Configured**:
-   - File: `/server/.env`
-   - Key: `OPENAI_API_KEY=sk-proj-...` (already configured)
+3. **LLM provider configured**: Configure a provider in the app's LLM Settings before triggering an intervention. This guide does not assume a key is stored in the repository `.env`.
+
+> These are manual browser procedures. Passing local lint, type-check, or unit-test gates does not establish Playwright E2E or production validation. Avoid sending real provider requests unless you intend to exercise the configured LLM.
 
 ---
 
@@ -157,31 +157,23 @@ Verify graceful error handling when backend is unavailable.
 
 ## Test 5: Loki Mode (Random Chaos) - OPTIONAL
 
-**Note**: Loki mode is currently disabled in `.env` (`ENABLE_LOKI_MODE=False`)
+**Note**: Select Loki mode in the application UI. `ENABLE_LOKI_MODE` is not a current server setting used by this application.
 
 ### Steps (if enabling Loki mode)
 
-1. **Enable Loki Mode**:
-   - Edit `/server/.env`:
-     ```bash
-     ENABLE_LOKI_MODE=True
-     ```
-   - Restart backend server
-
-2. **Change Mode in Frontend**:
+1. **Change Mode in Frontend**:
    - Look for mode selector (Off/Muse/Loki)
    - Select "Loki"
 
-3. **Wait for Random Trigger** (30-120 seconds):
+2. **Wait for Random Trigger** (the interval is selected by the client timer):
    - Watch **Network tab**
    - API call will happen at random interval
 
-4. **Expected Behavior**:
+3. **Expected Behavior**:
    - ✅ API call with `"mode": "loki"`
-   - ✅ Response action: `"provoke"` OR `"delete"`
-   - ✅ If `provoke`: AI content injected (same as Muse)
-   - ✅ If `delete`: Last sentence deleted with fade animation
-   - ✅ Console log: `[Loki] Provoke intervention injected` or `[Loki] Delete action executed`
+   - ✅ Response follows the current action schema (`provoke`, `delete`, or `rewrite`)
+   - ✅ The editor applies the returned action at the validated anchor
+   - ✅ Sensory feedback follows the applied action
 
 ---
 
@@ -306,6 +298,7 @@ Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000 (UUID v4)
     "type": "pos",
     "from": 50
   },
+  "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8a",
   "source": "muse",
   "issued_at": "2025-01-15T10:30:45.123Z"
 }

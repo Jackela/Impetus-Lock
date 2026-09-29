@@ -45,7 +45,7 @@ Impetus-Lock/
 ├── server/              # FastAPI backend
 │   ├── server/          # Application code
 │   │   ├── __init__.py
-│   │   └── main.py      # FastAPI app with health endpoint
+│   │   └── api/main.py  # FastAPI app with health endpoint
 │   ├── tests/           # pytest test suite
 │   │   ├── __init__.py
 │   │   └── test_main.py # Health endpoint tests
@@ -60,7 +60,7 @@ Impetus-Lock/
 │   ├── vite.config.ts
 │   ├── vitest.config.ts
 │   ├── playwright.config.ts
-│   ├── .eslintrc.cjs
+│   ├── eslint.config.js
 │   ├── .prettierrc
 │   └── .gitignore
 │
@@ -69,9 +69,7 @@ Impetus-Lock/
 │       └── ci.yml       # GitHub Actions CI (4 parallel jobs)
 │
 ├── scripts/
-│   ├── validate-local.sh      # Bash validation (Linux/macOS)
-│   ├── validate-local.ps1     # PowerShell validation (Windows)
-│   └── quick-validate.bat     # Windows fast check (skips tests)
+│   ├── validate.sh            # Bash validation (backend + frontend)
 │
 ├── openspec/            # OpenSpec governance and change proposals
 ├── specs/               # Legacy feature specifications (001-006)
@@ -83,7 +81,7 @@ Impetus-Lock/
 
 ### Backend Development (TDD with FastAPI)
 
-**Article III (TDD) - Red-Green-Refactor Cycle**:
+**Article III (TDD) - Red-Green-Refactor Cycle**. The task-service test and module paths below are illustrative examples; use paths present in the current test tree when running commands.
 
 ```bash
 cd server
@@ -114,7 +112,7 @@ poetry run ruff check --fix .        # Auto-fix issues
 poetry run ruff format .             # Format code
 
 # Type checking (strict mode)
-poetry run mypy .
+poetry run mypy . --no-site-packages --ignore-missing-imports
 
 # Tests (with coverage)
 poetry run pytest -v
@@ -297,7 +295,7 @@ jobs:
   lint:              # Ruff (backend) + ESLint/Prettier (frontend)
   type-check:        # mypy (backend) + tsc (frontend)
   backend-tests:     # pytest
-  frontend-tests:    # Vitest + Playwright
+  frontend-tests:    # Vitest unit tests with coverage
 ```
 
 **Triggers**:
@@ -383,7 +381,7 @@ act -j frontend-tests
 cd server
 poetry run ruff check .
 poetry run ruff format --check
-poetry run mypy .
+poetry run mypy . --no-site-packages --ignore-missing-imports
 
 # Frontend
 cd client
@@ -413,7 +411,7 @@ cd client && npm run test -- --run
 
      Windows users can run `pwsh ./scripts/act-sync.ps1 -Command "act -j e2e ..."` (forwards to WSL).
   3. The helper mirrors the repo to `$HOME/impetus-lock-act`, exports `ACT_WORKSPACE_BASE` / `ACT_CACHE_DIR`, and stops any local `impetus-lock-postgres` container to prevent port conflicts.
-  4. Logs land in `/tmp/act-e2e.log` by default; the latest run is also copied to `test-results/act-e2e.log` (ignored in git) so tail output can be shared when needed.
+  4. The helper writes output through `tee` to `/tmp/act-e2e.log` by default. Set `ACT_LOG_PATH` to choose another log path; the helper does not copy the log into the repository.
 
 ## Troubleshooting
 

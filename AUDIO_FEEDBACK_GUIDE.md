@@ -61,18 +61,20 @@ function MyComponent() {
 
 ## 🧪 测试音效系统
 
-### 方法 1: 使用 Demo 组件（已集成）
+### 在应用中查看反馈
 
-当前 `App.tsx` 已包含 `SensoryFeedbackDemo` 组件：
+`SensoryFeedbackDemo` 是单独的演示组件，目前没有挂载到 `App.tsx`。应用中的反馈由 `EditorCore` 根据真实编辑器动作显示；浏览器人工检查步骤见 [MANUAL_TESTING_GUIDE.md](./MANUAL_TESTING_GUIDE.md)。
 
-1. 启动前端：`npm run dev`
-2. 访问 http://localhost:5173
-3. 页面顶部有三个按钮：
-   - 🔨 **PROVOKE** - 触发 Glitch + Clank
-   - 🌀 **DELETE** - 触发 Fade + Whoosh
-   - ⛔ **REJECT** - 触发 Shake + Bonk
+启动前端：
 
-### 方法 2: 手动触发 API
+```bash
+cd client
+npm run dev
+```
+
+使用应用中的 Muse/Loki 模式和编辑器操作触发反馈。Loki 与 Muse 的干预需要后端及已配置的 LLM 提供方；本指南中的组件测试和本地检查不能证明浏览器或生产环境行为。
+
+### 手动触发
 
 点击右上角的 **"I'm stuck!"** 按钮（`ManualTriggerButton`）：
 

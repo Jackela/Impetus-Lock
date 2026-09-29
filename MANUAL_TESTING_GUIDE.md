@@ -375,7 +375,7 @@ Navigate to: http://localhost:5173
 act -j frontend-tests
 ```
 
-**Expected**: All frontend CI jobs pass (lint, type-check, tests)
+**Expected**: This runs only the `frontend-tests` CI job, which currently runs Vitest with coverage. The separate `lint` and `type-check` jobs do not run Playwright.
 
 ### Option 2: Manual CI Validation
 
@@ -398,10 +398,12 @@ npm run test:e2e
 ```
 
 **Success Criteria**:
-- ✅ Lint: No errors, max-warnings=0
-- ✅ Type check: No TypeScript errors
-- ✅ Unit tests: 118/118 passing
-- ✅ E2E tests: 11/11 passing (7 skipped Phase 5 tests)
+- ✅ Lint completes successfully (`npm run lint`)
+- ✅ Type check completes successfully (`npm run type-check`)
+- ✅ Unit tests complete successfully (`npm run test`; CI may also collect coverage)
+- ☐ Optional E2E: record the result only if `npm run test:e2e` was run; it requires a running development environment and is not implied by the local gates above
+
+The three required local gates cover lint, type checking, and unit tests. Passing them does not establish Playwright E2E or production validation.
 
 **Historical status** (from the recorded session):
 - ✅ Lint: PASS

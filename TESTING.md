@@ -29,7 +29,7 @@ poetry run pytest
 poetry run pytest-watch  # Install: poetry add -D pytest-watch
 
 # Specific test
-poetry run pytest tests/test_main.py::test_health_endpoint_returns_200
+poetry run pytest tests/test_main.py
 
 # Verbose
 poetry run pytest -v
@@ -61,6 +61,8 @@ npm run test -- --coverage
 ## Backend Testing (pytest + FastAPI TestClient)
 
 ### Test File Structure
+
+The following tree and snippets are teaching examples, not a claim that each listed file or feature exists in the current checkout. For a runnable example, use `server/tests/test_main.py` or inspect the current test tree.
 
 ```
 server/
@@ -439,7 +441,7 @@ act -n
 # Backend
 cd server
 poetry run ruff check .
-poetry run mypy .
+poetry run mypy . --no-site-packages --ignore-missing-imports
 poetry run pytest -v
 
 # Frontend
@@ -555,8 +557,8 @@ npx playwright test --debug
 # Headed mode (show browser)
 npx playwright test --headed
 
-# Slow motion (easier to follow)
-npx playwright test --headed --slow-mo=1000
+# Open Playwright Inspector for interactive debugging (not slow motion)
+npx playwright test --debug
 
 # Trace viewer (after test)
 npx playwright test --trace on

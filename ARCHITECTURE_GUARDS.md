@@ -115,16 +115,7 @@ forbidden_modules = [
     "server.api",
 ]
 
-# Contract 4: 分层顺序验证
-[[tool.importlinter.contracts]]
-name = "Clean Architecture: API Layer (Outermost)"
-type = "layers"
-layers = [
-    "server.api",
-    "server.application",
-    "server.domain",
-]
-containers = ["server"]
+# 当前 CI 配置启用三个 forbidden contracts；layers contract 尚未启用。
 ```
 
 ### 本地测试
@@ -147,9 +138,8 @@ Contracts
 ✓ Clean Architecture: Domain Layer Independence
 ✓ Clean Architecture: Application Layer Dependencies
 ✓ Clean Architecture: Infrastructure Layer Dependencies
-✓ Clean Architecture: API Layer (Outermost)
 
-Contracts: 4 kept, 0 broken.
+Contracts: 3 kept, 0 broken.
 ```
 
 **输出示例 (违规):**
@@ -284,7 +274,7 @@ lint:
 
 The CI workflow runs all three contracts with `poetry run lint-imports`; the output of the current CI run is the validation record.
 
-**Documentation enforcement note:** Article V remains a constitutional requirement. The current CI workflow runs Ruff, mypy, ESLint, and Prettier. It does not enforce JSDoc or Python docstring presence, while the existing ESLint JSDoc validation rules for `check-types` and `valid-types` remain enabled.
+**Documentation enforcement:** Article V remains a constitutional requirement. CI runs `pydocstyle server/` for Python docstrings and ESLint JSDoc rules for exported TypeScript declarations. ESLint also enables `jsdoc/check-types` and `jsdoc/valid-types` as warnings; the lint script sets `--max-warnings=0`, so warnings fail the job.
 
 ---
 
@@ -370,7 +360,7 @@ error: Components must not import from features
 
 | 指标 | 目标 | 当前 | 状态 |
 |------|------|------|------|
-| **Backend Contracts** | 4/4 ✅ | 4/4 | ✅ |
+| **Backend Contracts** | 3/3 ✅ | 3/3 | ✅ |
 | **Frontend Rules** | 2/2 ✅ | 2/2 | ✅ |
 | **CI 失败率 (架构)** | 0% | 0% | ✅ |
 | **违规 Ignore 行数** | <5 | 0 | ✅ |
