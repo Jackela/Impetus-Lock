@@ -24,14 +24,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Configuration
 const BACKEND_HEALTH_URL = process.env.BACKEND_HEALTH_URL || "http://localhost:8000/health";
 const FRONTEND_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
-const BACKEND_START_TIMEOUT = 60000; // 60 seconds
 const FRONTEND_START_TIMEOUT = 60000; // 60 seconds
 const HEALTH_CHECK_INTERVAL = 2000; // 2 seconds
-
-interface SetupContext {
-  backendStarted: boolean;
-  frontendReady: boolean;
-}
 
 /**
  * Check if a service is healthy by making an HTTP request

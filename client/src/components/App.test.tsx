@@ -1,5 +1,5 @@
 import { render, screen, act } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "../App";
 
@@ -13,11 +13,6 @@ function createTestQueryClient() {
         staleTime: 1000 * 60 * 5, // 5 minutes
         retry: false, // Disable retry for faster tests
       },
-    },
-    logger: {
-      log: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
     },
   });
 }

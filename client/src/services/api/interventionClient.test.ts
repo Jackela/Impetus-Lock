@@ -38,7 +38,9 @@ describe("generateIntervention", () => {
 
     await generateIntervention(baseRequest, { idempotencyKey: "fixed" });
 
-    const [, init] = fetchSpy.mock.calls[0];
+    const call = fetchSpy.mock.calls[0];
+    if (!call) throw new Error("Expected an intervention request");
+    const [, init] = call;
     expect(init?.headers).toMatchObject({
       "X-LLM-Provider": "gemini",
       "X-LLM-Model": "gemini-2.0-flash-lite",

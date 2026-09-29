@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices, type ReporterDescription } from "@playwright/test";
 
 /**
  * Playwright E2E Test Configuration for Impetus Lock
@@ -11,7 +11,7 @@ import { defineConfig, devices } from "@playwright/test";
  */
 
 // Reporter configuration: list for CI, HTML for local development
-const reporters = process.env.CI
+const reporters: ReporterDescription[] = process.env.CI
   ? [
       ["list"], // Console output
       ["html", { open: "never" }], // HTML report

@@ -21,7 +21,7 @@ describe("ManualTriggerButton", () => {
 
     const button = screen.getByTestId("manual-trigger-button");
     expect(button).toBeDefined();
-    expect(button.disabled).toBe(false);
+    expect(button).toBeEnabled();
     expect(button.textContent).toBe("I'm stuck!");
   });
 
@@ -82,7 +82,7 @@ describe("ManualTriggerButton", () => {
     render(<ManualTriggerButton mode="muse" />);
 
     const button = screen.getByTestId("manual-trigger-button");
-    expect(button.disabled).toBe(true);
+    expect(button).toBeDisabled();
     expect(button.textContent).toBe("Thinking...");
   });
 });

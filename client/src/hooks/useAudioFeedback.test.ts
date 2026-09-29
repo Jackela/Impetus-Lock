@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useAudioFeedback } from "./useAudioFeedback";
+import { TestAudioContext } from "../../tests/fixtures/audio";
 import { AIActionType } from "../types/ai-actions";
 
 /**
@@ -18,13 +19,12 @@ describe("useAudioFeedback", () => {
     vi.clearAllMocks();
 
     // Mock fetch for audio file loading
-    global.fetch = vi.fn().mockResolvedValue({
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(1024)),
-    } as Response);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(new ArrayBuffer(1024))));
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   /**
@@ -70,18 +70,10 @@ describe("useAudioFeedback", () => {
     });
 
     // Create spy on AudioContext methods
-    const mockSource = {
-      buffer: null,
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-      disconnect: vi.fn(),
-    };
+    const mockSource = new TestAudioContext().createBufferSource();
 
     const audioContext = new AudioContext();
-    vi.spyOn(audioContext, "createBufferSource").mockReturnValue(
-      mockSource as AudioBufferSourceNode
-    );
+    vi.spyOn(audioContext, "createBufferSource").mockReturnValue(mockSource);
 
     // Trigger PROVOKE audio
     await result.current.playAudio(AIActionType.PROVOKE);
@@ -107,26 +99,14 @@ describe("useAudioFeedback", () => {
       expect(result.current.isReady).toBe(true);
     });
 
-    const mockSource1 = {
-      buffer: null,
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-      disconnect: vi.fn(),
-    };
+    const mockSource1 = new TestAudioContext().createBufferSource();
 
-    const mockSource2 = {
-      buffer: null,
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-      disconnect: vi.fn(),
-    };
+    const mockSource2 = new TestAudioContext().createBufferSource();
 
     const audioContext = new AudioContext();
     vi.spyOn(audioContext, "createBufferSource")
-      .mockReturnValueOnce(mockSource1 as AudioBufferSourceNode)
-      .mockReturnValueOnce(mockSource2 as AudioBufferSourceNode);
+      .mockReturnValueOnce(mockSource1)
+      .mockReturnValueOnce(mockSource2);
 
     // Play first audio (PROVOKE)
     await result.current.playAudio(AIActionType.PROVOKE);
@@ -153,8 +133,7 @@ describe("useAudioFeedback", () => {
    */
   it("handles AudioContext creation failure gracefully (FR-015)", async () => {
     // Temporarily remove AudioContext to simulate unsupported browser
-    const originalAudioContext = global.AudioContext;
-    (global as unknown as { AudioContext?: typeof AudioContext }).AudioContext = undefined;
+    vi.stubGlobal("AudioContext", undefined);
 
     const { result } = renderHook(() => useAudioFeedback());
 
@@ -167,7 +146,7 @@ describe("useAudioFeedback", () => {
     await expect(result.current.playAudio(AIActionType.PROVOKE)).resolves.not.toThrow();
 
     // Restore AudioContext
-    global.AudioContext = originalAudioContext;
+    vi.unstubAllGlobals();
   });
 
   /**
@@ -194,18 +173,10 @@ describe("useAudioFeedback", () => {
     expect(fetch).toHaveBeenCalledWith("/assets/audio/buzz.mp3");
 
     // Create spy on AudioContext methods
-    const mockSource = {
-      buffer: null,
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-      disconnect: vi.fn(),
-    };
+    const mockSource = new TestAudioContext().createBufferSource();
 
     const audioContext = new AudioContext();
-    vi.spyOn(audioContext, "createBufferSource").mockReturnValue(
-      mockSource as AudioBufferSourceNode
-    );
+    vi.spyOn(audioContext, "createBufferSource").mockReturnValue(mockSource);
 
     // Trigger ERROR audio
     await result.current.playAudio(AIActionType.ERROR);

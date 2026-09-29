@@ -11,7 +11,8 @@
  * Expected Initial State: All tests FAIL (filterTransaction not implemented yet)
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+import { getLegacyMarkdown, setLegacyMarkdown } from "../fixtures/legacyEditorBoundary";
 
 /**
  * Test fixture: Inject a locked block into editor for testing.
@@ -23,14 +24,11 @@ import { test, expect } from "@playwright/test";
  * @param lockId - Lock ID to use (default: "lock_test_001")
  * @returns The injected content string
  */
-async function injectLockedBlock(page: any, lockId = "lock_test_001") {
+async function injectLockedBlock(page: Page, lockId = "lock_test_001") {
   const content = `> Muse 注入：门后传来低沉的呼吸声。<!-- lock:${lockId} -->`;
 
-  // Inject via editor API (will be implemented in Phase 3)
-  await page.evaluate((text: string) => {
-    // @ts-ignore - Editor instance will be available
-    window.__editor__.setMarkdown(text);
-  }, content);
+  // Fail explicitly if the legacy test facade has not been installed.
+  await page.evaluate(setLegacyMarkdown, content);
 
   return content;
 }
@@ -64,10 +62,7 @@ test.describe("Lock Enforcement - Backspace/Delete Prevention", () => {
     await page.keyboard.press("Backspace");
 
     // Verify block still exists
-    const editorContent = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    const editorContent = await page.evaluate(getLegacyMarkdown);
 
     expect(editorContent).toContain(lockedContent);
 
@@ -101,10 +96,7 @@ test.describe("Lock Enforcement - Backspace/Delete Prevention", () => {
     await page.keyboard.press("Delete");
 
     // Verify block still exists
-    const editorContent = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    const editorContent = await page.evaluate(getLegacyMarkdown);
 
     expect(editorContent).toContain(lockedContent);
   });
@@ -120,29 +112,20 @@ test.describe("Lock Enforcement - Backspace/Delete Prevention", () => {
    */
   test("should preserve locked blocks when deleting all content", async ({ page }) => {
     // Add normal text before locked block
-    await page.evaluate(() => {
-      // @ts-ignore
-      window.__editor__.setMarkdown("这是普通文本。\n\n");
-    });
+    await page.evaluate(setLegacyMarkdown, "这是普通文本。\n\n");
 
     // Inject locked block
     const lockId = "lock_test_002";
     const lockedContent = `> 测试内容 <!-- lock:${lockId} -->`;
-    await page.evaluate((text: string) => {
-      // @ts-ignore
-      const current = window.__editor__.getMarkdown();
-      window.__editor__.setMarkdown(current + text + "\n\n更多普通文本。");
-    }, lockedContent);
+    const current = await page.evaluate(getLegacyMarkdown);
+    await page.evaluate(setLegacyMarkdown, current + lockedContent + "\n\n更多普通文本。");
 
     // Select all and delete
     await page.keyboard.press("Control+A");
     await page.keyboard.press("Delete");
 
     // Verify locked block still exists
-    const editorContent = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    const editorContent = await page.evaluate(getLegacyMarkdown);
 
     expect(editorContent).toContain(lockedContent);
 
@@ -170,10 +153,7 @@ test.describe("Lock Enforcement - Backspace/Delete Prevention", () => {
     await page.keyboard.type("新文本");
 
     // Verify locked block still exists (not replaced)
-    const editorContent = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    const editorContent = await page.evaluate(getLegacyMarkdown);
 
     expect(editorContent).toContain(lockedContent);
   });
@@ -196,11 +176,8 @@ test.describe("Lock Enforcement - Multiple Locks", () => {
 
     for (const lockId of locks) {
       const content = `> Loki 锁定：Block ${lockId} <!-- lock:${lockId} -->\n\n`;
-      await page.evaluate((text: string) => {
-        // @ts-ignore
-        const current = window.__editor__.getMarkdown();
-        window.__editor__.setMarkdown(current + text);
-      }, content);
+      const current = await page.evaluate(getLegacyMarkdown);
+      await page.evaluate(setLegacyMarkdown, current + content);
     }
 
     // Try to delete all
@@ -208,10 +185,7 @@ test.describe("Lock Enforcement - Multiple Locks", () => {
     await page.keyboard.press("Delete");
 
     // Verify all locks still exist
-    const editorContent = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    const editorContent = await page.evaluate(getLegacyMarkdown);
 
     for (const lockId of locks) {
       expect(editorContent).toContain(lockId);

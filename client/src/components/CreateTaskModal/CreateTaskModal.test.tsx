@@ -177,7 +177,9 @@ describe("CreateTaskModal", () => {
     it("should not close when clicking modal content", () => {
       render(<CreateTaskModal {...defaultProps} open={true} />, { wrapper });
 
-      const modalContent = screen.getByText("Create New Task").closest(".create-task-modal");
+      const modalContent = screen
+        .getByText("Create New Task")
+        .closest<HTMLElement>(".create-task-modal");
       modalContent?.click();
 
       // Fast-forward time to ensure no delayed call

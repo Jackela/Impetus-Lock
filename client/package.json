@@ -11,7 +11,7 @@
     "build": "vite build",
     "lint": "eslint --max-warnings=0 \"src/**/*.{ts,tsx}\"",
     "format": "prettier --check .",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.tests.json && tsc --noEmit -p tsconfig.node.json",
     "api:generate": "node ./scripts/generate-api-types.mjs",
     "api:check": "node ./scripts/generate-api-types.mjs --check",
     "test:api-types": "node --test ./scripts/api-types.test.mjs",

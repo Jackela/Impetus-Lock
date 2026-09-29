@@ -14,7 +14,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { waitForAppReady } from "./helpers/waitHelpers";
+import { waitForAppReady } from "../../e2e/helpers/waitHelpers";
 
 test.describe("Style Analysis - Complete Workflow", () => {
   // Sample text with >500 words for testing
@@ -111,102 +111,6 @@ test.describe("Style Analysis - Complete Workflow", () => {
     being on the other side of the page, seeking connection, entertainment, or understanding. 
     Keeping the reader in mind while staying true to one's artistic vision is the central 
     challenge of the writing life.
-  `;
-
-  const comparisonText = `
-    Technology has fundamentally transformed how we live, work, and communicate in the modern 
-    world. The rapid pace of innovation continues to accelerate, bringing both opportunities 
-    and challenges. Digital tools have democratized access to information, allowing people 
-    from all backgrounds to learn and connect. However, these same tools have raised concerns 
-    about privacy, security, and the impact of constant connectivity on mental health.
-
-    Artificial intelligence represents one of the most significant technological developments 
-    of our time. Machine learning algorithms can now perform tasks that once required human 
-    intelligence, from recognizing speech to generating creative content. This capability 
-    raises important questions about the future of work and the relationship between humans 
-    and machines. Will AI augment human capabilities or replace human workers? The answer 
-    likely depends on how we choose to develop and deploy these technologies.
-
-    The internet has created unprecedented opportunities for collaboration and knowledge 
-    sharing. Open source software, Wikipedia, and countless online communities demonstrate 
-    the power of collective intelligence. At the same time, the digital divide persists, 
-    with billions of people lacking reliable internet access. Ensuring equitable access to 
-    technology remains a critical challenge for policymakers and industry leaders.
-
-    Cybersecurity has become a paramount concern as more of our lives move online. Data 
-    breaches, identity theft, and ransomware attacks pose real threats to individuals and 
-    organizations. Protecting sensitive information requires constant vigilance and ongoing 
-    investment in security infrastructure. The arms race between attackers and defenders 
-    shows no signs of slowing down.
-
-    Social media has reshaped how we form and maintain relationships. These platforms allow 
-    us to stay connected with friends and family across vast distances. They also enable 
-    the formation of communities around shared interests and identities. Yet research suggests 
-    that heavy social media use can contribute to anxiety, depression, and feelings of 
-    isolation. Finding a healthy balance between online and offline life is an ongoing 
-    challenge for many people.
-
-    The gig economy has transformed labor markets, offering flexibility for some workers 
-    while removing traditional employment protections. Ride-sharing, delivery services, 
-    and freelance platforms have created new income opportunities. However, questions about 
-    fair wages, benefits, and job security remain contentious. The classification of gig 
-    workers as independent contractors rather than employees has significant implications 
-    for labor rights and social safety nets.
-
-    Remote work has become mainstream, accelerated by the global pandemic. Many workers 
-    have discovered the benefits of eliminating commutes and achieving better work-life 
-    balance. Employers have realized that productivity does not necessarily require physical 
-    presence in an office. At the same time, remote work poses challenges for collaboration, 
-    company culture, and the separation of work and personal life.
-
-    Cryptocurrency and blockchain technology have introduced new paradigms for financial 
-    transactions and record-keeping. Bitcoin and other digital currencies offer alternatives 
-    to traditional banking systems. Smart contracts enable automated, trustless agreements. 
-    However, volatility, regulatory uncertainty, and environmental concerns have limited 
-    mainstream adoption. The long-term impact of these technologies remains uncertain.
-
-    Virtual and augmented reality promise to create new ways of experiencing digital content. 
-    VR headsets can transport users to immersive virtual worlds. AR overlays digital 
-    information onto the physical environment. These technologies have applications in 
-    gaming, education, healthcare, and numerous other fields. Current hardware limitations 
-    and content availability have slowed adoption, but continued improvement may eventually 
-    make these technologies ubiquitous.
-
-    The ethical implications of technology demand careful consideration. Algorithmic bias 
-    can perpetuate and amplify existing inequalities. Surveillance technologies threaten 
-    civil liberties. Autonomous weapons raise profound moral questions. As technology becomes 
-    more powerful, the decisions we make about its development and use become increasingly 
-    consequential. Engaging diverse perspectives in these decisions is essential for creating 
-    technology that serves the broader good.
-
-    Education is being transformed by digital tools and online learning platforms. Students 
-    can now access courses from top universities regardless of their location. Adaptive 
-    learning software personalizes instruction to individual needs and pace. However, 
-    technology cannot replace the human elements of teaching—mentorship, inspiration, and 
-    the cultivation of critical thinking. The most effective educational approaches combine 
-    technological tools with meaningful human interaction.
-
-    Healthcare has been revolutionized by medical technology, from diagnostic imaging to 
-    robotic surgery. Telemedicine has expanded access to care, particularly in underserved 
-    areas. Wearable devices enable continuous health monitoring. Big data analytics can 
-    identify patterns and improve treatment outcomes. Yet the healthcare system struggles 
-    with interoperability, data privacy, and ensuring equitable access to these advances.
-
-    Climate change represents one of the greatest challenges facing humanity, and technology 
-    will play a crucial role in addressing it. Renewable energy sources are becoming 
-    increasingly cost-competitive with fossil fuels. Battery technology continues to improve, 
-    enabling better energy storage. Carbon capture and other geoengineering approaches offer 
-    potential solutions, though they also raise concerns about unintended consequences. 
-    Technology alone cannot solve the climate crisis, but it is an essential component of 
-    any viable response.
-
-    The future of technology is impossible to predict with certainty, but certain trends 
-    seem likely to continue. Computing power will keep increasing, enabling more sophisticated 
-    applications. Connectivity will become more ubiquitous, linking an ever-growing network 
-    of devices. The boundaries between physical and digital reality will continue to blur. 
-    How these trends unfold will depend on the choices we make as individuals, organizations, 
-    and societies. Technology is a tool, and like all tools, its value depends on how we 
-    choose to use it.
   `;
 
   test.beforeEach(async ({ page }) => {

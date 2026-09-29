@@ -13,7 +13,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { waitForAppReady } from "./helpers/waitHelpers";
+import { waitForAppReady } from "../../e2e/helpers/waitHelpers";
 
 test.describe("Create Task and Write Flow", () => {
   test.beforeEach(async ({ page }) => {

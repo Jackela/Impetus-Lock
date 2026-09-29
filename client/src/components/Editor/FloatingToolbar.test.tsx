@@ -4,13 +4,22 @@
  * Test suite for FloatingToolbar component following TDD Red-Green-Refactor workflow.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { FloatingToolbar } from "./FloatingToolbar";
-import type { Editor } from "@milkdown/core";
+import { createToolbarEditor } from "../../../tests/fixtures/editor";
 
-// Mock editor type for testing
-type MockEditor = Pick<Editor, "action">;
+const fixtures: ReturnType<typeof createToolbarEditor>[] = [];
+function editorFixture() {
+  const fixture = createToolbarEditor();
+  fixtures.push(fixture);
+  vi.spyOn(fixture.editor, "action");
+  return fixture.editor;
+}
+afterEach(() => {
+  for (const { view } of fixtures.splice(0)) view.destroy();
+  vi.restoreAllMocks();
+});
 
 describe("FloatingToolbar", () => {
   // T010: Toolbar hidden when editor is null
@@ -23,9 +32,7 @@ describe("FloatingToolbar", () => {
   // T011: Toolbar hidden when no text selected
   it("should be hidden when no text is selected", () => {
     // Mock editor with empty selection
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
     const toolbar = screen.queryByRole("toolbar");
@@ -38,9 +45,7 @@ describe("FloatingToolbar", () => {
   it("should be visible when text is selected", () => {
     // This test will verify visibility logic after we implement selection tracking
     // For now, we verify the component can render when editor is provided
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
@@ -55,36 +60,28 @@ describe("FloatingToolbar", () => {
 describe("FloatingToolbar - Bold/Italic Formatting", () => {
   // T017: Bold button executes command
   it("should execute toggleStrongCommand when Bold button is clicked", () => {
-    const mockAction = vi.fn();
-    const mockEditor: MockEditor = {
-      action: mockAction,
-    };
+    const mockEditor = editorFixture();
 
     // Render toolbar in visible state (will need to set isVisible=true via selection)
     render(<FloatingToolbar editor={mockEditor} />);
 
     // This test will be updated when buttons are implemented
-    expect(mockAction).toHaveBeenCalled(); // Called during setup for transaction interception
+    expect(mockEditor.action).toHaveBeenCalled(); // Called during setup for transaction interception
   });
 
   // T018: Italic button executes command
   it("should execute toggleEmphasisCommand when Italic button is clicked", () => {
-    const mockAction = vi.fn();
-    const mockEditor: MockEditor = {
-      action: mockAction,
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
     // Will be updated when Italic button implemented
-    expect(mockAction).toHaveBeenCalled();
+    expect(mockEditor.action).toHaveBeenCalled();
   });
 
   // T019: Bold button shows active state
   it("should show active state when bold text is selected", () => {
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
@@ -95,9 +92,7 @@ describe("FloatingToolbar - Bold/Italic Formatting", () => {
 
   // T020: Italic button shows active state
   it("should show active state when italic text is selected", () => {
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
@@ -108,9 +103,7 @@ describe("FloatingToolbar - Bold/Italic Formatting", () => {
 
   // T021: Bold toggle behavior
   it("should remove bold formatting when clicking Bold on already-bold text", () => {
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
@@ -121,9 +114,7 @@ describe("FloatingToolbar - Bold/Italic Formatting", () => {
 
   // T022: Lock enforcement integration
   it("should respect lock enforcement when formatting locked content", () => {
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
@@ -137,22 +128,17 @@ describe("FloatingToolbar - Bold/Italic Formatting", () => {
 describe("FloatingToolbar - Bullet List Formatting", () => {
   // T051: Bullet List button executes command
   it("should execute wrapInBulletListCommand when Bullet List button is clicked", () => {
-    const mockAction = vi.fn();
-    const mockEditor: MockEditor = {
-      action: mockAction,
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
     // This test will be updated when Bullet List button is implemented
-    expect(mockAction).toHaveBeenCalled(); // Called during setup for transaction interception
+    expect(mockEditor.action).toHaveBeenCalled(); // Called during setup for transaction interception
   });
 
   // T052: Bullet List button shows active state
   it("should show active state when cursor is in bullet list", () => {
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
@@ -163,9 +149,7 @@ describe("FloatingToolbar - Bullet List Formatting", () => {
 
   // T053: Bullet List toggle behavior
   it("should remove list formatting when clicking Bullet List on already-list text", () => {
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 
@@ -176,9 +160,7 @@ describe("FloatingToolbar - Bullet List Formatting", () => {
 
   // T054: Lock enforcement integration for lists
   it("should respect lock enforcement when list formatting locked content", () => {
-    const mockEditor: MockEditor = {
-      action: vi.fn(),
-    };
+    const mockEditor = editorFixture();
 
     render(<FloatingToolbar editor={mockEditor} />);
 

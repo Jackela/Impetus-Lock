@@ -12,7 +12,7 @@
  * - Article V (Documentation): Clear JSDoc for all functions
  */
 
-import type { Page, APIRequestContext } from "@playwright/test";
+import type { APIRequestContext } from "@playwright/test";
 
 // Backend API configuration
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";

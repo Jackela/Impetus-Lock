@@ -110,7 +110,7 @@ export function useInterval(options: UseIntervalOptions): UseIntervalReturn {
 
   // Store current delay in ref to allow dynamic updates via setDelay
   const delayRef = useRef(delay);
-  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Update callback ref when callback changes
   useEffect(() => {

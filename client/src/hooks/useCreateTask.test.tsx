@@ -52,11 +52,6 @@ function createTestQueryClient() {
         retry: false, // Disable retry for faster tests
       },
     },
-    logger: {
-      log: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    },
   });
 }
 

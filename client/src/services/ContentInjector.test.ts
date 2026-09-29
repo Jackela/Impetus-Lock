@@ -10,11 +10,11 @@
  * - Article V (Documentation): JSDoc for all test cases
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { injectLockedBlock, rewriteRangeWithLock } from "./ContentInjector";
-import type { EditorView } from "@milkdown/prose/view";
-import type { EditorState, Transaction } from "@milkdown/prose/state";
-import type { Schema } from "@milkdown/prose/model";
+import { EditorView } from "@milkdown/prose/view";
+import { EditorState, TextSelection } from "@milkdown/prose/state";
+import { Schema, Node } from "@milkdown/prose/model";
 
 // Pin the real module for this file's module graph. Under the vmThreads pool
 // another file's partial `vi.mock(".../services/ContentInjector")` registry
@@ -23,67 +23,63 @@ import type { Schema } from "@milkdown/prose/model";
 // the leaked entry and resolves the original module.
 vi.mock("./ContentInjector", async (importOriginal) => await importOriginal());
 
-/**
- * Mock ProseMirror EditorView with typed structure.
- */
-interface MockEditorView {
-  state: EditorState;
-  dispatch: (tr: Transaction) => void;
+const views: EditorView[] = [];
+afterEach(() => {
+  for (const view of views.splice(0)) view.destroy();
+  vi.restoreAllMocks();
+});
+
+function first<T>(items: readonly T[]): T {
+  const item = items[0];
+  if (item === undefined) throw new Error("Expected a captured call");
+  return item;
+}
+function blockquote(schema: Schema) {
+  const type = schema.nodes.blockquote;
+  if (!type) throw new Error("Fixture requires a blockquote node");
+  return type;
+}
+function insertedNode(content: Node | import("@milkdown/prose/model").Fragment | readonly Node[]) {
+  if (!(content instanceof Node)) throw new Error("Expected an inserted node");
+  return content;
 }
 
-/**
- * Create mock EditorView for testing.
- */
-function createMockEditorView(): MockEditorView {
-  const mockSchema = {
-    text: vi.fn((content: string) => ({
-      type: { name: "text" },
-      text: content,
-      textContent: content,
-      isText: true,
-    })),
+/** Real schema, state and transaction; spies observe public editor operations. */
+function createMockEditorView(): EditorView {
+  const schema = new Schema({
     nodes: {
+      doc: { content: "block+" },
       paragraph: {
-        create: vi.fn((attrs, content) => ({
-          type: { name: "paragraph" },
-          attrs: attrs || {},
-          content: [content],
-          textContent: content?.textContent || "",
-        })),
+        content: "text*",
+        group: "block",
+        attrs: { lockId: { default: null }, source: { default: null } },
+        toDOM: () => ["p", 0],
       },
       blockquote: {
-        create: vi.fn((attrs, content) => ({
-          type: { name: "blockquote" },
-          attrs: attrs || {},
-          content: [content],
-          textContent: content?.textContent || "",
-        })),
+        content: "paragraph+",
+        group: "block",
+        attrs: { lockId: { default: null }, source: { default: null } },
+        toDOM: () => ["blockquote", 0],
       },
+      text: {},
     },
-  };
-
-  const mockTransaction = {
-    insert: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    insertText: vi.fn().mockReturnThis(),
-    setMeta: vi.fn().mockReturnThis(),
-  };
-
-  const mockState = {
-    schema: mockSchema as unknown as Schema,
-    tr: mockTransaction,
-    selection: {
-      $head: { pos: 0 },
-    },
-    doc: {
-      content: { size: 100 },
-    },
-  } as unknown as EditorState;
-
-  return {
-    state: mockState,
-    dispatch: vi.fn(),
-  };
+  });
+  const doc = schema.node("doc", null, schema.node("paragraph", null, schema.text("x".repeat(98))));
+  const state = EditorState.create({ schema, doc, selection: TextSelection.create(doc, 1) });
+  const tr = state.tr;
+  vi.spyOn(state, "tr", "get").mockReturnValue(tr);
+  vi.spyOn(tr, "insert");
+  vi.spyOn(tr, "delete");
+  vi.spyOn(tr, "setMeta");
+  vi.spyOn(schema, "text");
+  vi.spyOn(blockquote(schema), "create");
+  const view = new EditorView(document.createElement("div"), {
+    state,
+    dispatchTransaction: vi.fn(),
+  });
+  vi.spyOn(view, "dispatch");
+  views.push(view);
+  return view;
 }
 
 describe("ContentInjector - Lock Injection", () => {
@@ -98,7 +94,7 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Ensures lockId is stored in node.attrs, not text content
    */
   it("should create blockquote node with lockId and source attributes", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const content = "Test content";
     const lockId = "lock_test_123";
     const anchor = { type: "pos" as const, from: 10 };
@@ -107,10 +103,10 @@ describe("ContentInjector - Lock Injection", () => {
 
     // Verify blockquote.create was called with lockId and source in attrs
     const schema = view.state.schema;
-    expect(schema.nodes.blockquote.create).toHaveBeenCalled();
+    expect(blockquote(schema).create).toHaveBeenCalled();
 
     // Get the actual call arguments
-    const createCall = vi.mocked(schema.nodes.blockquote.create).mock.calls[0];
+    const createCall = first(vi.mocked(blockquote(schema).create).mock.calls);
     const attrs = createCall[0];
 
     // CRITICAL: lockId and source should be in attrs object, not text content
@@ -129,7 +125,7 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Ensures lock metadata survives markdown round-trips
    */
   it("should append lock marker comment to blockquote text", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const content = "Test content";
     const lockId = "lock_test_456";
     const anchor = { type: "pos" as const, from: 10 };
@@ -137,7 +133,7 @@ describe("ContentInjector - Lock Injection", () => {
     injectLockedBlock(view, content, lockId, anchor, "loki");
 
     const schema = view.state.schema;
-    const textCall = vi.mocked(schema.text).mock.calls[0][0];
+    const textCall = first(vi.mocked(schema.text).mock.calls)[0];
     expect(textCall).toContain("Test content");
     expect(textCall).toContain("<!-- lock:lock_test_456 source:loki -->");
   });
@@ -148,7 +144,7 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Anchor type handling
    */
   it("should insert at position specified by pos anchor", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 25 };
 
     injectLockedBlock(view, "Content", "lock_789", anchor);
@@ -163,7 +159,7 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Range anchor handling
    */
   it("should insert at from position for range anchor", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 30, to: 40 };
 
     injectLockedBlock(view, "Content", "lock_range", anchor);
@@ -178,13 +174,13 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Edge case - lock_id anchor type
    */
   it("should fallback to cursor position for lock_id anchor", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "lock_id" as const, ref_lock_id: "existing_lock" };
 
     injectLockedBlock(view, "Content", "new_lock", anchor);
 
-    // Should fallback to cursor position ($head.pos = 0)
-    expect(view.state.tr.insert).toHaveBeenCalledWith(0, expect.any(Object));
+    // Should fallback to cursor position ($head.pos = 1)
+    expect(view.state.tr.insert).toHaveBeenCalledWith(1, expect.any(Object));
   });
 
   /**
@@ -193,13 +189,13 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Edge case - invalid position
    */
   it("should fallback to cursor position if anchor position is out of bounds", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 999 }; // Beyond doc.content.size (100)
 
     injectLockedBlock(view, "Content", "lock_bounds", anchor);
 
-    // Should fallback to cursor position (0)
-    expect(view.state.tr.insert).toHaveBeenCalledWith(0, expect.any(Object));
+    // Should fallback to cursor position (1)
+    expect(view.state.tr.insert).toHaveBeenCalledWith(1, expect.any(Object));
   });
 
   /**
@@ -209,7 +205,7 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Ensures transaction is marked correctly for history management
    */
   it("should mark transaction as non-undoable and AI action", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 10 };
 
     injectLockedBlock(view, "Content", "lock_meta", anchor);
@@ -226,7 +222,7 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Transaction dispatch
    */
   it("should dispatch transaction to editor", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 10 };
 
     injectLockedBlock(view, "Content", "lock_dispatch", anchor);
@@ -241,13 +237,13 @@ describe("ContentInjector - Lock Injection", () => {
    * Coverage: Optional source parameter
    */
   it("should create blockquote with lockId only when source is omitted", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 10 };
 
     injectLockedBlock(view, "Content", "lock_no_source", anchor); // No source param
 
     const schema = view.state.schema;
-    const createCall = vi.mocked(schema.nodes.blockquote.create).mock.calls[0];
+    const createCall = first(vi.mocked(blockquote(schema).create).mock.calls);
     const attrs = createCall[0];
 
     // Should have lockId but no source
@@ -268,11 +264,11 @@ describe("ContentInjector - Rewrite Operations", () => {
    * Coverage: Ensures rewritten content has lockId in attributes
    */
   it("should replace range and attach lockId as node attribute", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 10, to: 20 };
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "Rewritten text",
       lockId: "lock_rewrite_123",
       anchor,
@@ -283,19 +279,18 @@ describe("ContentInjector - Rewrite Operations", () => {
     expect(view.state.tr.delete).toHaveBeenCalledWith(10, 20);
     expect(view.state.tr.insert).toHaveBeenCalled();
 
-    const insertCall = vi.mocked(view.state.tr.insert).mock.calls[0];
-    const [insertPos, insertedNode] = insertCall;
+    const insertCall = first(vi.mocked(view.state.tr.insert).mock.calls);
+    const [insertPos, contentNode] = insertCall;
+    const node = insertedNode(contentNode);
 
     expect(insertPos).toBe(10);
-    expect(insertedNode?.attrs).toEqual(
+    expect(node.attrs).toEqual(
       expect.objectContaining({
         lockId: "lock_rewrite_123",
         source: "muse",
       })
     );
-    expect(insertedNode?.textContent).toBe(
-      "Rewritten text <!-- lock:lock_rewrite_123 source:muse -->"
-    );
+    expect(node.textContent).toBe("Rewritten text <!-- lock:lock_rewrite_123 source:muse -->");
 
     // Verify transaction metadata
     expect(view.state.tr.setMeta).toHaveBeenCalledWith("addToHistory", false);
@@ -310,20 +305,20 @@ describe("ContentInjector - Rewrite Operations", () => {
    * Coverage: Ensures rewrite output embeds lock comment markers
    */
   it("should append lock marker comment to rewritten text", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 5, to: 15 };
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "Clean rewrite",
       lockId: "lock_clean",
       anchor,
     });
 
     // Get inserted node to verify clean text
-    const insertCall = vi.mocked(view.state.tr.insert).mock.calls[0];
-    const insertedNode = insertCall[1];
-    const insertedText = insertedNode?.textContent || "";
+    const insertCall = first(vi.mocked(view.state.tr.insert).mock.calls);
+    const node = insertedNode(insertCall[1]);
+    const insertedText = node.textContent;
 
     expect(insertedText).toBe("Clean rewrite <!-- lock:lock_clean -->");
   });
@@ -334,11 +329,11 @@ describe("ContentInjector - Rewrite Operations", () => {
    * Coverage: Edge case - invalid range
    */
   it("should skip rewrite if anchor range is invalid", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 20, to: 10 }; // Invalid: from > to
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "Content",
       lockId: "lock_invalid",
       anchor,
@@ -356,11 +351,11 @@ describe("ContentInjector - Rewrite Operations", () => {
    * Coverage: Edge case - range exceeds document size
    */
   it("should skip rewrite if range exceeds document bounds", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 50, to: 200 }; // to > doc.content.size (100)
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "Content",
       lockId: "lock_bounds",
       anchor,
@@ -376,11 +371,11 @@ describe("ContentInjector - Rewrite Operations", () => {
    * Coverage: Transaction dispatch
    */
   it("should dispatch transaction with rewrite", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 10, to: 20 };
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "Content",
       lockId: "lock_dispatch",
       anchor,
@@ -397,11 +392,11 @@ describe("ContentInjector - Rewrite Operations", () => {
    * Coverage: Ensures lockId survives content replacement
    */
   it("should preserve lockId in node attributes after text replacement", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 5, to: 15 };
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "New content",
       lockId: "lock_persist",
       anchor,
@@ -428,7 +423,7 @@ describe("ContentInjector - Edge Cases", () => {
    * Coverage: Edge case - empty content
    */
   it("should handle empty content gracefully", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 10 };
 
     injectLockedBlock(view, "", "lock_empty", anchor);
@@ -444,7 +439,7 @@ describe("ContentInjector - Edge Cases", () => {
    * Coverage: Edge case - large content
    */
   it("should handle very long content (10k+ characters)", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 10 };
     const longContent = "a".repeat(10000);
 
@@ -460,7 +455,7 @@ describe("ContentInjector - Edge Cases", () => {
    * Coverage: Edge case - special characters
    */
   it("should handle special characters (HTML entities, emojis, etc.)", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "pos" as const, from: 10 };
     const specialContent = "Test <>&\"'🔒 content";
 
@@ -477,11 +472,11 @@ describe("ContentInjector - Edge Cases", () => {
    * Coverage: Edge case - cursor position (from === to)
    */
   it("should skip rewrite for zero-length range (cursor position)", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: 10, to: 10 }; // Same position
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "Content",
       lockId: "lock_zero",
       anchor,
@@ -497,11 +492,11 @@ describe("ContentInjector - Edge Cases", () => {
    * Coverage: Edge case - invalid negative positions
    */
   it("should skip rewrite for negative positions", () => {
-    const view = createMockEditorView() as unknown as EditorView;
+    const view = createMockEditorView();
     const anchor = { type: "range" as const, from: -5, to: 10 };
 
     rewriteRangeWithLock({
-      view: view as unknown as EditorView,
+      view,
       content: "Content",
       lockId: "lock_negative",
       anchor,

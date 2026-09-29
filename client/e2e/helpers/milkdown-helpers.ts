@@ -6,7 +6,7 @@
  * so these helpers use the ProseMirror DOM structure and commands.
  */
 
-import { Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 const MILKDOWN_ROOT = '[data-testid="editor-ready"] .milkdown';
 const PROSEMIRROR_EDITABLE = '[data-testid="editor-ready"] .milkdown .ProseMirror';
