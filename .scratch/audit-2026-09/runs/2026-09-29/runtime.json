@@ -1,5 +1,32 @@
 {
-  "active": [],
-  "wave4": "complete; all tickets integrated, not yet accepted",
-  "reviews": "Wave5 ready"
+  "wave4": "complete; first integrated snapshot de4dbe5",
+  "active": [
+    {
+      "id": "D-A",
+      "role": "docs review repair",
+      "session": 14344,
+      "worktree": "/Users/jackela/.codex/worktrees/impetus-audit-docs/Impetus-Lock"
+    },
+    {
+      "id": "R12",
+      "role": "implementer review repair",
+      "session": 70707,
+      "worktree": "/Users/jackela/.codex/worktrees/impetus-audit-client/Impetus-Lock"
+    },
+    {
+      "id": "R13",
+      "role": "implementer review repair",
+      "session": 2973,
+      "worktree": "/Users/jackela/.codex/worktrees/impetus-audit-server/Impetus-Lock"
+    }
+  ],
+  "independent_reviews": {
+    "V01": "0 findings",
+    "V02": "0 findings",
+    "V03": "4 findings, R12/R13 RED accepted, repair running",
+    "V04": "0 findings",
+    "V05": "0 findings",
+    "V06": "3 docs findings, D-A repair running"
+  },
+  "gates": "first integrated gates passed; rerun affected client layer and V03/V06 reviews after repair"
 }

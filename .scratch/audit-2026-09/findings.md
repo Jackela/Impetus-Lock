@@ -170,3 +170,19 @@ All findings above are open at wave3. Closure and evidence will be appended afte
 B15/B16为提案来源核对中的追加发现。现有规范没有时间窗口、写作时长采集、回填及完整授予政策；清偿要求需要数据/行为选择，不能把字面零值或不存在的历史当作正确结果。当前不实施、不修改正式规范。
 
 - F14（R15）补充：真实 Milkdown 初始化测试在当前 placeholder `$prose` 回调返回形状处失败（读取 undefined.state）；不是仅有静态诊断。首个有效 RED 见 `runs/2026-09-29/logs/R15-test-writer-02-red.log`。该插件当前未被 EditorCore 导入或挂载，因此这是导出插件的可复现契约缺陷，不能据此断言当前主编辑器启动失败。归入既有 P2 编辑器契约票，保持现有挂载范围和状态语义，尚待完成修复与复核。
+
+### 2026-09-29 Wave5 独立复核补充（de4dbe5）
+
+以下是原 R12/R13 验收范围内的遗漏，主代理接受并退回修复；不新增架构方案。其余 V01/V02/V04/V05 初审为0项确认问题。证据见 [V03 初审](runs/2026-09-29/reviews/v03-initial.md)。
+
+| 编号 | 严重度 | 文件:行（复核基点） | 事实 | 建议动作 | Tier | 原票 |
+| --- | --- | --- | --- | --- | --- | --- |
+| V03-01 | P1 | client/src/hooks/useTaskSync.ts:316 | 加载完成无条件覆盖加载期间已修改的内容、锁和缓存 | 保留脏草稿，协调服务器身份/版本并正确排队保存 | 2 | R13 / F06 |
+| V03-02 | P1 | client/src/hooks/useTaskSync.ts:335 | 离线恢复草稿没有保留标识，A/B/A切换后被远端旧内容替代 | 恢复草稿进入现有保留分支，不自动覆盖远端 | 2 | R13 / F06 |
+| V03-03 | P2 | client/src/hooks/useTaskSync.ts:399 | 后台初始化结果被完全忽略，返回缓存任务后一直loading | 完成后台草稿状态，同时隔离当前可见任务 | 2 | R13 / F07 |
+| V03-04 | P2 | client/src/App.tsx:210 | 实际创建回调只刷新列表，没有满足原票选择新任务的验收 | 接入既有选择回调，以实际App流程验证 | 2 | R12 / F05 |
+| V06-01 | P2 | API_CONTRACT.md:433 | 25字符Loki示例触发短上下文保护，不能产生所列delete响应 | 修正上下文与provider前提，离线验证 | 1 | D-A / D01 |
+| V06-02 | P2 | TESTING.md:394 | 具体E2E命令指向不存在的task-lock.spec.ts | 改为现存相关测试路径 | 1 | D-A / D03 |
+| V06-03 | P2 | BROWSER_TEST_GUIDE.md:17 | 新浏览器缺少认证与CSRF会话前提，干预返回401 | 按现有auth API说明准备步骤与UI限制 | 1 | D-A / D07 |
+
+文档补充的取证与裁决见 [V06 初审](runs/2026-09-29/reviews/v06-initial.md)。

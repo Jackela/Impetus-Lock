@@ -170,7 +170,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "d663fa6"
+    "commit": "d663fa6",
+    "review_status": "repair-required"
   },
   {
     "id": "R13",
@@ -187,7 +188,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "380c9bc"
+    "commit": "380c9bc",
+    "review_status": "repair-required"
   },
   {
     "id": "R14",
@@ -341,7 +343,8 @@
     "commits": [
       "882017e",
       "5d66b3a"
-    ]
+    ],
+    "review_status": "repair-required"
   },
   {
     "id": "D-B",

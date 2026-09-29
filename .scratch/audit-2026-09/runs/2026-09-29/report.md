@@ -26,7 +26,7 @@
 
 ## Wave 5：独立复核与终验
 
-开始独立复核。最终需覆盖 commit、staged、unstaged、untracked，核对每项验收条件并完成两端全量门禁、构建、实际 TypeScript 编译范围及逐文件关键覆盖率。
+四组独立复核已无问题返回；V03 确认 4 项原票缺口，R12/R13 正补修，V06 确认 3 项文档缺口，D-A 正补修。最终需覆盖 commit、staged、unstaged、untracked，核对每项验收条件并完成两端全量门禁、构建、实际 TypeScript 编译范围及逐文件关键覆盖率。
 
 ## 取证基线（非最终验收）
 
@@ -73,3 +73,49 @@ P-01/P-02 已形成6份未批准提案，见 [提案索引](proposal-index.md)�
 | [P-01](issues/P-01-proposals.md) Tier3 proposals | B13, B14, H05, H06, H07, F12-boundary | 3 | 已集成，待复核 | e8bc6d4 |
 | [P-02](issues/P-02-activity-tracking.md) Draft missing writing activity statistics and milestone tracking | B15, B16 | 3 | 已集成，待复核 | 4bfbf69 |
 <!-- DISPOSITION:END -->
+
+## 集成门禁首轮结果（独立审查尚未结束）
+
+代码快照 `de4dbe5`，本地 Node 24.19.0 / npm 11.17.0、Poetry Python 3.12。下列检查全部退出 0；后续若审查导致代码变化，将重新验证受影响层。
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 后端 Ruff、format、import-linter、mypy、pydocstyle | 全部通过；3 项依赖方向约束保留 |
+| 后端 pytest（按用户选择排除两组 Redis） | 736 passed，6 skipped |
+| 前端 ESLint、Prettier、实际 TypeScript 检查 | 全部通过；238 个 TS/TSX 文件，0 遗漏、0 诊断 |
+| Vitest，实际 npm wrapper | 680 passed，4 skipped |
+| 前端生产构建、生成 API 漂移检查 | 全部通过 |
+| API 类型、运行环境、截图输出 Node 检查 | 4 项通过 |
+| OpenSpec 0.23.0 严格验证 | 23 项通过，0 失败；含全部 6 份新草案 |
+
+后端锁关键清单 16 个文件、前端 6 个文件均分别达到行覆盖率 ≥80%；缺失或未执行文件不能从门禁消失。后端整体覆盖率 79.42% 与关键文件规则是不同口径，未将前者写成 ≥80%。
+
+| 后端关键文件（相对 server/） | 行覆盖率 |
+| --- | ---: |
+| `server/application/services/intervention_service.py` | 87.91% |
+| `server/domain/models/intervention.py` | 88.89% |
+| `server/domain/models/anchor.py` | 100.00% |
+| `server/domain/text_window.py` | 90.48% |
+| `server/infrastructure/llm/base_provider.py` | 96.91% |
+| `server/infrastructure/llm/debug_provider.py` | 100.00% |
+| `server/api/routes/intervention.py` | 95.19% |
+| `server/infrastructure/cache/idempotency_cache.py` | 100.00% |
+| `server/domain/entities/task.py` | 100.00% |
+| `server/domain/entities/intervention_action.py` | 95.45% |
+| `server/infrastructure/persistence/postgresql_task_repository.py` | 100.00% |
+| `server/infrastructure/persistence/in_memory_task_repository.py` | 93.44% |
+| `server/infrastructure/persistence/models.py` | 100.00% |
+| `server/models/task.py` | 96.00% |
+| `server/api/routes/tasks.py` | 92.00% |
+| `server/application/services/task_service.py` | 96.23% |
+
+| 前端关键文件（相对 client/） | 行覆盖率 |
+| --- | ---: |
+| `src/components/Editor/TransactionFilter.ts` | 90.90% |
+| `src/services/ContentInjector.ts` | 98.95% |
+| `src/services/LockManager.ts` | 96.00% |
+| `src/utils/editorMarkdown.ts` | 100.00% |
+| `src/utils/prosemirror-helpers.ts` | 97.87% |
+| `src/utils/textRange.ts` | 89.28% |
+
+完整命令、退出码和输出见 `logs/final-{server,client,openspec}-initial-*.log`；编译输入见 `logs/final-client-inputs.json`。生产构建仍提示入口 chunk 超过默认 500 kB 建议值；构建成功，该提示不等于已复现的性能缺陷。
