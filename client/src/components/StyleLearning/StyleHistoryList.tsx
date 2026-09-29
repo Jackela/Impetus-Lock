@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { useState, useEffect } from "react";
 import type { StyleHistoryRecord } from "../../hooks/useStyleHistory";
 import { useStyleHistory } from "../../hooks/useStyleHistory";

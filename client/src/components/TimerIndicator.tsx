@@ -19,8 +19,6 @@
  * @see openspec/changes/chrome-audit-polish/design.md#2-timer-visibility
  */
 
-import React from "react";
-
 interface TimerIndicatorProps {
   /**
    * Progress percentage (0-100) of STUCK timer.

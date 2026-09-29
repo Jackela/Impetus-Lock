@@ -115,7 +115,7 @@ export function AppModals({
         locked={vaultLocked}
         onUnlock={onUnlock}
         onLock={onLock}
-        metadata={metadata}
+        metadata={metadata ?? undefined}
       />
 
       <CreateTaskModal

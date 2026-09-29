@@ -1,10 +1,11 @@
 import { useMemo, useRef } from "react";
+import type { Easing } from "framer-motion";
 import { AIActionType } from "../types/ai-actions";
 
 /**
  * Animation variants for Framer Motion.
  */
-interface AnimationVariants {
+type AnimationVariants = {
   initial: { opacity: number; backgroundColor?: string; x?: number };
   animate: {
     opacity: number | number[];
@@ -12,11 +13,11 @@ interface AnimationVariants {
     x?: number | number[];
     transition: {
       duration: number;
-      ease: string;
+      ease: Easing;
     };
   };
   exit: { opacity: number; backgroundColor?: string; x?: number };
-}
+};
 
 /**
  * Hook return value.

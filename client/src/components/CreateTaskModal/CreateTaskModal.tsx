@@ -59,7 +59,7 @@ export function CreateTaskModal({
   const [isExiting, setIsExiting] = useState(false);
   const { mutate, isLoading: isCreating } = useCreateTask();
   const isExitingRef = useRef(false);
-  const { ref: focusTrapRef } = useFocusTrap({ active: open && !isExiting });
+  const { ref: focusTrapRef } = useFocusTrap<HTMLDivElement>({ active: open && !isExiting });
 
   // Reset form when modal opens
   useEffect(() => {

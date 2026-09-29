@@ -296,7 +296,11 @@ export function AppLayout({
                   <Skeleton lines={5} height="48px" />
                 </div>
               ) : (
-                <TaskList tasks={tasks} onTaskClick={onTaskClick} selectedTaskId={selectedTaskId} />
+                <TaskList
+                  tasks={tasks}
+                  onTaskClick={onTaskClick}
+                  selectedTaskId={selectedTaskId ?? undefined}
+                />
               )}
             </aside>
           )}

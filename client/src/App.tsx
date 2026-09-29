@@ -159,8 +159,6 @@ function App() {
         llmFeedback={llmFeedback}
         isConfigured={isConfigured}
         llmProviderLabel={llmConfig ? getLLMProviderLabel(llmConfig.provider) : null}
-        timerProgress={timerProgress}
-        timerRemaining={timerRemaining}
         showStats={showStats}
         onToggleStats={() => setShowStats((prev) => !prev)}
         showAchievements={showAchievements}

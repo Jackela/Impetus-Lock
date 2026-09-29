@@ -6,6 +6,7 @@
  * @module components/Auth/LoginForm
  */
 
+import type { JSX } from "react";
 import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
