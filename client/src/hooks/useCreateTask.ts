@@ -13,7 +13,12 @@
  * @module hooks/useCreateTask
  */
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  type UseMutateFunction,
+  type UseMutateAsyncFunction,
+} from "@tanstack/react-query";
 
 import { createTask } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
@@ -21,9 +26,9 @@ import type { TaskRecord } from "../types/task";
 /** Result object returned by the useCreateTask hook. */
 export interface UseCreateTaskResult {
   /** Function to trigger the mutation (no return value, fire-and-forget) */
-  mutate: (variables: CreateTaskVariables) => void;
+  mutate: UseMutateFunction<TaskRecord, Error, CreateTaskVariables>;
   /** Function to trigger the mutation and wait for completion */
-  mutateAsync: (variables: CreateTaskVariables) => Promise<TaskRecord>;
+  mutateAsync: UseMutateAsyncFunction<TaskRecord, Error, CreateTaskVariables>;
   /** Whether the mutation is in progress */
   isLoading: boolean;
   /** Error object if the mutation failed */
@@ -80,8 +85,8 @@ export function useCreateTask(): UseCreateTaskResult {
   });
 
   return {
-    mutate: (variables) => mutation.mutate(variables),
-    mutateAsync: (variables) => mutation.mutateAsync(variables),
+    mutate: mutation.mutate,
+    mutateAsync: mutation.mutateAsync,
     isLoading: mutation.isPending,
     error: mutation.error ?? null,
   };

@@ -14,9 +14,9 @@
  * @module hooks/useTasks
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { fetchTasks } from "../services/api/taskClient";
+import { fetchTasks, type TaskListResponse } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
 
 /** Result object returned by the useTasks hook. */
@@ -34,7 +34,7 @@ export interface UseTasksResult {
   /** Current page offset */
   offset: number;
   /** Function to manually refetch the tasks */
-  refetch: () => Promise<void>;
+  refetch: UseQueryResult<TaskListResponse, Error>["refetch"];
 }
 
 /**
