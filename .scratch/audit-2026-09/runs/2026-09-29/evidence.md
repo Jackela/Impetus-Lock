@@ -28,6 +28,17 @@ This is an implementation evidence index, not final acceptance. Final status is 
 
 R15 initial cleanup/path failure is not its accepted RED. R15-implementer-undo-green.log contains an intermediate failed assertion and is not final GREEN evidence. R20 initial fixture-path error is retained separately; -red-02 is the actual policy defect. R07 connection-refused environment evidence is distinct from the successful reproduction using independent PostgreSQL sessions.
 
-Wave5 reviews and final gate logs will be appended after they run.
+Wave5 review and integration follow-ups are indexed below. Final acceptance remains in tickets.json and report.md.
 
 R18 main rejected a fabricated required browser global, then removed newly invented setter/delete return restrictions: original scenarios ignore those results, while the Markdown read must supply a string. The final helper checks only necessary runtime preconditions. Final package result: 680 passed, 4 existing skips; 238 TypeScript inputs covered, no omissions/diagnostics. Browser execution remains unverified. D-A final docs and D-C active commands were checked against the candidate; local links and unchanged constitution/root OpenSpec block were verified before integration.
+
+## Wave5 repair evidence
+
+| Scope | Accepted RED / finding | GREEN / independent review |
+|---|---|---|
+| R13 loading, recovery, background completion | [V03 initial](reviews/v03-initial.md), [seven new regressions](logs/R13-review-red-red.log), [unmount slice](logs/R13-review-green-unmount-red.log) | [focused35](logs/R13-review-green-focused-green.log), [full690](logs/R13-review-green-green.log); repair92e8efe |
+| R12 actual App creation | [actual App RED](logs/R12-main-version0-red.log); callback fix initially exposed separate R22 | [actual App afterR22](logs/R12-main-after-r22.log), [full696](logs/R12-main-integration-green.log); repaird528e0e |
+| R22 real editor loading | [five scoped RED cases](logs/R22-main-scoped-red.log), [duplicate callback probe](logs/R22-main-uncontrolled-probe.log) | [focused38](logs/R22-implementation-focused-green.log), [full695](logs/R22-implementation-green.log), [coverage](logs/R22-implementation-coverage-green.log); commit5d5d6b8 |
+| D-A examples and browser prerequisites | [V06 initial](reviews/v06-initial.md), [JSON omission recheck](reviews/v06-recheck.md) | [first correction checks](logs/D-A-review-repair-GREEN.md), [final extracted example](logs/D-A-review-example.green-v06-json-anchor.txt);666a3fb/60eb094 |
+
+R22 root narrowed an overreaching draft test before implementation: supplied-content loading must not grant new authority to delete protected blocks. Final controlled-after-readiness tests use unlocked content; separate real native-filter assertions retain protected-block rejection. R12 fixture uses actual task-create version0. Neither fix replaces real editor/API behavior with whole-module mocks.

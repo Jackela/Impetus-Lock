@@ -10,7 +10,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "3cd8625"
+    "commit": "3cd8625",
+    "review_status": "clear-v01-initial"
   },
   {
     "id": "R02",
@@ -23,7 +24,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "79ed45a"
+    "commit": "79ed45a",
+    "review_status": "clear-v01-initial"
   },
   {
     "id": "R03",
@@ -51,7 +53,8 @@
     "tier": 2,
     "red_accepted": true,
     "boundary_red_accepted": true,
-    "commit": "8fbf6cf"
+    "commit": "8fbf6cf",
+    "review_status": "clear-v02-initial"
   },
   {
     "id": "R05",
@@ -66,7 +69,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "2a0be77"
+    "commit": "2a0be77",
+    "review_status": "clear-v01-initial"
   },
   {
     "id": "R06",
@@ -83,7 +87,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "5b030ad"
+    "commit": "5b030ad",
+    "review_status": "clear-v01-initial"
   },
   {
     "id": "R07",
@@ -98,7 +103,8 @@
     "in_memory_red_accepted": true,
     "red_accepted": true,
     "postgres_red_accepted": true,
-    "commit": "700b36e"
+    "commit": "700b36e",
+    "review_status": "clear-v02-initial"
   },
   {
     "id": "R08",
@@ -111,7 +117,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "ff0d92a"
+    "commit": "ff0d92a",
+    "review_status": "clear-v01-initial"
   },
   {
     "id": "R09",
@@ -127,7 +134,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "a024c9b"
+    "commit": "a024c9b",
+    "review_status": "clear-v02-initial"
   },
   {
     "id": "R10",
@@ -140,7 +148,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "893148e"
+    "commit": "893148e",
+    "review_status": "clear-v02-initial"
   },
   {
     "id": "R11",
@@ -155,7 +164,8 @@
     "tier": 2,
     "red_accepted": true,
     "schema_red_accepted": true,
-    "commit": "a8a62ee"
+    "commit": "a8a62ee",
+    "review_status": "clear-v04-recheck"
   },
   {
     "id": "R12",
@@ -171,7 +181,11 @@
     "tier": 2,
     "red_accepted": true,
     "commit": "d663fa6",
-    "review_status": "repair-required"
+    "review_status": "awaiting-recheck",
+    "commits": [
+      "d663fa6",
+      "d528e0e"
+    ]
   },
   {
     "id": "R13",
@@ -189,7 +203,11 @@
     "tier": 2,
     "red_accepted": true,
     "commit": "380c9bc",
-    "review_status": "repair-required"
+    "review_status": "repair-required",
+    "commits": [
+      "380c9bc",
+      "92e8efe"
+    ]
   },
   {
     "id": "R14",
@@ -205,7 +223,8 @@
     "tier": 2,
     "red_accepted": true,
     "motion_repair_reviewed": true,
-    "commit": "bdfda4b"
+    "commit": "bdfda4b",
+    "review_status": "clear-v04-recheck"
   },
   {
     "id": "R15",
@@ -220,7 +239,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "1c58e4d"
+    "commit": "1c58e4d",
+    "review_status": "clear-v04-recheck"
   },
   {
     "id": "R16",
@@ -236,7 +256,8 @@
     "tier": 2,
     "red_accepted": true,
     "logger_boundary_red_accepted": true,
-    "commit": "3b778c6"
+    "commit": "3b778c6",
+    "review_status": "clear-v04-recheck"
   },
   {
     "id": "R17",
@@ -252,7 +273,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "fc928bc"
+    "commit": "fc928bc",
+    "review_status": "clear-v05-initial"
   },
   {
     "id": "R18",
@@ -275,7 +297,8 @@
     "tier": 2,
     "red_accepted": true,
     "commit": "632886b",
-    "boundary_repair_reviewed": true
+    "boundary_repair_reviewed": true,
+    "review_status": "clear-v05-initial"
   },
   {
     "id": "R19",
@@ -293,7 +316,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "7e255be"
+    "commit": "7e255be",
+    "review_status": "clear-v02-initial"
   },
   {
     "id": "R20",
@@ -308,7 +332,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "b30d805"
+    "commit": "b30d805",
+    "review_status": "clear-v05-initial"
   },
   {
     "id": "R21",
@@ -321,7 +346,8 @@
     "status": "integrated-pending-review",
     "tier": 2,
     "red_accepted": true,
-    "commit": "96b583c"
+    "commit": "96b583c",
+    "review_status": "clear-v05-initial"
   },
   {
     "id": "D-A",
@@ -342,9 +368,11 @@
     "commit": "882017e",
     "commits": [
       "882017e",
-      "5d66b3a"
+      "5d66b3a",
+      "666a3fb",
+      "60eb094"
     ],
-    "review_status": "repair-required"
+    "review_status": "clear-v06-final"
   },
   {
     "id": "D-B",
@@ -360,7 +388,8 @@
     "file": "issues/d-b.md",
     "status": "integrated-pending-review",
     "tier": 1,
-    "commit": "590638e"
+    "commit": "590638e",
+    "review_status": "clear-v06-final"
   },
   {
     "id": "D-C",
@@ -379,7 +408,8 @@
     "commits": [
       "de76d15",
       "e6acabc"
-    ]
+    ],
+    "review_status": "clear-v06-final"
   },
   {
     "id": "P-01",
@@ -396,7 +426,8 @@
     "file": "issues/P-01-proposals.md",
     "status": "integrated-pending-review",
     "tier": 3,
-    "commit": "e8bc6d4"
+    "commit": "e8bc6d4",
+    "review_status": "clear-v06-final"
   },
   {
     "id": "P-02",
@@ -409,6 +440,25 @@
     "file": "issues/P-02-activity-tracking.md",
     "status": "integrated-pending-review",
     "tier": 3,
-    "commit": "4bfbf69"
+    "commit": "4bfbf69",
+    "review_status": "clear-v06-final"
+  },
+  {
+    "id": "R22",
+    "title": "Synchronize loaded content when editor becomes ready",
+    "findings": [
+      "V03-05"
+    ],
+    "dependencies": [
+      "R15",
+      "R18"
+    ],
+    "file": "issues/r22-synchronize-editor-content-after-initialization.md",
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_evidence": "logs/R22-main-scoped-red.log",
+    "review_status": "clear-v04-recheck",
+    "red_accepted": true,
+    "commit": "5d5d6b8"
   }
 ]

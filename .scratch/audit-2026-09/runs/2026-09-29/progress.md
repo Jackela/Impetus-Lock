@@ -126,3 +126,15 @@ Wave5 V03 reproduced two R13 draft-loss paths omitted by first tests: dirty typi
 V03 final review confirms four findings: R13 three paths (dirty during load, offline recovered draft switch, background bootstrap stuck loading), plus R12 actual App creation callback never selects new task. Main accepts the fourth against original R12 acceptance and existing create-task-and-write journey, expands only actual caller seam; no new auth/navigation architecture. All repairs require fresh RED/GREEN and V03 re-review.
 
 V06 confirms three D-A P2 doc defects: short Loki delete example triggers correctguard, nonexistent specificE2E command, missing browser auth/CSRF prerequisites. Main accepts these source/probe-confirmed issues and dispatches a fresh docs-writer, only3 existingdocs. Constitution, OpenSpec blocks, cleanup/media preservation and all6 proposed/unapproved drafts passedreview.
+
+R13 review repair92e8efe integrated after main diff/RED/GREEN review (35 focused,690 full/4 skips). R12 caller wiring correctly selects new task but actual editor still shows placeholder; main reproduced again after R13 integration (R12-main-after-r13.log). The implementer correctly stopped at scope boundary. New Tier2 ready ticketR22 isolates existing EditorCore initialization/content-version0 defect; no architecture change. R12 pending changes held, no partial commit; completes only after R22 dependency and actual App GREEN.
+
+D-A correction666a3fb integrated after main full diff review:51-character Unicode Loki context andmatching17-character delete range withprovider assumption; existingE2E filename; exact auth cookie/CSRF/session preparation and unmountedUI limitation. Real offline service/provider and auth middleware probes plus collection-only4 Playwright tests passed; no browser/LLM/accountcreation. Fresh V06 recheck dispatched.
+
+V06 second review found the D-A response JSON still used oldfrom1289. Main accepted, fresh docs-writer corrected onlyJSONto1293 and verified extracted finalrequest/response with sourcefunctions. Integrated one-line followup, fresh V06 final recheck dispatched.
+
+R22 root reviewed actual diff: controlled props reconcile at readiness, native lock filter retained, server load is not user edit, heading-ID nested dispatch emits once. Five accepted RED cases retained; focused38 and full695/4 plus packagegates/coverage/build green. Committed and integrated pending independentreview and R12 actualApp integration.
+
+R12 actual App creation flow passed after R22 integration with real backendversion0 fixture; no assertions weakened. Main inspected App/AppModals wiring and actualfetch/realMilkdown test, ran fullclient lint/format/typecheck/test:696passed4skipped. Integrated R12 reviewrepair; fresh V03/V04 now dispatched.
+
+V03 recheck closed originalfour but reproduced newP1 unknownversion0 write afterfailedload. Main verifiedpersistguard currentlyonlystatusloading and acceptedV03-06; sameR13 boundedreadyrepair extended to unknownversion/cache preservation with known0/offlinecreation controls. V04 recheck0findings includingR22. Finalclient696/4 and6seeds passed but acceptance remainsblocked on thisconfirmeddefect.
