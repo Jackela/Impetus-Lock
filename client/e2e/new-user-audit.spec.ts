@@ -7,7 +7,7 @@ import { test } from "@playwright/test";
  * I'll explore everything I see and document my experience.
  */
 
-test("New User Audit - First Time Experience", async ({ page }) => {
+test("New User Audit - First Time Experience", async ({ page }, testInfo) => {
   console.log("\n🆕 NEW USER AUDIT - First Impressions\n");
   console.log('I am a new user who just discovered "Impetus Lock"...');
   console.log("Let me open the app and see what happens!\n");
@@ -19,7 +19,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Take first screenshot
-  await page.screenshot({ path: "audit-screenshots/01-first-load.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("01-first-load.png"), fullPage: true });
   console.log("📸 Screenshot saved: 01-first-load.png");
 
   // What do I see?
@@ -58,7 +58,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
       console.log(`      ${modeDesc?.substring(modeTitle?.length || 0, 200)}...`);
     }
 
-    await page.screenshot({ path: "audit-screenshots/02-welcome-modal.png", fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath("02-welcome-modal.png"), fullPage: true });
     console.log("\n📸 Screenshot saved: 02-welcome-modal.png");
 
     // Look for buttons
@@ -87,7 +87,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
     console.log('✓ Clicked "Get Started"');
   }
 
-  await page.screenshot({ path: "audit-screenshots/03-main-ui.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("03-main-ui.png"), fullPage: true });
   console.log("📸 Screenshot saved: 03-main-ui.png");
 
   // STEP 3: Analyze the main interface
@@ -135,7 +135,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
   await page.keyboard.type("\n\nAs a new user, I want to test this app!");
   console.log("✓ Typed some text");
 
-  await page.screenshot({ path: "audit-screenshots/04-typing.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("04-typing.png"), fullPage: true });
   console.log("📸 Screenshot saved: 04-typing.png");
 
   // STEP 5: Try changing modes
@@ -144,7 +144,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
   await modeSelector.selectOption("muse");
   console.log('✓ Selected "Muse" mode');
 
-  await page.screenshot({ path: "audit-screenshots/05-muse-mode.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("05-muse-mode.png"), fullPage: true });
   console.log("📸 Screenshot saved: 05-muse-mode.png");
 
   // Check if any buttons changed
@@ -163,7 +163,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
 
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: "audit-screenshots/06-after-stuck-button.png", fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath("06-after-stuck-button.png"), fullPage: true });
     console.log("📸 Screenshot saved: 06-after-stuck-button.png");
 
     const editorContentAfter = await page.locator(".milkdown .ProseMirror").textContent();
@@ -177,7 +177,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
   await modeSelector.selectOption("loki");
   console.log('✓ Selected "Loki" mode');
 
-  await page.screenshot({ path: "audit-screenshots/07-loki-mode.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("07-loki-mode.png"), fullPage: true });
   console.log("📸 Screenshot saved: 07-loki-mode.png");
 
   // STEP 8: Test keyboard shortcut
@@ -190,7 +190,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
   console.log(`   - Modal reappeared: ${modalReappeared ? "✓" : "✗"}`);
 
   if (modalReappeared) {
-    await page.screenshot({ path: "audit-screenshots/08-help-reopened.png", fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath("08-help-reopened.png"), fullPage: true });
     console.log("📸 Screenshot saved: 08-help-reopened.png");
 
     // Close it with Escape
@@ -204,7 +204,7 @@ test("New User Audit - First Time Experience", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
   await page.waitForTimeout(500);
 
-  await page.screenshot({ path: "audit-screenshots/09-mobile-view.png", fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath("09-mobile-view.png"), fullPage: true });
   console.log("📸 Screenshot saved: 09-mobile-view.png");
 
   const mobileEditorVisible = await page.locator(".milkdown").isVisible();
@@ -232,15 +232,15 @@ test("New User Audit - First Time Experience", async ({ page }) => {
   console.log(`   - AI-added content is "locked" (can't delete it)`);
 
   console.log(`\n📊 ALL SCREENSHOTS SAVED:`);
-  console.log(`   - audit-screenshots/01-first-load.png`);
-  console.log(`   - audit-screenshots/02-welcome-modal.png`);
-  console.log(`   - audit-screenshots/03-main-ui.png`);
-  console.log(`   - audit-screenshots/04-typing.png`);
-  console.log(`   - audit-screenshots/05-muse-mode.png`);
-  console.log(`   - audit-screenshots/06-after-stuck-button.png`);
-  console.log(`   - audit-screenshots/07-loki-mode.png`);
-  console.log(`   - audit-screenshots/08-help-reopened.png`);
-  console.log(`   - audit-screenshots/09-mobile-view.png`);
+  console.log(`   - ${testInfo.outputPath("01-first-load.png")}`);
+  console.log(`   - ${testInfo.outputPath("02-welcome-modal.png")}`);
+  console.log(`   - ${testInfo.outputPath("03-main-ui.png")}`);
+  console.log(`   - ${testInfo.outputPath("04-typing.png")}`);
+  console.log(`   - ${testInfo.outputPath("05-muse-mode.png")}`);
+  console.log(`   - ${testInfo.outputPath("06-after-stuck-button.png")}`);
+  console.log(`   - ${testInfo.outputPath("07-loki-mode.png")}`);
+  console.log(`   - ${testInfo.outputPath("08-help-reopened.png")}`);
+  console.log(`   - ${testInfo.outputPath("09-mobile-view.png")}`);
 
   console.log(`\n✨ AUDIT COMPLETE ✨\n`);
 });
