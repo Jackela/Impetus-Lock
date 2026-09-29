@@ -16,7 +16,7 @@
 ### Prerequisites
 
 - **Python 3.11+** with Poetry
-- **Node.js 24.x** (matches the CI toolchain)
+- **Node.js 22.13+ (22.x) or 24.x** (`^22.13.0 || ^24.0.0`); 24.x is recommended to match the CI toolchain
 - **Git**
 - **Act CLI** (optional, for local CI testing)
 
