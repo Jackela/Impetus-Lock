@@ -226,9 +226,13 @@ jobs:
         env:
           REDIS_URL: redis://localhost:6379/0
 
-      - name: Enforce lock-critical line coverage
+      - name: Report lock-critical line coverage
         working-directory: ./server
         run: poetry run coverage report --rcfile=coverage-critical.ini
+
+      - name: Enforce per-file lock-critical line coverage
+        working-directory: ./server
+        run: poetry run python check_critical_coverage.py
 
   frontend-tests:
     name: Frontend Tests
