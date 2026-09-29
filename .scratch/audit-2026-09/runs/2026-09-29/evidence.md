@@ -21,7 +21,7 @@ This is an implementation evidence index, not final acceptance. Final status is 
 | R15 | [R15-test-writer-02-red.log](logs/R15-test-writer-02-red.log), [R15-implementer-filter-red.log](logs/R15-implementer-filter-red.log), [R15-implementer-step-positions-red.log](logs/R15-implementer-step-positions-red.log) | [R15-implementer-green.log](logs/R15-implementer-green.log) |
 | R16 | [R16-test-writer-red.log](logs/R16-test-writer-red.log), [R16-logger-boundary-red-red.log](logs/R16-logger-boundary-red-red.log) | [R16-logger-boundary-repair-green.log](logs/R16-logger-boundary-repair-green.log) |
 | R17 | [R17-test-writer-red.log](logs/R17-test-writer-red.log), [R17-implementer-red.log](logs/R17-implementer-red.log) | [R17-implementer-green.log](logs/R17-implementer-green.log) |
-| R18 | Pending | Pending |
+| R18 | [R18-test-writer-red.log](logs/R18-test-writer-red.log), [input inventory](logs/R18-test-writer-compiler-input-inventory.json), [three invalid-input probes](logs/R18-implementer-probes-red.log) | [first gates](logs/R18-implementer-green.log), [six seeds](logs/R18-implementer-seeds-green.log); [boundary repair](logs/R18-legacy-boundary-repair-green.log), [main return-contract RED](logs/R18-main-unused-return-red.log), [final GREEN](logs/R18-main-final-green.log) |
 | R19 | [R19-test-writer-red.log](logs/R19-test-writer-red.log), [R19-implementer-red-missing.log](logs/R19-implementer-red-missing.log), [R19-implementer-red-real-coverage.log](logs/R19-implementer-red-real-coverage.log) | [R19-implementer-green.log](logs/R19-implementer-green.log) |
 | R20 | [R20-test-writer-red-02.log](logs/R20-test-writer-red-02.log) | [R20-implementer-green.log](logs/R20-implementer-green.log) |
 | R21 | [R21-test-writer-red.log](logs/R21-test-writer-red.log) | [R21-implementer-green.log](logs/R21-implementer-green.log) |
@@ -29,3 +29,5 @@ This is an implementation evidence index, not final acceptance. Final status is 
 R15 initial cleanup/path failure is not its accepted RED. R15-implementer-undo-green.log contains an intermediate failed assertion and is not final GREEN evidence. R20 initial fixture-path error is retained separately; -red-02 is the actual policy defect. R07 connection-refused environment evidence is distinct from the successful reproduction using independent PostgreSQL sessions.
 
 Wave5 reviews and final gate logs will be appended after they run.
+
+R18 main rejected a fabricated required browser global, then removed newly invented setter/delete return restrictions: original scenarios ignore those results, while the Markdown read must supply a string. The final helper checks only necessary runtime preconditions. Final package result: 680 passed, 4 existing skips; 238 TypeScript inputs covered, no omissions/diagnostics. Browser execution remains unverified. D-A final docs and D-C active commands were checked against the candidate; local links and unchanged constitution/root OpenSpec block were verified before integration.

@@ -1,18 +1,5 @@
 {
-  "active": [
-    {
-      "ticket": "R18",
-      "role": "test-writer",
-      "session": 74710
-    }
-  ],
-  "idle_lanes": [
-    "client",
-    "docs"
-  ],
-  "remaining_wave4": [
-    "R18 implementer after accepted RED and fast-forward to integrated R20/R21",
-    "D-A final integration documentation follow-up"
-  ],
-  "reviews": "not started: Wave4 must complete"
+  "active": [],
+  "wave4": "complete; all tickets integrated, not yet accepted",
+  "reviews": "Wave5 ready"
 }

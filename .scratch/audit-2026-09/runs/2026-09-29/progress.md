@@ -112,3 +112,11 @@ TDD skill public-interface seams are approved in the plan and fixed in each read
 - R21 integrated 96b583c: main reviewed all14 calls and preserved names/fullPage/conditions/assets. Node static regression1pass,5Playwright specs13tests collection-only and strict selected compile pass; fullclient630pass/4skip, actualapp114/node1 unchanged. No browser launched.
 
 - R20 integrated b30d805: native perFile80 plus minimal fixed inventory reporter; five real reporter fixtures prove low/missing/unexecuted reject and80/100 pass. Real PM operation tests leave production behavior unchanged. Full655pass/4skip, all6critical89.28–100%, ContentInjector98.95%. Sixfinite seeds each85pass; changedfile diagnostics0. Main reviewed real state/metadata/invalid-throttle assertions and corrected stale engine comment after R17.
+
+- R18 RED accepted: declared check0inputs/exit0 while actualapp114/node1 fail. Inventory omitted48clientTS inputs plus2outside-client spec contract documents; latter are documentary scope, not runtime source. R20/R21 now integrated; next fresh implementer starts from latest root. JavaScript-only config/scripts require separate explicit validation, not false tsc claims.
+
+- D-A final docs worker closed: onlyTESTING/DEVELOPMENT/ARCHITECTURE_GUARDS changed; three offline Node contract/config tests and links pass. Main read diff; hold final commit until R18 finishes, then replace acceptance-target wording with verified compiler behavior and ensure local Redis-excluded commands are directly runnable. No runtime code changed.
+
+R18 first candidate passed 655 tests/4 skips and six full vmThreads seeds, but main withheld acceptance: a required ambient legacy editor facade had no installer. Fresh scoped repair requested; no production facade or browser runtime claim authorized.
+
+Wave4 complete at e6acabc. R18 integrated632886b after main scope review and additional RED/GREEN removing invented legacy setter/delete return contracts;680 passed/4 skips,238 TS inputs, zero diagnostics. D-A final followup5d66b3a and D-C command followupe6acabc integrated; constitution and root OpenSpec block byte-identical to baseline. All21 Tier2,3 Tier1 batches and2 proposal tickets now integrated pending independent review. No final acceptance yet.

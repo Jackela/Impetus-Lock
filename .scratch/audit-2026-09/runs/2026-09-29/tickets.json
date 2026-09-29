@@ -269,8 +269,11 @@
       "R17"
     ],
     "file": "issues/r18-enable-complete-client-type-checking.md",
-    "status": "red-in-progress",
-    "tier": 2
+    "status": "integrated-pending-review",
+    "tier": 2,
+    "red_accepted": true,
+    "commit": "632886b",
+    "boundary_repair_reviewed": true
   },
   {
     "id": "R19",
@@ -334,7 +337,11 @@
     "file": "issues/d-a.md",
     "status": "integrated-pending-review",
     "tier": 1,
-    "commit": "882017e"
+    "commit": "882017e",
+    "commits": [
+      "882017e",
+      "5d66b3a"
+    ]
   },
   {
     "id": "D-B",
@@ -365,7 +372,11 @@
     "file": "issues/d-c.md",
     "status": "integrated-pending-review",
     "tier": 1,
-    "commit": "de76d15"
+    "commit": "de76d15",
+    "commits": [
+      "de76d15",
+      "e6acabc"
+    ]
   },
   {
     "id": "P-01",

@@ -22,11 +22,11 @@
 
 ## Wave 4：本地修复
 
-进行中。各票使用独立分支；test-writer 记录 RED，主 agent 核对后由 fresh-context implementer 完成 GREEN。全部本地提交待 Wave 5 独立复核。
+实施已完成，待独立复核。各票使用独立分支；test-writer 记录 RED，主 agent 核对后由 fresh-context implementer 完成 GREEN。全部本地提交待 Wave 5 独立复核。
 
 ## Wave 5：独立复核与终验
 
-待执行。最终需覆盖 commit、staged、unstaged、untracked，核对每项验收条件并完成两端全量门禁、构建、实际 TypeScript 编译范围及逐文件关键覆盖率。
+开始独立复核。最终需覆盖 commit、staged、unstaged、untracked，核对每项验收条件并完成两端全量门禁、构建、实际 TypeScript 编译范围及逐文件关键覆盖率。
 
 ## 取证基线（非最终验收）
 
@@ -42,7 +42,7 @@ P-01/P-02 已形成6份未批准提案，见 [提案索引](proposal-index.md)�
 <!-- DISPOSITION:START -->
 ## 逐票处置（实施中）
 
-当前21张 Tier2 票中，20张已本地集成；所有票据均等待独立复核和最终门禁。
+当前21张 Tier2 票已全部本地集成；所有票据均等待独立复核和最终门禁。
 
 | 票据 | 发现 | Tier | 处理 | 本地提交 |
 | --- | --- | --- | --- | --- |
@@ -63,7 +63,7 @@ P-01/P-02 已形成6份未批准提案，见 [提案索引](proposal-index.md)�
 | [R15](issues/r15-repair-editor-library-contracts-without-architecture-migration.md) Repair editor library contracts without architecture migration | F14 | 2 | 已集成，待复核 | 1c58e4d |
 | [R16](issues/r16-repair-domain-and-service-strict-type-contracts.md) Repair domain and service strict type contracts | F15 | 2 | 已集成，待复核 | 3b778c6 |
 | [R17](issues/r17-reconcile-client-dependency-and-supported-runtime-metadata.md) Reconcile client dependency and supported-runtime metadata | F11, F12 | 2 | 已集成，待复核 | fc928bc |
-| [R18](issues/r18-enable-complete-client-type-checking.md) Enable complete client type checking | F01, F16, F17 | 2 | 记录失败证据中 | — |
+| [R18](issues/r18-enable-complete-client-type-checking.md) Enable complete client type checking | F01, F16, F17 | 2 | 已集成，待复核 | 632886b |
 | [R19](issues/r19-enforce-per-file-backend-critical-coverage.md) Enforce per-file backend critical coverage | B12 | 2 | 已集成，待复核 | 7e255be |
 | [R20](issues/r20-enforce-per-file-client-critical-coverage.md) Enforce per-file client critical coverage | F10 | 2 | 已集成，待复核 | b30d805 |
 | [R21](issues/r21-keep-e2e-runtime-screenshots-outside-tracked-evidence.md) Keep E2E runtime screenshots outside tracked evidence | H01 | 2 | 已集成，待复核 | 96b583c |
