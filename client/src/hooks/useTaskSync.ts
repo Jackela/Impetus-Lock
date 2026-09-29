@@ -8,16 +8,22 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  createTask,
-  fetchTask,
-  updateTask,
-  TaskAPIError,
-  type TaskRecord,
-} from "../services/api/taskClient";
+import { createTask, fetchTask, updateTask, TaskAPIError } from "../services/api/taskClient";
 
 const LOCAL_CACHE_KEY = "impetus.task.cache";
 const LOCAL_META_KEY = "impetus.task.meta";
+
+type Draft = { content: string; lockIds: string[] };
+type TaskDraft = Draft & {
+  taskId: string | null;
+  version: number;
+  pending: Draft | null;
+  timer: number | null;
+  saving: boolean;
+  dirty: boolean;
+  status: Status;
+  error: string | null;
+};
 
 /**
  * Error message constants for task synchronization.
@@ -36,8 +42,10 @@ export const TaskSyncErrorMessages = {
   LOAD_FAILED: "Failed to load task. Please try again.",
 
   /** Version conflict during save */
-  CONFLICT_REFRESHED: "Content refreshed due to newer version on server.",
-  CONFLICT_REFRESH_FAILED: "Version conflict; could not refresh latest content.",
+  CONFLICT_REFRESHED:
+    "Version conflict. Local draft kept; edit again to retry with the latest version.",
+  CONFLICT_REFRESH_FAILED:
+    "Version conflict. Local draft kept; could not refresh the server version.",
 
   /** Save operation failure */
   SAVE_FAILED: "Save failed. Changes kept locally.",
@@ -189,168 +197,246 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const pending = useRef<{ content: string; lockIds: string[] } | null>(null);
-  const saveTimer = useRef<number | null>(null);
-  const isLoadingExternal = useRef(false);
+  const active = useRef<TaskDraft>({
+    taskId: null,
+    version: 0,
+    content: defaultContent,
+    lockIds: [],
+    pending: null,
+    timer: null,
+    saving: false,
+    dirty: false,
+    status: "loading",
+    error: null,
+  });
+  const mounted = useRef(true);
+  const bootstrapStarted = useRef(false);
+  const drafts = useRef(new Map<string, TaskDraft>());
 
-  const cacheLocal = useCallback((nextContent: string) => {
+  const cacheDraft = useCallback((draft: TaskDraft) => {
+    if (!mounted.current || active.current !== draft) return;
     try {
-      localStorage.setItem(LOCAL_CACHE_KEY, nextContent);
-    } catch {
-      // Ignore cache failures
-    }
-  }, []);
-
-  const cacheMeta = useCallback((meta: { taskId: string; version: number }) => {
-    try {
-      localStorage.setItem(LOCAL_META_KEY, JSON.stringify(meta));
-    } catch {
-      // Ignore cache failures
-    }
-  }, []);
-
-  const loadFromCache = useCallback(() => {
-    try {
-      const cachedContent = localStorage.getItem(LOCAL_CACHE_KEY);
-      if (cachedContent) {
-        setContent(cachedContent);
+      // Remove old metadata first so a storage failure cannot pair another
+      // task's identity with this content.
+      localStorage.removeItem(LOCAL_META_KEY);
+      localStorage.setItem(LOCAL_CACHE_KEY, draft.content);
+      if (draft.taskId) {
+        localStorage.setItem(
+          LOCAL_META_KEY,
+          JSON.stringify({
+            taskId: draft.taskId,
+            version: draft.version,
+          })
+        );
       }
     } catch {
-      // Ignore cache failures
+      // Ignore cache failures.
     }
   }, []);
+
+  const persist = useCallback(
+    async (draft: TaskDraft) => {
+      if (draft.saving || !draft.pending) return;
+      draft.saving = true;
+      const visible = () => mounted.current && active.current === draft;
+      if (visible()) setIsSaving(true);
+      try {
+        while (draft.pending) {
+          const payload = draft.pending;
+          draft.pending = null;
+          try {
+            const record = draft.taskId
+              ? await updateTask(draft.taskId, { ...payload, version: draft.version })
+              : await createTask(payload);
+            draft.taskId = record.id;
+            draft.version = record.version;
+            draft.dirty = draft.pending !== null;
+            draft.error = null;
+            draft.status = "ready";
+            drafts.current.set(record.id, draft);
+            if (visible()) {
+              setTaskId(record.id);
+              setVersion(record.version);
+              cacheDraft(draft);
+              setError(null);
+              setStatus("ready");
+            }
+          } catch (err) {
+            if (classifyError(err) === "conflict" && draft.taskId) {
+              draft.pending = null;
+              if (draft.timer) window.clearTimeout(draft.timer);
+              let message: string = TaskSyncErrorMessages.CONFLICT_REFRESHED;
+              try {
+                const latest = await fetchTask(draft.taskId);
+                draft.version = latest.version;
+              } catch {
+                message = TaskSyncErrorMessages.CONFLICT_REFRESH_FAILED;
+              }
+              // Typing during the refresh remains local until a deliberate retry.
+              draft.pending = null;
+              if (draft.timer) window.clearTimeout(draft.timer);
+              draft.error = message;
+              if (visible()) {
+                setVersion(draft.version);
+                cacheDraft(draft);
+                setError(message);
+              }
+              break;
+            }
+            draft.error = getErrorMessage(err, { operation: "save" });
+            if (visible()) setError(draft.error);
+            // A newer queued draft may still be drained after a failed older save.
+          }
+        }
+      } finally {
+        draft.saving = false;
+        if (visible()) setIsSaving(false);
+      }
+    },
+    [cacheDraft]
+  );
+
+  const showDraft = useCallback(
+    (draft: TaskDraft) => {
+      if (!mounted.current || active.current !== draft) return;
+      setTaskId(draft.taskId);
+      setContent(draft.content);
+      setLockIds(draft.lockIds);
+      setVersion(draft.version);
+      setError(draft.error);
+      setStatus(draft.status);
+      setIsSaving(draft.saving);
+      if (draft.status !== "loading") cacheDraft(draft);
+    },
+    [cacheDraft]
+  );
+
+  const adoptTask = useCallback(
+    (record: Awaited<ReturnType<typeof fetchTask>>, draft: TaskDraft) => {
+      Object.assign(draft, {
+        taskId: record.id,
+        version: record.version,
+        content: record.content,
+        lockIds: record.lock_ids || [],
+        dirty: false,
+        status: "ready",
+        error: null,
+      });
+      drafts.current.set(record.id, draft);
+      showDraft(draft);
+    },
+    [showDraft]
+  );
+
+  const loadFromCache = useCallback(
+    (draft: TaskDraft) => {
+      try {
+        const cachedContent = localStorage.getItem(LOCAL_CACHE_KEY);
+        if (cachedContent !== null) draft.content = cachedContent;
+      } catch {
+        // Ignore cache failures.
+      }
+      showDraft(draft);
+    },
+    [showDraft]
+  );
 
   const loadTask = useCallback(
     async (id: string) => {
-      if (isLoadingExternal.current) return;
-      isLoadingExternal.current = true;
-      setStatus("loading");
+      if (active.current.taskId === id) return;
+      const previous = active.current;
+      if (previous.timer) window.clearTimeout(previous.timer);
+      void persist(previous);
+      const cached = drafts.current.get(id);
+      const retained =
+        cached && (cached.saving || cached.dirty || cached.status === "loading") ? cached : null;
+      const draft: TaskDraft = retained ?? {
+        taskId: id,
+        version: 0,
+        content: defaultContent,
+        lockIds: [],
+        pending: null,
+        timer: null,
+        saving: false,
+        dirty: false,
+        status: "loading",
+        error: null,
+      };
+      active.current = draft;
+      drafts.current.set(id, draft);
+      showDraft(draft);
+      if (retained) return;
       try {
-        const existing = await fetchTask(id);
-        setTaskId(existing.id);
-        setContent(existing.content);
-        setLockIds(existing.lock_ids || []);
-        setVersion(existing.version);
-        cacheMeta({ taskId: existing.id, version: existing.version });
-        setError(null);
-        setStatus("ready");
+        const record = await fetchTask(id);
+        if (mounted.current) adoptTask(record, draft);
       } catch (err) {
-        const message = getErrorMessage(err, { operation: "load" });
-        setError(message);
-        setStatus("error");
-      } finally {
-        isLoadingExternal.current = false;
+        draft.error = getErrorMessage(err, { operation: "load" });
+        draft.status = "error";
+        showDraft(draft);
       }
     },
-    [cacheMeta]
+    [adoptTask, defaultContent, persist, showDraft]
   );
 
   const bootstrap = useCallback(async () => {
+    if (bootstrapStarted.current) return;
+    bootstrapStarted.current = true;
+    const draft = active.current;
     setStatus("loading");
     try {
       const cachedMetaRaw = localStorage.getItem(LOCAL_META_KEY);
-      const cachedMeta = cachedMetaRaw ? (JSON.parse(cachedMetaRaw) as { taskId?: string }) : null;
-
+      const cachedMeta = cachedMetaRaw
+        ? (JSON.parse(cachedMetaRaw) as { taskId?: string; version?: number })
+        : null;
       if (cachedMeta?.taskId) {
-        const existing = await fetchTask(cachedMeta.taskId);
-        setTaskId(existing.id);
-        setContent(existing.content);
-        setLockIds(existing.lock_ids || []);
-        setVersion(existing.version);
-        setStatus("ready");
-        return;
+        draft.taskId = cachedMeta.taskId;
+        draft.version = cachedMeta.version ?? 0;
+        drafts.current.set(cachedMeta.taskId, draft);
       }
-
-      const created = await createTask({ content: defaultContent, lockIds: [] });
-      setTaskId(created.id);
-      setContent(created.content);
-      setLockIds(created.lock_ids || []);
-      setVersion(created.version);
-      cacheMeta({ taskId: created.id, version: created.version });
-      setStatus("ready");
+      const record = cachedMeta?.taskId
+        ? await fetchTask(cachedMeta.taskId)
+        : await createTask({ content: defaultContent, lockIds: [] });
+      if (mounted.current && active.current === draft) adoptTask(record, draft);
     } catch {
-      loadFromCache();
-      setError(TaskSyncErrorMessages.API_UNAVAILABLE);
-      setStatus("error");
+      if (mounted.current && active.current === draft) {
+        draft.error = TaskSyncErrorMessages.API_UNAVAILABLE;
+        draft.status = "error";
+        loadFromCache(draft);
+      }
     }
-  }, [cacheMeta, defaultContent, loadFromCache]);
+  }, [adoptTask, defaultContent, loadFromCache]);
 
-  // Handle external task ID changes (when user selects a task from the list)
   useEffect(() => {
-    if (externalTaskId && externalTaskId !== taskId) {
-      void loadTask(externalTaskId);
-    }
-  }, [externalTaskId, taskId, loadTask]);
-
-  // Initial bootstrap (only if no external task ID is provided)
-  useEffect(() => {
-    if (!externalTaskId) {
-      void bootstrap();
-    }
+    mounted.current = true;
     return () => {
-      if (saveTimer.current) {
-        window.clearTimeout(saveTimer.current);
-      }
+      mounted.current = false;
+      const draft = active.current;
+      if (draft.timer) window.clearTimeout(draft.timer);
+      void persist(draft);
     };
-  }, [externalTaskId, bootstrap]);
+  }, [persist]);
 
-  const persist = useCallback(
-    async (payload: { content: string; lockIds: string[] }) => {
-      setIsSaving(true);
-      try {
-        let record: TaskRecord;
-        if (!taskId) {
-          record = await createTask(payload);
-          setTaskId(record.id);
-        } else {
-          record = await updateTask(taskId, { ...payload, version });
-        }
-
-        setVersion(record.version);
-        setLockIds(record.lock_ids || []);
-        cacheMeta({ taskId: record.id, version: record.version });
-        setError(null);
-      } catch (err) {
-        const errorType = classifyError(err);
-
-        if (errorType === "conflict" && taskId) {
-          try {
-            const latest = await fetchTask(taskId);
-            setContent(latest.content);
-            setLockIds(latest.lock_ids || []);
-            setVersion(latest.version);
-            setError(TaskSyncErrorMessages.CONFLICT_REFRESHED);
-          } catch {
-            setError(TaskSyncErrorMessages.CONFLICT_REFRESH_FAILED);
-          }
-        } else {
-          const message = getErrorMessage(err, { operation: "save" });
-          setError(message);
-        }
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    [cacheMeta, taskId, version]
-  );
+  useEffect(() => {
+    if (externalTaskId) void loadTask(externalTaskId);
+    else void bootstrap();
+  }, [externalTaskId, loadTask, bootstrap]);
 
   const onChange = useCallback(
     (markdown: string, locks: string[]) => {
+      const draft = active.current;
+      draft.content = markdown;
+      draft.lockIds = [...locks];
+      draft.dirty = true;
       setContent(markdown);
-      setLockIds(locks);
-      cacheLocal(markdown);
-      pending.current = { content: markdown, lockIds: locks };
-      if (saveTimer.current) {
-        window.clearTimeout(saveTimer.current);
-      }
-      saveTimer.current = window.setTimeout(() => {
-        if (pending.current) {
-          void persist(pending.current);
-          pending.current = null;
-        }
+      setLockIds(draft.lockIds);
+      cacheDraft(draft);
+      draft.pending = { content: markdown, lockIds: draft.lockIds };
+      if (draft.timer) window.clearTimeout(draft.timer);
+      draft.timer = window.setTimeout(() => {
+        void persist(draft);
       }, 800);
     },
-    [cacheLocal, persist]
+    [cacheDraft, persist]
   );
 
   return {
