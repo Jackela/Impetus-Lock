@@ -121,7 +121,7 @@ act -P ubuntu-latest=catthehacker/ubuntu:act-latest
 
 **Known Limitations:**
 - Act does not guarantee parity with GitHub-hosted runners. In particular, service-container networking can differ.
-- The current backend CI job uses Redis as a service. Review local Act results against `.github/workflows/ci.yml` and confirm the final result in GitHub Actions.
+- The current backend CI job uses Redis and PostgreSQL as services. Review local Act results against `.github/workflows/ci.yml` and confirm the final result in GitHub Actions.
 
 **Separate local E2E guide (Feature 004):**
 `specs/004-fix-e2e-workflow/quickstart.md` documents that feature’s Docker Compose workflow. It is a separate guide and does not represent an additional job in the current CI workflow.
@@ -275,7 +275,7 @@ npx vitest run src/App.test.tsx  # Run specific test file
 # Linting, Formatting, Type Checking
 npm run lint              # ESLint (max-warnings=0)
 npm run format            # Prettier check
-npm run type-check        # TypeScript (tsc --noEmit)
+npm run type-check        # TypeScript app, test, and tool projects (--noEmit)
 
 # Build
 npm run build             # Production build
@@ -293,7 +293,7 @@ npm run preview           # Preview production build
 GitHub Actions runs 4 parallel jobs on push/PR to `main`:
 
 1. **lint**: Ruff (backend) + ESLint/Prettier (frontend)
-2. **type-check**: mypy (backend) + tsc --noEmit (frontend)
+2. **type-check**: mypy (backend) + npm run type-check (frontend app, test, and tool projects)
 3. **backend-tests**: pytest
 4. **frontend-tests**: Vitest unit tests
 
