@@ -38,7 +38,7 @@ class DebugLLMProvider(LLMProvider):
             selection_to: Optional selection end position.
 
         Returns:
-            A structured provoke response with a unique lock identifier.
+            A structured provoke response with unique action and lock identifiers.
         """
         cursor = selection_to or selection_from or len(context)
         snippet = context[max(0, cursor - 80) : cursor].strip() or "让故事更紧张。"
@@ -58,7 +58,7 @@ class DebugLLMProvider(LLMProvider):
             content=content,
             lock_id=lock_id,
             anchor=AnchorPos(from_=cursor),
-            action_id="act_debug",
+            action_id=f"act_debug_{uuid4().hex}",
             issued_at=issued,
             source=mode,
         )
