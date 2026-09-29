@@ -20,6 +20,8 @@ class AsyncIdempotencyCache:
 
     Stores intervention responses keyed by Idempotency-Key header (UUID).
     Entries expire after 15 seconds (configurable TTL).
+    Entries remain valid at exact expiry and expire once time exceeds it.
+    Writes reclaim all expired entries, including keys never read again.
     Uses asyncio locks to avoid blocking the event loop.
     """
 
@@ -48,9 +50,15 @@ class AsyncIdempotencyCache:
             return response
 
     async def set(self, key: str, response: Any) -> None:
-        """Store response in cache with TTL expiry."""
+        """Remove expired entries and store response with a fresh TTL."""
         async with self._lock:
-            expiry = time.time() + self.ttl
+            current_time = time.time()
+            expired_keys = [
+                key for key, (_, expiry) in self._cache.items() if current_time > expiry
+            ]
+            for expired_key in expired_keys:
+                self._cache.pop(expired_key, None)
+            expiry = current_time + self.ttl
             self._cache[key] = (response, expiry)
 
     async def clear(self) -> None:
