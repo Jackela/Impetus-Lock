@@ -117,7 +117,10 @@ poetry run mypy . --no-site-packages --ignore-missing-imports
 # Tests (with coverage)
 poetry run pytest -v
 poetry run pytest --cov=server --cov-report=term-missing
+poetry run python check_critical_coverage.py  # Enforce each lock-critical file after coverage
 ```
+
+Most backend tests use SQLite. Repository, ownership, and concurrent-write regression tests use a real local PostgreSQL server at `postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres`; each creates and removes only its unique test-owned schema. Keep valuable data out of the test database. For local validation without Redis, run `poetry run pytest tests/ -n auto -k "not RedisIntegration and not redis_pubsub" --cov=server`, followed by `poetry run python check_critical_coverage.py`. Record skipped tests separately; excluded Redis paths remain unvalidated.
 
 **Development Server**:
 
@@ -164,7 +167,7 @@ npm run format                # Prettier check
 npx prettier --write .        # Auto-format
 
 # Type checking
-npm run type-check            # tsc --noEmit (strict mode)
+npm run type-check            # Stable TypeScript check entry point
 
 # Unit tests (Vitest)
 npm run test                  # Run once
@@ -174,6 +177,8 @@ npm run test:watch            # Watch mode for TDD
 npm run test:e2e              # Headless mode (CI-style)
 npx playwright test --ui      # Interactive UI mode (recommended for development)
 ```
+
+`npm run type-check` executes the app, test, and tool TypeScript projects. It covers application code, tests under `src/`, `tests/`, and `e2e/`, and root TypeScript tool/setup configuration. E2E tests are only compiled by this command; JavaScript scripts have separate Node checks documented in [TESTING.md](TESTING.md).
 
 **Development Server**:
 
@@ -293,7 +298,7 @@ npx playwright test e2e/smoke.spec.ts
 ```yaml
 jobs:
   lint:              # Ruff (backend) + ESLint/Prettier (frontend)
-  type-check:        # mypy (backend) + tsc (frontend)
+  type-check:        # mypy (backend) + npm run type-check (frontend)
   backend-tests:     # pytest
   frontend-tests:    # Vitest unit tests with coverage
 ```

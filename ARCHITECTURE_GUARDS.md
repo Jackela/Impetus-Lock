@@ -274,6 +274,18 @@ lint:
 
 The CI workflow runs all three contracts with `poetry run lint-imports`; the output of the current CI run is the validation record.
 
+The backend lock-critical per-file coverage check runs after pytest coverage collection:
+
+```bash
+cd server
+poetry run pytest tests/ -n auto -k "not RedisIntegration and not redis_pubsub" --cov=server
+poetry run python check_critical_coverage.py
+```
+
+The frontend test command `npm run test -- --coverage` enforces its retained six-file inventory individually; aggregate coverage alone is insufficient. The frontend type-check command `npm run type-check` executes the app, test, and tool TypeScript projects, covering application code, tests under `src/`, `tests/`, and `e2e/`, and root TypeScript tool/setup configuration. Browser tests are compiled, not executed; JavaScript scripts have separate Node checks.
+
+The repository, ownership, and concurrent-write backend regressions require local PostgreSQL at `postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres`; they create and clean up unique test-owned schemas. The local command above excludes `RedisIntegration` and `redis_pubsub`; record any remaining skips separately. It does not validate the excluded Redis paths, browser E2E, or production behavior.
+
 **Documentation enforcement:** Article V remains a constitutional requirement. CI runs `pydocstyle server/` for Python docstrings and ESLint JSDoc rules for exported TypeScript declarations. ESLint also enables `jsdoc/check-types` and `jsdoc/valid-types` as warnings; the lint script sets `--max-warnings=0`, so warnings fail the job.
 
 ---

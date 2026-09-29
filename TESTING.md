@@ -37,7 +37,12 @@ poetry run pytest -v
 # Coverage
 poetry run pytest --cov=server --cov-report=html
 open htmlcov/index.html  # View coverage report
+
+# Enforce the fixed per-file lock-critical inventory (run after coverage)
+poetry run python check_critical_coverage.py
 ```
+
+The server suite uses SQLite for most tests, but the PostgreSQL repository, ownership, and concurrent-write regressions require a reachable local PostgreSQL instance. They use the default URL `postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres` and create/drop only unique test-owned schemas; do not substitute a shared schema or database with valuable data. The CI suite also provisions PostgreSQL. For local validation without Redis, use `poetry run pytest tests/ -n auto -k "not RedisIntegration and not redis_pubsub" --cov=server`, then run the per-file coverage check. Record skipped tests separately; this command does not validate the excluded Redis paths.
 
 ### Frontend Tests (Vitest + Playwright)
 
@@ -49,6 +54,11 @@ npm run test              # Run once
 npm run test:watch        # TDD watch mode ⭐
 npm run test -- --ui      # Visual UI mode
 
+# Offline contract and configuration checks (no server or live LLM)
+npm run test:api-types
+npm run test:runtime-metadata
+node --test ./e2e/screenshot-output-path.test.mjs
+
 # E2E tests (Playwright)
 npm run test:e2e          # Run E2E tests
 npx playwright test --ui  # Interactive mode
@@ -57,6 +67,8 @@ npx playwright test --headed --debug  # Debug mode
 # Coverage
 npm run test -- --coverage
 ```
+
+Coverage enforces the retained six-file critical inventory in `client/vitest.config.ts`: each listed file must be present in the report and meet the per-file line threshold. Aggregate coverage alone does not satisfy this gate.
 
 ## Backend Testing (pytest + FastAPI TestClient)
 
@@ -399,6 +411,7 @@ npx playwright install --with-deps
 cd server
 poetry run pytest --cov=server --cov-report=term-missing
 poetry run pytest --cov=server --cov-report=html
+poetry run python check_critical_coverage.py
 
 # Frontend
 cd client
@@ -450,6 +463,8 @@ npm run lint
 npm run type-check
 npm run test
 ```
+
+`npm run type-check` executes `tsconfig.app.json`, `tsconfig.tests.json`, and `tsconfig.node.json`. These check application code, TypeScript tests under `src/`, `tests/`, and `e2e/` (E2E compilation only), and root TypeScript tool/setup configuration. JavaScript scripts are outside these TypeScript projects; the offline Node checks above validate their corresponding contracts separately. Compiling browser tests does not execute them.
 
 ## TDD Best Practices
 
