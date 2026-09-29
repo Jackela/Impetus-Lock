@@ -17,6 +17,7 @@ type Draft = { content: string; lockIds: string[] };
 type TaskDraft = Draft & {
   taskId: string | null;
   version: number;
+  versionKnown: boolean;
   pending: Draft | null;
   timer: number | null;
   saving: boolean;
@@ -200,6 +201,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   const active = useRef<TaskDraft>({
     taskId: null,
     version: 0,
+    versionKnown: false,
     content: defaultContent,
     lockIds: [],
     pending: null,
@@ -225,7 +227,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
           LOCAL_META_KEY,
           JSON.stringify({
             taskId: draft.taskId,
-            version: draft.version,
+            version: draft.versionKnown ? draft.version : null,
           })
         );
       }
@@ -236,8 +238,14 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
 
   const persist = useCallback(
     async (draft: TaskDraft) => {
-      // Loading must establish the actual identity/version before any write.
-      if (draft.status === "loading" || draft.saving || !draft.pending) return;
+      // Failed loads also leave an existing task's version unknown; retain its queue.
+      if (
+        draft.status === "loading" ||
+        (draft.taskId && !draft.versionKnown) ||
+        draft.saving ||
+        !draft.pending
+      )
+        return;
       draft.saving = true;
       const visible = () => mounted.current && active.current === draft;
       if (visible()) setIsSaving(true);
@@ -251,6 +259,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
               : await createTask(payload);
             draft.taskId = record.id;
             draft.version = record.version;
+            draft.versionKnown = true;
             draft.dirty = draft.pending !== null;
             draft.error = null;
             draft.status = "ready";
@@ -317,6 +326,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       Object.assign(draft, {
         taskId: record.id,
         version: record.version,
+        versionKnown: true,
         content: draft.dirty ? draft.content : record.content,
         lockIds: draft.dirty ? draft.lockIds : record.lock_ids || [],
         status: "ready",
@@ -356,6 +366,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       const draft: TaskDraft = retained ?? {
         taskId: id,
         version: 0,
+        versionKnown: false,
         content: defaultContent,
         lockIds: [],
         pending: null,
@@ -367,8 +378,10 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       };
       active.current = draft;
       drafts.current.set(id, draft);
+      const needsLoad = !retained || (!draft.versionKnown && draft.status !== "loading");
+      if (needsLoad) draft.status = "loading";
       showDraft(draft);
-      if (retained) return;
+      if (!needsLoad) return;
       try {
         const record = await fetchTask(id);
         adoptTask(record, draft);
@@ -392,11 +405,15 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       cachedContent = localStorage.getItem(LOCAL_CACHE_KEY);
       const cachedMetaRaw = localStorage.getItem(LOCAL_META_KEY);
       const cachedMeta = cachedMetaRaw
-        ? (JSON.parse(cachedMetaRaw) as { taskId?: string; version?: number })
+        ? (JSON.parse(cachedMetaRaw) as { taskId?: string; version?: number | null })
         : null;
       if (cachedMeta?.taskId) {
         draft.taskId = cachedMeta.taskId;
         draft.version = cachedMeta.version ?? 0;
+        draft.versionKnown =
+          typeof cachedMeta.version === "number" &&
+          Number.isInteger(cachedMeta.version) &&
+          cachedMeta.version >= 0;
         drafts.current.set(cachedMeta.taskId, draft);
       }
       const record = cachedMeta?.taskId
