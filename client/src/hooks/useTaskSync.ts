@@ -261,7 +261,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         return;
       }
 
-      const created = await createTask(defaultContent, []);
+      const created = await createTask({ content: defaultContent, lockIds: [] });
       setTaskId(created.id);
       setContent(created.content);
       setLockIds(created.lock_ids || []);
@@ -300,10 +300,10 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       try {
         let record: TaskRecord;
         if (!taskId) {
-          record = await createTask(payload.content, payload.lockIds);
+          record = await createTask(payload);
           setTaskId(record.id);
         } else {
-          record = await updateTask(taskId, payload.content, payload.lockIds, version);
+          record = await updateTask(taskId, { ...payload, version });
         }
 
         setVersion(record.version);
