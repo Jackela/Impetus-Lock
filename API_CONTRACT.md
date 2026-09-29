@@ -448,7 +448,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
   "issued_at": "2025-01-15T10:31:12.456Z",
   "anchor": {
     "type": "range",
-    "from": 1289,
+    "from": 1293,
     "to": 1310
   }
 }
