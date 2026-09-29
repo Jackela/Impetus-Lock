@@ -1,0 +1,337 @@
+[
+  {
+    "id": "R01",
+    "title": "Expire unvisited idempotency cache entries",
+    "findings": [
+      "B04"
+    ],
+    "dependencies": [],
+    "file": "issues/r01-expire-unvisited-idempotency-cache-entries.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R02",
+    "title": "Make debug action identities persistable",
+    "findings": [
+      "B08"
+    ],
+    "dependencies": [],
+    "file": "issues/r02-make-debug-action-identities-persistable.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R03",
+    "title": "Restore task sync request bodies",
+    "findings": [
+      "F04"
+    ],
+    "dependencies": [],
+    "file": "issues/r03-restore-task-sync-request-bodies.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R04",
+    "title": "Restore mounted authentication and client CSRF contract",
+    "findings": [
+      "B07",
+      "F09"
+    ],
+    "dependencies": [],
+    "file": "issues/r04-restore-mounted-authentication-and-client-csrf-contract.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R05",
+    "title": "Enforce intervention task ownership",
+    "findings": [
+      "B02"
+    ],
+    "dependencies": [
+      "R04"
+    ],
+    "file": "issues/r05-enforce-intervention-task-ownership.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R06",
+    "title": "Scope and serialize idempotent interventions",
+    "findings": [
+      "B01",
+      "B03"
+    ],
+    "dependencies": [
+      "R01",
+      "R05"
+    ],
+    "file": "issues/r06-scope-and-serialize-idempotent-interventions.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R07",
+    "title": "Make task version updates atomic",
+    "findings": [
+      "B05"
+    ],
+    "dependencies": [],
+    "file": "issues/r07-make-task-version-updates-atomic.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R08",
+    "title": "Keep synchronous model generation off event loop",
+    "findings": [
+      "B06"
+    ],
+    "dependencies": [],
+    "file": "issues/r08-keep-synchronous-model-generation-off-event-loop.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R09",
+    "title": "Enforce style profile and history ownership",
+    "findings": [
+      "B10",
+      "B11"
+    ],
+    "dependencies": [
+      "R04"
+    ],
+    "file": "issues/r09-enforce-style-profile-and-history-ownership.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R10",
+    "title": "Unify collaboration room manager dependency",
+    "findings": [
+      "B09"
+    ],
+    "dependencies": [],
+    "file": "issues/r10-unify-collaboration-room-manager-dependency.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R11",
+    "title": "Restore authoritative client type sources",
+    "findings": [
+      "F02",
+      "F03"
+    ],
+    "dependencies": [],
+    "file": "issues/r11-restore-authoritative-client-type-sources.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R12",
+    "title": "Preserve task mutation callbacks",
+    "findings": [
+      "F05"
+    ],
+    "dependencies": [
+      "R11"
+    ],
+    "file": "issues/r12-preserve-task-mutation-callbacks.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R13",
+    "title": "Preserve drafts through task synchronization races",
+    "findings": [
+      "F06",
+      "F07",
+      "F08"
+    ],
+    "dependencies": [
+      "R03"
+    ],
+    "file": "issues/r13-preserve-drafts-through-task-synchronization-races.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R14",
+    "title": "Repair React component strict type contracts",
+    "findings": [
+      "F13"
+    ],
+    "dependencies": [
+      "R11"
+    ],
+    "file": "issues/r14-repair-react-component-strict-type-contracts.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R15",
+    "title": "Repair editor library contracts without architecture migration",
+    "findings": [
+      "F14"
+    ],
+    "dependencies": [
+      "R11"
+    ],
+    "file": "issues/r15-repair-editor-library-contracts-without-architecture-migration.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R16",
+    "title": "Repair domain and service strict type contracts",
+    "findings": [
+      "F15"
+    ],
+    "dependencies": [
+      "R11"
+    ],
+    "file": "issues/r16-repair-domain-and-service-strict-type-contracts.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R17",
+    "title": "Reconcile client dependency and supported-runtime metadata",
+    "findings": [
+      "F11",
+      "F12"
+    ],
+    "dependencies": [
+      "R11"
+    ],
+    "file": "issues/r17-reconcile-client-dependency-and-supported-runtime-metadata.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R18",
+    "title": "Enable complete client type checking",
+    "findings": [
+      "F01",
+      "F16",
+      "F17"
+    ],
+    "dependencies": [
+      "R12",
+      "R13",
+      "R14",
+      "R15",
+      "R16",
+      "R17"
+    ],
+    "file": "issues/r18-enable-complete-client-type-checking.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R19",
+    "title": "Enforce per-file backend critical coverage",
+    "findings": [
+      "B12"
+    ],
+    "dependencies": [
+      "R05",
+      "R06",
+      "R07",
+      "R08"
+    ],
+    "file": "issues/r19-enforce-per-file-backend-critical-coverage.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R20",
+    "title": "Enforce per-file client critical coverage",
+    "findings": [
+      "F10"
+    ],
+    "dependencies": [
+      "R15"
+    ],
+    "file": "issues/r20-enforce-per-file-client-critical-coverage.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "R21",
+    "title": "Keep E2E runtime screenshots outside tracked evidence",
+    "findings": [
+      "H01"
+    ],
+    "dependencies": [],
+    "file": "issues/r21-keep-e2e-runtime-screenshots-outside-tracked-evidence.md",
+    "status": "specified",
+    "tier": 2
+  },
+  {
+    "id": "D-A",
+    "title": "Correct active API and testing documentation",
+    "findings": [
+      "D01",
+      "D02",
+      "D03",
+      "D04",
+      "D05",
+      "D07",
+      "C05"
+    ],
+    "dependencies": [],
+    "file": "issues/d-a.md",
+    "status": "specified",
+    "tier": 1
+  },
+  {
+    "id": "D-B",
+    "title": "Preserve evidence and clean generated-state tracking",
+    "findings": [
+      "D04",
+      "D06",
+      "H02",
+      "H03",
+      "H04"
+    ],
+    "dependencies": [],
+    "file": "issues/d-b.md",
+    "status": "specified",
+    "tier": 1
+  },
+  {
+    "id": "D-C",
+    "title": "Clarify active collaboration instructions",
+    "findings": [
+      "C01",
+      "C02",
+      "C03",
+      "C04"
+    ],
+    "dependencies": [],
+    "file": "issues/d-c.md",
+    "status": "specified",
+    "tier": 1
+  },
+  {
+    "id": "P-01",
+    "title": "Tier3 proposals",
+    "findings": [
+      "B13",
+      "B14",
+      "H05",
+      "H06",
+      "H07",
+      "F12-boundary"
+    ],
+    "dependencies": [],
+    "file": "issues/P-01-proposals.md",
+    "status": "specified",
+    "tier": 3
+  }
+]

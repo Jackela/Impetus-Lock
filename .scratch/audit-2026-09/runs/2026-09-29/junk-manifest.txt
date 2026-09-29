@@ -1,0 +1,17 @@
+client/audit-screenshots/01-first-load.png
+client/audit-screenshots/02-welcome-modal.png
+client/audit-screenshots/03-main-ui.png
+client/audit-screenshots/04-typing.png
+client/audit-screenshots/05-muse-mode.png
+client/audit-screenshots/06-after-stuck-button.png
+client/audit-screenshots/07-loki-mode.png
+client/audit-screenshots/08-help-reopened.png
+client/audit-screenshots/09-mobile-view.png
+client/e2e-results/manual-trigger-clicked.png
+client/e2e-results/phase5-quick-check.png
+client/e2e-results/trigger-debug.png
+client/e2e-results/ux-003-task-list-hidden-browser.png
+client/e2e-results/ux-003-task-list-hidden.png
+client/e2e-results/ux-003-task-list-integration-browser.png
+client/e2e-results/ux-003-task-list-integration.png
+scripts/ralph/.last-branch

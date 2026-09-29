@@ -80,3 +80,79 @@ All remaining P2 findings and the three Tier3 proposals were completed on 2026-0
 | A14 (Tier3) | migrate-gemini-sdk implemented (google-genai 2.23, retry parity measured & pinned), archived | `d2f7dd0` |
 | A17 (Tier3) | refactor-unused-client-state implemented (unused hooks deleted), archived | `dc1aaf4` |
 | Dependabot | 5 same-major/coordinated PRs landed locally; 8 majors/group verify-only records with recommendations | `2167c18`..`109a2ec` |
+
+
+## 2026-09-29 audit — base 31b0e3f
+
+Current run: [progress](runs/2026-09-29/progress.md), [ready tickets](runs/2026-09-29/tickets.json). Audit severity is independent of constitutional feature priority. All confirmed Tier1/2 including P2 must close; Tier3 proposal only.
+
+### docs
+
+| ID | Severity | Location | Verified fact | Action | Tier |
+|---|---|---|---|---|---|
+| D01 | P2 | API_CONTRACT.md:391,424,459,519 | curl examples omit required contract version/client_meta; response examples omit anchor; version fallback contradicts 422 | Align current examples and field/version descriptions with runtime schema, retain dated history | 1 |
+| D02 | P2 | ARCHITECTURE_GUARDS.md:118,152,287,373 | Four contracts/no docstring guard claims conflict with three enforced contracts and pydocstyle/JSDoc | Correct active enforcement descriptions | 1 |
+| D03 | P2 | TESTING.md:191,203,380; DEVELOPMENT.md:48,93 | Example test/entrypoint paths do not exist | Use actual runnable paths or label hypothetical examples | 1 |
+| D04 | P2 | TESTING.md:559; LOCK_REFACTORING_TESTS_README.md:99,161; DEPENDENCY_MANAGEMENT.md:133,159 | Playwright --slow-mo, Vitest --grep, Poetry audit/lock --no-update are unsupported | Correct current command guidance | 1 |
+| D05 | P2 | DEVELOPMENT.md:300; MANUAL_TESTING_GUIDE.md:375,378 | frontend-tests runs only Vitest, not Playwright/all frontend gates | Separate lint/type/unit/E2E job descriptions | 1 |
+| D06 | P2 | DEPENDENCY_MANAGEMENT.md:22,38,39 | ^1.56.1 allows 1.57.0; documented schedule/PR limits drift | Correct semver and refer to current Dependabot config | 1 |
+| D07 | P2 | AUDIO_FEEDBACK_GUIDE.md:64,66; BROWSER_TEST_GUIDE.md:160,164 | SensoryFeedbackDemo is not rendered and ENABLE_LOKI_MODE has no production consumer | Replace obsolete manual instructions with current entrypoints | 1 |
+
+### backend
+
+| ID | Severity | Location | Fact | Action | Tier |
+|---|---|---|---|---|---|
+| B01 | P1 | server/server/api/routes/intervention.py:145 | Shared cache key omits authenticated user and task; cross-user response disclosure reproduced | Scope keys to identity and task; preserve same-key retry | 2 |
+| B02 | P1 | server/server/application/services/intervention_service.py:289 | X-Task-Id writes history without owner check; cross-user action write reproduced | Check ownership before generate/cache/history using existing 404 | 2 |
+| B03 | P1 | server/server/api/routes/intervention.py:146 | Concurrent same-key misses generate and persist twice | Single-flight per effective key, release on failure/cancel, cache after commit | 2 |
+| B04 | P2 | server/server/infrastructure/cache/idempotency_cache.py:50 | Unvisited expired entries accumulate during new writes | Automatically purge expired entries in existing cache lifecycle | 2 |
+| B05 | P1 | server/server/infrastructure/persistence/postgresql_task_repository.py:102 | Version check and update are not atomic; stale snapshots both write version1 | Atomic compare-and-swap and existing conflict mapping | 2 |
+| B06 | P1 | server/server/application/services/intervention_service.py:286 | Sync provider blocks async event loop;150ms call delays heartbeat161ms | Offload synchronous generation, preserve cleanup and error behavior | 2 |
+| B07 | P1 | server/server/auth/router.py:74 | Mounted auth router omits CSRF cookie required by middleware | Repair issuer/middleware/client cookie contract; test config loading | 2 |
+| B08 | P1 | server/server/infrastructure/llm/debug_provider.py:61 | Fixed act_debug conflicts with unique persisted action_id | Issue unique action ids, preserve idempotent retries | 2 |
+| B09 | P2 | server/server/api/routes/collaboration.py:45 | DI creates fresh managers separate from shared collaboration service | Share existing application manager across route/service consumers | 2 |
+| B10 | P1 | server/server/api/routes/style.py:337; server/server/api/routes/style_history.py:66 | Profile/history trust caller user_id/record_id without authenticated owner check | Enforce existing identity on all reads/mutations | 2 |
+| B11 | P2 | server/server/infrastructure/persistence/style_history_repository.py:110 | Delete returns true even when no row deleted | Return actual deletion outcome | 2 |
+| B12 | P2 | server/coverage-critical.ini:3 | Coverage aggregates files and omits TaskService | Each listed file >=80 and add TaskService | 2 |
+| B13 | P2 | server/server/api/routes/collaboration.py:109 | Permissions query absent tables, POST falsely reports success, read/write not separated | Draft collaboration persistence and authorization proposal | 3 |
+| B14 | P2 | server/server/api/routes/style.py:330 | Remaining style/stats/achievements/collaboration routes contain business queries | Draft scoped route-service boundary proposal | 3 |
+
+### frontend
+
+| ID | Severity | Location | Fact | Action | Tier |
+|---|---|---|---|---|---|
+| F01 | P2 | client/package.json:14 | Root tsc configuration has no source inputs;248 app diagnostics hidden | Repair diagnostics then enable effective app/node checks | 2 |
+| F02 | P2 | client/src/vite.d.ts:1 | Ambient declaration replaces react-query public types | Use actual library public types | 2 |
+| F03 | P2 | client/src/types/api.generated.ts:142 | Generated API types omit current fields and mark anchor optional | Regenerate from current OpenAPI and check drift | 2 |
+| F04 | P1 | client/src/hooks/useTaskSync.ts:264 | Positional calls to object-parameter APIs drop content/version | Use current request object and verify actual fetch JSON | 2 |
+| F05 | P2 | client/src/hooks/useCreateTask.ts:83 | Mutation wrapper discards callbacks supplied by modal | Forward public mutation callbacks and test real hook seam | 2 |
+| F06 | P1 | client/src/hooks/useTaskSync.ts:290 | Switch loses pending saves; overlapping saves conflict and overwrite newer edits | Serialize task saves, preserve drafts, isolate task completions | 2 |
+| F07 | P2 | client/src/hooks/useTaskSync.ts:223 | Failed old load prevents latest selected task loading | Latest request wins, ignore stale completions | 2 |
+| F08 | P2 | client/src/hooks/useTaskSync.ts:248 | Root StrictMode creates two initial tasks | Make bootstrap idempotent without disabling StrictMode | 2 |
+| F09 | P1 | client/src/services/api/interventionClient.ts:137 | Active clients omit required credentials/CSRF contract | Merge with B07 full authentication request repair | 2 |
+| F10 | P2 | client/vitest.config.ts:20 | Aggregate coverage hides ContentInjector54.21% | Per-file80 and public ProseMirror operation tests | 2 |
+| F11 | P2 | client/package.json:7 | Declared Node range includes versions excluded by jsdom/Vitest | Use supported intersection ^22.13.0 || ^24.0.0 | 2 |
+| F12 | P2 | client/src/components/Task/index.ts:23 | Nonexistent exports and undeclared axios/router imports fail compilation | Remove impossible exports; reconcile used dependencies without enabling new UI | 2 |
+| F13 | P2 | client/src/App.tsx:162 | React19 props/JSX/ref/nullability contracts fail strict compiler | Repair actual public component contracts and guards | 2 |
+| F14 | P2 | client/src/components/Editor/EditorCore.tsx:608 | Editor/ProseMirror plugin and public type contracts fail compiler | Repair library API use while preserving transaction safety | 2 |
+| F15 | P2 | client/src/types/ai-actions.ts:13 | Enums/parameter properties violate erasable syntax; BufferSource and guards fail | Preserve values and runtime behavior with correct syntax/types | 2 |
+| F16 | P2 | client/src/components/Editor/TransactionFilter.test.ts:101 | 135 test diagnostics masked by transpilation | Repair test fixtures and signatures without suppressions | 2 |
+| F17 | P2 | client/vite.config.ts:7 | Vite config contains invalid duplicate test property | Use existing separate test config and check tool configs | 2 |
+
+### hygiene
+
+| ID | Severity | Location | Fact | Action | Tier |
+|---|---|---|---|---|---|
+| H01 | P2 | client/e2e/test-trigger-debug.spec.ts:83; test-manual-trigger-click.spec.ts:64; new-user-audit.spec.ts:22 | E2E overwrites tracked screenshot evidence | Direct future output to ignored test-results, retain referenced documentation assets, untrack only disposable outputs | 2 |
+| H02 | P2 | .gitignore:72 | server/coverage.json is not ignored | Add precise generated-report ignore | 1 |
+| H03 | P2 | scripts/ralph/ralph.sh:40,71 | Tracked .last-branch is overwritten at runtime | Untrack/ignore exact state file; retain local bytes | 1 |
+| H04 | P2 | LOCK_REFACTORING_TESTS_README.md:94,107 | Completed2025 migration still presents instructions to fail/implement | Archive intact with current guide pointer and repair links | 1 |
+| H05 | P2 | client/package.json:52;PR181 | plugin-react6 needs Vite8, isolated PR retains Vite7 and fails | Coordinated migration proposal | 3 |
+| H06 | P2 | client/eslint.config.js:30;PR176 | Hooks7 preset produces legacy plugins array and fails flat config | Migration proposal with actual preset validation | 3 |
+| H07 | P2 | server/tests/conftest.py:52;PR172 | Pytest9 removes old path hook argument, collection fails | Migration proposal with collection_path compatibility tests | 3 |
+
+### workflow
+
+See [C01–C05](runs/2026-09-29/reviews/workflow-audit.md). All P2/Tier1, consolidated with documentation to avoid duplicate repairs.
+
+All findings above are open at wave3. Closure and evidence will be appended after acceptance; historical sections remain unchanged.
