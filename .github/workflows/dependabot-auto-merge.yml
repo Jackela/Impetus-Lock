@@ -29,17 +29,18 @@ jobs:
   auto-merge:
     name: Auto-merge Dependabot PRs
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: github.actor == 'dependabot[bot]'
 
     steps:
       - name: Fetch Dependabot metadata
         id: dependabot-metadata
-        uses: dependabot/fetch-metadata@v3
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Wait for required checks
-        uses: lewagon/wait-on-check-action@v1.9.1
+        uses: lewagon/wait-on-check-action@369769072fe522a3a8a85c03c96af1e5242a1994 # v1.9.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           # v1.9.1 matches check_name against ONE exact name (no comma-splitting);
@@ -86,12 +87,13 @@ jobs:
   auto-merge-e2e:
     name: Auto-merge after E2E tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: github.actor == 'dependabot[bot]'
     needs: auto-merge
 
     steps:
       - name: Wait for E2E tests
-        uses: lewagon/wait-on-check-action@v1.9.1
+        uses: lewagon/wait-on-check-action@369769072fe522a3a8a85c03c96af1e5242a1994 # v1.9.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           check-name: "Playwright E2E Tests"

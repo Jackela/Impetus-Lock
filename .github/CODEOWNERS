@@ -1,16 +1,3 @@
-# Code Owners for Impetus-Lock
-
-# All files require review from owner
+# Request review from the repository owner.
+# Required approvals are configured separately in branch protection.
 * @Jackela
-
-# Backend code
-/server/ @Jackela
-
-# Frontend code  
-/client/ @Jackela
-
-# Documentation
-/docs/ @Jackela
-
-# CI/CD configuration
-/.github/ @Jackela

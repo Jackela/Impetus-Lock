@@ -1,3 +1,7 @@
+# Historical PR body: Style Learning
+
+This is an archived draft from the Style Learning sprint. Its test counts and completion claims describe that draft, not the current checkout.
+
 ## 🎯 Style Learning Enhancement Sprint
 
 ### Summary

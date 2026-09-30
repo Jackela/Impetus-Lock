@@ -2,8 +2,13 @@
 
 # Environment variables
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+!.env.*.sample
+!.env.*.template
 .envrc
 .python-version
 .tool-versions
@@ -26,6 +31,7 @@ Thumbs.db
 *.sln
 
 # AI tooling
+.zcode/plans/
 .claude/commands/
 .specify/
 .tools/
@@ -80,6 +86,7 @@ playwright-report/
 .playwright/
 test-results/act-e2e.log
 demo-artifacts/*.webm
+!demo-artifacts/impetus-lock-demo.webm
 demo-artifacts/*.mp4
 
 # Dev server pid files

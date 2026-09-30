@@ -10,6 +10,23 @@
 version: 2
 
 updates:
+  # Root contribution tools have their own package-lock.json.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 3
+    groups:
+      contribution-tools:
+        update-types: ["patch", "minor"]
+    labels: ["dependencies", "ci", "automated"]
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
   # ==========================================
   # Backend (Python/Poetry) - Production Critical
   # ==========================================
@@ -69,7 +86,7 @@ updates:
         update-types:
           - "patch"
 
-      # Dev tools: Auto-mergeable
+      # Dev tools: Group patch/minor updates
       dev-tools:
         patterns:
           - "ruff"
@@ -101,10 +118,9 @@ updates:
       - "automated"
 
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "chore"
       include: "scope"
 
-    # Never ignore security updates
     ignore:
       # Major versions: Manual review required
       - dependency-name: "fastapi"
@@ -172,7 +188,7 @@ updates:
           - "patch"
           - "minor"
 
-      # Dev dependencies (safe to auto-merge)
+      # Dev dependencies: Group patch/minor updates
       dev-dependencies:
         dependency-type: "development"
         update-types:
@@ -191,7 +207,7 @@ updates:
       - "automated"
 
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "chore"
       include: "scope"
 
     ignore:
@@ -230,14 +246,16 @@ updates:
       - "automated"
 
     commit-message:
-      prefix: "chore(ci)"
+      prefix: "chore"
       include: "scope"
 
   # ==========================================
   # Docker - Infrastructure
   # ==========================================
   - package-ecosystem: "docker"
-    directory: "/.github/workflows"
+    directories:
+      - "/client"
+      - "/server"
     schedule:
       interval: "monthly"
       day: "monday"
@@ -253,5 +271,5 @@ updates:
       - "automated"
 
     commit-message:
-      prefix: "chore(docker)"
+      prefix: "chore"
       include: "scope"

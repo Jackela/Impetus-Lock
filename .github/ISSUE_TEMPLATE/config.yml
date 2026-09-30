@@ -1,8 +1,5 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Questions
-    url: https://github.com/anthropics/impetus-lock/discussions/new
-    about: Please ask and answer questions in GitHub Discussions.
-  - name: Feature requests
-    url: https://github.com/anthropics/impetus-lock/issues/new?template=feature_request.md
-    about: Use the feature request template to propose a new feature.
+  - name: Security vulnerability
+    url: https://github.com/Jackela/Impetus-Lock/security/advisories/new
+    about: Report vulnerabilities privately. Do not include secrets in public issues.

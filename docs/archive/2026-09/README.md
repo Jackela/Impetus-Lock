@@ -7,3 +7,5 @@ For current test commands and validation guidance, see [TESTING.md](../../../TES
 ## Archived lock refactoring guide
 
 [LOCK_REFACTORING_TESTS_README.md](LOCK_REFACTORING_TESTS_README.md) is retained as historical guidance. It includes its own archive notice and links to the archived test suite summary and examples in this directory.
+
+- [Style Learning PR body](PR_BODY_STYLE_LEARNING_SNAPSHOT.md): archived one-off pull request draft, formerly `.github/PR_BODY_TEMP.md`.

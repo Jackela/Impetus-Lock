@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: ["main"]
@@ -24,6 +27,7 @@ jobs:
   lint:
     name: Lint (Backend + Frontend)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Debug information
         run: |
@@ -36,11 +40,14 @@ jobs:
           python3 --version || true
           node --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.ref }}
 
       # Backend lint
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
@@ -50,7 +57,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Cache Poetry dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/pypoetry
@@ -81,7 +88,7 @@ jobs:
 
       # Frontend lint
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.x"
           cache: "npm"
@@ -102,6 +109,7 @@ jobs:
   type-check:
     name: Type Check (Backend + Frontend)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Debug information
         run: |
@@ -110,11 +118,14 @@ jobs:
           python3 --version || true
           node --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.ref }}
 
       # Backend type check
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
@@ -124,7 +135,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Cache Poetry dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/pypoetry
@@ -143,7 +154,7 @@ jobs:
 
       # Frontend type check
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.x"
           cache: "npm"
@@ -192,10 +203,13 @@ jobs:
           python3 --version || true
           poetry --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.ref }}
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
           cache: "pip"
@@ -206,7 +220,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Cache Poetry dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: |
             ~/.cache/pypoetry
@@ -237,6 +251,7 @@ jobs:
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       TZ: UTC # Force UTC timezone for consistent date formatting in snapshots
     steps:
@@ -247,10 +262,13 @@ jobs:
           node --version || true
           npm --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.ref }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24.x"
           cache: "npm"
