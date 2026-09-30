@@ -1,7 +1,7 @@
 name: Dependabot Auto-Merge
 
 # Automatically merge Dependabot PRs that pass CI
-# Uses GitHub's built-in merge queue for safety
+# Uses auto-merge subject to the repository's required checks and branch protection
 #
 # pull_request_target (not pull_request): workflows triggered by
 # dependabot[bot] pull requests receive a restricted read-only GITHUB_TOKEN

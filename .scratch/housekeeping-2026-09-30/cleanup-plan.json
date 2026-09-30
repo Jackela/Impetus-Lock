@@ -1,0 +1,70 @@
+{
+  "base": "c9e8af8",
+  "original_main": "31b0e3f",
+  "archive_worktrees": [
+    "/Users/jackela/.codex/worktrees/impetus-audit-server/Impetus-Lock",
+    "/Users/jackela/.codex/worktrees/impetus-audit-docs/Impetus-Lock",
+    "/Users/jackela/.codex/worktrees/impetus-audit-client/Impetus-Lock",
+    "/Users/jackela/.codex/worktrees/impetus-audit-2026-09-29/Impetus-Lock"
+  ],
+  "delete_branches_after_main_integration": [
+    "codex/audit-2026-09-29",
+    "codex/audit-2026-09-29-d-a",
+    "codex/audit-2026-09-29-d-b",
+    "codex/audit-2026-09-29-d-c",
+    "codex/audit-2026-09-29-docs-final",
+    "codex/audit-2026-09-29-docs-review",
+    "codex/audit-2026-09-29-p01",
+    "codex/audit-2026-09-29-p02",
+    "codex/audit-2026-09-29-r01",
+    "codex/audit-2026-09-29-r02",
+    "codex/audit-2026-09-29-r03",
+    "codex/audit-2026-09-29-r04",
+    "codex/audit-2026-09-29-r05",
+    "codex/audit-2026-09-29-r06",
+    "codex/audit-2026-09-29-r07",
+    "codex/audit-2026-09-29-r08",
+    "codex/audit-2026-09-29-r09",
+    "codex/audit-2026-09-29-r10",
+    "codex/audit-2026-09-29-r11",
+    "codex/audit-2026-09-29-r12",
+    "codex/audit-2026-09-29-r12-review",
+    "codex/audit-2026-09-29-r13",
+    "codex/audit-2026-09-29-r13-restart",
+    "codex/audit-2026-09-29-r13-review",
+    "codex/audit-2026-09-29-r13-version",
+    "codex/audit-2026-09-29-r14",
+    "codex/audit-2026-09-29-r15",
+    "codex/audit-2026-09-29-r16",
+    "codex/audit-2026-09-29-r17",
+    "codex/audit-2026-09-29-r18",
+    "codex/audit-2026-09-29-r19",
+    "codex/audit-2026-09-29-r20",
+    "codex/audit-2026-09-29-r21",
+    "codex/audit-2026-09-29-r22",
+    "codex/housekeeping-2026-09-30",
+    "codex/housekeeping-2026-09-30-docs"
+  ],
+  "keep_branches": [
+    "integration/audit-followup-round3c",
+    "main",
+    "ticket/round3c-client-hygiene",
+    "ticket/round3c-model-defaults"
+  ],
+  "preserve": [
+    "original .zcode plans",
+    "local database and environment files",
+    "all audit logs and evidence",
+    "published demo media",
+    "3 unmerged round3c worktrees and branches"
+  ],
+  "preconditions": [
+    "independent review passes",
+    "local gates pass",
+    "main fast-forward succeeds",
+    "recovery bundle verified and current refs included",
+    "ignored files restored and checksummed in main or external recovery archive",
+    "no running process relies on archived worktrees",
+    "main dependencies operate without archived paths"
+  ]
+}

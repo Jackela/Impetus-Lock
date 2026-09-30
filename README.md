@@ -85,9 +85,11 @@ cd server
 poetry run ruff check .
 poetry run ruff format --check .
 poetry run lint-imports
+poetry run pydocstyle server/
 poetry run mypy . --no-site-packages --ignore-missing-imports
 poetry run pytest tests/ -n auto --cov=server --cov-report=term
 poetry run coverage report --rcfile=coverage-critical.ini
+poetry run python check_critical_coverage.py
 
 cd ../client
 npm ci

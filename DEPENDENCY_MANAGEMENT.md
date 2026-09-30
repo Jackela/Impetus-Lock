@@ -1,6 +1,6 @@
 # 依赖管理
 
-依赖声明和锁文件共同决定可安装版本：`server/poetry.lock` 与 `client/package-lock.json` 固定解析结果。更新依赖时检查清单、锁文件及受影响的镜像或工作流，并根据变更范围运行相应验证。
+依赖声明和锁文件共同决定可安装版本：根目录 `package-lock.json`、`server/poetry.lock` 与 `client/package-lock.json` 固定解析结果。更新依赖时检查清单、锁文件及受影响的镜像或工作流，并根据变更范围运行相应验证。
 
 ## Dependabot
 
@@ -9,7 +9,7 @@
 - Python：`/server`，每周一。
 - npm：`/` 与 `/client`，分别维护根工具依赖和前端依赖；具体目录按仓库配置。
 - GitHub Actions：`/`，每月。
-- Docker：`/.github/workflows`、`/server` 和 `/client`，每月检查工作流及服务/前端容器声明的镜像。
+- Docker：`/server` 和 `/client`，每月检查 Dockerfile 中的镜像；工作流里的 Actions 和容器引用由 GitHub Actions 生态扫描。
 
 检查 `dependabot.yml` 以获取准确的时区、时间、分组、标签和 PR 上限；不要在本文另行维护一份可能过期的副本。
 
