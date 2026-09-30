@@ -1,0 +1,50 @@
+[
+  {
+    "headRefName": "dependabot/npm_and_yarn/client/vite-8.3.1",
+    "number": 190,
+    "title": "chore(deps)(deps-dev): bump vite from 7.3.6 to 8.3.1 in /client",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/190"
+  },
+  {
+    "headRefName": "dependabot/npm_and_yarn/client/types/node-26.6.3",
+    "number": 189,
+    "title": "chore(deps)(deps-dev): bump @types/node from 25.9.7 to 26.6.3 in /client",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/189"
+  },
+  {
+    "headRefName": "dependabot/pip/server/redis-8.1.0",
+    "number": 185,
+    "title": "chore(deps)(deps): bump redis from 7.4.1 to 8.1.0 in /server",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/185"
+  },
+  {
+    "headRefName": "dependabot/npm_and_yarn/client/vitejs/plugin-react-6.1.1",
+    "number": 181,
+    "title": "chore(deps)(deps-dev): bump @vitejs/plugin-react from 5.2.0 to 6.1.1 in /client",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/181"
+  },
+  {
+    "headRefName": "dependabot/npm_and_yarn/client/eslint-10.11.0",
+    "number": 180,
+    "title": "chore(deps)(deps-dev): bump eslint from 9.39.5 to 10.11.0 in /client",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/180"
+  },
+  {
+    "headRefName": "dependabot/npm_and_yarn/client/lint-staged-17.5.1",
+    "number": 177,
+    "title": "chore(deps)(deps-dev): bump lint-staged from 16.4.0 to 17.5.1 in /client",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/177"
+  },
+  {
+    "headRefName": "dependabot/npm_and_yarn/client/eslint-plugin-react-hooks-7.1.1",
+    "number": 176,
+    "title": "chore(deps)(deps-dev): bump eslint-plugin-react-hooks from 5.2.0 to 7.1.1 in /client",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/176"
+  },
+  {
+    "headRefName": "dependabot/pip/server/pytest-9.1.1",
+    "number": 172,
+    "title": "chore(deps)(deps-dev): bump pytest from 8.4.2 to 9.1.1 in /server",
+    "url": "https://github.com/Jackela/Impetus-Lock/pull/172"
+  }
+]

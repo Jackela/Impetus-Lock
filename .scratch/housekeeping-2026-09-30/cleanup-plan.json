@@ -4,8 +4,8 @@
   "archive_worktrees": [
     "/Users/jackela/.codex/worktrees/impetus-audit-server/Impetus-Lock",
     "/Users/jackela/.codex/worktrees/impetus-audit-docs/Impetus-Lock",
-    "/Users/jackela/.codex/worktrees/impetus-audit-client/Impetus-Lock",
-    "/Users/jackela/.codex/worktrees/impetus-audit-2026-09-29/Impetus-Lock"
+    "/Users/jackela/.codex/worktrees/impetus-audit-2026-09-29/Impetus-Lock",
+    "/Users/jackela/.codex/worktrees/impetus-audit-client/Impetus-Lock"
   ],
   "delete_branches_after_main_integration": [
     "codex/audit-2026-09-29",

@@ -1,0 +1,137 @@
+{
+  "code_and_config_commit": "ce38e27",
+  "server": [
+    {
+      "command": ["poetry", "run", "ruff", "check", "."],
+      "exit_code": 0,
+      "seconds": 0.5,
+      "log": "server-01.log"
+    },
+    {
+      "command": ["poetry", "run", "ruff", "format", "--check", "."],
+      "exit_code": 0,
+      "seconds": 0.3,
+      "log": "server-02.log"
+    },
+    {
+      "command": ["poetry", "run", "lint-imports"],
+      "exit_code": 0,
+      "seconds": 0.51,
+      "log": "server-03.log"
+    },
+    {
+      "command": [
+        "poetry",
+        "run",
+        "mypy",
+        ".",
+        "--no-site-packages",
+        "--ignore-missing-imports"
+      ],
+      "exit_code": 0,
+      "seconds": 0.51,
+      "log": "server-04.log"
+    },
+    {
+      "command": ["poetry", "run", "pydocstyle", "server/"],
+      "exit_code": 0,
+      "seconds": 0.88,
+      "log": "server-05.log"
+    },
+    {
+      "command": [
+        "poetry",
+        "run",
+        "pytest",
+        "tests/",
+        "-n",
+        "auto",
+        "-k",
+        "not RedisIntegration and not redis_pubsub",
+        "--cov=server",
+        "--cov-report=term"
+      ],
+      "exit_code": 0,
+      "seconds": 14.95,
+      "log": "server-06-restored.log"
+    },
+    {
+      "command": ["poetry", "run", "python", "check_critical_coverage.py"],
+      "exit_code": 0,
+      "seconds": 0.57,
+      "log": "server-07-critical.log"
+    }
+  ],
+  "client": [
+    {
+      "command": ["npm", "run", "lint"],
+      "exit_code": 0,
+      "seconds": 1.84,
+      "log": "client-01.log"
+    },
+    {
+      "command": ["npm", "run", "format"],
+      "exit_code": 0,
+      "seconds": 3.86,
+      "log": "client-02.log"
+    },
+    {
+      "command": ["npm", "run", "type-check"],
+      "exit_code": 0,
+      "seconds": 8.86,
+      "log": "client-03.log"
+    },
+    {
+      "command": ["npm", "run", "test", "--", "--coverage"],
+      "exit_code": 0,
+      "seconds": 9.86,
+      "log": "client-04.log"
+    },
+    {
+      "command": ["npm", "run", "build"],
+      "exit_code": 0,
+      "seconds": 3.3,
+      "log": "client-05.log"
+    },
+    {
+      "command": ["npm", "run", "api:check"],
+      "exit_code": 0,
+      "seconds": 1.54,
+      "log": "client-06.log"
+    }
+  ],
+  "config": {
+    "workflow_files": 7,
+    "dependabot_directories": [
+      ["docker", "/client"],
+      ["docker", "/server"],
+      ["github-actions", "/"],
+      ["npm", "/"],
+      ["npm", "/client"],
+      ["pip", "/server"]
+    ],
+    "relative_links_valid": 78,
+    "tracked_ignored_files": 0,
+    "product_code_unchanged_since_audit": true
+  },
+  "ignore_cases": 13,
+  "actionlint_version": "1.7.12",
+  "actionlint_result": "pass (workflow syntax and expressions; shellcheck/pyflakes not installed)",
+  "openspec": "0.23.0; 23 passed, 0 failed",
+  "main_environment": "fresh npm ci, effective type-check and production build passed; Poetry Python3.12 environment retained",
+  "initial_backend_failure": "25 PostgreSQL fixture setup errors while Colima was stopped; restored existing container, reran tests and coverage successfully",
+  "browser_e2e": "not run",
+  "remote_ci": "not run",
+  "deployment": "not run",
+  "final_closeout": {
+    "relative_markdown_links": 89,
+    "remote_heads_unchanged": true,
+    "open_prs_unchanged": 8,
+    "tracked_ignored_files": 0,
+    "instructions_specs_product_code_unchanged_since_audit": true,
+    "original_local_files_checksums_preserved": 26,
+    "main_branch": "main",
+    "branch_count": 4,
+    "worktree_count": 4
+  }
+}

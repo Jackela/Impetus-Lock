@@ -42,6 +42,8 @@
 
 ## Historical reports
 
+- [2026-09-30 仓库配置与清理报告](../.scratch/housekeeping-2026-09-30/report.md)：本地 main 收口、GitHub 设置、分支清理、恢复路径和剩余告警。
+
 - [2026-09-29 审查与修复报告](../.scratch/audit-2026-09/runs/2026-09-29/report.md)：本地验收范围、结果、未完成提案和验证边界。
 - [2026-09-14 本地审计报告](../.scratch/audit-2026-09/report.md)：此前审计记录。
 - [2026-09 历史归档索引](archive/2026-09/README.md)：归档报告及其状态说明。

@@ -1,0 +1,21 @@
+{
+  "archived_worktree_count": 4,
+  "archived_worktrees": [
+    "/Users/jackela/.codex/worktrees/impetus-audit-server/Impetus-Lock",
+    "/Users/jackela/.codex/worktrees/impetus-audit-docs/Impetus-Lock",
+    "/Users/jackela/.codex/worktrees/impetus-audit-2026-09-29/Impetus-Lock",
+    "/Users/jackela/.codex/worktrees/impetus-audit-client/Impetus-Lock"
+  ],
+  "deleted_branch_count": 36,
+  "remaining_branches": [
+    "integration/audit-followup-round3c",
+    "main",
+    "ticket/round3c-client-hygiene",
+    "ticket/round3c-model-defaults"
+  ],
+  "remaining_worktrees": "worktree /Users/jackela/Documents/GitHub/Impetus-Lock\nHEAD ce38e27bbcd871274193bdf1cfef55dcc76f4e99\nbranch refs/heads/main\n\nworktree /Users/jackela/Documents/GitHub/impetus-worktrees/round3c-integration\nHEAD f7eabafcd1bd0eb50bb802c1077bb6baf1b8526e\nbranch refs/heads/integration/audit-followup-round3c\n\nworktree /Users/jackela/Documents/GitHub/impetus-worktrees/round3c-t1-model\nHEAD 24736caf9fd247c0e1bd6e451badb9563fee3b3d\nbranch refs/heads/ticket/round3c-model-defaults\n\nworktree /Users/jackela/Documents/GitHub/impetus-worktrees/round3c-t2-hygiene\nHEAD 154b2117d16a964e3879d924343bc560155b3b20\nbranch refs/heads/ticket/round3c-client-hygiene\n\n",
+  "stale_remote_tracking_refs": 0,
+  "recovery_bundle_verified": true,
+  "original_environment_and_plans_preserved": true,
+  "ignored_evidence_restored_to_main": 689
+}
