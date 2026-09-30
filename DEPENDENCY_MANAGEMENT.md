@@ -1,205 +1,26 @@
-# Dependency Management Strategy
+# 依赖管理
 
-**Project:** Impetus Lock (5-Day MVP Sprint)  
-**Philosophy:** Automated updates with CI validation
+依赖声明和锁文件共同决定可安装版本：`server/poetry.lock` 与 `client/package-lock.json` 固定解析结果。更新依赖时检查清单、锁文件及受影响的镜像或工作流，并根据变更范围运行相应验证。
 
----
+## Dependabot
 
-## 📦 Version Management Strategy
+[`.github/dependabot.yml`](.github/dependabot.yml) 是更新时间、分组、忽略规则和 PR 上限的权威配置。当前覆盖：
 
-### Manifests Define Ranges; Lock Files Pin Resolutions
+- Python：`/server`，每周一。
+- npm：`/` 与 `/client`，分别维护根工具依赖和前端依赖；具体目录按仓库配置。
+- GitHub Actions：`/`，每月。
+- Docker：`/.github/workflows`、`/server` 和 `/client`，每月检查工作流及服务/前端容器声明的镜像。
 
-**Rationale:**
-- Manifest constraints are mixed: caret and tilde ranges, bounded ranges, and exact pins.
-- Allowed updates do not auto-apply to a locked install; review and commit the resolved lock-file changes.
-- ✅ **package-lock.json ensures reproducibility** (exact versions locked)
-- ✅ **Less manual maintenance** for MVP sprint
-- ✅ **Dependabot manages updates via PR** (not automatic merges)
+检查 `dependabot.yml` 以获取准确的时区、时间、分组、标签和 PR 上限；不要在本文另行维护一份可能过期的副本。
 
-**Example:**
-```json
-{
-  "@playwright/test": "^1.56.1"  // Illustrative: allows >=1.56.1 <2.0.0, including 1.57.0
-}
-```
+## 自动合并边界
 
-**When NOT to use `^`:**
-- Libraries published to npm (use exact versions for peer deps)
-- Known breaking changes in patch versions
-- Regulatory compliance requiring change control
+`.github/workflows/dependabot-auto-merge.yml` 在 Dependabot PR 打开或更新时等待配置的 CI 检查。对 patch 和 minor 更新，工作流会尝试启用 GitHub 自动合并；GitHub 仅在仓库保护规则要求的检查满足后执行合并。major 更新不启用自动合并，工作流会提示人工审查。配置尝试启用自动合并不表示 PR 已合并，也不替代对依赖影响的审查。
 
----
+## 更新审查
 
-## 🤖 Dependabot Configuration
-
-**File:** `.github/dependabot.yml`
-
-### Update Schedule
-- **Backend:** Weekly Monday, 09:00 Asia/Shanghai; limit 5 open PRs.
-- **Frontend:** Weekly Tuesday, 09:00 Asia/Shanghai; limit 8 open PRs.
-- **Actions and Docker:** Monthly, 09:00 Asia/Shanghai; limits 3 and 2 respectively.
-- The checked-in [Dependabot configuration](.github/dependabot.yml) is authoritative for schedules, grouping and ignore rules.
-
-### Ecosystems Monitored
-1. **Python/Poetry** (`/server`) - Backend dependencies
-2. **npm** (`/client`) - Frontend dependencies
-3. **GitHub Actions** (`/`) - CI/CD workflows
-4. **Docker** (`/.github/workflows`) - Playwright container images
-
-### PR Behavior
-- **Auto-created:** According to each ecosystem schedule above
-- **Auto-merged:** No (requires CI pass + manual review)
-- **Labels:** `dependencies`, `backend`/`frontend`/`ci`/`docker`
-
----
-
-## 🔒 Critical Dependencies
-
-### Playwright Version Lock
-
-**Requirement:** The Playwright container image must match the resolved test package version; check the manifest, lock file and image together.
-
-**Solution:**
-```yaml
-# .github/workflows/e2e.yml
-container:
-  image: mcr.microsoft.com/playwright:v1.63.0-noble  # Current checked-in image
-
-# Also compare the image tag with the resolved @playwright/test version
-```
-
-**Review together:**
-- npm package/lock updates and the workflow image are separate files; do not assume an npm PR updates the image.
-- The current E2E workflow compares its declared package version with the installed Playwright CLI version. That check alone does not inspect the container image tag.
-- Validate the matched package/image combination with E2E before merging an update.
-
----
-
-## 🚦 Update Workflow
-
-### 1. Dependabot Creates PR
-```
-chore(deps): bump @playwright/test from 1.56.1 to 1.56.2
-```
-
-### 2. GitHub Actions Validates
-- ✅ Lint (Ruff, ESLint)
-- ✅ Type-check (mypy, tsc)
-- ✅ Unit tests (pytest, Vitest)
-- Playwright runs in the separate E2E workflow; record its actual result rather than inferring it from unit checks.
-
-### 3. Manual Review (Quick Check)
-- Review changelog (auto-linked by Dependabot)
-- Check for breaking changes
-- Review applicable migration notes and actual checks before deciding to merge. A major dependency migration needs an approved OpenSpec proposal.
-
----
-
-## 🛡️ Security Updates
-
-### Automatic Alerts
-When repository security updates are enabled, Dependabot can create PRs for:
-- Known CVEs in dependencies
-- Security advisories from GitHub
-
-### Response Protocol
-1. **Critical vulnerabilities:** Review + merge within 24h
-2. **Medium vulnerabilities:** Review + merge within 1 week
-3. **Low vulnerabilities:** Batch with weekly updates
-
----
-
-## 📊 Ignored Updates (During MVP)
-
-### Major Version Bumps (Temporary)
-```yaml
-ignore:
-  - dependency-name: "react"
-    update-types: ["version-update:semver-major"]
-  - dependency-name: "react-dom"
-    update-types: ["version-update:semver-major"]
-```
-
-**Reason:** Focus on MVP delivery, defer major upgrades to post-launch.
-
-**After MVP:** Remove ignore rules, evaluate major updates quarterly.
-
----
-
-## 🔍 Local Dependency Audits
-
-### Security Scanning
-```bash
-# Backend
-cd server
-# Poetry has no built-in audit command; use advisories or a separately installed Python auditor.
-
-# Frontend
-cd client
-npm audit
-# Review the advisory and proposed dependency/lock changes before applying a fix.
-```
-
-### Outdated Dependencies
-```bash
-# Backend
-poetry show --outdated
-
-# Frontend
-npm outdated
-```
-
----
-
-## 🏗️ Adding New Dependencies
-
-### Backend (Poetry)
-```bash
-cd server
-poetry add <package>          # Production dependency
-poetry add --group dev <pkg>  # Dev dependency
-poetry lock                  # Refresh lock metadata with the current Poetry CLI
-```
-
-### Frontend (npm)
-```bash
-cd client
-npm install <package>         # Production dependency
-npm install -D <package>      # Dev dependency
-```
-
-### Constitutional Check (Article I: Simplicity)
-Before adding a new dependency, ask:
-1. Is the package necessary for the accepted task?
-2. Can framework-native capabilities or an existing dependency solve it simply?
-3. Is it maintained and appropriate for the project?
-
-Prefer framework-native capabilities; explain any new dependency and validate its manifest and lock-file changes. Feature priority and constitutional requirements remain governed by CLAUDE.md.
-
----
-
-## 🎯 Post-MVP Enhancements
-
-### Historical Post-Sprint Suggestions (not approved or enabled)
-1. Review all `^` ranges → Consider stricter `~` for stability
-2. Remove React major version ignore rule
-3. Enable Dependabot auto-merge for patch updates
-4. Add Snyk or Dependabot security scanning dashboard
-
-### Quarterly Reviews
-- Evaluate major version updates (React, FastAPI, etc.)
-- Remove unused dependencies
-- Consolidate duplicate functionality
-
----
-
-## 📚 References
-
-- [Dependabot Docs](https://docs.github.com/en/code-security/dependabot)
-- [Semver Specification](https://semver.org/)
-- [npm Dependency Hell Guide](https://npm.github.io/how-npm-works-docs/)
-- [Poetry Dependency Management](https://python-poetry.org/docs/dependency-specification/)
-
----
-
-**Configuration checked:** 2026-09-29. Current manifests, lock files and `.github/dependabot.yml` own the effective values; this guide does not approve upgrades or remote actions.
+- 阅读上游变更记录，确认破坏性改动、弃用项和迁移要求。
+- 核对锁文件变化，并检查相关构建、类型检查、测试及运行时镜像是否需要同步。
+- Playwright 包版本和容器镜像标签要一起核对；E2E 工作流中的版本比较不能单独证明镜像标签匹配。更新后运行适用的浏览器 E2E 检查。
+- 重大版本迁移按 [OpenSpec 指南](openspec/AGENTS.md) 提案并获批后实施。
+- 安全更新按漏洞影响、可利用条件和受影响范围评估优先级，并及时记录处置；本文不承诺固定修复时限。

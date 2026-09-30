@@ -99,21 +99,13 @@ npm run test -- --coverage
 
 提交前保持测试与实现同步，并通过 GitHub Actions 的 lint、类型检查和测试任务。`act` 本地 CI 流程见[开发指南](DEVELOPMENT.md)。
 
-2026-09-14 的本地审计结果如下；该记录未运行 Playwright E2E，也不代表远端 CI 或发布状态。
-
-| 范围                                                    | 结果                                                         |
-| ------------------------------------------------------- | ------------------------------------------------------------ |
-| 后端测试                                                | 479 passed, 4 skipped；固定关键路径集合的聚合行覆盖率 82.19% |
-| 前端测试                                                | 545 passed, 4 skipped；固定关键路径集合的聚合行覆盖率 81.73% |
-| Ruff、import-linter、mypy、ESLint、Prettier、TypeScript | PASS                                                         |
-| OpenSpec 严格校验                                       | 19 passed, 0 failed；3 份 Tier 3 草稿待审批                  |
-
-完整证据见 [2026-09-14 本地审计报告](.scratch/audit-2026-09/report.md)。
+2026-09-29 本地审查与修复快照：确认的 Tier 1/2 问题（包括 P2）已修复并通过本地门禁；6 份 Tier 3 提案仍待审批。后端测试 736 项通过、6 项跳过；前端 Vitest 707 项通过、4 项跳过；OpenSpec 严格校验 23 项通过。关键路径按逐文件门槛检查，16 个后端文件和 6 个前端文件均达到 80%。后端整体覆盖率为 79.42%，不属于该逐文件门槛。此次未运行 Playwright 浏览器 E2E、真实付费模型或远端 GitHub Actions；本地验收不代表远端 CI 已通过或项目已发布。详见[2026-09-29 本地审查与修复报告](.scratch/audit-2026-09/runs/2026-09-29/report.md)。此前 [2026-09-14 本地审计报告](.scratch/audit-2026-09/report.md)保留为历史记录。
 
 ## 文档导航
 
 - [开发指南](DEVELOPMENT.md)：开发流程、测试策略和 CI 说明。
 - [文档索引](docs/INDEX.md)：当前指南、报告、组件文档和历史归档。
+- [贡献指南](CONTRIBUTING.md) 与 [安全问题报告](SECURITY.md)：提交改进和私密报告安全问题。
 - [部署指南](docs/guides/deployment.md)：部署配置与运行方式。
 - [故障排查](docs/guides/troubleshooting.md)：常见开发问题。
 - [客户端说明](client/README.md) 与 [服务端说明](server/README.md)：分层实现和组件细节。

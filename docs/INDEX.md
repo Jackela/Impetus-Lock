@@ -1,119 +1,51 @@
 # Documentation Index
 
-**Last Updated**: 2025-11-07
+**Last Updated**: 2026-09-30
 
-This directory contains active guides and archived process documents, reports, and session summaries for the Impetus Lock project.
+本索引区分当前使用指南与历史记录。当前项目状态请以根目录 README 和对应的最新报告为准；归档材料保留当时记录，不代表当前状态。
 
-## Directory Structure
+## Start here
 
-```
-docs/
-├── INDEX.md (this file)
-├── archive/2026-09/ # Root historical reports and session records
-├── process/          # Feature implementation process documents
-├── reports/          # Validation, review, and analysis reports
-└── sessions/         # Session summaries and status updates
-```
+- [项目说明与当前审查快照](../README.md)
+- [贡献指南](../CONTRIBUTING.md)
+- [安全问题报告](../SECURITY.md)
+- [开发指南](../DEVELOPMENT.md)
+- [测试指南](../TESTING.md)
+- [OpenSpec 提案与实施约定](../openspec/AGENTS.md)
+- [依赖管理](../DEPENDENCY_MANAGEMENT.md)
+- [GitHub Actions 故障定位](../.github/AI_PR_WORKFLOW.md)
+- [GitHub Issues 使用约定](agents/issue-tracker.md)
 
-## Process Documents (process/)
+## Active guides
 
-Implementation tracking and phase completion documents:
+- [部署指南](guides/deployment.md)：部署配置与运行方式。
+- [故障排查](guides/troubleshooting.md)：常见开发和部署问题。
+- [客户端说明](../client/README.md) 与 [服务端说明](../server/README.md)：组件和实现说明。
+- [API 合约](../API_CONTRACT.md)、[架构约束](../ARCHITECTURE_GUARDS.md)：接口和分层约定。
+- [功能规格索引](../specs/README.md)：遗留规格；当前 OpenSpec 规格与提案以 `openspec/` 为准。
 
-- **checkpoint.md** - Latest implementation checkpoint (Phase 5)
-- **PHASE_4_COMPLETE.md** - Phase 4 (Sensory Feedback) completion summary
-- **PHASE_5_INTEGRATION_COMPLETE.md** - Phase 5 (Integration & Polish) completion summary
-- **US2_IMPLEMENTATION_COMPLETE.md** - User Story 2 implementation complete
-- **US2_PROGRESS_SUMMARY.md** - User Story 2 progress tracking
+## Process records
 
-## Validation Reports (reports/)
+- [实施检查点](process/checkpoint.md)
+- [第 4 阶段完成记录](process/PHASE_4_COMPLETE.md)
+- [第 5 阶段集成记录](process/PHASE_5_INTEGRATION_COMPLETE.md)
+- [US2 实施记录](process/US2_IMPLEMENTATION_COMPLETE.md) 与 [进度摘要](process/US2_PROGRESS_SUMMARY.md)
+- [QA 隐私检查表](process/qa-privacy-checklist.md)
+- [组件目录](components/catalog.md)
 
-CI/CD validation and code quality reports:
+## Reports and sessions
 
-- **ACT_CLI_VALIDATION_REPORT.md** - Act CLI local CI validation results
-- **ACT_VS_GITHUB_ACTIONS_COMPARISON.md** - Comparison between Act and GitHub Actions
-- **GITHUB_ACTIONS_ANALYSIS.md** - GitHub Actions workflow analysis
-- **COMPREHENSIVE_REVIEW_REPORT.md** - Comprehensive code review and quality analysis
-- **P0_CRITICAL_FIXES_SUMMARY.md** - Critical fixes summary (P0 priority)
+`reports/` 与 `sessions/` 保存带日期的审查、验证和过程记录。请按各文件记录的时间理解其结果，不把历史状态当作当前状态。
 
-## Session Summaries (sessions/)
+- 验证与审查：[Act 本地验证](reports/ACT_CLI_VALIDATION_REPORT.md)、[Act 与 GitHub Actions 对照](reports/ACT_VS_GITHUB_ACTIONS_COMPARISON.md)、[GitHub Actions 分析](reports/GITHUB_ACTIONS_ANALYSIS.md)、[综合审查](reports/COMPREHENSIVE_REVIEW_REPORT.md)、[P0 修复摘要](reports/P0_CRITICAL_FIXES_SUMMARY.md)。
+- 会话与状态：[项目状态报告](sessions/PROJECT_STATUS_REPORT.md)、[实施状态](sessions/IMPLEMENTATION_STATUS.md)、[完成摘要](sessions/COMPLETION_SUMMARY.md)、[最终会话摘要](sessions/FINAL_SESSION_SUMMARY.md)、[实施完成摘要](sessions/IMPLEMENTATION_COMPLETE_SUMMARY.md)、[会话续接摘要](sessions/SESSION_CONTINUATION_SUMMARY.md)。
 
-Historical session progress and completion summaries:
+## Historical reports
 
-- **COMPLETION_SUMMARY.md** - Overall feature completion summary
-- **FINAL_SESSION_SUMMARY.md** - Final implementation session summary
-- **IMPLEMENTATION_COMPLETE_SUMMARY.md** - Implementation completion details
-- **IMPLEMENTATION_STATUS.md** - Implementation status tracking
-- **SESSION_CONTINUATION_SUMMARY.md** - Session continuation context
-- **PROJECT_STATUS_REPORT.md** - Project-wide status report
-
-## Root Documentation (../)
-
-Core project documentation remains in the root directory:
-
-- **README.md** - Project overview and quickstart
-- **CLAUDE.md** - Claude Code configuration and guidelines
-- **DEVELOPMENT.md** - Development workflow and guidelines
-- **TESTING.md** - Testing strategy and commands
-- **API_CONTRACT.md** - API endpoint specifications
-- **ARCHITECTURE_GUARDS.md** - Architecture enforcement rules
-- **[DEPENDENCY_MANAGEMENT.md](../DEPENDENCY_MANAGEMENT.md)** - Dependency constraints, lock files, and update schedule
-
-Historical root reports and dated implementation guides are in [archive/2026-09/](archive/2026-09/); see its [archive guide](archive/2026-09/README.md) for status context.
-
-## Historical Root Reports (archive/2026-09/)
-
-The following reports retain their original facts and status as dated process records:
-
-- [AI_INTEGRATION_STATUS.md](archive/2026-09/AI_INTEGRATION_STATUS.md) - AI integration status
-- [ARCHITECTURE_SAFETY_NET_STATUS.md](archive/2026-09/ARCHITECTURE_SAFETY_NET_STATUS.md) - Architecture safety net status
-- [E2E_FIX_SUMMARY.md](archive/2026-09/E2E_FIX_SUMMARY.md) - E2E debugging and fix summary
-- [E2E_STABILITY_FIX.md](archive/2026-09/E2E_STABILITY_FIX.md) - E2E stability fix plan
-- [E2E_TEST_STATUS.md](archive/2026-09/E2E_TEST_STATUS.md) - E2E execution status
-- [FIX_PLAN.md](archive/2026-09/FIX_PLAN.md) - CI fix plan
-- [READY_FOR_TESTING.md](archive/2026-09/READY_FOR_TESTING.md) - Historical testing readiness record
-- [RESEARCH_FINDINGS.md](archive/2026-09/RESEARCH_FINDINGS.md) - CI and Poetry research findings
-- [SESSION_SUMMARY.md](archive/2026-09/SESSION_SUMMARY.md) - Historical session summary
-- [TEST_SUITE_EXAMPLES.md](archive/2026-09/TEST_SUITE_EXAMPLES.md) - Lock storage test examples
-- [TEST_SUITE_SUMMARY.md](archive/2026-09/TEST_SUITE_SUMMARY.md) - Lock storage test suite summary
-- [LOCK_REFACTORING_TESTS_README.md](archive/2026-09/LOCK_REFACTORING_TESTS_README.md) - Historical lock storage refactoring test package guide
-
-## Component Documentation (components/)
-
-UI component reference and usage documentation:
-
-- **catalog.md** - Complete component catalog with props, examples, and accessibility notes
-
-## Developer Guides (guides/)
-
-Developer-facing guides for common workflows:
-
-- **troubleshooting.md** - Common issues and solutions for development and deployment
-- **deployment.md** - Production deployment instructions with Docker and environment setup
-
-## Feature Specifications (../specs/)
-
-Feature planning and task breakdown:
-
-- **specs/001-impetus-core/** - Core un-deletable lock system (P1)
-- **specs/002-vibe-enhancements/** - Vibe enhancements (manual trigger + sensory feedback)
-
-## Asset Organization
-
-Audio assets have been moved to their correct location:
-
-- **client/src/assets/audio/** - Audio files for sensory feedback
-  - ✅ clank.mp3 (28.8 KB) - Provoke action sound
-  - ✅ whoosh.mp3 (18.4 KB) - Delete action sound
-  - ✅ bonk.mp3 - REJECT/lock block action sound
-
-## Archive Purpose
-
-These documents have been archived to keep the root directory clean and focused on active development documentation. They provide historical context and detailed tracking of the implementation process.
-
-## Navigation Tips
-
-- **For current status**: See root-level README.md, DEVELOPMENT.md, and TESTING.md
-- **For implementation details**: Check process/ subdirectory
-- **For validation results**: Check reports/ subdirectory
-- **For historical context**: Check sessions/ subdirectory
-- **For feature specs**: See ../specs/ directory
+- [2026-09-29 审查与修复报告](../.scratch/audit-2026-09/runs/2026-09-29/report.md)：本地验收范围、结果、未完成提案和验证边界。
+- [2026-09-14 本地审计报告](../.scratch/audit-2026-09/report.md)：此前审计记录。
+- [2026-09 历史归档索引](archive/2026-09/README.md)：归档报告及其状态说明。
+- [AI 集成状态](archive/2026-09/AI_INTEGRATION_STATUS.md)、[架构安全网状态](archive/2026-09/ARCHITECTURE_SAFETY_NET_STATUS.md)。
+- [E2E 修复摘要](archive/2026-09/E2E_FIX_SUMMARY.md)、[E2E 稳定性记录](archive/2026-09/E2E_STABILITY_FIX.md)、[E2E 测试状态](archive/2026-09/E2E_TEST_STATUS.md)、[2026-03-17 E2E 快照](archive/2026-09/README_E2E_SNAPSHOT_2026-03-17.md)。
+- [CI 修复计划](archive/2026-09/FIX_PLAN.md)、[测试准备记录](archive/2026-09/READY_FOR_TESTING.md)、[研究发现](archive/2026-09/RESEARCH_FINDINGS.md)。
+- [测试套件示例](archive/2026-09/TEST_SUITE_EXAMPLES.md)、[测试套件摘要](archive/2026-09/TEST_SUITE_SUMMARY.md)、[锁重构测试说明](archive/2026-09/LOCK_REFACTORING_TESTS_README.md)、[会话摘要](archive/2026-09/SESSION_SUMMARY.md)。

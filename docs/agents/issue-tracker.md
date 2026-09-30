@@ -53,3 +53,7 @@ For the September 2026 audit, tickets and evidence are limited to `.scratch/audi
 ### 2026-09-29 continuation
 
 The new audit starts at `31b0e3f` and records tickets, logs, reviews and its report in `.scratch/audit-2026-09/runs/2026-09-29/`. Append dated findings to the existing audit ledger without rewriting earlier conclusions. Work stays on local `codex/audit-2026-09-29`; do not merge into `main` or write to GitHub. The owner approved all confirmed Tier 1/2 findings, including P2, for remediation; Tier 3 remains proposal-only. Historical follow-up PRs do not authorize remote writes in this run.
+
+### 2026-09-30 收口授权
+
+本轮文档与仓库维护获准在本地验收后合入本地 `main`，并可修改 GitHub 仓库设置。此授权不包括 push、修改或关闭已有 Pull request，也不包括执行 Tier 3 提案。GitHub Issue 与 OpenSpec 的既有职责划分保持有效。
