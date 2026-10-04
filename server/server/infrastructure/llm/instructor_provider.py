@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from threading import Lock
+from threading import Event, Lock
 
 import instructor
 from openai import (
@@ -48,6 +48,12 @@ class InstructorLLMProvider(BasePromptLLMProvider):
         self._sol_lock = Lock()
         self._sol_active = 0
         self._sol_closing = False
+        self._sol_closed = Event()
+
+    @property
+    def owns_sol_client(self) -> bool:
+        """Identify official Sol ownership for cached registry shutdown."""
+        return self._sol_client is not None
 
     def close(self) -> None:
         """Release the Sol client after its last active completion finishes.
@@ -60,8 +66,30 @@ class InstructorLLMProvider(BasePromptLLMProvider):
             return
         with self._sol_lock:
             self._sol_closing = True
-            if self._sol_active == 0 and not self._sol_client.is_closed():
+            if self._sol_active == 0:
+                self._close_sol_client()
+
+    def wait_closed(self) -> None:
+        """Join Sol cleanup after close(), without blocking its active workers.
+
+        Completion means release was attempted; a transport close failure is
+        logged without replacing the worker's result or preventing shutdown.
+        """
+        if self._sol_client is not None:
+            self._sol_closed.wait()
+
+    def _close_sol_client(self) -> None:
+        # Call only under _sol_lock after the last worker has left the SDK call.
+        assert self._sol_client is not None
+        if self._sol_closed.is_set():
+            return
+        try:
+            if not self._sol_client.is_closed():
                 self._sol_client.close()
+        except Exception:
+            logger.warning("Failed to close OpenAI Sol client.")
+        finally:
+            self._sol_closed.set()
 
     def _complete(self, system_prompt: str, user_message: str) -> LLMInterventionDraft:
         if self._sol_client is not None:
@@ -125,12 +153,7 @@ class InstructorLLMProvider(BasePromptLLMProvider):
             with self._sol_lock:
                 self._sol_active -= 1
                 if self._sol_closing and self._sol_active == 0:
-                    try:
-                        self._sol_client.close()
-                    except Exception:
-                        # Match route/registry cleanup: never replace the worker's
-                        # response or typed error, and do not log SDK/secret details.
-                        logger.warning("Failed to close OpenAI Sol client.")
+                    self._close_sol_client()
 
     def _parse_sol(self, system_prompt: str, user_message: str) -> LLMInterventionDraft:
         assert self._sol_client is not None
