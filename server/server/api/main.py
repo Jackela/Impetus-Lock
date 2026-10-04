@@ -1,5 +1,6 @@
 """FastAPI main application entry point with structured logging."""
 
+import asyncio
 import logging
 import os
 import time
@@ -61,7 +62,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Initialize shared resources and close them on shutdown."""
     await init_database()
     app.state.idempotency_cache = AsyncIdempotencyCache(ttl=15)
-    app.state.provider_registry = ProviderRegistry()
+    provider_registry = ProviderRegistry()
+    app.state.provider_registry = provider_registry
 
     # Initialize collaboration service
     from server.api.routes.collaboration import collab_service
@@ -72,10 +74,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
-        if is_database_initialized():
-            await get_db_manager().close()
-        # Shutdown collaboration service
-        await collab_service.shutdown()
+        # Closing a cached Sol provider can wait for synchronous SDK workers.
+        # Keep the event loop free and drain this cleanup even on repeat cancel.
+        shutdown = asyncio.create_task(asyncio.to_thread(provider_registry.close))
+        try:
+            try:
+                await asyncio.shield(shutdown)
+            except asyncio.CancelledError:
+                while not shutdown.done():
+                    try:
+                        await asyncio.shield(shutdown)
+                    except asyncio.CancelledError:
+                        continue
+                    except Exception:
+                        break
+                if not shutdown.cancelled():
+                    shutdown.exception()
+                raise
+        finally:
+            if is_database_initialized():
+                await get_db_manager().close()
+            # Shutdown collaboration service
+            await collab_service.shutdown()
 
 
 app = FastAPI(
