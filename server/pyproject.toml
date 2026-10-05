@@ -9,7 +9,7 @@ packages = [{include = "server"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = ">=0.131,<0.142"
-uvicorn = {extras = ["standard"], version = ">=0.40,<0.54"}
+uvicorn = {extras = ["standard"], version = ">=0.40,<0.55"}
 pydantic = "^2.9.0"
 instructor = "^1.4.0"
 httpx = ">=0.28.1,<1.0.0"
