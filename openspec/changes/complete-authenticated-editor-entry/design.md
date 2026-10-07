@@ -1,46 +1,42 @@
-## Context
+## Context and approval
 
-当前 App 直接启动 useTaskSync；该 hook 使用 `impetus.task.cache` 和 `impetus.task.meta`，没有用户隔离。QueryClient 为全局实例。AuthContext 直接 fetch 现有 auth endpoints，提供 user/isLoading/login/register/logout；错误处理目前把 me 非成功与网络失败都设为无用户，logout 也未检查 HTTP status。ProtectedRoute 导入 react-router-dom，却没有 active router；不能仅包上它就声称入口已完成。
+2026-10-07 的用户提示批准本提案的单页认证入口、登录与注册、会话过期后本地继续写作，以及旧全局缓存的显式导入/导出/丢弃。实现从干净本地 `main@20482ff` 隔离开展。实时 `origin/main@149cf18` 与本地分叉，远端 13 项依赖提交未直接合入。R04/R13 的传输、保存队列与版本冲突行为已在本地基线存在，继续复用。本次批准不扩展到其他提案，不代表部署或用户验收。
 
-## Goals / Non-Goals
+## Goals and boundaries
 
-目标是当前编辑器的完整认证入口、会话状态和可恢复草稿。非目标是新认证后端、token 存储重建、router 平台、账号权限治理、修复 cookie/CSRF 或重写编辑器。继续使用现有 HttpOnly 会话、修复后的 credentials/CSRF client 合同。
+在现有单页应用接入 AuthProvider、LoginForm、RegisterForm；保留后端注册、HttpOnly cookie、credentials 与 CSRF 规则。没有新增路由平台、认证平台或视觉重设计。状态和恢复操作围绕当前账户与写作区域提供。
 
-## Recommended state model
+## Authentication and request lifecycle
 
-| 状态/触发 | UI 与允许动作 |
-| --- | --- |
-| 初始 `/auth/me` pending | 有可访问 loading；不挂载远端任务同步/查询/AI 定时器 |
-| me 200 | 以服务器 user.id 建立账户范围，进入原编辑器 |
-| me 401 或受保护请求明确401 | 登录/会话过期提示；停远端自动保存和 AI；保留已归属草稿 |
-| me 网络错误/5xx | 显示重试与失败原因，不判定 session 过期，不创建远端任务 |
-| login/register pending | 禁止重复提交，保留表单可理解等待状态 |
-| login/register 失败 | 可访问 error，保留适当输入；不挂载编辑器/宣称已登录 |
-| login/register 成功 | 用响应 user 或 me 确认身份后建立账户范围，恢复或选择草稿 |
-| logout pending | 先停止新远端工作，将未保存内容/锁写入用户草稿快照，清理账户 UI 展示 |
-| logout 204 | 清理用户会话及敏感 query 缓存，显示登录；草稿保留在原用户范围 |
-| logout 非成功/网络失败 | 明确“退出未确认”，编辑器远端工作保持暂停，提供重试或 me 检查；不宣称服务端会话已清除 |
+| 状态               | 界面与远端工作                                                      |
+| ------------------ | ------------------------------------------------------------------- |
+| 初始 checking      | 等待 `/auth/me`；不挂载账户编辑器、任务查询、创建、保存或 AI 定时器 |
+| authenticated      | 以服务器 user.id 建立账户范围；允许远端工作                         |
+| anonymous          | 显示登录与注册；不展示已归属草稿                                    |
+| check-error        | 显示网络/服务器失败及重试；不推断用户已退出                         |
+| expired            | 保存本地正文和锁；保留编辑器供本地写作，暂停远端并提供重新登录      |
+| logging-out        | 先可靠保存本地快照再暂停；等待期间保留编辑器                        |
+| logout-unconfirmed | 明确退出尚未确认；远端保持暂停，可重试退出或重新检查会话            |
+| logout 204         | 移除账户界面并清理查询缓存；草稿仍只保留在原用户范围                |
 
-401 是会话无效信号，403 CSRF/权限失败仍走其错误提示，不循环跳登录。不要轮询无期限或把失败请求无限重放。现有 AuthContext 的入口要适配统一且已经修复的 client transport；不能另建 cookie 发行方案。组件层通过 context/hooks，保留既有 import guard。
+服务器 me 200 或成功 login/register 的 user 是身份依据，不读取 HttpOnly cookie。初始化等待和表单提交等待分开，错误关联到保留输入的原表单。同步快照失败会阻止发出退出请求和卸载最后一份正文；服务器明确401仍立即暂停远端并报告存储失败。403保留权限/CSRF错误；网络与5xx不转成“已退出”。
 
-## Account and draft lifecycle
+存储拒读导致任务切换失败时保留实际任务和未完成目标，显示错误，读取恢复后才重试目标任务；高亮以实际任务身份为准。
 
-建议缓存键按稳定 user.id 与 task.id（尚无 task 时为本用户 local draft）隔离，保存 content、lock_ids、version、dirty 标记及恢复时间。auth/session generation 用于阻止上个账户的异步 load/save/AI 结果回写当前界面。取消本账户在途查询/定时保存，并忽略无法取消的旧完成；不复制 R13 的每任务序列化实现，沿用其已修复公共行为。
+每个远端请求捕获 `userId/generation/signal/isCurrent`，发送前、重试前、响应及 body 解析后均核对原会话。会话转换取消旧请求和定时器；无法取消的迟到结果也不能通知、修改界面、缓存或下载。受保护401仅由仍当前的原请求通知认证状态。任务、统计、成就、风格、AI及账户数据导出使用相同边界。
 
-会话过期先缓存最新编辑和锁，再暂停远端同步，提示可继续本地写作并重新登录。同一账号恢复时比较服务器 Task version，采用现有冲突提示，不能用陈旧缓存覆盖服务器或抹去新草稿。另一账号登录时只加载其用户范围；不得向其显示、上传前一账号草稿，也不得复用前一账号 query 数据。退出后不显示已归属草稿，除非该用户重新通过身份确认。
+## Account drafts and recovery
 
-旧两个全局键无法证明 owner。迁移保留内容和 metadata 的本地副本，归为 unassigned；即使带 taskId 也不能推出所属账号。登录后仅提示有未归属草稿，用户明确选择导入为当前账户新草稿或导出/丢弃；绝不自动更新旧 taskId。锁必须随内容完整恢复；无法辨认锁时显示恢复错误并保留原文，不默默去锁。浏览器缓存不能消除共享设备的本机访问风险，范围隔离解决的是产品内跨账户误显示和误上传。
+账户子树按 user.id 重建 QueryClient；查询键包括账户和会话代次。任务同步保留每任务序列化队列，退出暂停与卸载不能发出新写入；同账户任务切换仍保存原任务自己的待保存内容。
 
-## Alternatives and trade-offs
+草稿键为 `impetus.draft.<encoded user.id>.<encoded draftId>`。稳定 draftId 在远端 taskId 创建前已存在。快照保存正文、lockIds、taskId、version、versionKnown、dirty 和更新时间；恢复备份附 recoveryOf。同账号重新确认后，先比较服务器版本再决定写入。冲突保留两份完整快照，暂停保存；允许本地继续写、另存为新草稿，或在可靠备份本地稿后采用服务器版本。显式替换重建编辑器和锁管理器，避免旧锁拒绝新文档而界面错误显示已保存。
 
-单页 auth gate 足够覆盖当前入口，并能复用 LoginForm/RegisterForm；无需为此接入 router。若确认多 URL 导航才使用 ProtectedRoute，并另外批准 router 与路由范围。仅 AuthProvider 包装不足以停止 App 内受保护副作用；需要认证后才挂载编辑器子树或明确 gating。仅“401 toast”缺少登录入口和草稿切换，不能满足要求。
+编辑器在实际 Milkdown/ProseMirror 解析结果中验证锁定位。规范化比较同时考虑解析文档和序列化正文，标题自动 ID/末尾换行差异不能触发无意义替换。只有已接受的可信 AI 事务可移除已被其删除/改写的旧锁身份；其他实际锁仍保留，普通编辑和恢复绝不静默去锁。缺失、损坏或不可定位的锁保留原文、明确报错，阻止正常编辑及上传，提供原文导出与重试。受控正文替换若被原锁过滤器拒绝，也不能记录为已加载。存储读取/写入失败可见；损坏账户快照保留完整 raw 及可恢复正文，不被静默跳过或以默认稿上传替代。
 
-## Migration and rollback
+旧 `impetus.task.cache/meta` 视为未归属草稿。导出保留两条原始字符串；显式导入验证锁后创建当前账户新 draftId，不继承旧 taskId/version。原始副本保留至明确丢弃，不从旧任务身份推断归属。共享设备的浏览器存储不是加密保险箱，本次隔离处理产品内跨账户误显示和误上传。
 
-先验证 R04/R13 及完整 TypeScript 修复后的基线，再添加 loading/auth/error 边界，再迁移缓存与账户 query 生命周期，最后开启入口。保留原缓存副本直至恢复验证，不擅自销毁草稿。
+## Verification and rollback
 
-回退入口及缓存 reader 必须一起考虑：保留按账户缓存和未归属备份，认证策略不回退；若旧 UI 无法安全读取新缓存，就暂停远端入口并提供受控恢复，不能回到全局缓存自动上传。未来实际浏览器验证包括刷新、账号切换、401 和网络失败，不用 unit green 代替。
+关键行为按 RED/GREEN 小步实现，自动化覆盖认证、请求代次、锁、存储失败及冲突。独立只读复核检查规范与实现组合；普通安全浏览器使用真实后端 cookie/CSRF、隔离 PostgreSQL 数据及受控 AI HTTP 响应。单元测试不能代替浏览器证据；Sol SDK 合同也不证明真实模型 API、活跃请求退出或数据库历史 drain。实际结果集中记录在本提案 validation.md。
 
-## Open approval decisions
-
-注册是否开放、过期后的本地继续写作提示、未归属草稿导入与保留策略；auth gate 与缓存生命周期的精确组装方案。均 Proposed / not approved。
+安全回退必须同时考虑认证入口和账户缓存读取：保留账户快照、原始未归属副本和恢复备份，禁止回退到旧全局缓存自动上传。源码回退可在独立本地分支 revert 本次功能提交，恢复前先导出草稿；后端认证政策不回退。恢复资料与旧独立候选保留。

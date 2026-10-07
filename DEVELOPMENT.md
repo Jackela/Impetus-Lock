@@ -255,14 +255,14 @@ import { test, expect } from "@playwright/test";
 
 test("user can create and lock task", async ({ page }) => {
   await page.goto("/");
-  
+
   // Create task
   await page.fill('[data-testid="task-input"]', "Important Task");
   await page.click('[data-testid="create-button"]');
-  
+
   // Lock task (P1 feature - un-deletable constraint)
   await page.click('[data-testid="lock-button"]');
-  
+
   // Verify delete button is disabled
   await expect(page.locator('[data-testid="delete-button"]')).toBeDisabled();
 });
@@ -297,13 +297,14 @@ npx playwright test e2e/smoke.spec.ts
 
 ```yaml
 jobs:
-  lint:              # Ruff (backend) + ESLint/Prettier (frontend)
-  type-check:        # mypy (backend) + npm run type-check (frontend)
-  backend-tests:     # pytest
-  frontend-tests:    # Vitest unit tests with coverage
+  lint: # Ruff (backend) + ESLint/Prettier (frontend)
+  type-check: # mypy (backend) + npm run type-check (frontend)
+  backend-tests: # pytest
+  frontend-tests: # Vitest unit tests with coverage
 ```
 
 **Triggers**:
+
 - Push to `main`
 - Pull requests to `main`
 
@@ -406,7 +407,6 @@ cd client && npm run test -- --run
 ```
 
 - ### Local CI via Act
-
   1. Install [Act](https://github.com/nektos/act) and Docker.
   2. Sync and run:
 
@@ -415,6 +415,7 @@ cd client && npm run test -- --run
      ```
 
      Windows users can run `pwsh ./scripts/act-sync.ps1 -Command "act -j e2e ..."` (forwards to WSL).
+
   3. The helper mirrors the repo to `$HOME/impetus-lock-act`, exports `ACT_WORKSPACE_BASE` / `ACT_CACHE_DIR`, and stops any local `impetus-lock-postgres` container to prevent port conflicts.
   4. The helper writes output through `tee` to `/tmp/act-e2e.log` by default. Set `ACT_LOG_PATH` to choose another log path; the helper does not copy the log into the repository.
 
@@ -470,7 +471,7 @@ npx playwright install --with-deps
 
 ```typescript
 // Add to vitest.setup.ts or individual test files
-import '@testing-library/jest-dom'
+import "@testing-library/jest-dom";
 
 // Ensure tsconfig includes test files
 // tsconfig.app.json: "include": ["src", "**/*.test.ts", "**/*.test.tsx"]
@@ -520,3 +521,16 @@ Before committing, verify:
 3. **Validate with Act**: Run `act` to simulate CI before pushing
 4. **Constitutional Review**: Verify compliance with 5 articles
 5. **Commit**: Use conventional commits format
+
+## 认证编辑器本地浏览器验证
+
+独立配置 `client/playwright.auth.config.ts` 使用普通 Chromium 安全设置、真实 auth/cookie/CSRF 和任务 API；不使用旧 E2E 的 TESTING 入口、共享 storage-state 或关闭浏览器安全的参数。测试通过 UI 创建本地账户，AI 请求只用受控 HTTP 响应。
+
+先为测试准备隔离 PostgreSQL 数据库并执行现有迁移，后端监听 `127.0.0.1:8001`，前端 `127.0.0.1:3000` 由测试配置启动。后端进程须移除 TESTING，并避免 `.env` 重新设置该变量；本地 CORS 已允许 3000。不要把测试指向用户数据或真实模型密钥。然后运行：
+
+```sh
+cd client
+npx playwright test --config playwright.auth.config.ts
+```
+
+当前结果及完整环境、重启持久化、首次失败归因、跳过项和证据位置见 [认证入口验证记录](openspec/changes/complete-authenticated-editor-entry/validation.md)。前端 format 检查在 coverage 测试完成后运行，避免覆盖率反例测试的临时 fixture 被格式扫描误报。
