@@ -33,6 +33,7 @@ type TaskDraft = Draft & {
   conflict: DraftConflict | null;
   storageError: boolean;
   recoveryIssue: DraftRecoveryIssue | null;
+  storageReadFailed: boolean;
   taskId: string | null;
   version: number;
   versionKnown: boolean;
@@ -148,6 +149,9 @@ function getErrorMessage(error: unknown, context?: { operation?: "load" | "save"
  * Sync status for task operations.
  */
 type Status = "loading" | "ready" | "error";
+
+/** Separates unavailable browser storage from server/network load failures. */
+class DraftStorageReadError extends Error {}
 
 /** Both versions remain available until the user makes an explicit choice. */
 export interface DraftConflict {
@@ -274,6 +278,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       conflict: null,
       storageError: false,
       recoveryIssue: null,
+      storageReadFailed: false,
     }),
     [defaultContent]
   );
@@ -284,6 +289,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   const bootstrapStarted = useRef(false);
   const drafts = useRef(new Map<string, TaskDraft>());
   const binding = useRef({ userId, session });
+  const failedSelection = useRef<{ ownerId?: string | null; id: string | null } | null>(null);
   const snapshotOf = useCallback(
     (draft: TaskDraft): DraftSnapshot => ({
       draftId: draft.draftId,
@@ -353,6 +359,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     (draft: TaskDraft) => {
       if (!sameOwner(draft) || (draft.ownerId === undefined && !visible(draft))) return;
       if (draft.status === "loading" && !draft.dirty) return;
+      if (draft.storageReadFailed && !draft.taskId && !draft.dirty) return;
       try {
         writeLocal(draft);
       } catch {
@@ -381,7 +388,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   );
   const mayWrite = useCallback(
     (draft: TaskDraft, candidate: Draft) => {
-      if (draft.recoveryIssue) return false;
+      if (draft.recoveryIssue || draft.storageReadFailed) return false;
       try {
         return (
           context.current.canSave?.(draft.draftId, candidate.content, [...candidate.lockIds]) ??
@@ -434,9 +441,12 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
             draft.version = record.version;
             draft.versionKnown = true;
             draft.dirty = draft.pending !== null;
-            draft.status = "ready";
+            draft.status = draft.storageReadFailed ? "error" : "ready";
             draft.updatedAt = Date.now();
-            draft.error = draft.storageError ? TaskSyncErrorMessages.STORAGE_FAILED : null;
+            draft.error =
+              draft.storageError || draft.storageReadFailed
+                ? TaskSyncErrorMessages.STORAGE_FAILED
+                : null;
             drafts.current.set(record.id, draft);
             cacheDraft(draft);
             showDraft(draft);
@@ -512,8 +522,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         versionKnown: true,
         content: draft.dirty ? draft.content : record.content,
         lockIds: draft.dirty ? draft.lockIds : record.lock_ids || [],
-        status: "ready",
-        error: draft.storageError ? TaskSyncErrorMessages.STORAGE_FAILED : null,
+        status: draft.storageReadFailed ? "error" : "ready",
+        error:
+          draft.storageError || draft.storageReadFailed
+            ? TaskSyncErrorMessages.STORAGE_FAILED
+            : null,
       });
       drafts.current.set(record.id, draft);
       showDraft(draft);
@@ -523,7 +536,12 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   );
   const readOwned = useCallback((id?: string | null) => {
     if (typeof context.current.userId !== "string") return null;
-    const inspected = inspectOwnedDrafts(context.current.userId);
+    let inspected;
+    try {
+      inspected = inspectOwnedDrafts(context.current.userId);
+    } catch {
+      throw new DraftStorageReadError(TaskSyncErrorMessages.STORAGE_FAILED);
+    }
     setRecovery({ ownerId: context.current.userId, issues: inspected.issues });
     const selected = inspected.drafts.find(
       (draft) => !draft.recoveryOf && (id === undefined || draft.taskId === id)
@@ -546,6 +564,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       const issue = failure.issues[0];
       if (!issue) return;
       draft.recoveryIssue = issue;
+      draft.storageReadFailed = false;
       if (!draft.dirty) {
         draft.content = failure.recovered?.content ?? issue.content ?? issue.raw;
         draft.lockIds = failure.recovered?.lockIds ?? [];
@@ -558,13 +577,24 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     },
     [showDraft]
   );
+  const showStorageReadFailure = useCallback(
+    (draft: TaskDraft) => {
+      draft.storageReadFailed = true;
+      draft.error = TaskSyncErrorMessages.STORAGE_FAILED;
+      draft.status = "error";
+      showDraft(draft);
+    },
+    [showDraft]
+  );
   const loadTask = useCallback(
     async (id: string, force = false) => {
-      if (active.current!.taskId === id && !force) return;
+      if (active.current!.taskId === id && !force) {
+        failedSelection.current = null;
+        return;
+      }
       const previous = active.current!;
       if (previous.timer) window.clearTimeout(previous.timer);
       previous.timer = null;
-      if (remoteAllowed(previous)) void persist(previous);
       cacheDraft(previous);
       const cached = drafts.current.get(id);
       const retained =
@@ -575,13 +605,25 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       try {
         draft = retained ?? makeDraft(id, readOwned(id) ?? undefined);
       } catch (failure) {
-        if (!(failure instanceof DraftRecoveryError)) throw failure;
+        if (!(failure instanceof DraftRecoveryError)) {
+          failedSelection.current = { ownerId: previous.ownerId, id };
+          showStorageReadFailure(previous);
+          return;
+        }
+        failedSelection.current = null;
         draft = makeDraft(id);
         active.current = draft;
         drafts.current.set(id, draft);
         showRecoveryFailure(draft, failure);
         return;
       }
+      failedSelection.current = null;
+      if (previous.storageReadFailed) {
+        previous.storageReadFailed = false;
+        if (previous.error === TaskSyncErrorMessages.STORAGE_FAILED) previous.error = null;
+        if (previous.versionKnown) previous.status = "ready";
+      }
+      if (remoteAllowed(previous)) void persist(previous);
       active.current = draft;
       drafts.current.set(id, draft);
       const needsLoad = force || !retained || (!draft.versionKnown && draft.status !== "loading");
@@ -611,6 +653,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       requestOptions,
       showDraft,
       showRecoveryFailure,
+      showStorageReadFailure,
     ]
   );
   const bootstrap = useCallback(async () => {
@@ -622,12 +665,14 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     const allowed = () => remoteAllowed(draft) && draft.session === requestSession;
     try {
       if (draft.ownerId !== undefined) {
-        if (!draft.dirty) {
+        if (!draft.dirty || draft.storageReadFailed) {
           const owned = readOwned();
-          if (owned) {
+          if (owned && !draft.dirty) {
             draft = makeDraft(null, owned);
             active.current = draft;
           }
+          draft.storageReadFailed = false;
+          failedSelection.current = null;
         }
         if (draft.dirty) draft.pending = { content: draft.content, lockIds: draft.lockIds };
         draft.status = "loading";
@@ -689,7 +734,13 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     } catch (err) {
       if (!allowed()) return;
       if (err instanceof DraftRecoveryError) {
+        failedSelection.current = null;
         showRecoveryFailure(draft, err);
+        return;
+      }
+      if (err instanceof DraftStorageReadError) {
+        failedSelection.current = { ownerId: draft.ownerId, id: null };
+        showStorageReadFailure(draft);
         return;
       }
       draft.error = TaskSyncErrorMessages.API_UNAVAILABLE;
@@ -713,6 +764,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     requestOptions,
     showDraft,
     showRecoveryFailure,
+    showStorageReadFailure,
   ]);
   useEffect(() => {
     mounted.current = true;
@@ -737,6 +789,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       }
       if (previousOwner !== userId) {
         drafts.current.clear();
+        failedSelection.current = null;
         active.current = makeDraft();
         setRecovery({ ownerId: userId, issues: [] });
       } else {
@@ -866,8 +919,24 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   );
   const retry = useCallback(async () => {
     const draft = active.current!;
+    const selection = failedSelection.current;
+    if (selection && selection.ownerId === draft.ownerId) {
+      if (selection.id) await loadTask(selection.id, true);
+      else {
+        bootstrapStarted.current = false;
+        await bootstrap();
+      }
+      return;
+    }
     if (draft.recoveryIssue && typeof draft.ownerId === "string") {
-      const inspected = inspectOwnedDrafts(draft.ownerId);
+      let inspected;
+      try {
+        inspected = inspectOwnedDrafts(draft.ownerId);
+      } catch {
+        failedSelection.current = { ownerId: draft.ownerId, id: draft.taskId };
+        showStorageReadFailure(draft);
+        return;
+      }
       setRecovery({ ownerId: draft.ownerId, issues: inspected.issues });
       const currentIssue = inspected.issues.find((issue) => issue.key === draft.recoveryIssue!.key);
       if (currentIssue) {
@@ -892,7 +961,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       if (draft.taskId) drafts.current.set(draft.taskId, draft);
       showDraft(draft);
     }
-    flushLocal();
+    try {
+      flushLocal();
+    } catch {
+      return;
+    }
     const requestSession = draft.session;
     const allowed = () => remoteAllowed(draft) && draft.session === requestSession;
     if (!allowed()) return;
@@ -920,6 +993,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     draft.status = "ready";
     await persist(draft);
   }, [
+    bootstrap,
     flushLocal,
     loadTask,
     persist,
@@ -927,6 +1001,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     requestOptions,
     showDraft,
     showRecoveryFailure,
+    showStorageReadFailure,
     snapshotOf,
   ]);
   const owned = active.current!.ownerId === userId;

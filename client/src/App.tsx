@@ -114,10 +114,10 @@ function App() {
   activeIdentity.current = draftIdentity;
   const handleEditorChange = useCallback(
     (markdown: string, locks: string[]) => {
-      if (activeIdentity.current === draftIdentity && !recoveryError)
+      if (activeIdentity.current === draftIdentity && !recoveryError && !hasBlockedRecovery)
         handleTaskChange(markdown, locks);
     },
-    [draftIdentity, handleTaskChange, recoveryError]
+    [draftIdentity, handleTaskChange, recoveryError, hasBlockedRecovery]
   );
   const importLegacy = () => {
     const payload = recovery.legacy?.payload;
@@ -330,9 +330,9 @@ function App() {
         onModeChange={setMode}
         onManualTrigger={handleManualTrigger}
         onTaskClick={handleTaskClick}
-        selectedTaskId={selectedTask?.id}
+        selectedTaskId={currentTaskId ?? selectedTask?.id}
         taskStatus={
-          taskError
+          taskError || recoveryError
             ? "error"
             : !remoteEnabled
               ? "local"
@@ -347,7 +347,7 @@ function App() {
                       : "synced"
         }
         isSaving={isSaving}
-        taskError={taskError}
+        taskError={recoveryError ?? taskError}
         onCreateTask={() => setShowCreateTaskModal(true)}
         onShowSettings={() => setShowSettings(true)}
         onLockSession={lock}
@@ -355,7 +355,7 @@ function App() {
         onShowStyleLearning={() => setShowStyleLearning((prev) => !prev)}
         showStyleLearning={showStyleLearning}
         llmFeedback={llmFeedback}
-        isConfigured={isConfigured && remoteEnabled && !recoveryError}
+        isConfigured={isConfigured && remoteEnabled && !recoveryError && !hasBlockedRecovery}
         llmProviderLabel={llmConfig ? getLLMProviderLabel(llmConfig.provider) : null}
         showStats={showStats}
         onToggleStats={() => setShowStats((prev) => !prev)}
@@ -365,7 +365,7 @@ function App() {
       >
         <TimerIndicator
           progress={timerProgress}
-          visible={remoteEnabled && !recoveryError && mode === "muse"}
+          visible={remoteEnabled && !recoveryError && !hasBlockedRecovery && mode === "muse"}
           remainingTime={timerRemaining}
         />
         {hasBlockedRecovery ? (
@@ -374,7 +374,7 @@ function App() {
           <EditorCore
             key={`${draftIdentity}:${recoveryAttempt}`}
             contentVersion={taskVersion}
-            mode={remoteEnabled && !recoveryError ? mode : "off"}
+            mode={remoteEnabled && !recoveryError && !hasBlockedRecovery ? mode : "off"}
             session={auth ? auth.session : undefined}
             requestIdentity={draftIdentity}
             initialContent={taskContent}
@@ -415,7 +415,9 @@ function App() {
         onStorageModeChange={setStorageMode}
         onUnlock={unlock}
         onLock={lock}
-        showCreateTaskModal={showCreateTaskModal && remoteEnabled && !recoveryError}
+        showCreateTaskModal={
+          showCreateTaskModal && remoteEnabled && !recoveryError && !hasBlockedRecovery
+        }
         onCloseCreateTaskModal={() => setShowCreateTaskModal(false)}
         onTaskCreated={(task) => {
           handleTaskClick(task);

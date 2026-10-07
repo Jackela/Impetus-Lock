@@ -259,7 +259,8 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         if (!document) return false;
         // Markdown serializers normalize spacing and final newlines. Compare
         // parsed documents before attempting a replacement protected by locks.
-        if (currentContent !== initialContent && !view.state.doc.eq(document)) {
+        const canonicalContent = restoreLockMarkers(ctx.get(serializerCtx)(document), ctx.get(remarkCtx));
+        if (currentContent !== initialContent && currentContent !== canonicalContent && !view.state.doc.eq(document)) {
           const before = view.state.doc;
           view.dispatch(
             view.state.tr
@@ -771,6 +772,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
             // Auto-detect and register locks from content changes
             // Register accepted locks before the NEXT transaction (e.g., deletion).
             // Uses same pattern as LockDecorations (which successfully detects locks).
+            const liveLocks = new Set<string>();
             view.state.doc.descendants((node) => {
               if (node.type.name === "code_block") return false;
               if (node.isText && node.marks.some((mark) => mark.type.name === "inlineCode")) return;
@@ -781,14 +783,26 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
                 node.descendants((child) => {
                   if (child.isText) prose += child.marks.some((mark) => mark.type.name === "inlineCode") ? "\n" : child.textContent;
                 });
-                if (![...prose.matchAll(/<!--\s*lock:([^\s>]+)(?:\s+source:([^\s>]+))?\s*-->/gi)].some((match) => match[1] === metadata.lockId)) return;
+                const markers = [...prose.matchAll(/<!--\s*lock:([^\s>]+)(?:\s+source:([^\s>]+))?\s*-->/gi)];
+                markers.forEach((match) => liveLocks.add(match[1]!));
+                if (!markers.some((match) => match[1] === metadata.lockId)) return;
               }
+              if (metadata?.lockId) liveLocks.add(metadata.lockId);
               if (metadata?.lockId && !lockManager.hasLock(metadata.lockId)) {
                 lockManager.applyLock(metadata.lockId, { source: metadata.source });
                 refreshLockDecorations(view);
               }
             });
 
+            // Only an accepted AI action may retire locks whose writing it
+            // intentionally removed. Recovery and ordinary edits keep strict
+            // missing-lock validation instead of silently discarding locks.
+            if (tr.getMeta("aiAction")) {
+              lockManager.getAllLocks().forEach((id) => {
+                if (!liveLocks.has(id)) lockManager.removeLock(id);
+              });
+              refreshLockDecorations(view);
+            }
             const markdown = restoreLockMarkers(ctx.get(serializerCtx)(view.state.doc), ctx.get(remarkCtx));
             onChangeRef.current?.(markdown, lockManager.getAllLocks());
           }

@@ -797,4 +797,157 @@ describe("account scoped task drafts", () => {
       version: 7,
     });
   });
+
+  it("keeps the actual task and shows a failed storage read until an explicit retry can finish the requested switch", async () => {
+    writeOwnedDraft("alice", {
+      draftId: "B-draft",
+      content: "cached B",
+      lockIds: ["lock-b"],
+      taskId: "B",
+      version: 11,
+      versionKnown: true,
+      dirty: false,
+      updatedAt: 1,
+    });
+    const scope = session();
+    const http = vi.fn<typeof fetch>(async (input, init) => {
+      if (init?.method === "PUT") {
+        const body = JSON.parse(String(init.body));
+        return response(task("B", body.content, 12, body.lock_ids));
+      }
+      return response(
+        new URL(String(input)).pathname.endsWith("/B")
+          ? task("B", "server B", 11, ["lock-b"])
+          : task("A", "server A", 7, ["lock-a"])
+      );
+    });
+    vi.stubGlobal("fetch", http);
+    let permits = false;
+    const hook = renderHook(
+      ({ id }) =>
+        useTaskSync("default", {
+          userId: "alice",
+          session: scope,
+          externalTaskId: id,
+          canSave: () => permits,
+        }),
+      { initialProps: { id: "A" } }
+    );
+    await advance();
+    act(() => hook.result.current.onChange("reliable A local", ["lock-a", "lock-new"]));
+    const originalGet = Storage.prototype.getItem;
+    let fails = true;
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (this: Storage, key) {
+      if (fails && key === "impetus.draft.alice.B-draft")
+        throw new DOMException("Storage denied", "SecurityError");
+      return originalGet.call(this, key);
+    });
+    hook.rerender({ id: "B" });
+    await advance();
+    expect(hook.result.current.taskId).toBe("A");
+    expect(hook.result.current.content).toBe("reliable A local");
+    expect(hook.result.current.lockIds).toEqual(["lock-a", "lock-new"]);
+    expect(hook.result.current.error).toContain("could not be saved on this device");
+    expect(hook.result.current.status).toBe("error");
+    await act(async () => hook.result.current.retry());
+    expect(http.mock.calls.map(([input]) => new URL(String(input)).pathname)).toEqual(["/tasks/A"]);
+    fails = false;
+    await act(async () => hook.result.current.retry());
+    expect(hook.result.current.taskId).toBe("B");
+    expect(hook.result.current.content).toBe("server B");
+    expect(hook.result.current.version).toBe(11);
+    expect(hook.result.current.error).toBeNull();
+    expect(http.mock.calls.map(([input]) => new URL(String(input)).pathname)).toEqual([
+      "/tasks/A",
+      "/tasks/B",
+    ]);
+    expect(readOwnedDraft("alice", "A")).toMatchObject({
+      content: "reliable A local",
+      dirty: true,
+      lockIds: ["lock-a", "lock-new"],
+    });
+    permits = true;
+    act(() => hook.result.current.onChange("B own edit", ["lock-b", "lock-b-new"]));
+    await advance(800);
+    const save = http.mock.calls.find(([, init]) => init?.method === "PUT");
+    expect(new URL(String(save?.[0])).pathname).toBe("/tasks/B");
+    expect(JSON.parse(String(save?.[1]?.body))).toEqual({
+      content: "B own edit",
+      lock_ids: ["lock-b", "lock-b-new"],
+      version: 11,
+    });
+    expect(hook.result.current.version).toBe(12);
+  });
+
+  it.each(["getItem", "length"] as const)(
+    "handles a permanent storage %s SecurityError without rejecting retries or leaving the reliable task",
+    async (boundary) => {
+      const scope = session();
+      const http = vi.fn<typeof fetch>(async () =>
+        response(task("A", "reliable A", 7, ["lock-a"]))
+      );
+      vi.stubGlobal("fetch", http);
+      const hook = renderHook(
+        ({ id }) =>
+          useTaskSync("default", {
+            userId: "alice",
+            session: scope,
+            externalTaskId: id,
+            canSave: () => false,
+          }),
+        { initialProps: { id: "A" } }
+      );
+      await advance();
+      act(() => hook.result.current.onChange("latest local A", ["lock-a", "lock-new"]));
+      const failure = () => {
+        throw new DOMException("Storage denied", "SecurityError");
+      };
+      if (boundary === "getItem")
+        vi.spyOn(Storage.prototype, "getItem").mockImplementation(failure);
+      else vi.spyOn(Storage.prototype, "length", "get").mockImplementation(failure);
+      hook.rerender({ id: "B" });
+      await advance();
+      await act(async () => {
+        await expect(hook.result.current.retry()).resolves.toBeUndefined();
+      });
+      expect(hook.result.current.taskId).toBe("A");
+      expect(hook.result.current.content).toBe("latest local A");
+      expect(hook.result.current.lockIds).toEqual(["lock-a", "lock-new"]);
+      expect(hook.result.current.status).toBe("error");
+      expect(hook.result.current.error).toContain("could not be saved on this device");
+      expect(http).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it("reports an initial storage read failure without creating a default task, including subsequent typing and retry", async () => {
+    writeOwnedDraft("alice", {
+      draftId: "retained",
+      content: "owned draft",
+      lockIds: ["lock-owned"],
+      taskId: "A",
+      version: 7,
+      versionKnown: true,
+      dirty: true,
+      updatedAt: 1,
+    });
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new DOMException("Storage denied", "SecurityError");
+    });
+    const scope = session();
+    const http = vi.fn<typeof fetch>(async () => response(task()));
+    vi.stubGlobal("fetch", http);
+    const hook = renderHook(() => useTaskSync("default", { userId: "alice", session: scope }));
+    await advance();
+    expect(hook.result.current.error).toContain("could not be saved on this device");
+    act(() =>
+      hook.result.current.onChange("locally retained while storage is unavailable", ["lock-local"])
+    );
+    await advance(1600);
+    await act(async () => {
+      await expect(hook.result.current.retry()).resolves.toBeUndefined();
+    });
+    expect(hook.result.current.content).toBe("locally retained while storage is unavailable");
+    expect(hook.result.current.lockIds).toEqual(["lock-local"]);
+    expect(http).not.toHaveBeenCalled();
+  });
 });

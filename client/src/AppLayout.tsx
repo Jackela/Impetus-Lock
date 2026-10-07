@@ -4,7 +4,6 @@ import { TelemetryToggle } from "./components/TelemetryToggle";
 import { TaskList } from "./components/TaskList/TaskList";
 import { Skeleton } from "./components/Skeleton";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { OnboardingChecklist } from "./components/OnboardingChecklist";
 import { NewTaskButton } from "./components/NewTaskButton";
 import { StyleLearningPanel } from "./components/StyleLearning/StyleLearningPanel";
 import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle";
@@ -321,10 +320,7 @@ export function AppLayout({
         </ErrorBoundary>
 
         <ErrorBoundary>
-          <div className="editor-area">
-            <OnboardingChecklist />
-            {children}
-          </div>
+          <div className="editor-area">{children}</div>
         </ErrorBoundary>
       </main>
 

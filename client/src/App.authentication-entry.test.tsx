@@ -11,6 +11,55 @@ afterEach(() => {
 });
 
 describe("the actual authenticated editor entry", () => {
+  it("never labels a server draft as saved when its locks cannot be restored", async () => {
+    localStorage.setItem("impetus-lock-welcome-dismissed", "true");
+    writeOwnedDraft("account-a", {
+      draftId: "missing-server-lock",
+      content: "Original",
+      lockIds: [],
+      taskId: "server-broken",
+      version: 1,
+      versionKnown: true,
+      dirty: false,
+      updatedAt: Date.now(),
+    });
+    const server = {
+      id: "server-broken",
+      title: "Broken lock",
+      content: "Server original without a marker",
+      lock_ids: ["missing-server-lock"],
+      version: 2,
+      created_at: "2026-10-07T00:00:00Z",
+      updated_at: "2026-10-07T00:00:00Z",
+      category: "WRITING",
+      priority: "MEDIUM",
+      due_date: null,
+      word_count: 5,
+    };
+    const writes: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async (input, init) => {
+        const path = new URL(String(input), window.location.href).pathname;
+        if (path === "/auth/me") return Response.json({ id: "account-a", email: "a@example.com" });
+        if (path === "/tasks/")
+          return Response.json({ tasks: [server], total: 1, limit: 100, offset: 0 });
+        if (init?.method === "POST" || init?.method === "PUT") writes.push(path);
+        if (path === `/tasks/${server.id}`) return Response.json(server);
+        return new Response(new ArrayBuffer(8));
+      })
+    );
+    const { container } = render(
+      <AppProviders>
+        <App />
+      </AppProviders>
+    );
+    expect(await screen.findByTestId("unrecovered-draft")).toHaveTextContent(server.content);
+    expect(container.querySelector(".task-status")).toHaveTextContent("Save failed");
+    expect(container.querySelector(".task-status")).not.toHaveTextContent(/^Saved$/);
+    expect(writes).toEqual([]);
+  });
+
   it("keeps malformed account lock metadata available as read-only original writing", async () => {
     localStorage.setItem("impetus-lock-welcome-dismissed", "true");
     const raw = JSON.stringify({
