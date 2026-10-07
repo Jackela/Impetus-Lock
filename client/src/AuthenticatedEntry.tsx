@@ -95,53 +95,57 @@ export function AuthenticatedEntry({ children }: { children: ReactNode }) {
 
   return (
     <AccountWorkspace key={auth.user.id}>
-      <div className="account-bar">
-        <span>
-          Signed in as <strong>{auth.user.email}</strong>
-        </span>
-        <button
-          type="button"
-          disabled={auth.isLoading}
-          onClick={() => void auth.logout().catch(() => {})}
-        >
-          Sign out
-        </button>
-      </div>
-      {!auth.remoteEnabled && (
-        <section className="session-notice" aria-label="Session status">
-          <p
-            role={auth.status === "logging-out" || auth.status === "checking" ? "status" : "alert"}
+      <div className="authenticated-workspace">
+        <div className="account-bar">
+          <span>
+            Signed in as <strong>{auth.user.email}</strong>
+          </span>
+          <button
+            type="button"
+            disabled={auth.isLoading}
+            onClick={() => void auth.logout().catch(() => {})}
           >
-            {auth.status === "expired"
-              ? "Session expired. Your draft is kept locally; you can keep writing. Sign in to resume saving."
-              : auth.status === "logging-out"
-                ? "Signing out… Remote work is paused."
-                : auth.status === "checking"
-                  ? "Checking your session… Your draft is kept locally."
-                  : auth.status === "logout-unconfirmed"
-                    ? "Sign out is not confirmed. Your draft is kept locally and remote work is paused."
-                    : "The session check failed. Your draft is kept locally and remote work is paused."}
-          </p>
-          {auth.error && <p className="session-error">{auth.error}</p>}
-          {auth.status !== "checking" && auth.status !== "logging-out" && (
-            <div className="recovery-actions">
-              {auth.status === "logout-unconfirmed" && (
-                <button type="button" onClick={() => void auth.logout().catch(() => {})}>
-                  Retry sign out
+            Sign out
+          </button>
+        </div>
+        {!auth.remoteEnabled && (
+          <section className="session-notice" aria-label="Session status">
+            <p
+              role={
+                auth.status === "logging-out" || auth.status === "checking" ? "status" : "alert"
+              }
+            >
+              {auth.status === "expired"
+                ? "Session expired. Your draft is kept locally; you can keep writing. Sign in to resume saving."
+                : auth.status === "logging-out"
+                  ? "Signing out… Remote work is paused."
+                  : auth.status === "checking"
+                    ? "Checking your session… Your draft is kept locally."
+                    : auth.status === "logout-unconfirmed"
+                      ? "Sign out is not confirmed. Your draft is kept locally and remote work is paused."
+                      : "The session check failed. Your draft is kept locally and remote work is paused."}
+            </p>
+            {auth.error && <p className="session-error">{auth.error}</p>}
+            {auth.status !== "checking" && auth.status !== "logging-out" && (
+              <div className="recovery-actions">
+                {auth.status === "logout-unconfirmed" && (
+                  <button type="button" onClick={() => void auth.logout().catch(() => {})}>
+                    Retry sign out
+                  </button>
+                )}
+                <button type="button" onClick={() => void auth.recheck().catch(() => {})}>
+                  Check session again
                 </button>
-              )}
-              <button type="button" onClick={() => void auth.recheck().catch(() => {})}>
-                Check session again
-              </button>
-              <button type="button" onClick={() => setShowSignIn((v) => !v)}>
-                {showSignIn ? "Close sign in" : "Sign in again"}
-              </button>
-            </div>
-          )}
-          {showSignIn && <div className="session-sign-in">{forms}</div>}
-        </section>
-      )}
-      {children}
+                <button type="button" onClick={() => setShowSignIn((v) => !v)}>
+                  {showSignIn ? "Close sign in" : "Sign in again"}
+                </button>
+              </div>
+            )}
+            {showSignIn && <div className="session-sign-in">{forms}</div>}
+          </section>
+        )}
+        {children}
+      </div>
     </AccountWorkspace>
   );
 }

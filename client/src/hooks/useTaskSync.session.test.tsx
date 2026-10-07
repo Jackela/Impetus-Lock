@@ -1,7 +1,12 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTaskSync } from "./useTaskSync";
-import { listOwnedDrafts, readOwnedDraft, writeOwnedDraft } from "../services/draftStore";
+import {
+  inspectOwnedDrafts,
+  listOwnedDrafts,
+  readOwnedDraft,
+  writeOwnedDraft,
+} from "../services/draftStore";
 import type { RemoteSession } from "../services/api/remoteSession";
 
 function session(userId = "alice", generation = 1): RemoteSession {
@@ -658,5 +663,138 @@ describe("account scoped task drafts", () => {
     await advance();
     expect(hook.result.current.isSaving).toBe(false);
     expect(hook.result.current.hasUnsavedChanges).toBe(false);
+  });
+
+  it.each(["invalid JSON", "invalid locks"])(
+    "keeps %s owned source raw, reports recovery errors and sends no default write",
+    async (kind) => {
+      const raw =
+        kind === "invalid JSON"
+          ? "{broken JSON"
+          : '{"draftId":"broken","content":"Original <!-- lock:x -->","lockIds":"x","taskId":"A","version":7,"versionKnown":true,"dirty":true,"updatedAt":1}';
+      localStorage.setItem("impetus.draft.alice.broken", raw);
+      const http = vi.fn<typeof fetch>(async () => response(task()));
+      vi.stubGlobal("fetch", http);
+      const scope = session();
+      const hook = renderHook(() => useTaskSync("default", { userId: "alice", session: scope }));
+      await advance(1600);
+      expect(hook.result.current.error).toContain("could not be restored");
+      expect(hook.result.current.hasBlockedRecovery).toBe(true);
+      expect(hook.result.current.recoveryIssues).toContainEqual(
+        expect.objectContaining({ key: "impetus.draft.alice.broken", raw })
+      );
+      expect(hook.result.current.content).toBe(
+        kind === "invalid locks" ? "Original <!-- lock:x -->" : raw
+      );
+      expect(http).not.toHaveBeenCalled();
+      await act(async () => hook.result.current.retry());
+      act(() => hook.result.current.onChange("edited locally <!-- lock:x -->", []));
+      await advance(1600);
+      expect(http).not.toHaveBeenCalled();
+      expect(localStorage.getItem("impetus.draft.alice.broken")).toBe(raw);
+    }
+  );
+
+  it("reports a damaged sibling draft while restoring and saving the reliable selected task", async () => {
+    const raw = "{broken JSON";
+    localStorage.setItem("impetus.draft.alice.broken", raw);
+    writeOwnedDraft("alice", {
+      draftId: "valid",
+      content: "valid local",
+      lockIds: ["lock-valid"],
+      taskId: "A",
+      version: 7,
+      versionKnown: true,
+      dirty: true,
+      updatedAt: 1,
+    });
+    const scope = session();
+    const http = vi.fn<typeof fetch>(async (_input, init) => {
+      if (init?.method === "PUT") {
+        const body = JSON.parse(String(init.body));
+        return response(task("A", body.content, 8, body.lock_ids));
+      }
+      return response(task());
+    });
+    vi.stubGlobal("fetch", http);
+    const hook = renderHook(() =>
+      useTaskSync("default", { userId: "alice", session: scope, externalTaskId: "A" })
+    );
+    await advance();
+    expect(hook.result.current.hasBlockedRecovery).toBe(false);
+    expect(hook.result.current.content).toBe("valid local");
+    expect(hook.result.current.lockIds).toEqual(["lock-valid"]);
+    expect(hook.result.current.recoveryIssues[0]?.raw).toBe(raw);
+    expect(http.mock.calls.filter(([, init]) => init?.method === "PUT")).toHaveLength(1);
+    expect(localStorage.getItem("impetus.draft.alice.broken")).toBe(raw);
+  });
+
+  it("retains recovery edits across restart without turning a damaged selected source into a default POST", async () => {
+    const raw =
+      '{"draftId":"broken","content":"Original <!-- lock:x -->","lockIds":"x","taskId":"A","version":7,"versionKnown":true,"dirty":true,"updatedAt":1}';
+    localStorage.setItem("impetus.draft.alice.broken", raw);
+    const scope = session();
+    const http = vi.fn<typeof fetch>(async () => response(task()));
+    vi.stubGlobal("fetch", http);
+    const initial = renderHook(() =>
+      useTaskSync("default", { userId: "alice", session: scope, externalTaskId: "A" })
+    );
+    await advance();
+    act(() => initial.result.current.onChange("Retained recovery edit <!-- lock:x -->", []));
+    act(() => initial.result.current.flushLocal());
+    initial.unmount();
+    const restored = renderHook(() => useTaskSync("default", { userId: "alice", session: scope }));
+    await advance(1600);
+    expect(restored.result.current.hasBlockedRecovery).toBe(true);
+    expect(restored.result.current.content).toBe("Retained recovery edit <!-- lock:x -->");
+    expect(http).not.toHaveBeenCalled();
+    expect(inspectOwnedDrafts("alice").issues[0]?.raw).toBe(raw);
+  });
+
+  it("only resumes a repaired source after explicit retry, server version check and editor validation", async () => {
+    const raw =
+      '{"draftId":"broken","content":"Original <!-- lock:x -->","lockIds":"x","taskId":"A","version":7,"versionKnown":true,"dirty":true,"updatedAt":1}';
+    localStorage.setItem("impetus.draft.alice.broken", raw);
+    const scope = session();
+    let permits = false;
+    const http = vi.fn<typeof fetch>(async (_input, init) => {
+      if (init?.method === "PUT") {
+        const body = JSON.parse(String(init.body));
+        return response(task("A", body.content, 8, body.lock_ids));
+      }
+      return response(task());
+    });
+    vi.stubGlobal("fetch", http);
+    const hook = renderHook(() =>
+      useTaskSync("default", { userId: "alice", session: scope, canSave: () => permits })
+    );
+    await advance();
+    expect(hook.result.current.hasBlockedRecovery).toBe(true);
+    writeOwnedDraft("alice", {
+      draftId: "broken",
+      content: "Original <!-- lock:x -->",
+      lockIds: ["x"],
+      taskId: "A",
+      version: 7,
+      versionKnown: true,
+      dirty: true,
+      updatedAt: 1,
+    });
+    await advance(1600);
+    expect(http).not.toHaveBeenCalled();
+    await act(async () => hook.result.current.retry());
+    expect(hook.result.current.hasBlockedRecovery).toBe(false);
+    expect(hook.result.current.recoveryIssues).toEqual([]);
+    expect(hook.result.current.content).toBe("Original <!-- lock:x -->");
+    expect(hook.result.current.lockIds).toEqual(["x"]);
+    expect(http.mock.calls.map(([, init]) => init?.method)).toEqual([undefined]);
+    permits = true;
+    await act(async () => hook.result.current.retry());
+    expect(http.mock.calls.map(([, init]) => init?.method)).toEqual([undefined, "PUT"]);
+    expect(JSON.parse(String(http.mock.calls[1]?.[1]?.body))).toEqual({
+      content: "Original <!-- lock:x -->",
+      lock_ids: ["x"],
+      version: 7,
+    });
   });
 });

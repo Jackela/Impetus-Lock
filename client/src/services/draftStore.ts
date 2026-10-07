@@ -12,6 +12,33 @@ export interface DraftSnapshot {
   recoveryOf?: string;
 }
 
+/** An owned source that is preserved verbatim until its recovery error is resolved. */
+export interface DraftRecoveryIssue {
+  key: string;
+  raw: string;
+  content: string | null;
+  taskId: string | null;
+  error: string;
+}
+
+/** Recovery failure carries all original source strings for a lossless export. */
+export class DraftRecoveryError extends Error {
+  issues: DraftRecoveryIssue[];
+  recovered?: DraftSnapshot;
+
+  /**
+   * Create an actionable recovery error without discarding any source.
+   * @param issues - Preserved malformed owned sources
+   * @param recovered - A later local recovery backup, when available
+   */
+  constructor(issues: DraftRecoveryIssue[], recovered?: DraftSnapshot) {
+    super(`Owned draft could not be restored. ${issues[0]?.error ?? "Export the original draft."}`);
+    this.name = "DraftRecoveryError";
+    this.issues = issues;
+    this.recovered = recovered;
+  }
+}
+
 const PREFIX = "impetus.draft.";
 const prefix = (userId: string) => `${PREFIX}${encodeURIComponent(userId).replace(/\./g, "%2E")}.`;
 
@@ -44,23 +71,61 @@ export function newDraftId(): string {
 }
 
 /**
- * Read all valid account snapshots without deleting malformed source data.
+ * Inspect account snapshots and retain malformed sources with recovery diagnostics.
+ * @param userId - Server-confirmed account ID
+ * @returns Valid snapshots and lossless recovery issues
+ */
+export function inspectOwnedDrafts(userId: string): {
+  drafts: DraftSnapshot[];
+  issues: DraftRecoveryIssue[];
+} {
+  const result: DraftSnapshot[] = [];
+  const issues: DraftRecoveryIssue[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(prefix(userId))) continue;
+    const raw = localStorage.getItem(key);
+    if (raw === null) continue;
+    let value: unknown;
+    let error = "Snapshot JSON could not be read. Export the original draft.";
+    try {
+      value = JSON.parse(raw);
+      if (validSnapshot(value)) {
+        result.push(value);
+        continue;
+      }
+      const fields = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+      error =
+        fields &&
+        (!Array.isArray(fields.lockIds) || !fields.lockIds.every((id) => typeof id === "string"))
+          ? "Draft lock metadata could not be recovered. Export the original draft."
+          : "Draft snapshot metadata could not be recovered. Export the original draft.";
+    } catch {
+      /* The original JSON remains available in the recovery issue. */
+    }
+    const fields = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+    issues.push({
+      key,
+      raw,
+      content: typeof fields?.content === "string" ? fields.content : null,
+      taskId: typeof fields?.taskId === "string" ? fields.taskId : null,
+      error,
+    });
+  }
+  return { drafts: result.sort((a, b) => b.updatedAt - a.updatedAt), issues };
+}
+
+/**
+ * Read valid account snapshots and report every malformed source instead of skipping it.
  * @param userId - Server-confirmed account ID
  * @returns Snapshots ordered from newest to oldest
  */
 export function listOwnedDrafts(userId: string): DraftSnapshot[] {
-  const result: DraftSnapshot[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (!key?.startsWith(prefix(userId))) continue;
-    try {
-      const value: unknown = JSON.parse(localStorage.getItem(key)!);
-      if (validSnapshot(value)) result.push(value);
-    } catch {
-      /* Retain malformed source data for explicit recovery. */
-    }
+  const inspected = inspectOwnedDrafts(userId);
+  if (inspected.issues.length) {
+    throw new DraftRecoveryError(inspected.issues);
   }
-  return result.sort((a, b) => b.updatedAt - a.updatedAt);
+  return inspected.drafts;
 }
 
 /**

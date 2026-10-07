@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   discardLegacyDraft,
+  inspectOwnedDrafts,
   exportLegacyDraft,
   listOwnedDrafts,
   readLegacyDraft,
@@ -63,5 +64,24 @@ describe("owned draft storage", () => {
       updatedAt: 1,
     });
     expect(readOwnedDraft("alice")).toBeNull();
+  });
+
+  it("reports malformed owned lock metadata with its exact raw and recoverable body", () => {
+    const raw =
+      '{"draftId":"broken","content":"Retained <!-- lock:x -->","lockIds":"x","taskId":"A","version":7,"versionKnown":true,"dirty":true,"updatedAt":1}';
+    localStorage.setItem("impetus.draft.alice.broken", raw);
+    const inspected = inspectOwnedDrafts("alice");
+    expect(inspected.drafts).toEqual([]);
+    expect(inspected.issues).toEqual([
+      {
+        key: "impetus.draft.alice.broken",
+        raw,
+        content: "Retained <!-- lock:x -->",
+        taskId: "A",
+        error: expect.stringContaining("lock metadata"),
+      },
+    ]);
+    expect(() => readOwnedDraft("alice")).toThrow("could not be restored");
+    expect(localStorage.getItem("impetus.draft.alice.broken")).toBe(raw);
   });
 });

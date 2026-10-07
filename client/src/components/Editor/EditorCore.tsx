@@ -252,12 +252,14 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const recoveredIds = recoverLocks(editor, initialContent, locks);
       if (!recoveredIds) return;
 
-      editor.action((ctx) => {
+      const loaded = editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
         const currentContent = restoreLockMarkers(ctx.get(serializerCtx)(view.state.doc), ctx.get(remarkCtx));
-        if (currentContent !== initialContent) {
-          const document = ctx.get(parserCtx)(preserveLockMarkers(initialContent, ctx.get(remarkCtx)));
-          if (!document) return;
+        const document = ctx.get(parserCtx)(preserveLockMarkers(initialContent, ctx.get(remarkCtx)));
+        if (!document) return false;
+        // Markdown serializers normalize spacing and final newlines. Compare
+        // parsed documents before attempting a replacement protected by locks.
+        if (currentContent !== initialContent && !view.state.doc.eq(document)) {
           const before = view.state.doc;
           view.dispatch(
             view.state.tr
@@ -266,14 +268,23 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
               .setMeta("addToHistory", false)
           );
           // Native filters still decide whether the replacement is permitted.
-          if (view.state.doc === before) return;
+          if (view.state.doc === before) return false;
         }
         recoveredIds.forEach((lockId) => lockManager.applyLock(lockId));
         lockManager.extractLockEntriesFromMarkdown(initialContent).filter(({ lockId }) => recoveredIds.includes(lockId)).forEach(({ lockId, source }) =>
           lockManager.applyLock(lockId, { source })
         );
         refreshLockDecorations(view);
+        return true;
       });
+      if (!loaded) {
+        const failure = new Error("The restored draft could not replace the current locked document. Export the original and retry recovery.");
+        recoveryBlockedRef.current = true;
+        editor.action((ctx) => ctx.get(editorViewCtx).setProps({ editable: () => false }));
+        setRecoveryFailure({ error: failure, markdown: initialContent });
+        onRecoveryErrorRef.current?.(failure);
+        return;
+      }
 
       lastLoadedContentRef.current = { content: initialContent, version: contentVersion, locks: [...locks] };
     },

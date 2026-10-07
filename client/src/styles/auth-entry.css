@@ -1,7 +1,25 @@
+.authenticated-workspace {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.authenticated-workspace > .app {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+.authenticated-workspace > .account-bar,
+.authenticated-workspace > .session-notice,
+.authenticated-workspace > .draft-recovery {
+  flex-shrink: 0;
+}
 .auth-entry {
   min-height: 100dvh;
   display: grid;
-  place-items: center;
+  place-items: safe center;
+  height: 100dvh;
+  overflow: auto;
   padding: 24px;
   background: var(--bg-primary, #111);
   color: var(--text-primary, #eee);

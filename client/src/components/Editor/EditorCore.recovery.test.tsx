@@ -9,6 +9,69 @@ afterEach(() => {
 });
 
 describe("EditorCore draft recovery", () => {
+  it("accepts structurally identical locked Markdown with a different final newline", async () => {
+    const onReady = vi.fn<(editor: Editor) => void>();
+    const onRecoveryError = vi.fn();
+    const mounted = render(
+      <EditorCore
+        initialContent={"Server writing\n\n> Protected server <!-- lock:server-lock -->"}
+        initialLocks={["server-lock"]}
+        contentVersion={2}
+        onReady={onReady}
+        onRecoveryError={onRecoveryError}
+      />
+    );
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+    const view = onReady.mock.calls[0]![0].action((ctx) => ctx.get(editorViewCtx));
+    expect(onRecoveryError).not.toHaveBeenCalled();
+    expect(view.editable).toBe(true);
+    await waitFor(() =>
+      expect(mounted.container.querySelector('[data-lock-id="server-lock"]')).toBeInTheDocument()
+    );
+    const before = view.state.doc;
+    let protectedPosition = 0;
+    before.forEach((node, offset) => {
+      if (node.type.name === "blockquote") protectedPosition = offset;
+    });
+    act(() => view.dispatch(view.state.tr.delete(protectedPosition, before.content.size)));
+    expect(view.state.doc).toBe(before);
+    act(() => view.dispatch(view.state.tr.insertText("Continued ", 1)));
+    expect(view.state.doc.textContent).toContain("Continued Server writing");
+  });
+
+  it("reports and blocks a controlled replacement rejected by existing locks", async () => {
+    const onReady = vi.fn<(editor: Editor) => void>();
+    const onRecoveryError = vi.fn();
+    const mounted = render(
+      <EditorCore
+        initialContent={"Writer\n\n> Protected local <!-- lock:local-lock -->"}
+        initialLocks={["local-lock"]}
+        contentVersion={1}
+        onReady={onReady}
+        onRecoveryError={onRecoveryError}
+      />
+    );
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+    const view = onReady.mock.calls[0]![0].action((ctx) => ctx.get(editorViewCtx));
+    const before = view.state.doc;
+    const candidate = "Server writer\n\n> Protected server <!-- lock:server-lock -->";
+    mounted.rerender(
+      <EditorCore
+        initialContent={candidate}
+        initialLocks={["server-lock"]}
+        contentVersion={2}
+        onReady={onReady}
+        onRecoveryError={onRecoveryError}
+      />
+    );
+    await waitFor(() => expect(onRecoveryError).toHaveBeenCalledWith(expect.any(Error)));
+    expect(view.state.doc).toBe(before);
+    expect(view.editable).toBe(false);
+    expect(mounted.container.querySelector('[data-testid="unrecovered-draft"]')).toHaveTextContent(
+      "Protected server"
+    );
+  });
+
   it("restores and enforces prose locks omitted by legacy metadata", async () => {
     const onReady = vi.fn<(editor: Editor) => void>();
     const onChange = vi.fn();

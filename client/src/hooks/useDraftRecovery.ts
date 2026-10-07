@@ -45,5 +45,12 @@ export function useDraftRecovery() {
   const exportCurrent = useCallback((content: string, lockIds: string[]) => {
     download(JSON.stringify({ content, lockIds }), "writing-draft.json", "application/json");
   }, []);
-  return { legacy, error, exportLegacy, discardLegacy, exportCurrent };
+  const exportOwned = useCallback((issue: { key: string; raw: string }) => {
+    download(
+      JSON.stringify({ key: issue.key, raw: issue.raw }, null, 2),
+      "owned-draft-backup.json",
+      "application/json"
+    );
+  }, []);
+  return { legacy, error, exportLegacy, discardLegacy, exportCurrent, exportOwned };
 }

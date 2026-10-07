@@ -87,6 +87,7 @@ function App() {
 
   const {
     content: taskContent,
+    taskId: currentTaskId,
     lockIds: taskLocks,
     version: taskVersion,
     status: taskStatus,
@@ -99,6 +100,8 @@ function App() {
     resolveConflict,
     createLocalDraft,
     hasUnsavedChanges,
+    recoveryIssues,
+    hasBlockedRecovery,
   } = useTaskSync(INITIAL_STORY, {
     externalTaskId: editingTaskId,
     userId: auth?.user?.id,
@@ -180,13 +183,18 @@ function App() {
     showFeedback("LLM key cleared");
   }, [clearConfig, showFeedback]);
 
-  const handleTaskClick = useCallback((task: Pick<TaskRecord, "id" | "title">) => {
-    setRecoveryError(null);
-    setEditorReady(false);
-    editorRef.current = null;
-    setSelectedTask(task);
-    setEditingTaskId(task.id);
-  }, []);
+  const handleTaskClick = useCallback(
+    (task: Pick<TaskRecord, "id" | "title">) => {
+      if (task.id !== currentTaskId) {
+        setRecoveryError(null);
+        setEditorReady(false);
+        editorRef.current = null;
+      }
+      setSelectedTask(task);
+      setEditingTaskId(task.id);
+    },
+    [currentTaskId]
+  );
 
   const handleManualTrigger = useCallback((actionType: AIActionType) => {
     setManualTrigger(actionType);
@@ -200,6 +208,23 @@ function App() {
 
   return (
     <>
+      {recoveryIssues.length > 0 && (
+        <section className="draft-recovery" aria-label="Account draft recovery">
+          <h2>Owned draft needs recovery</h2>
+          <p>
+            The original writing is kept on this device. Export a backup and retry recovery before
+            continuing with this draft.
+          </p>
+          {recoveryIssues.map((issue) => (
+            <div key={issue.key}>
+              <p role="alert">{issue.error}</p>
+              <button type="button" onClick={() => recovery.exportOwned(issue)}>
+                Export original account draft
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
       {auth && recovery.legacy && (
         <section className="draft-recovery" aria-label="Unassigned draft recovery">
           <h2>Unassigned draft found</h2>
@@ -248,8 +273,13 @@ function App() {
               disabled={!conflict.server || !remoteEnabled}
               onClick={() => {
                 try {
-                  void resolveConflict("server");
+                  resolveConflict("server");
+                  // Explicit replacement starts a fresh editor and lock manager;
+                  // the prior document's locks must not reject the user's choice.
+                  editorRef.current = null;
+                  setEditorReady(false);
                   setRecoveryError(null);
+                  setRecoveryAttempt((attempt) => attempt + 1);
                 } catch {
                   /* The hook preserves and reports storage failures. */
                 }
@@ -338,26 +368,30 @@ function App() {
           visible={remoteEnabled && !recoveryError && mode === "muse"}
           remainingTime={timerRemaining}
         />
-        <EditorCore
-          key={`${draftIdentity}:${recoveryAttempt}`}
-          contentVersion={taskVersion}
-          mode={remoteEnabled && !recoveryError ? mode : "off"}
-          session={auth ? auth.session : undefined}
-          requestIdentity={draftIdentity}
-          initialContent={taskContent}
-          initialLocks={taskLocks}
-          externalTrigger={manualTrigger}
-          onTriggerProcessed={handleTriggerProcessed}
-          onTimerUpdate={setTimerRemaining}
-          onInterventionError={handleInterventionError}
-          onChange={handleEditorChange}
-          onRecoveryError={(error) => setRecoveryError(error.message)}
-          onReady={(editor) => {
-            editorRef.current = editor;
-            setEditorReady(true);
-            void Promise.resolve(retry()).catch(() => {});
-          }}
-        />
+        {hasBlockedRecovery ? (
+          <pre data-testid="unrecovered-account-draft">{taskContent}</pre>
+        ) : (
+          <EditorCore
+            key={`${draftIdentity}:${recoveryAttempt}`}
+            contentVersion={taskVersion}
+            mode={remoteEnabled && !recoveryError ? mode : "off"}
+            session={auth ? auth.session : undefined}
+            requestIdentity={draftIdentity}
+            initialContent={taskContent}
+            initialLocks={taskLocks}
+            externalTrigger={manualTrigger}
+            onTriggerProcessed={handleTriggerProcessed}
+            onTimerUpdate={setTimerRemaining}
+            onInterventionError={handleInterventionError}
+            onChange={handleEditorChange}
+            onRecoveryError={(error) => setRecoveryError(error.message)}
+            onReady={(editor) => {
+              editorRef.current = editor;
+              setEditorReady(true);
+              void Promise.resolve(retry()).catch(() => {});
+            }}
+          />
+        )}
       </AppLayout>
 
       <AppModals
