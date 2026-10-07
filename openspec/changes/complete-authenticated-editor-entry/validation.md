@@ -15,7 +15,7 @@
 
 | 检查                                                  | 当前结果                                                             | 本地证据                                                  |
 | ----------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------- |
-| 前端完整 Vitest / 关键路径逐文件覆盖                  | 852 通过、4 既有音频 skip；6 文件均 ≥80%，合计行覆盖 96.88%          | frontend-tests-final.log、client/coverage                 |
+| 前端完整 Vitest / 关键路径逐文件覆盖                  | 852 通过、4 既有音频 skip；6 文件均 ≥80%，合计行覆盖 96.88%          | frontend-tests-final.log、frontend-coverage/              |
 | app/tests/node TypeScript、ESLint、Prettier、生产构建 | 全通过；既有大块体积警告保留                                         | frontend-{types,lint,format,build}-final.log              |
 | 离线 API 类型合同和运行时元数据                       | API 与离线 FastAPI schema 一致，合同测试通过                         | frontend-contracts.log                                    |
 | 后端完整回归（不运行 llm_live）                       | 847 通过、6 skip；含真实 PostgreSQL 归属/版本原子性，合计覆盖 81.66% | backend-tests-integrated.log                              |
@@ -24,7 +24,7 @@
 | 当前 Sol 专属离线合同                                 | 75 通过，socket guard 网络尝试 0；已包含在 847 中，不能加总          | sol/current-contracts.log、sol/offline_network_guard.json |
 | 全量严格 OpenSpec 0.23.0                              | 23 通过、0 失败                                                      | openspec-all.log                                          |
 
-以上证据路径统一相对仓库 `.scratch/authenticated-editor-entry-2026-10-07/`，覆盖率产物除外。后端 pytest 采用其既有测试认证环境和 SQLite/独立 PostgreSQL schema；此表不代替下述真实认证浏览器验证。6 个后端 skip 为 4 个既有授权占位和 2 个不可达 Redis 用例，未实施协作扩展。前端 4 个 skip 位于 useAudioFeedback.test.ts。
+以上证据路径统一相对仓库 `.scratch/authenticated-editor-entry-2026-10-07/`；关键证据已逐文件核对 SHA256 后保留到原仓，覆盖率产物也保留于其中的 frontend-coverage/，避免误读原仓既有旧报告。后端 pytest 采用其既有测试认证环境和 SQLite/独立 PostgreSQL schema；此表不代替下述真实认证浏览器验证。6 个后端 skip 为 4 个既有授权占位和 2 个不可达 Redis 用例，未实施协作扩展。前端 4 个 skip 位于 useAudioFeedback.test.ts。
 
 关键行为保留小步 RED/GREEN：auth/（入口、表单、查询及导出）、drafts/（账户保存/冲突、存储读取写入、坏源）、editor/（请求生命周期、实际锁定位），另有 conflict-editor、canonical-lock、final-lock-boundaries 和 malformed-app 日志。Prettier 首次与 coverage 临时反例 fixture 并发时误报，待测试清理后顺序复跑通过；不是产品源码格式故障。
 
