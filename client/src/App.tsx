@@ -1,4 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { parserCtx, remarkCtx, type Editor } from "@milkdown/core";
+import { useOptionalAuth } from "./contexts/AuthContext";
+import { useDraftRecovery } from "./hooks/useDraftRecovery";
+import { validateRecoveredLocks } from "./utils/editorMarkdown";
 import "./App.css";
 import "./styles/variables.css";
 import "./styles/responsive.css";
@@ -25,6 +29,21 @@ import { AppModals } from "./AppModals";
  * @returns The application layout with editor and modal subtree
  */
 function App() {
+  const auth = useOptionalAuth();
+  const remoteEnabled = auth?.remoteEnabled ?? true;
+  const editorRef = useRef<Editor | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
+  const [recoveryAttempt, setRecoveryAttempt] = useState(0);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [legacyNotice, setLegacyNotice] = useState<string | null>(null);
+  const recovery = useDraftRecovery();
+  const validateDraft = useCallback((_identity: string, content: string, locks: string[]) => {
+    if (!editorRef.current) return false;
+    editorRef.current.action((ctx) =>
+      validateRecoveredLocks(content, locks, ctx.get(remarkCtx), ctx.get(parserCtx))
+    );
+    return true;
+  }, []);
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -69,13 +88,60 @@ function App() {
   const {
     content: taskContent,
     lockIds: taskLocks,
-    taskId,
     version: taskVersion,
     status: taskStatus,
     error: taskError,
     isSaving,
     onChange: handleTaskChange,
-  } = useTaskSync(INITIAL_STORY, { externalTaskId: editingTaskId });
+    draftIdentity,
+    conflict,
+    retry,
+    resolveConflict,
+    createLocalDraft,
+    hasUnsavedChanges,
+  } = useTaskSync(INITIAL_STORY, {
+    externalTaskId: editingTaskId,
+    userId: auth?.user?.id,
+    session: auth ? auth.session : undefined,
+    registerSnapshot: auth?.registerSnapshot,
+    canSave: auth ? validateDraft : undefined,
+  });
+
+  const activeIdentity = useRef(draftIdentity);
+  activeIdentity.current = draftIdentity;
+  const handleEditorChange = useCallback(
+    (markdown: string, locks: string[]) => {
+      if (activeIdentity.current === draftIdentity && !recoveryError)
+        handleTaskChange(markdown, locks);
+    },
+    [draftIdentity, handleTaskChange, recoveryError]
+  );
+  const importLegacy = () => {
+    const payload = recovery.legacy?.payload;
+    if (!payload || !editorRef.current) return;
+    try {
+      const locks = editorRef.current.action((ctx) =>
+        validateRecoveredLocks(
+          payload.content,
+          payload.lockIds,
+          ctx.get(remarkCtx),
+          ctx.get(parserCtx)
+        )
+      );
+      setEditingTaskId(null);
+      setSelectedTask(null);
+      createLocalDraft(payload.content, locks);
+      setLegacyNotice(
+        "Imported as a new draft. The original is still available until you discard it."
+      );
+    } catch (error) {
+      setLegacyNotice(
+        error instanceof Error
+          ? error.message
+          : "The original draft could not be restored. Export it and retry."
+      );
+    }
+  };
 
   const { refetch } = useTasks();
 
@@ -115,6 +181,9 @@ function App() {
   }, [clearConfig, showFeedback]);
 
   const handleTaskClick = useCallback((task: Pick<TaskRecord, "id" | "title">) => {
+    setRecoveryError(null);
+    setEditorReady(false);
+    editorRef.current = null;
     setSelectedTask(task);
     setEditingTaskId(task.id);
   }, []);
@@ -131,6 +200,99 @@ function App() {
 
   return (
     <>
+      {auth && recovery.legacy && (
+        <section className="draft-recovery" aria-label="Unassigned draft recovery">
+          <h2>Unassigned draft found</h2>
+          <p>
+            Choose whether to import this writing into your account as a new draft. The original
+            will stay on this device.
+          </p>
+          {(recovery.legacy.error || legacyNotice || recovery.error) && (
+            <p role="alert">{recovery.legacy.error ?? legacyNotice ?? recovery.error}</p>
+          )}
+          <div className="recovery-actions">
+            <button
+              type="button"
+              disabled={!remoteEnabled || !editorReady || !recovery.legacy.payload}
+              onClick={importLegacy}
+            >
+              Import as a new draft
+            </button>
+            <button type="button" onClick={recovery.exportLegacy}>
+              Export original draft
+            </button>
+            <button type="button" onClick={recovery.discardLegacy}>
+              Discard unassigned draft
+            </button>
+          </div>
+        </section>
+      )}
+      {conflict && (
+        <section className="draft-recovery" aria-label="Version conflict">
+          <h2>Your local draft and server version differ</h2>
+          <p>Both versions are kept. You can keep writing locally or choose how to continue.</p>
+          <div className="recovery-actions">
+            <button
+              type="button"
+              disabled={!remoteEnabled}
+              onClick={() => {
+                setEditingTaskId(null);
+                setSelectedTask(null);
+                void resolveConflict("new");
+              }}
+            >
+              Save as a new draft
+            </button>
+            <button
+              type="button"
+              disabled={!conflict.server || !remoteEnabled}
+              onClick={() => {
+                try {
+                  void resolveConflict("server");
+                  setRecoveryError(null);
+                } catch {
+                  /* The hook preserves and reports storage failures. */
+                }
+              }}
+            >
+              Use server version
+            </button>
+            <button type="button" onClick={() => recovery.exportCurrent(taskContent, taskLocks)}>
+              Export local draft
+            </button>
+          </div>
+          <details>
+            <summary>Local draft</summary>
+            <pre>{conflict.local.content}</pre>
+          </details>
+          {conflict.server && (
+            <details>
+              <summary>Server version</summary>
+              <pre>{conflict.server.content}</pre>
+            </details>
+          )}
+        </section>
+      )}
+      {(taskError || recoveryError) && (
+        <section className="draft-recovery" aria-label="Draft recovery actions">
+          <p role="alert">{recoveryError ?? taskError}</p>
+          <div className="recovery-actions">
+            <button
+              type="button"
+              onClick={() => {
+                setRecoveryError(null);
+                setRecoveryAttempt((v) => v + 1);
+                void Promise.resolve(retry()).catch(() => {});
+              }}
+            >
+              Retry draft recovery
+            </button>
+            <button type="button" onClick={() => recovery.exportCurrent(taskContent, taskLocks)}>
+              Export local draft
+            </button>
+          </div>
+        </section>
+      )}
       <AppLayout
         mode={mode}
         sidebarOpen={sidebarOpen}
@@ -140,13 +302,19 @@ function App() {
         onTaskClick={handleTaskClick}
         selectedTaskId={selectedTask?.id}
         taskStatus={
-          taskStatus === "loading"
-            ? "loading"
-            : isSaving
-              ? "saving"
-              : taskError
-                ? "error"
-                : "synced"
+          taskError
+            ? "error"
+            : !remoteEnabled
+              ? "local"
+              : taskStatus === "loading"
+                ? "loading"
+                : isSaving
+                  ? "saving"
+                  : taskError
+                    ? "error"
+                    : hasUnsavedChanges
+                      ? "unsaved"
+                      : "synced"
         }
         isSaving={isSaving}
         taskError={taskError}
@@ -157,7 +325,7 @@ function App() {
         onShowStyleLearning={() => setShowStyleLearning((prev) => !prev)}
         showStyleLearning={showStyleLearning}
         llmFeedback={llmFeedback}
-        isConfigured={isConfigured}
+        isConfigured={isConfigured && remoteEnabled && !recoveryError}
         llmProviderLabel={llmConfig ? getLLMProviderLabel(llmConfig.provider) : null}
         showStats={showStats}
         onToggleStats={() => setShowStats((prev) => !prev)}
@@ -167,20 +335,28 @@ function App() {
       >
         <TimerIndicator
           progress={timerProgress}
-          visible={mode === "muse"}
+          visible={remoteEnabled && !recoveryError && mode === "muse"}
           remainingTime={timerRemaining}
         />
         <EditorCore
-          key={taskId ?? "local"}
+          key={`${draftIdentity}:${recoveryAttempt}`}
           contentVersion={taskVersion}
-          mode={mode}
+          mode={remoteEnabled && !recoveryError ? mode : "off"}
+          session={auth ? auth.session : undefined}
+          requestIdentity={draftIdentity}
           initialContent={taskContent}
           initialLocks={taskLocks}
           externalTrigger={manualTrigger}
           onTriggerProcessed={handleTriggerProcessed}
           onTimerUpdate={setTimerRemaining}
           onInterventionError={handleInterventionError}
-          onChange={handleTaskChange}
+          onChange={handleEditorChange}
+          onRecoveryError={(error) => setRecoveryError(error.message)}
+          onReady={(editor) => {
+            editorRef.current = editor;
+            setEditorReady(true);
+            void Promise.resolve(retry()).catch(() => {});
+          }}
         />
       </AppLayout>
 
@@ -205,7 +381,7 @@ function App() {
         onStorageModeChange={setStorageMode}
         onUnlock={unlock}
         onLock={lock}
-        showCreateTaskModal={showCreateTaskModal}
+        showCreateTaskModal={showCreateTaskModal && remoteEnabled && !recoveryError}
         onCloseCreateTaskModal={() => setShowCreateTaskModal(false)}
         onTaskCreated={(task) => {
           handleTaskClick(task);

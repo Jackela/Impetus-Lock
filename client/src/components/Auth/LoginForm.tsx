@@ -7,7 +7,7 @@
  */
 
 import type { JSX } from "react";
-import React, { useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
 /** Props for LoginForm */
@@ -36,9 +36,17 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const errorId = useId();
+  const errorRef = useRef<HTMLDivElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const initiallyFocused = useRef(false);
+  const submitting = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const busy = isLoading || isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
+    if (busy || submitting.current) return;
     clearError();
     setValidationError(null);
 
@@ -53,37 +61,54 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
       return;
     }
 
+    submitting.current = true;
+    setIsSubmitting(true);
     try {
       await login(email, password);
       onSuccess?.();
     } catch {
       // Error is handled by auth context
+    } finally {
+      submitting.current = false;
+      setIsSubmitting(false);
     }
   };
 
   const displayError = validationError || error;
+  useEffect(() => {
+    if (displayError) errorRef.current?.focus();
+    else if (!busy && !initiallyFocused.current) {
+      emailRef.current?.focus();
+      initiallyFocused.current = true;
+    }
+  }, [displayError, busy]);
 
   return (
     <div className="login-form">
       <h2>Login</h2>
 
       {displayError && (
-        <div className="error-message" role="alert">
+        <div id={errorId} ref={errorRef} tabIndex={-1} className="error-message" role="alert">
           {displayError}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} aria-label="Login" aria-busy={busy}>
         <div className="form-group">
           <label htmlFor="email">Email</label>
           <input
             id="email"
+            ref={emailRef}
+            name="email"
+            autoComplete="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
+            disabled={busy}
             placeholder="your@email.com"
             required
+            aria-describedby={displayError ? errorId : undefined}
+            aria-invalid={!!displayError}
           />
         </div>
 
@@ -91,17 +116,21 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
           <label htmlFor="password">Password</label>
           <input
             id="password"
+            name="password"
+            autoComplete="current-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
+            disabled={busy}
             placeholder="••••••••"
             required
+            aria-describedby={displayError ? errorId : undefined}
+            aria-invalid={!!displayError}
           />
         </div>
 
-        <button type="submit" disabled={isLoading} className="submit-button">
-          {isLoading ? "Logging in..." : "Login"}
+        <button type="submit" disabled={busy} className="submit-button">
+          {busy ? "Logging in..." : "Login"}
         </button>
       </form>
 
@@ -112,7 +141,7 @@ export function LoginForm({ onSuccess, onSwitchToRegister }: LoginFormProps): JS
             type="button"
             onClick={onSwitchToRegister}
             className="link-button"
-            disabled={isLoading}
+            disabled={busy}
           >
             Register
           </button>

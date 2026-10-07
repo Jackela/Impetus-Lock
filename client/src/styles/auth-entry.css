@@ -1,0 +1,130 @@
+.auth-entry {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg-primary, #111);
+  color: var(--text-primary, #eee);
+}
+.auth-entry__card {
+  width: min(100%, 440px);
+  padding: 28px;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 12px;
+  background: var(--bg-secondary, #1a1a1a);
+}
+.auth-entry__intro {
+  line-height: 1.5;
+  color: var(--text-secondary, #bbb);
+}
+.auth-entry .form-group,
+.session-sign-in .form-group {
+  display: grid;
+  gap: 6px;
+  margin-block: 16px;
+}
+.auth-entry input,
+.session-sign-in input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color, #666);
+  border-radius: 6px;
+  background: var(--bg-primary, #111);
+  color: inherit;
+  font: inherit;
+}
+.auth-entry button,
+.account-bar button,
+.session-notice button,
+.draft-recovery button {
+  padding: 8px 12px;
+  min-height: 40px;
+  border: 1px solid var(--border-color, #777);
+  border-radius: 6px;
+  background: var(--bg-secondary, #222);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.auth-entry button:focus-visible,
+.account-bar button:focus-visible,
+.session-notice button:focus-visible,
+.draft-recovery button:focus-visible,
+.auth-entry input:focus-visible,
+.session-sign-in input:focus-visible {
+  outline: 2px solid var(--accent-primary, #ae8aff);
+  outline-offset: 3px;
+}
+.auth-entry button:disabled,
+.account-bar button:disabled,
+.session-notice button:disabled,
+.draft-recovery button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.auth-entry .error-message,
+.session-sign-in .error-message,
+.session-error {
+  color: var(--error-color, #ffaaa8);
+  line-height: 1.5;
+}
+.account-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border-color, #444);
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-primary, #eee);
+  overflow-wrap: anywhere;
+}
+.session-notice,
+.draft-recovery {
+  margin: 12px 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color, #777);
+  border-radius: 8px;
+  background: var(--bg-secondary, #1a1a1a);
+  color: var(--text-primary, #eee);
+  line-height: 1.5;
+}
+.session-notice p,
+.draft-recovery p {
+  margin: 0 0 8px;
+}
+.recovery-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.session-sign-in {
+  max-width: 440px;
+  margin-top: 16px;
+}
+.draft-recovery details {
+  margin-top: 12px;
+}
+.draft-recovery pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+}
+@media (max-width: 600px) {
+  .auth-entry {
+    padding: 12px;
+  }
+  .auth-entry__card {
+    padding: 20px;
+  }
+  .account-bar {
+    padding-inline: 12px;
+    flex-wrap: wrap;
+  }
+  .session-notice,
+  .draft-recovery {
+    margin: 8px 12px;
+  }
+}

@@ -1,4 +1,5 @@
 import { cookieAuthOptions } from "./cookieAuth";
+import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
 
 /**
  * Style Learning API Client
@@ -21,10 +22,7 @@ export type { StyleVector, StyleAnalysisResponse, StyleApplyResponse } from "./t
 /**
  * Options for API calls.
  */
-export interface StyleClientOptions {
-  /** AbortSignal for request cancellation */
-  signal?: AbortSignal;
-}
+export type StyleClientOptions = RemoteRequestOptions;
 
 /**
  * API client configuration.
@@ -92,7 +90,7 @@ export async function analyzeStyle(
   userId: string,
   options?: StyleClientOptions
 ): Promise<StyleAnalysisResponse> {
-  const response = await fetch(
+  const response = await sessionFetch(
     `${API_BASE_URL}/style/analyze`,
     cookieAuthOptions({
       method: "POST",
@@ -104,17 +102,20 @@ export async function analyzeStyle(
         user_id: userId,
       }),
       signal: options?.signal,
-    })
+    }),
+    options
   );
 
   let data: unknown;
   try {
     data = await response.json();
   } catch (parseError) {
+    assertCurrentSession(options?.session);
     throw new StyleAPIError(response.status, "ParseError", "Failed to parse response JSON", {
       originalError: parseError instanceof Error ? parseError.message : String(parseError),
     });
   }
+  assertCurrentSession(options?.session);
 
   // Type guard to safely check parsed data
   function isRecord(value: unknown): value is Record<string, unknown> {

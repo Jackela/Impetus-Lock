@@ -16,6 +16,7 @@ import { useTasks } from "./hooks/useTasks";
 import type { TaskRecord } from "./types/task";
 import type { AgentMode } from "./hooks/useWritingState";
 import { AIActionType } from "./types/ai-actions";
+import { useOptionalAuth } from "./contexts/AuthContext";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -26,7 +27,7 @@ interface AppLayoutProps {
   onManualTrigger: (action: AIActionType) => void;
   onTaskClick: (task: TaskRecord) => void;
   selectedTaskId?: string | null;
-  taskStatus: "loading" | "saving" | "synced" | "error";
+  taskStatus: "loading" | "saving" | "synced" | "error" | "local" | "unsaved";
   isSaving: boolean;
   taskError: string | null;
   onCreateTask: () => void;
@@ -103,6 +104,8 @@ export function AppLayout({
   onToggleAchievements,
   content,
 }: AppLayoutProps) {
+  const auth = useOptionalAuth();
+  const remoteEnabled = auth?.remoteEnabled ?? true;
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasks();
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -223,7 +226,17 @@ export function AppLayout({
           </button>
           <TelemetryToggle />
           <span className="task-status" role="status">
-            {taskStatus === "loading" ? "Loading draft…" : isSaving ? "Saving…" : "Synced"}
+            {taskStatus === "loading"
+              ? "Loading draft…"
+              : taskStatus === "local"
+                ? "Writing locally"
+                : isSaving
+                  ? "Saving…"
+                  : taskStatus === "error"
+                    ? "Save failed"
+                    : taskStatus === "unsaved"
+                      ? "Unsaved changes"
+                      : "Saved"}
           </span>
           {taskError && (
             <span className="task-error" role="alert">
@@ -260,6 +273,7 @@ export function AppLayout({
           <select
             id="mode-selector"
             data-testid="mode-selector"
+            disabled={!remoteEnabled}
             value={mode}
             onChange={(e) => onModeChange(e.target.value as AgentMode)}
           >
@@ -267,7 +281,7 @@ export function AppLayout({
             <option value="muse">Muse</option>
             <option value="loki">Loki</option>
           </select>
-          <ManualTriggerButton mode={mode} onTrigger={onManualTrigger} />
+          <ManualTriggerButton mode={remoteEnabled ? mode : "off"} onTrigger={onManualTrigger} />
           <button
             type="button"
             className={`llm-settings-trigger ${isConfigured ? "configured" : ""}`}
@@ -318,7 +332,7 @@ export function AppLayout({
         Press <kbd>?</kbd> for help | <Export />
       </footer>
 
-      {showStats && (
+      {showStats && remoteEnabled && (
         <div className="stats-overlay" data-testid="stats-overlay">
           <div className="stats-modal">
             <Stats />
@@ -334,7 +348,7 @@ export function AppLayout({
         </div>
       )}
 
-      {showAchievements && (
+      {showAchievements && remoteEnabled && (
         <div className="achievements-overlay" data-testid="achievements-overlay">
           <div className="achievements-modal">
             <Achievements />
@@ -350,10 +364,10 @@ export function AppLayout({
         </div>
       )}
 
-      {showStyleLearning && (
+      {showStyleLearning && remoteEnabled && (
         <div className="style-learning-overlay" data-testid="style-learning-overlay">
           <div className="style-learning-modal">
-            <StyleLearningPanel userId="default-user" />
+            <StyleLearningPanel userId={auth?.user?.id ?? "default-user"} />
             <button
               type="button"
               className="close-button"
@@ -366,7 +380,7 @@ export function AppLayout({
         </div>
       )}
 
-      <NewTaskButton onClick={onCreateTask} ariaLabel="Create new task" />
+      <NewTaskButton disabled={!remoteEnabled} onClick={onCreateTask} ariaLabel="Create new task" />
 
       <ExportModal
         open={showExportModal}

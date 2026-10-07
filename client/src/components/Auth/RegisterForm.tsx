@@ -7,7 +7,7 @@
  */
 
 import type { JSX } from "react";
-import React, { useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 
 /** Props for RegisterForm */
@@ -37,9 +37,18 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps):
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const errorId = useId();
+  const passwordHintId = useId();
+  const errorRef = useRef<HTMLDivElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const initiallyFocused = useRef(false);
+  const submitting = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const busy = isLoading || isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
+    if (busy || submitting.current) return;
     clearError();
     setValidationError(null);
 
@@ -64,37 +73,54 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps):
       return;
     }
 
+    submitting.current = true;
+    setIsSubmitting(true);
     try {
       await register(email, password);
       onSuccess?.();
     } catch {
       // Error is handled by auth context
+    } finally {
+      submitting.current = false;
+      setIsSubmitting(false);
     }
   };
 
   const displayError = validationError || error;
+  useEffect(() => {
+    if (displayError) errorRef.current?.focus();
+    else if (!busy && !initiallyFocused.current) {
+      emailRef.current?.focus();
+      initiallyFocused.current = true;
+    }
+  }, [displayError, busy]);
 
   return (
     <div className="register-form">
       <h2>Register</h2>
 
       {displayError && (
-        <div className="error-message" role="alert">
+        <div id={errorId} ref={errorRef} tabIndex={-1} className="error-message" role="alert">
           {displayError}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} aria-label="Register" aria-busy={busy}>
         <div className="form-group">
           <label htmlFor="register-email">Email</label>
           <input
             id="register-email"
+            ref={emailRef}
+            name="email"
+            autoComplete="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            disabled={isLoading}
+            disabled={busy}
             placeholder="your@email.com"
             required
+            aria-describedby={displayError ? errorId : undefined}
+            aria-invalid={!!displayError}
           />
         </div>
 
@@ -102,44 +128,51 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps):
           <label htmlFor="register-password">Password</label>
           <input
             id="register-password"
+            name="password"
+            autoComplete="new-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            disabled={isLoading}
+            disabled={busy}
             placeholder="••••••••"
             required
             minLength={8}
+            aria-describedby={[passwordHintId, displayError ? errorId : ""]
+              .filter(Boolean)
+              .join(" ")}
+            aria-invalid={!!displayError}
           />
-          <small className="hint">Must be at least 8 characters</small>
+          <small id={passwordHintId} className="hint">
+            Must be at least 8 characters
+          </small>
         </div>
 
         <div className="form-group">
           <label htmlFor="confirm-password">Confirm Password</label>
           <input
             id="confirm-password"
+            name="confirm-password"
+            autoComplete="new-password"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            disabled={isLoading}
+            disabled={busy}
             placeholder="••••••••"
             required
+            aria-describedby={displayError ? errorId : undefined}
+            aria-invalid={!!displayError}
           />
         </div>
 
-        <button type="submit" disabled={isLoading} className="submit-button">
-          {isLoading ? "Creating account..." : "Register"}
+        <button type="submit" disabled={busy} className="submit-button">
+          {busy ? "Creating account..." : "Register"}
         </button>
       </form>
 
       {onSwitchToLogin && (
         <p className="switch-form">
           Already have an account?{" "}
-          <button
-            type="button"
-            onClick={onSwitchToLogin}
-            className="link-button"
-            disabled={isLoading}
-          >
+          <button type="button" onClick={onSwitchToLogin} className="link-button" disabled={busy}>
             Login
           </button>
         </p>

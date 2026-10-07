@@ -22,6 +22,9 @@ import {
 
 import { createTask } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
+import { useCallback } from "react";
+import { useOptionalAuth } from "../contexts/AuthContext";
+import { assertCurrentSession, type RemoteSession } from "../services/api/remoteSession";
 
 /** Result object returned by the useCreateTask hook. */
 export interface UseCreateTaskResult {
@@ -41,6 +44,31 @@ export interface CreateTaskVariables {
   content: string;
   /** Optional list of lock IDs to associate with the task */
   lockIds?: string[];
+}
+
+type ScopedCreateVariables = CreateTaskVariables & { session?: RemoteSession | null };
+type CreateCallbacks = Parameters<UseCreateTaskResult["mutate"]>[1];
+
+function scopedCallbacks(
+  variables: CreateTaskVariables,
+  options: CreateCallbacks,
+  session?: RemoteSession | null
+): CreateCallbacks {
+  if (!options) return options;
+  const current = (): boolean =>
+    session === undefined || (session !== null && session.isCurrent() && !session.signal.aborted);
+  return {
+    ...options,
+    onSuccess: (data, _variables, result, context) => {
+      if (current()) options.onSuccess?.(data, variables, result, context);
+    },
+    onError: (error, _variables, result, context) => {
+      if (current()) options.onError?.(error, variables, result, context);
+    },
+    onSettled: (data, error, _variables, result, context) => {
+      if (current()) options.onSettled?.(data, error, variables, result, context);
+    },
+  };
 }
 
 /**
@@ -73,21 +101,49 @@ export interface CreateTaskVariables {
  */
 export function useCreateTask(): UseCreateTaskResult {
   const queryClient = useQueryClient();
+  const auth = useOptionalAuth();
+  const session = auth?.session;
 
-  const mutation = useMutation({
-    mutationFn: async (variables: CreateTaskVariables) => {
-      return createTask({ content: variables.content, lockIds: variables.lockIds ?? [] });
+  const mutation = useMutation<TaskRecord, Error, ScopedCreateVariables>({
+    mutationFn: async (variables) => {
+      return createTask(
+        { content: variables.content, lockIds: variables.lockIds ?? [] },
+        { session: variables.session }
+      );
     },
-    onSuccess: () => {
+    onSuccess: (_task, variables) => {
+      if (variables.session && !variables.session.isCurrent()) return;
       // Invalidate the task list query to trigger a refetch
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      return queryClient.invalidateQueries({
+        queryKey: variables.session ? ["tasks", variables.session.userId] : ["tasks"],
+      });
     },
+    ...(auth ? { retry: false } : {}),
   });
+  const { mutate: execute, mutateAsync: executeAsync } = mutation;
+  const mutate: UseCreateTaskResult["mutate"] = useCallback(
+    (variables, options) => {
+      execute({ ...variables, session }, scopedCallbacks(variables, options, session));
+    },
+    [execute, session]
+  );
+  const mutateAsync: UseCreateTaskResult["mutateAsync"] = useCallback(
+    async (variables, options) => {
+      const task = await executeAsync(
+        { ...variables, session },
+        scopedCallbacks(variables, options, session)
+      );
+      assertCurrentSession(session);
+      return task;
+    },
+    [executeAsync, session]
+  );
 
+  const ownsMutation = auth === undefined || !!mutation.variables?.session?.isCurrent();
   return {
-    mutate: mutation.mutate,
-    mutateAsync: mutation.mutateAsync,
-    isLoading: mutation.isPending,
-    error: mutation.error ?? null,
+    mutate,
+    mutateAsync,
+    isLoading: ownsMutation && mutation.isPending,
+    error: ownsMutation ? (mutation.error ?? null) : null,
   };
 }
