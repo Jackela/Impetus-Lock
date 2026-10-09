@@ -1,0 +1,66 @@
+name: Authenticated Editor
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auth-editor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-authentication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: auth_editor
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d auth_editor"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: |
+          pipx install poetry
+          poetry -C server install
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install browser dependencies
+        working-directory: client
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Verify real authentication, account isolation and restart durability
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/auth_editor
+        run: python3 scripts/run-auth-e2e.py
+      - name: Preserve failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authenticated-editor-failure
+          path: client/test-results/authenticated-editor/
+          retention-days: 7

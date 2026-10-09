@@ -10,8 +10,8 @@ from typing import Any
 import bcrypt
 import jwt
 
-# JWT configuration
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
+# Existing fallback; signing and verification read environment overrides at request time.
+JWT_SECRET = "dev-secret-change-in-production"
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
@@ -74,7 +74,9 @@ def create_access_token(user_id: str, expires_delta: timedelta | None = None) ->
         "type": "access",
     }
 
-    token_str: str = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    token_str: str = jwt.encode(
+        payload, os.getenv("JWT_SECRET", JWT_SECRET), algorithm=JWT_ALGORITHM
+    )
     return token_str
 
 
@@ -88,14 +90,19 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
         Decoded token payload if valid, None otherwise.
     """
     try:
-        payload: dict[str, Any] = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload: dict[str, Any] = jwt.decode(
+            token,
+            os.getenv("JWT_SECRET", JWT_SECRET),
+            algorithms=[JWT_ALGORITHM],
+            options={"require": ["sub", "exp"]},
+        )
         # Verify token type
         if payload.get("type") != "access":
             return None
         return payload
     except jwt.ExpiredSignatureError:
         return None
-    except jwt.InvalidTokenError:
+    except (jwt.InvalidTokenError, TypeError, ValueError, OverflowError):
         return None
 
 
@@ -110,7 +117,10 @@ def get_token_expiry(token: str) -> datetime | None:
     """
     try:
         payload = jwt.decode(
-            token, JWT_SECRET, algorithms=[JWT_ALGORITHM], options={"verify_exp": False}
+            token,
+            os.getenv("JWT_SECRET", JWT_SECRET),
+            algorithms=[JWT_ALGORITHM],
+            options={"verify_exp": False},
         )
         exp_timestamp = payload.get("exp")
         if exp_timestamp:

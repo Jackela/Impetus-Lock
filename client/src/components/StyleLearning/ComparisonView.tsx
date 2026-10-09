@@ -1,3 +1,4 @@
+import type { JSX } from "react";
 import { useCallback, useRef } from "react";
 import type { StyleHistoryRecord } from "../../hooks/useStyleHistory";
 import { StyleComparisonChart } from "./StyleComparisonChart";

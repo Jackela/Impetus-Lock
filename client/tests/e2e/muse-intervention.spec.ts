@@ -14,6 +14,13 @@
 
 import { test, expect } from "@playwright/test";
 
+// Browser-only test hooks used by this legacy suite; no runtime installation.
+declare global {
+  interface Window {
+    audioPlayed: boolean;
+  }
+}
+
 test.describe("Muse Mode - STUCK Detection and Intervention", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to editor in Muse mode

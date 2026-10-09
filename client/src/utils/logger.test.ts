@@ -73,16 +73,82 @@ describe("utils/logger", () => {
 
       expect(infoSpy).toHaveBeenCalledOnce();
     });
+
+    it("falls back to DEBUG and emits debug for the numeric environment key 0", async () => {
+      vi.stubEnv("VITE_LOG_LEVEL", "0");
+      try {
+        const { createLogger: createFreshLogger, configureLogger: configureFreshLogger } =
+          await importPristineLogger();
+        configureFreshLogger({ enableAll: true });
+
+        createFreshLogger("EnvNS").debug("numeric key fallback");
+
+        expect(debugSpy).toHaveBeenCalledWith("[EnvNS]", "numeric key fallback");
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
+
+    it.each(["1", "2", "3", "4", "unsupported", "constructor", "__proto__"])(
+      "falls back to DEBUG for unsupported environment level %s",
+      async (level) => {
+        vi.stubEnv("VITE_LOG_LEVEL", level);
+        try {
+          const { createLogger: createFreshLogger, configureLogger: configureFreshLogger } =
+            await importPristineLogger();
+          configureFreshLogger({ enableAll: true });
+
+          createFreshLogger("EnvNS").debug("unsupported level fallback");
+
+          expect(debugSpy).toHaveBeenCalledWith("[EnvNS]", "unsupported level fallback");
+        } finally {
+          vi.unstubAllEnvs();
+        }
+      }
+    );
+
+    it.each([
+      { level: "dEbUg", debug: 1, info: 1, warn: 1, error: 1 },
+      { level: "info", debug: 0, info: 1, warn: 1, error: 1 },
+      { level: "WaRn", debug: 0, info: 0, warn: 1, error: 1 },
+      { level: "error", debug: 0, info: 0, warn: 0, error: 1 },
+      { level: "NoNe", debug: 0, info: 0, warn: 0, error: 0 },
+    ])("uses case-insensitive named environment level $level", async (expected) => {
+      vi.stubEnv("VITE_LOG_LEVEL", expected.level);
+      try {
+        const { createLogger: createFreshLogger, configureLogger: configureFreshLogger } =
+          await importPristineLogger();
+        configureFreshLogger({ enableAll: true });
+        const logger = createFreshLogger("EnvNS");
+
+        logger.debug("d");
+        logger.info("i");
+        logger.warn("w");
+        logger.error("e");
+
+        expect(debugSpy).toHaveBeenCalledTimes(expected.debug);
+        expect(infoSpy).toHaveBeenCalledTimes(expected.info);
+        expect(warnSpy).toHaveBeenCalledTimes(expected.warn);
+        expect(errorSpy).toHaveBeenCalledTimes(expected.error);
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
   });
 
   describe("LogLevel", () => {
     it("defines the severity ladder consumed by level gating", () => {
-      // Assert the forward mapping only; TS enums also carry reverse mappings.
+      // Preserve the numeric enum's forward and reverse runtime mappings.
       expect(LogLevel.DEBUG).toBe(0);
       expect(LogLevel.INFO).toBe(1);
       expect(LogLevel.WARN).toBe(2);
       expect(LogLevel.ERROR).toBe(3);
       expect(LogLevel.NONE).toBe(4);
+      expect(LogLevel[0]).toBe("DEBUG");
+      expect(LogLevel[1]).toBe("INFO");
+      expect(LogLevel[2]).toBe("WARN");
+      expect(LogLevel[3]).toBe("ERROR");
+      expect(LogLevel[4]).toBe("NONE");
     });
   });
 
@@ -242,7 +308,9 @@ describe("utils/logger", () => {
 
       createLogger("EvtNS").event("tick");
 
-      const entry = JSON.parse(infoSpy.mock.calls[0][1] as string) as Record<string, unknown>;
+      const call = infoSpy.mock.calls[0];
+      if (!call) throw new Error("Expected an event log");
+      const entry = JSON.parse(call[1] as string) as Record<string, unknown>;
       expect(Object.keys(entry).sort()).toEqual(["event", "namespace", "timestamp"]);
     });
 

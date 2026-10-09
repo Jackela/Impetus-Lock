@@ -16,8 +16,10 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from server.auth import get_current_user
 from server.infrastructure.persistence.database import get_session_optional
 from server.models.style import StyleModel
+from server.models.user import User
 
 router = APIRouter(prefix="/style", tags=["style"])
 
@@ -300,6 +302,7 @@ def apply_style_to_text(text: str, style_vector: StyleVector, intensity: float) 
 @router.post("/analyze", response_model=StyleAnalysisResponse, status_code=201)
 async def analyze_style(
     request: StyleAnalysisRequest,
+    current_user: User = Depends(get_current_user),
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> StyleAnalysisResponse:
     """Analyze user writing sample and extract style features.
@@ -309,6 +312,7 @@ async def analyze_style(
 
     Args:
         request: Style analysis request with text sample and user_id.
+        current_user: Authenticated owner of the profile.
         session: Database session (injected, optional for testing).
 
     Returns:
@@ -327,6 +331,9 @@ async def analyze_style(
           }'
         ```
     """
+    if request.user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Style profile not found")
+
     # Analyze text style
     style_vector = analyze_text_style(request.text)
 
@@ -365,6 +372,7 @@ async def analyze_style(
 @router.post("/apply", response_model=StyleApplyResponse)
 async def apply_style(
     request: StyleApplyRequest,
+    current_user: User = Depends(get_current_user),
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> StyleApplyResponse:
     """Apply learned style to AI-generated text.
@@ -374,6 +382,7 @@ async def apply_style(
 
     Args:
         request: Style application request with text and user_id.
+        current_user: Authenticated owner of the profile.
         session: Database session (injected, optional for testing).
 
     Returns:
@@ -393,6 +402,9 @@ async def apply_style(
           }'
         ```
     """
+    if request.user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Style profile not found")
+
     style_version = 0
     style_vector = None
 
@@ -447,12 +459,14 @@ async def apply_style(
 @router.get("/profile/{user_id}", response_model=StyleProfileResponse)
 async def get_style_profile(
     user_id: str,
+    current_user: User = Depends(get_current_user),
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> StyleProfileResponse:
     """Retrieve stored style profile for a user.
 
     Args:
         user_id: User identifier.
+        current_user: Authenticated owner of the profile.
         session: Database session (injected, optional for testing).
 
     Returns:
@@ -466,6 +480,9 @@ async def get_style_profile(
         curl http://localhost:8000/style/profile/user_123
         ```
     """
+    if user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Style profile not found")
+
     if session is None:
         raise HTTPException(
             status_code=503,
@@ -494,12 +511,14 @@ async def get_style_profile(
 @router.delete("/profile/{user_id}", status_code=204)
 async def delete_style_profile(
     user_id: str,
+    current_user: User = Depends(get_current_user),
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> None:
     """Delete stored style profile for a user.
 
     Args:
         user_id: User identifier.
+        current_user: Authenticated owner of the profile.
         session: Database session (injected, optional for testing).
 
     Raises:
@@ -510,6 +529,9 @@ async def delete_style_profile(
         curl -X DELETE http://localhost:8000/style/profile/user_123
         ```
     """
+    if user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Style profile not found")
+
     if session is None:
         raise HTTPException(
             status_code=503,

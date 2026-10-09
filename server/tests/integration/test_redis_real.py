@@ -60,6 +60,7 @@ class TestRealRedisCollaboration:
     async def test_pubsub_roundtrip_delivers_published_message(
         self,
         real_redis: redis_asyncio.Redis,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Publishing JSON from another client reaches subscribed handlers."""
         channel = f"test:collab:{uuid4().hex}"
@@ -74,8 +75,10 @@ class TestRealRedisCollaboration:
             received.set()
 
         await manager.connect()
-        await manager.subscribe(channel, handler)
         await manager.start_listening()
+        await asyncio.sleep(0.1)
+        assert "Error in Redis listener" not in caplog.text
+        await manager.subscribe(channel, handler)
         try:
             message = {
                 "type": "update",

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from sqlalchemy import delete, desc, func, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.infrastructure.persistence.database import get_db_manager
@@ -81,47 +82,43 @@ class StyleHistoryRepository:
                 result = await session.execute(query)
                 return list(result.scalars().all())
 
-    async def get_by_id(self, history_id: UUID) -> StyleHistoryModel | None:
-        """Get a specific style history record by ID."""
+    async def get_by_id(
+        self, history_id: UUID, user_id: str | None = None
+    ) -> StyleHistoryModel | None:
+        """Get a history record by ID, restricted to the owner when provided."""
         from server.models.style_history import StyleHistoryModel
 
+        query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
+        if user_id is not None:
+            query = query.where(StyleHistoryModel.user_id == user_id)
+
         if self.session:
-            query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
             result = await self.session.execute(query)
             record: StyleHistoryModel | None = result.scalar_one_or_none()
             return record
         else:
             async with get_db_manager().session() as session:
-                query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
                 result = await session.execute(query)
             record_else: StyleHistoryModel | None = result.scalar_one_or_none()
             return record_else
 
-        if self.session:
-            query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
-            result = await self.session.execute(query)
-            return result.scalar_one_or_none()
-        else:
-            async with get_db_manager().session() as session:
-                query = select(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
-                result = await session.execute(query)
-                return result.scalar_one_or_none()
-
-    async def delete(self, history_id: UUID) -> bool:
-        """Delete a style history record."""
+    async def delete(self, history_id: UUID, user_id: str | None = None) -> bool:
+        """Delete a history record, restricted to the owner when provided."""
         from server.models.style_history import StyleHistoryModel
 
+        query = delete(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
+        if user_id is not None:
+            query = query.where(StyleHistoryModel.user_id == user_id)
+
         if self.session:
-            query = delete(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
-            await self.session.execute(query)
+            result = await self.session.execute(query)
             await self.session.commit()
-            return True
+            return cast(CursorResult[Any], result).rowcount > 0
         else:
             async with get_db_manager().session() as session:
-                query = delete(StyleHistoryModel).where(StyleHistoryModel.id == history_id)
-                await session.execute(query)
+                result = await session.execute(query)
                 await session.commit()
-                return True
+                return cast(CursorResult[Any], result).rowcount > 0
 
     async def count_by_user(self, user_id: str) -> int:
         """Count total style history records for a user."""

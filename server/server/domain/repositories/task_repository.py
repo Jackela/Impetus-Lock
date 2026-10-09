@@ -64,10 +64,11 @@ class TaskRepository(ABC):
         """Update existing task (optimistic locking).
 
         Args:
-            task: Task entity with updated content and lock_ids.
+            task: Updated snapshot whose version has been incremented exactly once.
 
         Returns:
-            Task: Updated task with incremented version.
+            Task: Saved task with the candidate version; only a stored version
+                equal to task.version - 1 may be replaced atomically.
 
         Raises:
             ValueError: If task not found or version mismatch (optimistic locking).

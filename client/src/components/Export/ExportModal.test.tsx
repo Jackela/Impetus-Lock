@@ -150,7 +150,9 @@ describe("ExportModal", () => {
     it("should not close when clicking modal content", () => {
       render(<ExportModal {...defaultProps} />);
 
-      const modalContent = screen.getByText("Export Document").closest(".export-modal");
+      const modalContent = screen
+        .getByText("Export Document")
+        .closest<HTMLElement>(".export-modal");
       modalContent?.click();
 
       act(() => {

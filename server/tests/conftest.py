@@ -235,3 +235,15 @@ def pytest_collection_modifyitems(session, config, items):
 
         if any(word in item.name.lower() for word in ["slow", "performance", "benchmark"]):
             item.add_marker(pytest.mark.slow)
+
+
+@pytest.fixture(autouse=True)
+def isolate_application_rate_bucket(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep unrelated API unit tests out of shared live Redis rate buckets.
+
+    Real Redis integration tests construct their own limiter and unique keys.
+    Normal-browser validation runs in a separate backend without this fixture.
+    """
+    from server.infrastructure.rate_limiting import limiter
+
+    monkeypatch.setattr(limiter, "_redis", None)

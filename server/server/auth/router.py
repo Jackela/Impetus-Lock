@@ -3,6 +3,7 @@
 @module auth.router
 """
 
+import secrets
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
@@ -80,6 +81,15 @@ def _set_auth_cookie(response: Response, token: str) -> None:
         max_age=86400,  # 24 hours
         path="/",
     )
+    response.set_cookie(
+        key="csrf_token",
+        value=secrets.token_urlsafe(32),
+        httponly=False,
+        secure=False,
+        samesite="lax",
+        max_age=86400,
+        path="/",
+    )
 
 
 def _clear_auth_cookie(response: Response) -> None:
@@ -89,6 +99,7 @@ def _clear_auth_cookie(response: Response) -> None:
         response: FastAPI response object.
     """
     response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="csrf_token", path="/")
 
 
 @router.post(

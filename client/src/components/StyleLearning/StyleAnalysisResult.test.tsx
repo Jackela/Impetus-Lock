@@ -142,6 +142,16 @@ describe("StyleAnalysisResult", () => {
   });
 
   describe("edge cases", () => {
+    it("shows unavailable metrics without crashing or inventing zero values", () => {
+      render(
+        <StyleAnalysisResult result={{ ...sampleResult, style_vector: { vocab_richness: 0 } }} />
+      );
+
+      expect(screen.getAllByText("—")).toHaveLength(4);
+      expect(screen.getByText("0%")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /apply to task/i })).toBeEnabled();
+    });
+
     it("should handle zero values correctly", () => {
       const zeroResult: StyleAnalysisResponse = {
         user_id: "user-123",

@@ -99,7 +99,7 @@ exclude = [
 ]
 
 [[tool.mypy.overrides]]
-module = ["instructor"]
+module = ["instructor", "asyncpg"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

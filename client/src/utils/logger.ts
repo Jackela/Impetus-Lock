@@ -24,13 +24,21 @@
  */
 
 /** Log severity levels, ordered from most verbose to fully suppressed. */
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
-  NONE = 4,
-}
+export const LogLevel = {
+  DEBUG: 0,
+  INFO: 1,
+  WARN: 2,
+  ERROR: 3,
+  NONE: 4,
+  0: "DEBUG",
+  1: "INFO",
+  2: "WARN",
+  3: "ERROR",
+  4: "NONE",
+} as const;
+
+/** Numeric log severity values. */
+export type LogLevel = (typeof LogLevel)["DEBUG" | "INFO" | "WARN" | "ERROR" | "NONE"];
 
 interface LoggerConfig {
   level: LogLevel;
@@ -51,7 +59,10 @@ const config: LoggerConfig = {
 // Parse VITE_LOG_LEVEL environment variable
 if (import.meta.env.VITE_LOG_LEVEL) {
   const levelStr = import.meta.env.VITE_LOG_LEVEL.toUpperCase();
-  config.level = LogLevel[levelStr as keyof typeof LogLevel] ?? LogLevel.DEBUG;
+  const level = Object.entries(LogLevel).find(
+    ([name, value]) => name === levelStr && typeof value === "number"
+  )?.[1];
+  config.level = typeof level === "number" ? level : LogLevel.DEBUG;
 }
 
 // Parse VITE_LOG_NAMESPACES environment variable

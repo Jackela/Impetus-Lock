@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
+import type { RefObject } from "react";
 
 /**
  * Return type for useFocusTrap hook.
  */
-export interface UseFocusTrapReturn {
+export interface UseFocusTrapReturn<T extends HTMLElement = HTMLElement> {
   /** Ref to attach to the container element */
-  ref: React.RefObject<HTMLElement>;
+  ref: RefObject<T | null>;
   /** Ref to store the element that had focus before trap was activated */
-  triggerRef: React.MutableRefObject<HTMLElement | null>;
+  triggerRef: RefObject<HTMLElement | null>;
 }
 
 /**
@@ -37,7 +38,7 @@ export interface UseFocusTrapOptions {
  * @example
  * ```tsx
  * function Modal({ open, onClose }) {
- *   const { ref } = useFocusTrap({ active: open });
+ *   const { ref } = useFocusTrap<HTMLDivElement>({ active: open });
  *
  *   return (
  *     <div ref={ref} role="dialog">
@@ -49,11 +50,11 @@ export interface UseFocusTrapOptions {
  * }
  * ```
  */
-export function useFocusTrap({
+export function useFocusTrap<T extends HTMLElement = HTMLElement>({
   active,
   excludeSelectors = [],
-}: UseFocusTrapOptions): UseFocusTrapReturn {
-  const ref = useRef<HTMLElement>(null);
+}: UseFocusTrapOptions): UseFocusTrapReturn<T> {
+  const ref = useRef<T>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
   // Get all focusable elements within container
@@ -81,7 +82,8 @@ export function useFocusTrap({
   // Store the element that had focus before activation
   useEffect(() => {
     if (active) {
-      triggerRef.current = document.activeElement as HTMLElement;
+      const focusedElement = document.activeElement;
+      triggerRef.current = focusedElement instanceof HTMLElement ? focusedElement : null;
     }
   }, [active]);
 
@@ -113,10 +115,9 @@ export function useFocusTrap({
       if (e.key !== "Tab") return;
 
       const focusableElements = getFocusableElements();
-      if (focusableElements.length === 0) return;
-
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
+      if (!firstElement || !lastElement) return;
 
       // Shift+Tab on first element -> wrap to last
       if (e.shiftKey && document.activeElement === firstElement) {

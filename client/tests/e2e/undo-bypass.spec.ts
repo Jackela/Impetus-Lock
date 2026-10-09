@@ -12,6 +12,11 @@
  */
 
 import { test, expect } from "@playwright/test";
+import {
+  getLegacyMarkdown,
+  setLegacyMarkdown,
+  deleteLegacyWithoutUndo,
+} from "../fixtures/legacyEditorBoundary";
 
 test.describe("Undo Bypass - AI Delete Actions", () => {
   test.beforeEach(async ({ page }) => {
@@ -31,40 +36,24 @@ test.describe("Undo Bypass - AI Delete Actions", () => {
   test("should prevent undo of AI delete actions", async ({ page }) => {
     // Set initial content
     const initialText = "他打开门，犹豫着要不要进去。突然，门后传来脚步声。";
-    await page.evaluate((text: string) => {
-      // @ts-ignore
-      window.__editor__.setMarkdown(text);
-    }, initialText);
+    await page.evaluate(setLegacyMarkdown, initialText);
 
     // Verify initial content
-    let content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    let content = await page.evaluate(getLegacyMarkdown);
     expect(content).toContain("突然，门后传来脚步声。");
 
     // Simulate AI Delete action (via API that bypasses Undo)
-    await page.evaluate(() => {
-      // This will call a special API that deletes without Undo
-      // @ts-ignore
-      window.__editor__.deleteWithoutUndo({ from: 30, to: 50 });
-    });
+    await page.evaluate(deleteLegacyWithoutUndo, { from: 30, to: 50 });
 
     // Verify content was deleted
-    content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    content = await page.evaluate(getLegacyMarkdown);
     expect(content).not.toContain("突然，门后传来脚步声。");
 
     // Try to undo with Ctrl+Z
     await page.keyboard.press("Control+Z");
 
     // Verify deletion still persists (cannot be undone)
-    content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    content = await page.evaluate(getLegacyMarkdown);
     expect(content).not.toContain("突然，门后传来脚步声。");
   });
 
@@ -82,20 +71,14 @@ test.describe("Undo Bypass - AI Delete Actions", () => {
     await page.keyboard.type("用户输入的文本");
 
     // Verify text was added
-    let content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    let content = await page.evaluate(getLegacyMarkdown);
     expect(content).toContain("用户输入的文本");
 
     // Undo with Ctrl+Z (should work for user edits)
     await page.keyboard.press("Control+Z");
 
     // Verify text was undone
-    content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    content = await page.evaluate(getLegacyMarkdown);
     expect(content).not.toContain("用户输入的文本");
   });
 
@@ -114,19 +97,13 @@ test.describe("Undo Bypass - AI Delete Actions", () => {
     await page.keyboard.type("第二段文本。");
 
     // Simulate AI Delete action (deletes "第一段文本。")
-    await page.evaluate(() => {
-      // @ts-ignore
-      window.__editor__.deleteWithoutUndo({ from: 0, to: 7 });
-    });
+    await page.evaluate(deleteLegacyWithoutUndo, { from: 0, to: 7 });
 
     // User types third text
     await page.keyboard.type("第三段文本。");
 
     // Get content before undo
-    let content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    let content = await page.evaluate(getLegacyMarkdown);
     expect(content).not.toContain("第一段文本");
     expect(content).toContain("第二段文本");
     expect(content).toContain("第三段文本");
@@ -134,20 +111,14 @@ test.describe("Undo Bypass - AI Delete Actions", () => {
     // Undo once (should undo "第三段文本。")
     await page.keyboard.press("Control+Z");
 
-    content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    content = await page.evaluate(getLegacyMarkdown);
     expect(content).not.toContain("第三段文本");
     expect(content).toContain("第二段文本");
 
     // Undo again (should undo "第二段文本。", skip AI delete)
     await page.keyboard.press("Control+Z");
 
-    content = await page.evaluate(() => {
-      // @ts-ignore
-      return window.__editor__.getMarkdown();
-    });
+    content = await page.evaluate(getLegacyMarkdown);
     expect(content).not.toContain("第二段文本");
 
     // AI deletion should still persist (not undoable)

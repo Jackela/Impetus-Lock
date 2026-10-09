@@ -293,7 +293,7 @@ export const test = base.extend<TestFixtures>({
   authenticatedPage: async ({ browser }, use) => {
     // Create new context with auth state if available
     const context = await browser.newContext({
-      storageState: "./e2e/storage-state.json",
+      storageState: "./e2e/storage-state.generated.json",
     });
 
     const page = await context.newPage();

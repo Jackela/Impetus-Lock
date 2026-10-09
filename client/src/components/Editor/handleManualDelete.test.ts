@@ -14,8 +14,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { EditorView } from "@codemirror/view";
-import type { Node as ProsemirrorNode } from "@milkdown/prose";
+// This legacy harness simulates the deletion heuristic; its fixture describes
+// only that harness's input, rather than impersonating an editor library.
+type DeleteView = { state: { doc: { content: { size: number } } } };
+type DeleteEditor = {
+  action: (callback: (ctx: { get: (key: string) => DeleteView }) => DeleteView) => DeleteView;
+};
 
 // Create mock function that can be used in both mock setup and test helper
 const mockDeleteContentAtAnchor = vi.hoisted(() => vi.fn());
@@ -26,15 +30,15 @@ vi.mock("../../services/ContentInjector", () => ({
 }));
 
 describe("handleManualDelete", () => {
-  let mockEditor: {
-    action: (callback: (ctx: { get: (key: string) => EditorView }) => EditorView) => EditorView;
-  };
-  let mockView: EditorView;
-  let mockState: { doc: ProsemirrorNode };
+  let mockEditor: DeleteEditor | null;
+  let mockView: DeleteView;
+  let mockState: { doc: { content: { size: number } } };
   let mockDoc: { content: { size: number } };
   let mockContent: { size: number };
   let isDeletingRef: { current: boolean };
-  let showSensoryAction: ReturnType<typeof vi.fn>;
+  let showSensoryAction: ReturnType<
+    typeof vi.fn<(action: string, options: { duration: number }) => void>
+  >;
 
   // Constants from animation config
   const MIN_DOCUMENT_SIZE_FOR_DELETE = 10;
@@ -106,7 +110,7 @@ describe("handleManualDelete", () => {
     isDeletingRef.current = true;
 
     try {
-      const view = editor.action((ctx: { get: (key: string) => EditorView }) =>
+      const view = editor.action((ctx: { get: (key: string) => DeleteView }) =>
         ctx.get("editorViewCtx")
       );
       const { state } = view;
@@ -294,7 +298,7 @@ describe("handleManualDelete", () => {
    * Then: Should return early without error
    */
   it("should handle missing editor gracefully", () => {
-    mockEditor = null as unknown as typeof mockEditor;
+    mockEditor = null;
 
     const result = executeHandleManualDelete();
 

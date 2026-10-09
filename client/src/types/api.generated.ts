@@ -3,616 +3,3437 @@
  * Do not make direct changes to the file.
  */
 
+// Generator: openapi-typescript 7.13.0; source: offline FastAPI app.openapi().
+// Regenerate: npm run api:generate; verify drift: npm run api:check.
+
 export interface paths {
-    "/impetus/generate-intervention": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Generate AI intervention action
-         * @description Calls LLM to decide intervention action based on writing context and mode.
-         *
-         *     **Request Flow**:
-         *     1. Client sends context (last 3 sentences for Muse, full doc for Loki)
-         *     2. Backend calls LLM with structured prompt
-         *     3. LLM returns typed response (Instructor + Pydantic validation)
-         *     4. Backend returns InterventionResponse
-         *
-         *     **Idempotency**:
-         *     - Requests with same `Idempotency-Key` within 15s return cached response
-         *     - Prevents duplicate injections on network retry
-         *
-         *     **Safety Guards**:
-         *     - If doc length <50 chars → Backend rejects "delete", returns "provoke" instead
-         *     - If anchor out of bounds → 400 Bad Request
-         */
-        post: operations["generateIntervention"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/achievements/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/tasks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create task with initial content and locks
-         * @description Creates a task record storing the current Markdown and lock IDs.
-         *     Used by the editor to persist adversarial constraints across sessions.
-         */
-        post: operations["createTask"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * List Achievements
+     * @description List all achievements for current user.
+     */
+    get: operations["list_achievements_achievements__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/achievements/definitions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/tasks/{task_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Task identifier (UUID v4) */
-                task_id: string;
-            };
-            cookie?: never;
-        };
-        /** Get task by ID */
-        get: operations["getTask"];
-        /** Update task content and locks (optimistic locking) */
-        put: operations["updateTask"];
-        post?: never;
-        /** Delete task and its intervention history */
-        delete: operations["deleteTask"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get Achievement Definitions
+     * @description Get all achievement definitions.
+     */
+    get: operations["get_achievement_definitions_achievements_definitions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/achievements/{achievement_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/tasks/{task_id}/actions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Task identifier (UUID v4) */
-                task_id: string;
-            };
-            cookie?: never;
-        };
-        /** List intervention actions for a task (most recent first) */
-        get: operations["listTaskActions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /**
+     * Get Achievement
+     * @description Get achievement by ID.
+     */
+    get: operations["get_achievement_achievements__achievement_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    get?: never;
+    put?: never;
+    /**
+     * Login
+     * @description Login a user.
+     *
+     *     Args:
+     *         request: Login request with email and password.
+     *         response: Response object for setting cookies.
+     *         session: Database session.
+     *
+     *     Returns:
+     *         User data on success.
+     *
+     *     Raises:
+     *         HTTPException: 401 if credentials invalid.
+     */
+    post: operations["login_auth_login_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Logout
+     * @description Logout the current user.
+     *
+     *     Args:
+     *         response: Response object for clearing cookies.
+     *         access_token: Current access token (optional).
+     */
+    post: operations["logout_auth_logout_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Me
+     * @description Get current authenticated user info.
+     *
+     *     Args:
+     *         current_user: Current authenticated user from dependency.
+     *
+     *     Returns:
+     *         User data.
+     */
+    get: operations["get_me_auth_me_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/register": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Register
+     * @description Register a new user.
+     *
+     *     Args:
+     *         request: Registration request with email and password.
+     *         response: Response object for setting cookies.
+     *         session: Database session.
+     *
+     *     Returns:
+     *         User data on success.
+     *
+     *     Raises:
+     *         HTTPException: 400 if email already registered.
+     */
+    post: operations["register_auth_register_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/collaboration/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Collaboration Health
+     * @description Health check for collaboration service.
+     *
+     *     Args:
+     *         connection_manager: Connection manager dependency
+     *
+     *     Returns:
+     *         JSON response with service status
+     */
+    get: operations["collaboration_health_collaboration_health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/collaboration/rooms/active": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Active Rooms
+     * @description Get list of all active collaboration rooms.
+     *
+     *     Args:
+     *         connection_manager: Connection manager dependency
+     *
+     *     Returns:
+     *         JSON response with list of active room IDs
+     */
+    get: operations["get_active_rooms_collaboration_rooms_active_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/collaboration/rooms/{document_id}/permission": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Update Room Permission
+     * @description Update user permissions for a room.
+     *
+     *     Args:
+     *         document_id: Document/room identifier
+     *         user_id: User to update permissions for
+     *         permission: Permission level (read, write, admin)
+     *
+     *     Returns:
+     *         JSON response with result
+     *
+     *     Note:
+     *         Full permission persistence requires database schema updates.
+     *         Track as Issue #XXX: Collaboration permission storage.
+     */
+    post: operations["update_room_permission_collaboration_rooms__document_id__permission_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/collaboration/rooms/{document_id}/stats": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Room Stats
+     * @description Get statistics for a collaboration room.
+     *
+     *     Args:
+     *         document_id: Document/room identifier
+     *         connection_manager: Connection manager dependency
+     *
+     *     Returns:
+     *         JSON response with room statistics
+     */
+    get: operations["get_room_stats_collaboration_rooms__document_id__stats_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/collaboration/rooms/{document_id}/users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Room Users
+     * @description Get list of users currently in a collaboration room.
+     *
+     *     Args:
+     *         document_id: Document/room identifier
+     *         connection_manager: Connection manager dependency
+     *
+     *     Returns:
+     *         JSON response with user list
+     */
+    get: operations["get_room_users_collaboration_rooms__document_id__users_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Health
+     * @description Health check endpoint.
+     *
+     *     Returns basic service information to verify API is running.
+     *     This is the minimal P2 infrastructure endpoint (non-Vibe feature).
+     *
+     *     Returns:
+     *         HealthResponse: Service health status and metadata
+     *
+     *     Example:
+     *         >>> response = client.get("/health")
+     *         >>> response.json()
+     *         {"status": "ok", "service": "impetus-lock", "version": "0.1.0"}
+     */
+    get: operations["health_health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/health/db": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Health Db
+     * @description Database health check endpoint with pool metrics.
+     *
+     *     Returns detailed database connectivity status and pool utilization.
+     *
+     *     Returns:
+     *         dict: Database health status with metrics.
+     */
+    get: operations["health_db_health_db_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/impetus/generate-intervention": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generate Intervention
+     * @description Generate AI intervention action based on context and mode.
+     *
+     *     Implements idempotency via Idempotency-Key header (15s cache).
+     *     Validates contract version for API compatibility.
+     *
+     *     Args:
+     *         request: Intervention request payload (context, mode, client_meta).
+     *         idempotency_key: UUID v4 for deduplication (required header).
+     *         contract_version: API contract version (must be "2.0.0").
+     *         service: InterventionService instance (dependency injection).
+     *
+     *     Returns:
+     *         InterventionResponse: Generated intervention action.
+     *
+     *     Raises:
+     *         HTTPException 422: If contract_version mismatch or validation fails.
+     *         HTTPException 404: If the supplied task is missing or owned by another user.
+     *         HTTPException 500: If LLM provider fails.
+     *
+     *     Example:
+     *         ```bash
+     *         curl -X POST http://localhost:8000/impetus/generate-intervention           -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000"           -H "X-Contract-Version: 2.0.0"           -H "Content-Type: application/json"           -d '{
+     *             "context": "他打开门，犹豫着要不要进去。",
+     *             "mode": "muse",
+     *             "client_meta": {"doc_version": 42, "selection_from": 1234, "selection_to": 1234}
+     *           }'
+     *         ```
+     */
+    post: operations["generate_intervention_impetus_generate_intervention_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/stats/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Stats
+     * @description Get user statistics.
+     */
+    get: operations["get_stats_stats__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/stats/breakdown": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Intervention Breakdown
+     * @description Get intervention type breakdown.
+     */
+    get: operations["get_intervention_breakdown_stats_breakdown_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/stats/period/{period}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Stats By Period
+     * @description Get stats by period (day, week, month).
+     */
+    get: operations["get_stats_by_period_stats_period__period__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/streaks/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Streak
+     * @description Get user streak (zero-valued response when no row exists).
+     *
+     *     Args:
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped streak service (None when DB unavailable).
+     *
+     *     Returns:
+     *         StreakResponse: The user's streak, or the zero-valued response.
+     *
+     *     Raises:
+     *         HTTPException: 500 if no database session is available.
+     */
+    get: operations["get_streak_streaks__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/streaks/update": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Update Streak
+     * @description Update streak on user activity.
+     *
+     *     Args:
+     *         request: Streak update request.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped streak service (None when DB unavailable).
+     *
+     *     Returns:
+     *         StreakResponse: The resulting streak.
+     *
+     *     Raises:
+     *         HTTPException: 500 if no database session is available.
+     */
+    post: operations["update_streak_streaks_update_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/style/analyze": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Analyze Style
+     * @description Analyze user writing sample and extract style features.
+     *
+     *     Extracts quantifiable style features from provided text sample
+     *     and stores the style profile for the user.
+     *
+     *     Args:
+     *         request: Style analysis request with text sample and user_id.
+     *         current_user: Authenticated owner of the profile.
+     *         session: Database session (injected, optional for testing).
+     *
+     *     Returns:
+     *         StyleAnalysisResponse with extracted style vector.
+     *
+     *     Raises:
+     *         HTTPException: 400 if text is too short or invalid.
+     *
+     *     Example:
+     *         ```bash
+     *         curl -X POST http://localhost:8000/style/analyze           -H "Content-Type: application/json"           -d '{
+     *             "text": "Your writing sample with at least 500 words...",
+     *             "user_id": "user_123"
+     *           }'
+     *         ```
+     */
+    post: operations["analyze_style_style_analyze_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/style/apply": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Apply Style
+     * @description Apply learned style to AI-generated text.
+     *
+     *     Retrieves user's stored style profile and applies style transformations
+     *     to the provided text.
+     *
+     *     Args:
+     *         request: Style application request with text and user_id.
+     *         current_user: Authenticated owner of the profile.
+     *         session: Database session (injected, optional for testing).
+     *
+     *     Returns:
+     *         StyleApplyResponse with styled text and metadata.
+     *
+     *     Raises:
+     *         HTTPException: 404 if user has no stored style profile.
+     *
+     *     Example:
+     *         ```bash
+     *         curl -X POST http://localhost:8000/style/apply           -H "Content-Type: application/json"           -d '{
+     *             "text": "This is some AI generated text.",
+     *             "user_id": "user_123",
+     *             "intensity": 0.7
+     *           }'
+     *         ```
+     */
+    post: operations["apply_style_style_apply_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/style/compare": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Compare Styles
+     * @description Compare two style vectors and return differences.
+     *
+     *     Args:
+     *         request: Two style vectors to compare
+     *
+     *     Returns:
+     *         Comparison metrics, radar chart data, and insights
+     */
+    post: operations["compare_styles_style_compare_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/style/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create History
+     * @description Create a new style history record.
+     *
+     *     Args:
+     *         request: Style history data
+     *         current_user: Authenticated owner of the history
+     *         repo: Repository instance
+     *
+     *     Returns:
+     *         Created history record
+     *
+     *     Raises:
+     *         HTTPException: 400 if validation fails, 409 if conflict, 503 if DB unavailable
+     */
+    post: operations["create_history_style_history_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/style/history/user/{user_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get User History
+     * @description Get style history for a user with pagination.
+     *
+     *     Args:
+     *         user_id: User identifier
+     *         limit: Maximum records to return (default 10)
+     *         offset: Records to skip (default 0)
+     *         current_user: Authenticated owner of the history
+     *         repo: Repository instance
+     *
+     *     Returns:
+     *         Paginated list of history records
+     */
+    get: operations["get_user_history_style_history_user__user_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/style/history/{history_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get History By Id
+     * @description Get a specific style history record by ID.
+     *
+     *     Args:
+     *         history_id: History record UUID
+     *         current_user: Authenticated owner of the history
+     *         repo: Repository instance
+     *
+     *     Returns:
+     *         History record
+     *
+     *     Raises:
+     *         HTTPException: 404 if not found
+     */
+    get: operations["get_history_by_id_style_history__history_id__get"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete History
+     * @description Delete a style history record.
+     *
+     *     Args:
+     *         history_id: History record UUID to delete
+     *         current_user: Authenticated owner of the history
+     *         repo: Repository instance
+     *
+     *     Raises:
+     *         HTTPException: 404 if not found
+     */
+    delete: operations["delete_history_style_history__history_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/style/profile/{user_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Style Profile
+     * @description Retrieve stored style profile for a user.
+     *
+     *     Args:
+     *         user_id: User identifier.
+     *         current_user: Authenticated owner of the profile.
+     *         session: Database session (injected, optional for testing).
+     *
+     *     Returns:
+     *         StyleProfileResponse with stored style data.
+     *
+     *     Raises:
+     *         HTTPException: 404 if user has no stored style profile.
+     *
+     *     Example:
+     *         ```bash
+     *         curl http://localhost:8000/style/profile/user_123
+     *         ```
+     */
+    get: operations["get_style_profile_style_profile__user_id__get"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Style Profile
+     * @description Delete stored style profile for a user.
+     *
+     *     Args:
+     *         user_id: User identifier.
+     *         current_user: Authenticated owner of the profile.
+     *         session: Database session (injected, optional for testing).
+     *
+     *     Raises:
+     *         HTTPException: 404 if user has no stored style profile.
+     *
+     *     Example:
+     *         ```bash
+     *         curl -X DELETE http://localhost:8000/style/profile/user_123
+     *         ```
+     */
+    delete: operations["delete_style_profile_style_profile__user_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/tasks/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Tasks
+     * @description List all tasks for current user (paginated, reverse chronological).
+     *
+     *     Args:
+     *         limit: Maximum number of tasks to return (1-100).
+     *         offset: Number of tasks to skip.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped task service (injected via DIP).
+     *
+     *     Returns:
+     *         TaskListResponse: Paginated task list in reverse chronological order.
+     *
+     *     Raises:
+     *         HTTPException: 401 if not authenticated.
+     *
+     *     Example:
+     *         ```bash
+     *         # Get first 10 tasks
+     *         curl http://localhost:8000/tasks/?limit=10
+     *
+     *         # Get next 10 tasks
+     *         curl http://localhost:8000/tasks/?limit=10&offset=10
+     *         ```
+     */
+    get: operations["list_tasks_tasks__get"];
+    put?: never;
+    /**
+     * Create Task
+     * @description Create new task for current user.
+     *
+     *     Args:
+     *         request: Task creation request.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped task service (injected via DIP).
+     *
+     *     Returns:
+     *         TaskResponse: Created task.
+     *
+     *     Raises:
+     *         HTTPException: 401 if not authenticated.
+     *
+     *     Example:
+     *         ```bash
+     *         curl -X POST http://localhost:8000/tasks           -H "Content-Type: application/json"           -d '{"content": "Initial content", "lock_ids": []}'
+     *         ```
+     */
+    post: operations["create_task_tasks__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/tasks/{task_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Task
+     * @description Get task by ID (must belong to current user).
+     *
+     *     Args:
+     *         task_id: Task UUID.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped task service (injected via DIP).
+     *
+     *     Returns:
+     *         TaskResponse: Task details.
+     *
+     *     Raises:
+     *         HTTPException: 404 if task not found or not owned by user.
+     *         HTTPException: 401 if not authenticated.
+     *
+     *     Example:
+     *         ```bash
+     *         curl http://localhost:8000/tasks/{task_id}
+     *         ```
+     */
+    get: operations["get_task_tasks__task_id__get"];
+    /**
+     * Update Task
+     * @description Update task content and lock IDs (must belong to current user).
+     *
+     *     Args:
+     *         task_id: Task UUID.
+     *         request: Task update request.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped task service (injected via DIP).
+     *
+     *     Returns:
+     *         TaskResponse: Updated task.
+     *
+     *     Raises:
+     *         HTTPException: 404 if task not found or not owned by user.
+     *         HTTPException: 409 if version mismatch.
+     *         HTTPException: 500 if the update cannot be persisted.
+     *         HTTPException: 401 if not authenticated.
+     *
+     *     Example:
+     *         ```bash
+     *         curl -X PUT http://localhost:8000/tasks/{task_id}           -H "Content-Type: application/json"           -d '{"content": "Updated", "lock_ids": ["lock_1"], "version": 0}'
+     *         ```
+     */
+    put: operations["update_task_tasks__task_id__put"];
+    post?: never;
+    /**
+     * Delete Task
+     * @description Delete task (must belong to current user, cascade deletes intervention actions).
+     *
+     *     Args:
+     *         task_id: Task UUID.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped task service (injected via DIP).
+     *
+     *     Raises:
+     *         HTTPException: 404 if task not found or not owned by user.
+     *         HTTPException: 401 if not authenticated.
+     *
+     *     Example:
+     *         ```bash
+     *         curl -X DELETE http://localhost:8000/tasks/{task_id}
+     *         ```
+     */
+    delete: operations["delete_task_tasks__task_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/tasks/{task_id}/actions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Intervention History
+     * @description Get intervention action history for task (must belong to current user).
+     *
+     *     Args:
+     *         task_id: Task UUID.
+     *         limit: Maximum number of actions to return (1-100).
+     *         offset: Number of actions to skip.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped task service (injected via DIP).
+     *
+     *     Returns:
+     *         InterventionHistoryResponse: Paginated intervention history.
+     *
+     *     Raises:
+     *         HTTPException: 404 if task not found or not owned by user.
+     *         HTTPException: 401 if not authenticated.
+     *
+     *     Example:
+     *         ```bash
+     *         # Get first 10 actions
+     *         curl http://localhost:8000/tasks/{task_id}/actions?limit=10
+     *
+     *         # Get next 10 actions
+     *         curl http://localhost:8000/tasks/{task_id}/actions?limit=10&offset=10
+     *         ```
+     */
+    get: operations["get_intervention_history_tasks__task_id__actions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Templates
+     * @description List all templates for current user.
+     *
+     *     Args:
+     *         limit: Maximum number of templates to return (1-100).
+     *         offset: Number of templates to skip.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped template service (None when DB unavailable).
+     *
+     *     Returns:
+     *         TemplateListResponse: Paginated template list, or the empty response
+     *         when no database session is available.
+     */
+    get: operations["list_templates_templates__get"];
+    put?: never;
+    /**
+     * Create Template
+     * @description Create a new template.
+     *
+     *     Args:
+     *         request: Template creation request.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped template service (None when DB unavailable).
+     *
+     *     Returns:
+     *         TemplateResponse: Created template.
+     *
+     *     Raises:
+     *         HTTPException: 500 if no database session is available.
+     */
+    post: operations["create_template_templates__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/templates/{template_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Template
+     * @description Get template by ID.
+     *
+     *     Args:
+     *         template_id: Template UUID.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped template service (None when DB unavailable).
+     *
+     *     Returns:
+     *         TemplateResponse: Template details.
+     *
+     *     Raises:
+     *         HTTPException: 404 if template not found or not owned by user.
+     *         HTTPException: 500 if no database session is available.
+     */
+    get: operations["get_template_templates__template_id__get"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Template
+     * @description Delete template (no-op for missing or foreign templates).
+     *
+     *     Args:
+     *         template_id: Template UUID.
+     *         current_user: Authenticated user (injected via auth).
+     *         service: User-scoped template service (None when DB unavailable).
+     *
+     *     Raises:
+     *         HTTPException: 500 if no database session is available.
+     */
+    delete: operations["delete_template_templates__template_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        InterventionRequest: {
-            /**
-             * @description Writing context for LLM decision-making.
-             *     - **Muse mode**: Last 3 sentences before cursor
-             *     - **Loki mode**: Full document or last 10 sentences (whichever shorter)
-             * @example 他打开门,犹豫着要不要进去。
-             */
-            context: string;
-            /**
-             * @description Agent working mode:
-             *     - **muse**: STUCK-triggered, provoke only
-             *     - **loki**: Random-triggered, provoke OR delete
-             * @example muse
-             * @enum {string}
-             */
-            mode: "muse" | "loki";
-            client_meta: {
-                /**
-                 * @description Document version counter (increments on each edit)
-                 * @example 42
-                 */
-                doc_version: number;
-                /**
-                 * @description Cursor position or selection start (ProseMirror absolute position)
-                 * @example 1234
-                 */
-                selection_from: number;
-                /**
-                 * @description Selection end (same as from if no selection)
-                 * @example 1234
-                 */
-                selection_to: number;
-            };
-        };
-        InterventionResponse: {
-            /**
-             * @description Intervention action type:
-             *     - **provoke**: Inject content with lock_id (un-deletable)
-             *     - **delete**: Remove text at anchor position (irreversible)
-             *     - **rewrite**: Replace an anchor range with locked content
-             * @example provoke
-             * @enum {string}
-             */
-            action: "provoke" | "delete" | "rewrite";
-            /**
-             * @description Plain text snippet rendered as Markdown (blockquote for provoke, inline for rewrite).
-             *     No `[AI施压]` prefixes; UI handles vibe styling.
-             * @example 门后是一堵砖墙。
-             */
-            content?: string | null;
-            /**
-             * @description Unique lock identifier (ONLY for "provoke" action).
-             *     Format: `lock_{ulid}` (sortable UUID alternative)
-             * @example lock_01j4z3m8a6q3qz2x8j4z3m8a
-             */
-            lock_id?: string | null;
-            /**
-             * @description Target location for action.
-             *     - **provoke**: Optional, defaults to cursor position
-             *     - **delete**: Required
-             */
-            anchor?: components["schemas"]["Anchor"];
-            /**
-             * Format: uuid
-             * @description Unique action identifier (UUID v4)
-             * @example act_550e8400-e29b-41d4-a716-446655440000
-             */
-            action_id: string;
-        };
-        TaskCreateRequest: {
-            /** @description Initial task content (Markdown) */
-            content: string;
-            /**
-             * @description Lock IDs present in the content
-             * @default []
-             * @example [
-             *       "lock_01j4z3m8a6q3qz2x8j4z3m8a"
-             *     ]
-             */
-            lock_ids: string[];
-        };
-        TaskUpdateRequest: {
-            /** @description Updated Markdown content */
-            content: string;
-            /** @description Updated lock IDs extracted from content */
-            lock_ids: string[];
-            /** @description Expected current version for optimistic locking */
-            version: number;
-        };
-        TaskResponse: {
-            /**
-             * Format: uuid
-             * @example 550e8400-e29b-41d4-a716-446655440000
-             */
-            id: string;
-            /** @description Task content (Markdown) */
-            content: string;
-            /** @description Lock IDs present in the content */
-            lock_ids: string[];
-            /**
-             * Format: date-time
-             * @example 2025-01-15T10:30:45.123Z
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @example 2025-01-15T10:31:45.123Z
-             */
-            updated_at: string;
-            /**
-             * @description Optimistic lock version
-             * @example 1
-             */
-            version: number;
-        };
-        InterventionActionResponse: {
-            /**
-             * Format: uuid
-             * @example 7c4a3c5c-2fb7-41cb-8f6c-7d7b9d77a111
-             */
-            id: string;
-            /** Format: uuid */
-            task_id: string;
-            /** @enum {string} */
-            action_type: "provoke" | "delete" | "rewrite";
-            /** @description Stable client-facing action identifier */
-            action_id: string;
-            /** @description Present for provoke/rewrite actions */
-            lock_id?: string | null;
-            /** @description Present for provoke/rewrite actions */
-            content?: string | null;
-            anchor: components["schemas"]["Anchor"];
-            /** @enum {string} */
-            mode: "muse" | "loki";
-            /** @description Author context captured when the action was generated */
-            context: string;
-            /** Format: date-time */
-            issued_at: string;
-            /** Format: date-time */
-            created_at: string;
-        };
-        InterventionHistoryResponse: {
-            total: number;
-            limit: number;
-            offset: number;
-            actions: components["schemas"]["InterventionActionResponse"][];
-        };
-        Anchor: components["schemas"]["AnchorPos"] | components["schemas"]["AnchorRange"] | components["schemas"]["AnchorLockId"];
-        AnchorPos: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "pos";
-            /**
-             * @description ProseMirror absolute position (0-indexed)
-             * @example 1234
-             */
-            from: number;
-        };
-        AnchorRange: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "range";
-            /**
-             * @description Start position (inclusive)
-             * @example 1289
-             */
-            from: number;
-            /**
-             * @description End position (exclusive)
-             * @example 1310
-             */
-            to: number;
-        };
-        AnchorLockId: {
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "lock_id";
-            /**
-             * @description Reference to existing lock_id to delete
-             * @example lock_01j4z3m8a6q3qz2x8j4z3m8a
-             */
-            ref_lock_id: string;
-        };
-        ErrorResponse: {
-            /**
-             * @description Error code (PascalCase)
-             * @example ValidationError
-             */
-            error: string;
-            /**
-             * @description Human-readable error message
-             * @example Request body validation failed
-             */
-            message: string;
-            /** @description Additional error context (structure varies by error type) */
-            details?: Record<string, never> | null;
-        };
+  schemas: {
+    /**
+     * AchievementDefinition
+     * @description Definition of an achievement type.
+     */
+    AchievementDefinition: {
+      /** Achievement Type */
+      achievement_type: string;
+      /** Description */
+      description: string;
+      /** Icon */
+      icon?: string | null;
+      /** Name */
+      name: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    /**
+     * AchievementDefinitionsResponse
+     * @description Response schema for achievement definitions list.
+     */
+    AchievementDefinitionsResponse: {
+      /** Achievements */
+      achievements: components["schemas"]["AchievementDefinition"][];
+    };
+    /**
+     * AchievementListResponse
+     * @description Response schema for achievement list.
+     */
+    AchievementListResponse: {
+      /** Achievements */
+      achievements: components["schemas"]["AchievementResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * AchievementResponse
+     * @description Response schema for achievement.
+     */
+    AchievementResponse: {
+      /** Achievement Type */
+      achievement_type: string;
+      /** Description */
+      description: string;
+      /** Earned At */
+      earned_at: string;
+      /** Id */
+      id: string;
+      /** Metadata */
+      metadata?: {
+        [key: string]: unknown;
+      } | null;
+      /** Name */
+      name: string;
+    };
+    /**
+     * AnchorLockId
+     * @description Reference anchor using existing lock ID.
+     *
+     *     Used to position relative to or reference an existing locked block.
+     *
+     *     Attributes:
+     *         type: Always "lock_id" to identify this anchor variant.
+     *         ref_lock_id: UUID of the referenced locked block.
+     *
+     *     Example:
+     *         ```json
+     *         {
+     *             "type": "lock_id",
+     *             "ref_lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8a"
+     *         }
+     *         ```
+     */
+    AnchorLockId: {
+      /**
+       * Ref Lock Id
+       * @description UUID of referenced lock
+       */
+      ref_lock_id: string;
+      /**
+       * Type
+       * @default lock_id
+       * @constant
+       */
+      type: "lock_id";
+    };
+    /**
+     * AnchorPos
+     * @description Single-point anchor using ProseMirror position.
+     *
+     *     Used for provoke actions when injecting at a specific cursor position.
+     *
+     *     Attributes:
+     *         type: Always "pos" to identify this anchor variant.
+     *         from_: ProseMirror document position (0-based).
+     *
+     *     Example:
+     *         ```json
+     *         {
+     *             "type": "pos",
+     *             "from": 1234
+     *         }
+     *         ```
+     */
+    AnchorPos: {
+      /**
+       * From
+       * @description ProseMirror position (0-based)
+       */
+      from: number;
+      /**
+       * Type
+       * @default pos
+       * @constant
+       */
+      type: "pos";
+    };
+    /**
+     * AnchorRange
+     * @description Range anchor using start and end positions.
+     *
+     *     Used for delete actions when removing a specific text range.
+     *
+     *     Attributes:
+     *         type: Always "range" to identify this anchor variant.
+     *         from_: Start position (inclusive).
+     *         to: End position (exclusive).
+     *
+     *     Example:
+     *         ```json
+     *         {
+     *             "type": "range",
+     *             "from": 1289,
+     *             "to": 1310
+     *         }
+     *         ```
+     */
+    AnchorRange: {
+      /**
+       * From
+       * @description Start position (inclusive)
+       */
+      from: number;
+      /**
+       * To
+       * @description End position (exclusive, must be > from)
+       */
+      to: number;
+      /**
+       * Type
+       * @default range
+       * @constant
+       */
+      type: "range";
+    };
+    /**
+     * AuthResponse
+     * @description Authentication response with user data.
+     */
+    AuthResponse: {
+      user: components["schemas"]["UserResponse"];
+    };
+    /**
+     * ClientMeta
+     * @description Client-provided metadata about document state.
+     *
+     *     Attributes:
+     *         doc_version: Document version counter (increments on each edit).
+     *         selection_from: Cursor position or selection start (ProseMirror absolute position).
+     *         selection_to: Selection end (same as from if no selection).
+     *
+     *     Example:
+     *         ```json
+     *         {
+     *             "doc_version": 42,
+     *             "selection_from": 1234,
+     *             "selection_to": 1234
+     *         }
+     *         ```
+     */
+    ClientMeta: {
+      /**
+       * Doc Version
+       * @description Document version counter
+       */
+      doc_version: number;
+      /**
+       * Selection From
+       * @description Cursor/selection start position
+       */
+      selection_from: number;
+      /**
+       * Selection To
+       * @description Selection end position
+       */
+      selection_to: number;
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components["schemas"]["ValidationError"][];
+    };
+    /**
+     * HealthResponse
+     * @description Health check response model.
+     *
+     *     Attributes:
+     *         status: Service health status (always 'ok' if responding)
+     *         service: Service name identifier
+     *         version: API version number
+     */
+    HealthResponse: {
+      /** Service */
+      service: string;
+      /**
+       * Status
+       * @constant
+       */
+      status: "ok";
+      /** Version */
+      version: string;
+    };
+    /**
+     * InterventionActionResponse
+     * @description Response schema for intervention action.
+     *
+     *     Attributes:
+     *         id: Action UUID as string.
+     *         task_id: Parent task UUID as string.
+     *         action_type: Type of intervention (e.g., "insert", "replace").
+     *         action_id: Unique action identifier.
+     *         lock_id: Optional lock ID associated with action.
+     *         content: Optional content payload.
+     *         anchor: Position anchor (offset or selection tuple).
+     *         mode: Intervention mode ("muse" or "loki").
+     *         context: Context text that triggered intervention.
+     *         issued_at: ISO format issue timestamp.
+     *         created_at: ISO format creation timestamp.
+     *
+     *     Example:
+     *         ```python
+     *         action = InterventionAction.create(...)
+     *         response = InterventionActionResponse.from_entity(action)
+     *         ```
+     */
+    InterventionActionResponse: {
+      /** Action Id */
+      action_id: string;
+      /** Action Type */
+      action_type: string;
+      /** Anchor */
+      anchor:
+        | components["schemas"]["AnchorPos"]
+        | components["schemas"]["AnchorRange"]
+        | components["schemas"]["AnchorLockId"];
+      /** Content */
+      content: string | null;
+      /** Context */
+      context: string;
+      /** Created At */
+      created_at: string;
+      /** Id */
+      id: string;
+      /** Issued At */
+      issued_at: string;
+      /** Lock Id */
+      lock_id: string | null;
+      /** Mode */
+      mode: string;
+      /** Task Id */
+      task_id: string;
+    };
+    /**
+     * InterventionBreakdownResponse
+     * @description Response schema for intervention type breakdown.
+     */
+    InterventionBreakdownResponse: {
+      /** Loki Count */
+      loki_count: number;
+      /** Muse Count */
+      muse_count: number;
+    };
+    /**
+     * InterventionHistoryResponse
+     * @description Response schema for intervention history query.
+     *
+     *     Attributes:
+     *         total: Total number of actions available.
+     *         limit: Maximum number of actions returned in this response.
+     *         offset: Number of actions skipped.
+     *         actions: List of intervention action responses.
+     *
+     *     Example:
+     *         ```python
+     *         response = InterventionHistoryResponse(
+     *             total=50,
+     *             limit=10,
+     *             offset=0,
+     *             actions=[InterventionActionResponse.from_entity(action)]
+     *         )
+     *         ```
+     */
+    InterventionHistoryResponse: {
+      /** Actions */
+      actions: components["schemas"]["InterventionActionResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * InterventionRequest
+     * @description Request schema for POST /impetus/generate-intervention.
+     *
+     *     Matches OpenAPI contract (intervention.yaml v2.0.0).
+     *
+     *     Attributes:
+     *         context: Writing context for LLM decision-making.
+     *             - Muse mode: Last 3 sentences before cursor
+     *             - Loki mode: Full document or last 10 sentences (whichever shorter)
+     *         mode: Agent working mode ("muse" or "loki").
+     *         client_meta: Document state metadata (version, selection).
+     *
+     *     Example:
+     *         ```python
+     *         request = InterventionRequest(
+     *             context="他打开门，犹豫着要不要进去。",
+     *             mode="muse",
+     *             client_meta=ClientMeta(
+     *                 doc_version=42,
+     *                 selection_from=1234,
+     *                 selection_to=1234
+     *             )
+     *         )
+     *         ```
+     */
+    InterventionRequest: {
+      /** @description Client document state metadata */
+      client_meta: components["schemas"]["ClientMeta"];
+      /**
+       * Context
+       * @description Writing context (last N sentences)
+       */
+      context: string;
+      /**
+       * Mode
+       * @description Agent mode: muse (STUCK) or loki (random)
+       * @enum {string}
+       */
+      mode: "muse" | "loki";
+    };
+    /**
+     * InterventionResponse
+     * @description Response schema for successful intervention generation.
+     *
+     *     Returned by LLM via Instructor (strongly-typed structured output).
+     *     Matches OpenAPI contract (intervention.yaml v2.0.0).
+     *
+     *     Attributes:
+     *         action: Intervention action type ("provoke", "delete", "rewrite").
+     *         content: Markdown blockquote content (provoke) or inline replacement text (rewrite).
+     *         lock_id: UUID for un-deletable lock (required for provoke/rewrite).
+     *         anchor: Target position for injection/deletion.
+     *         action_id: Unique action identifier (UUID v4).
+     *         issued_at: Server timestamp when action was generated.
+     *
+     *     Example (Provoke):
+     *         ```json
+     *         {
+     *             "action": "provoke",
+     *             "content": "门后传来低沉的呼吸声。",
+     *             "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8a",
+     *             "anchor": {"type": "pos", "from": 1234},
+     *             "action_id": "act_550e8400-e29b-41d4-a716-446655440000",
+     *             "source": "muse",
+     *             "issued_at": "2024-01-15T10:30:00Z"
+     *         }
+     *         ```
+     *
+     *     Example (Delete):
+     *         ```json
+     *         {
+     *             "action": "delete",
+     *             "anchor": {"type": "range", "from": 1289, "to": 1310},
+     *             "action_id": "act_660e8400-e29b-41d4-a716-446655440001",
+     *             "source": "loki",
+     *             "issued_at": "2024-01-15T10:31:00Z"
+     *         }
+     *         ```
+     *
+     *     Example (Rewrite):
+     *         ```json
+     *         {
+     *             "action": "rewrite",
+     *             "content": "他改为砸向那扇门",
+     *             "lock_id": "lock_01j...",
+     *             "anchor": {"type": "range", "from": 120, "to": 140},
+     *             "action_id": "act_77...",
+     *             "source": "muse",
+     *             "issued_at": "2024-01-15T10:32:00Z"
+     *         }
+     *         ```
+     */
+    InterventionResponse: {
+      /**
+       * Action
+       * @description Intervention action: provoke (inject), delete (remove) or rewrite (surgical replace)
+       * @enum {string}
+       */
+      action: "provoke" | "delete" | "rewrite";
+      /**
+       * Action Id
+       * @description Unique action identifier (UUID v4)
+       */
+      action_id: string;
+      /**
+       * Anchor
+       * @description Target position (pos/range/lock_id)
+       */
+      anchor:
+        | components["schemas"]["AnchorPos"]
+        | components["schemas"]["AnchorRange"]
+        | components["schemas"]["AnchorLockId"];
+      /**
+       * Content
+       * @description Intervention content (blockquote for provoke, inline text for rewrite)
+       */
+      content: string | null;
+      /**
+       * Issued At
+       * Format: date-time
+       * @description Server timestamp when action was generated
+       */
+      issued_at: string;
+      /**
+       * Lock Id
+       * @description UUID for un-deletable lock (required for provoke/rewrite actions)
+       */
+      lock_id: string | null;
+      /**
+       * Source
+       * @description Agent mode responsible for the action
+       * @enum {string}
+       */
+      source: "muse" | "loki";
+    };
+    /**
+     * LoginRequest
+     * @description User login request.
+     * @example {
+     *       "email": "user@example.com",
+     *       "password": "securePassword123"
+     *     }
+     */
+    LoginRequest: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** Password */
+      password: string;
+    };
+    /**
+     * RegisterRequest
+     * @description User registration request.
+     * @example {
+     *       "email": "user@example.com",
+     *       "password": "securePassword123"
+     *     }
+     */
+    RegisterRequest: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** Password */
+      password: string;
+    };
+    /**
+     * StatsPeriodResponse
+     * @description Response schema for stats by period.
+     */
+    StatsPeriodResponse: {
+      /** Interventions */
+      interventions: number;
+      /** Locks Created */
+      locks_created: number;
+      /** Period */
+      period: string;
+      /** Tasks Created */
+      tasks_created: number;
+      /** Writing Minutes */
+      writing_minutes: number;
+    };
+    /**
+     * StatsResponse
+     * @description Response schema for user stats.
+     */
+    StatsResponse: {
+      /** Last Activity At */
+      last_activity_at: string | null;
+      /** Total Locks Created */
+      total_locks_created: number;
+      /** Total Loki Interventions */
+      total_loki_interventions: number;
+      /** Total Muse Interventions */
+      total_muse_interventions: number;
+      /** Total Tasks */
+      total_tasks: number;
+      /** Writing Minutes */
+      writing_minutes: number;
+    };
+    /**
+     * StreakResponse
+     * @description Response schema for user streak.
+     */
+    StreakResponse: {
+      /** Current Streak Days */
+      current_streak_days: number;
+      /** Grace Used */
+      grace_used: boolean;
+      /** Last Activity Date */
+      last_activity_date: string | null;
+      /** Longest Streak Days */
+      longest_streak_days: number;
+      /** Streak Start Date */
+      streak_start_date: string | null;
+    };
+    /**
+     * StreakUpdateRequest
+     * @description Request schema for updating streak.
+     */
+    StreakUpdateRequest: Record<string, never>;
+    /**
+     * StyleAnalysisRequest
+     * @description Request schema for style analysis.
+     *
+     *     Attributes:
+     *         text: User writing sample (min 500 words).
+     *         user_id: User identifier for storing the style profile.
+     */
+    StyleAnalysisRequest: {
+      /**
+       * Text
+       * @description User writing sample (minimum 500 words recommended)
+       */
+      text: string;
+      /**
+       * User Id
+       * @description User identifier
+       */
+      user_id: string;
+    };
+    /**
+     * StyleAnalysisResponse
+     * @description Response schema for style analysis.
+     *
+     *     Attributes:
+     *         style_vector: Extracted style features.
+     *         samples_count: Number of samples processed.
+     *         user_id: User identifier.
+     */
+    StyleAnalysisResponse: {
+      /**
+       * Samples Count
+       * @description Number of samples analyzed
+       * @default 1
+       */
+      samples_count?: number;
+      style_vector: components["schemas"]["StyleVector"];
+      /**
+       * User Id
+       * @description User identifier
+       */
+      user_id: string;
+    };
+    /**
+     * StyleApplyRequest
+     * @description Request schema for applying style to text.
+     *
+     *     Attributes:
+     *         text: Text to stylize.
+     *         user_id: User whose style to apply.
+     *         intensity: Style application intensity (0.0-1.0).
+     */
+    StyleApplyRequest: {
+      /**
+       * Intensity
+       * @description Style intensity (0-1)
+       * @default 0.7
+       */
+      intensity?: number;
+      /**
+       * Text
+       * @description Text to apply style to
+       */
+      text: string;
+      /**
+       * User Id
+       * @description User identifier
+       */
+      user_id: string;
+    };
+    /**
+     * StyleApplyResponse
+     * @description Response schema for style application.
+     *
+     *     Attributes:
+     *         original_text: Original input text.
+     *         styled_text: Text with applied style.
+     *         style_applied: Whether style was successfully applied.
+     *         style_version: Version of style profile used.
+     */
+    StyleApplyResponse: {
+      /**
+       * Original Text
+       * @description Original input text
+       */
+      original_text: string;
+      /**
+       * Style Applied
+       * @description Whether style was applied
+       */
+      style_applied: boolean;
+      /**
+       * Style Version
+       * @description Style profile version used
+       */
+      style_version: number;
+      /**
+       * Styled Text
+       * @description Text with style applied
+       */
+      styled_text: string;
+    };
+    /**
+     * StyleComparisonRequest
+     * @description Request model for style comparison.
+     */
+    StyleComparisonRequest: {
+      /**
+       * Style Vector 1
+       * @description First style vector
+       */
+      style_vector_1: {
+        [key: string]: unknown;
+      };
+      /**
+       * Style Vector 2
+       * @description Second style vector
+       */
+      style_vector_2: {
+        [key: string]: unknown;
+      };
+    };
+    /**
+     * StyleComparisonResponse
+     * @description Response model for style comparison.
+     */
+    StyleComparisonResponse: {
+      /** Euclidean Distance */
+      euclidean_distance: number;
+      /** Insights */
+      insights: string;
+      /** Radar Chart Data */
+      radar_chart_data: {
+        [key: string]: number[];
+      };
+    };
+    /**
+     * StyleHistoryCreate
+     * @description Request model for creating style history.
+     */
+    StyleHistoryCreate: {
+      /**
+       * Style Vector
+       * @description Style analysis vector
+       */
+      style_vector: {
+        [key: string]: unknown;
+      };
+      /**
+       * Text
+       * @description Analyzed text (min 100 chars)
+       */
+      text: string;
+      /**
+       * User Id
+       * @description User identifier
+       */
+      user_id: string;
+    };
+    /**
+     * StyleHistoryListResponse
+     * @description Response model for paginated history list.
+     */
+    StyleHistoryListResponse: {
+      /** Items */
+      items: components["schemas"]["StyleHistoryResponse"][];
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Total */
+      total: number;
+    };
+    /**
+     * StyleHistoryResponse
+     * @description Response model for style history.
+     */
+    StyleHistoryResponse: {
+      /** Created At */
+      created_at: string;
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Style Vector */
+      style_vector: {
+        [key: string]: unknown;
+      };
+      /** Text */
+      text: string;
+      /** User Id */
+      user_id: string;
+    };
+    /**
+     * StyleProfileResponse
+     * @description Response schema for retrieving stored style profile.
+     *
+     *     Attributes:
+     *         user_id: User identifier.
+     *         style_vector: Stored style features.
+     *         samples_count: Number of samples used.
+     *         version: Profile version.
+     *         created_at: Creation timestamp.
+     *         updated_at: Last update timestamp.
+     */
+    StyleProfileResponse: {
+      /** Created At */
+      created_at: string;
+      /** Samples Count */
+      samples_count: number;
+      /** Style Vector */
+      style_vector: {
+        [key: string]: unknown;
+      };
+      /** Updated At */
+      updated_at: string;
+      /** User Id */
+      user_id: string;
+      /** Version */
+      version: number;
+    };
+    /**
+     * StyleVector
+     * @description Style vector containing extracted features.
+     *
+     *     Attributes:
+     *         avg_sentence_length: Average words per sentence.
+     *         vocabulary_richness: Unique words / total words ratio.
+     *         punctuation_density: Punctuation marks per 100 words.
+     *         formality_score: Estimated formality level (0-1).
+     *         tone_markers: Detected tone characteristics.
+     *         confidence: Overall confidence in analysis (0-1).
+     */
+    StyleVector: {
+      /**
+       * Avg Sentence Length
+       * @description Average words per sentence
+       */
+      avg_sentence_length: number;
+      /**
+       * Confidence
+       * @description Analysis confidence
+       */
+      confidence: number;
+      /**
+       * Formality Score
+       * @description Formality estimate
+       */
+      formality_score: number;
+      /**
+       * Punctuation Density
+       * @description Punctuation per 100 words
+       */
+      punctuation_density: number;
+      /**
+       * Tone Markers
+       * @description Tone characteristics with weights
+       */
+      tone_markers?: {
+        [key: string]: number;
+      };
+      /**
+       * Vocabulary Richness
+       * @description Unique/total word ratio
+       */
+      vocabulary_richness: number;
+    };
+    /**
+     * TaskCreateRequest
+     * @description Request schema for creating a task.
+     *
+     *     Attributes:
+     *         content: Task content in Markdown format (1-100000 chars).
+     *         lock_ids: List of lock IDs for un-deletable content blocks.
+     *         title: Task title.
+     *         category: Task category.
+     *         priority: Task priority.
+     *         due_date: Optional ISO format due date.
+     *         word_count: Initial word count.
+     *
+     *     Example:
+     *         ```python
+     *         request = TaskCreateRequest(
+     *             content="# My Task\n\nContent here",
+     *             lock_ids=["lock_01j4z3m8a6q3qz2x8j4z3m8a"]
+     *         )
+     *         ```
+     */
+    TaskCreateRequest: {
+      /**
+       * Category
+       * @description Task category
+       * @default WRITING
+       */
+      category?: string;
+      /**
+       * Content
+       * @description Task content (Markdown)
+       */
+      content: string;
+      /**
+       * Due Date
+       * @description Optional ISO format due date
+       */
+      due_date?: string | null;
+      /**
+       * Lock Ids
+       * @description List of lock IDs
+       */
+      lock_ids?: string[];
+      /**
+       * Priority
+       * @description Task priority
+       * @default MEDIUM
+       */
+      priority?: string;
+      /**
+       * Title
+       * @description Task title
+       * @default
+       */
+      title?: string;
+      /**
+       * Word Count
+       * @description Initial word count
+       * @default 0
+       */
+      word_count?: number;
+    };
+    /**
+     * TaskListResponse
+     * @description Response schema for task list query.
+     *
+     *     Attributes:
+     *         total: Total number of tasks available.
+     *         limit: Maximum number of tasks returned in this response.
+     *         offset: Number of tasks skipped.
+     *         tasks: List of task responses.
+     *
+     *     Example:
+     *         ```python
+     *         response = TaskListResponse(
+     *             total=100,
+     *             limit=10,
+     *             offset=0,
+     *             tasks=[TaskResponse.from_entity(task)]
+     *         )
+     *         ```
+     */
+    TaskListResponse: {
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Tasks */
+      tasks: components["schemas"]["TaskResponse"][];
+      /** Total */
+      total: number;
+    };
+    /**
+     * TaskResponse
+     * @description Response schema for task operations.
+     *
+     *     Attributes:
+     *         id: Task UUID as string.
+     *         content: Task content in Markdown format.
+     *         lock_ids: List of lock IDs.
+     *         created_at: ISO format creation timestamp.
+     *         updated_at: ISO format last update timestamp.
+     *         version: Current version number.
+     *         title: Task title.
+     *         category: Task category.
+     *         priority: Task priority.
+     *         due_date: Optional ISO format due date.
+     *         word_count: Current word count.
+     *
+     *     Example:
+     *         ```python
+     *         task = Task.create("Content", ["lock_1"])
+     *         response = TaskResponse.from_entity(task)
+     *         print(response.id)  # "550e8400-e29b-41d4-a716-446655440000"
+     *         ```
+     */
+    TaskResponse: {
+      /** Category */
+      category: string;
+      /** Content */
+      content: string;
+      /** Created At */
+      created_at: string;
+      /** Due Date */
+      due_date: string | null;
+      /** Id */
+      id: string;
+      /** Lock Ids */
+      lock_ids: string[];
+      /** Priority */
+      priority: string;
+      /** Title */
+      title: string;
+      /** Updated At */
+      updated_at: string;
+      /** Version */
+      version: number;
+      /** Word Count */
+      word_count: number;
+    };
+    /**
+     * TaskUpdateRequest
+     * @description Request schema for updating a task.
+     *
+     *     Attributes:
+     *         content: Updated task content in Markdown format (1-100000 chars).
+     *         lock_ids: Updated list of lock IDs.
+     *         version: Current version for optimistic locking (must match server).
+     *         title: Updated task title.
+     *         category: Updated task category.
+     *         priority: Updated task priority.
+     *         due_date: Updated ISO format due date.
+     *         word_count: Updated word count.
+     *
+     *     Example:
+     *         ```python
+     *         request = TaskUpdateRequest(
+     *             content="# Updated Task",
+     *             lock_ids=["lock_1"],
+     *             version=0
+     *         )
+     *         ```
+     */
+    TaskUpdateRequest: {
+      /**
+       * Category
+       * @description Updated task category
+       */
+      category?: string | null;
+      /**
+       * Content
+       * @description Updated task content
+       */
+      content: string;
+      /**
+       * Due Date
+       * @description Updated ISO format due date
+       */
+      due_date?: string | null;
+      /**
+       * Lock Ids
+       * @description Updated list of lock IDs
+       */
+      lock_ids: string[];
+      /**
+       * Priority
+       * @description Updated task priority
+       */
+      priority?: string | null;
+      /**
+       * Title
+       * @description Updated task title
+       */
+      title?: string | null;
+      /**
+       * Version
+       * @description Current version (for optimistic locking)
+       */
+      version: number;
+      /**
+       * Word Count
+       * @description Updated word count
+       */
+      word_count?: number | null;
+    };
+    /**
+     * TemplateCreateRequest
+     * @description Request schema for creating a template.
+     */
+    TemplateCreateRequest: {
+      /**
+       * Content
+       * @default
+       */
+      content?: string;
+      /** Name */
+      name: string;
+    };
+    /**
+     * TemplateListResponse
+     * @description Response schema for template list.
+     */
+    TemplateListResponse: {
+      /** Limit */
+      limit: number;
+      /** Offset */
+      offset: number;
+      /** Templates */
+      templates: components["schemas"]["TemplateResponse"][];
+      /** Total */
+      total: number;
+    };
+    /**
+     * TemplateResponse
+     * @description Response schema for template.
+     */
+    TemplateResponse: {
+      /** Content */
+      content: string;
+      /** Created At */
+      created_at: string;
+      /** Id */
+      id: string;
+      /** Name */
+      name: string;
+      /** Updated At */
+      updated_at: string;
+      /** User Id */
+      user_id: string;
+    };
+    /**
+     * UserResponse
+     * @description User response without sensitive data.
+     */
+    UserResponse: {
+      /** Email */
+      email: string;
+      /** Id */
+      id: string;
+    };
+    /** ValidationError */
+    ValidationError: {
+      /** Context */
+      ctx?: Record<string, never>;
+      /** Input */
+      input?: unknown;
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+    };
+    /**
+     * Anchor
+     * @description Target position (pos/range/lock_id)
+     */
+    Anchor:
+      | components["schemas"]["AnchorPos"]
+      | components["schemas"]["AnchorRange"]
+      | components["schemas"]["AnchorLockId"];
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    generateIntervention: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description UUID v4 to prevent duplicate interventions on retry */
-                "Idempotency-Key": string;
-                /** @description API contract version (MUST be "2.0.0") */
-                "X-Contract-Version": "2.0.0";
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InterventionRequest"];
-            };
-        };
-        responses: {
-            /** @description Success - intervention action generated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InterventionResponse"];
-                };
-            };
-            /** @description Bad Request - invalid anchor position */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "BadRequest",
-                     *       "message": "Anchor position out of bounds: from=9999 exceeds document length 1500",
-                     *       "details": {
-                     *         "anchor": {
-                     *           "type": "pos",
-                     *           "from": 9999
-                     *         },
-                     *         "doc_length": 1500
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Unprocessable Entity - request validation failed */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "ValidationError",
-                     *       "message": "Request body validation failed",
-                     *       "details": [
-                     *         {
-                     *           "field": "mode",
-                     *           "message": "must be one of: muse, loki",
-                     *           "received": "chaos"
-                     *         }
-                     *       ]
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Too Many Requests - rate limit exceeded */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "RateLimitExceeded",
-                     *       "message": "Maximum 10 requests per minute exceeded",
-                     *       "details": {
-                     *         "limit": 10,
-                     *         "window": "60s",
-                     *         "retry_after": 42
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Internal Server Error - LLM or backend failure */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": "InternalServerError",
-                     *       "message": "LLM service unavailable",
-                     *       "details": {
-                     *         "llm_provider": "openai",
-                     *         "error_code": "503"
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
+  list_achievements_achievements__get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
     };
-    createTask: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TaskCreateRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["AchievementListResponse"];
         };
-        responses: {
-            /** @description Task created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaskResponse"];
-                };
-            };
-            /** @description Validation error (content too short/long) */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    getTask: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Task identifier (UUID v4) */
-                task_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Task found */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaskResponse"];
-                };
-            };
-            /** @description Task not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
+  };
+  get_achievement_definitions_achievements_definitions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    updateTask: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Task identifier (UUID v4) */
-                task_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TaskUpdateRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["AchievementDefinitionsResponse"];
         };
-        responses: {
-            /** @description Task updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TaskResponse"];
-                };
-            };
-            /** @description Task not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Version conflict (optimistic locking failed) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
+      };
     };
-    deleteTask: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Task identifier (UUID v4) */
-                task_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Deleted */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Task not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
+  };
+  get_achievement_achievements__achievement_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        achievement_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
     };
-    listTaskActions: {
-        parameters: {
-            query?: {
-                /** @example 50 */
-                limit?: number;
-                /** @example 0 */
-                offset?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Task identifier (UUID v4) */
-                task_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Intervention history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InterventionHistoryResponse"];
-                };
-            };
-            /** @description Task not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["AchievementResponse"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
+  };
+  login_auth_login_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LoginRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  logout_auth_logout_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_me_auth_me_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UserResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  register_auth_register_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RegisterRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  collaboration_health_collaboration_health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  get_active_rooms_collaboration_rooms_active_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  update_room_permission_collaboration_rooms__document_id__permission_post: {
+    parameters: {
+      query: {
+        /** @description User ID to update */
+        user_id: string;
+        /** @description Permission level (read, write, admin) */
+        permission: string;
+      };
+      header?: never;
+      path: {
+        document_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_room_stats_collaboration_rooms__document_id__stats_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        document_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_room_users_collaboration_rooms__document_id__users_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        document_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  health_health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HealthResponse"];
+        };
+      };
+    };
+  };
+  health_db_health_db_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+  };
+  generate_intervention_impetus_generate_intervention_post: {
+    parameters: {
+      query?: never;
+      header: {
+        "Idempotency-Key": string;
+        "X-Contract-Version"?: string | null;
+        "X-LLM-Provider"?: string | null;
+        "X-LLM-Model"?: string | null;
+        "X-LLM-Api-Key"?: string | null;
+        "X-Task-Id"?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InterventionRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InterventionResponse"];
+        };
+      };
+      /** @description Bad Request - Invalid anchor or out of bounds */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Unprocessable Entity - Validation failed */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Too Many Requests - Rate limit exceeded */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Internal Server Error - LLM or backend failure */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  get_stats_stats__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StatsResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_intervention_breakdown_stats_breakdown_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InterventionBreakdownResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_stats_by_period_stats_period__period__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        period: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StatsPeriodResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_streak_streaks__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StreakResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_streak_streaks_update_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StreakUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StreakResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  analyze_style_style_analyze_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StyleAnalysisRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StyleAnalysisResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  apply_style_style_apply_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StyleApplyRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StyleApplyResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  compare_styles_style_compare_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StyleComparisonRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StyleComparisonResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_history_style_history_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["StyleHistoryCreate"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StyleHistoryResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_user_history_style_history_user__user_id__get: {
+    parameters: {
+      query?: {
+        /** @description Max records to return */
+        limit?: number;
+        /** @description Number of records to skip */
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StyleHistoryListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_history_by_id_style_history__history_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        history_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StyleHistoryResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_history_style_history__history_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        history_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_style_profile_style_profile__user_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StyleProfileResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_style_profile_style_profile__user_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        user_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_tasks_tasks__get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TaskListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_task_tasks__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TaskCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TaskResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_task_tasks__task_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        task_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TaskResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_task_tasks__task_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        task_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TaskUpdateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TaskResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_task_tasks__task_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        task_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_intervention_history_tasks__task_id__actions_get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path: {
+        task_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InterventionHistoryResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_templates_templates__get: {
+    parameters: {
+      query?: {
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TemplateListResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_template_templates__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TemplateCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TemplateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_template_templates__template_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["TemplateResponse"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_template_templates__template_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        template_id: string;
+      };
+      cookie?: {
+        access_token?: string | null;
+      };
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
 }

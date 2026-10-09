@@ -2,7 +2,7 @@
  * ProseMirror Transaction Filter for Lock Enforcement
  *
  * Implements editor-level transaction filtering to prevent deletion/modification
- * of locked blocks. Uses Milkdown's filterTransaction API.
+ * of locked blocks. Uses ProseMirror's Plugin filterTransaction API.
  *
  * Constitutional Compliance:
  * - Article I (Simplicity): Uses native ProseMirror API (no custom wrapper)
@@ -43,16 +43,9 @@ import { extractLockAttributes } from "../../utils/prosemirror-helpers";
  * // Apply to Milkdown editor
  * editor.action((ctx) => {
  *   const view = ctx.get(editorViewCtx);
- *   const oldFilter = view.props.filterTransaction;
- *
- *   view.setProps({
- *     filterTransaction: (tr, state) => {
- *       // Apply lock filter first
- *       if (!filter(tr, state)) return false;
- *       // Chain with existing filters
- *       return oldFilter ? oldFilter(tr, state) : true;
- *     }
- *   });
+ *   view.updateState(view.state.reconfigure({
+ *     plugins: [...view.state.plugins, new Plugin({ filterTransaction: filter })],
+ *   }));
  * });
  * ```
  */
@@ -88,11 +81,14 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
     // Locks are registered in EditorCore dispatch when content is first inserted
     let affectsLock = false;
 
-    tr.steps.forEach((step) => {
+    tr.steps.forEach((step, index) => {
       const stepMap = step.getMap();
+      // Step maps refer to the document before that step, which may differ
+      // from the initial state after preceding insertions/deletions.
+      const docBeforeStep = tr.docs?.[index] ?? state.doc;
 
       stepMap.forEach((oldStart, oldEnd) => {
-        state.doc.nodesBetween(oldStart, oldEnd, (node: unknown) => {
+        docBeforeStep.nodesBetween(oldStart, oldEnd, (node: unknown) => {
           const anyNode = node as Record<string, unknown>;
 
           const metadata = extractLockAttributes(node as ProseMirrorNode);
@@ -119,7 +115,7 @@ export function createLockTransactionFilter(lockManager: LockManager, onReject?:
           if (anyNode.isText && typeof anyNode.text === "string") {
             const lockPattern = /<!--\s*lock:([^\s>]+)\s*-->/i;
             const match = anyNode.text.match(lockPattern);
-            if (match && lockManager.hasLock(match[1])) {
+            if (match?.[1] && lockManager.hasLock(match[1])) {
               affectsLock = true;
               return false;
             }

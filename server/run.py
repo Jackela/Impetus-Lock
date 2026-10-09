@@ -49,7 +49,7 @@ def set_process_title(title: str) -> None:
     """Set process title for better monitoring visibility."""
     logger = get_logger()
     try:
-        import setproctitle
+        import setproctitle  # type: ignore[import-not-found]
 
         setproctitle.setproctitle(title)
         logger.info("process_title_set", extra={"title": title})

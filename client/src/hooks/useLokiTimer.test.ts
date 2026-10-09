@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useLokiTimer } from "./useLokiTimer";
+import type { AgentMode } from "../types/mode";
 
 describe("useLokiTimer", () => {
   beforeEach(() => {
@@ -52,9 +53,11 @@ describe("useLokiTimer", () => {
 
   it("stops timer when mode changes from 'loki'", () => {
     const onTrigger = vi.fn();
-    const { result, rerender } = renderHook(({ mode }) => useLokiTimer({ mode, onTrigger }), {
-      initialProps: { mode: "loki" as const },
-    });
+    const initialProps: { mode: AgentMode } = { mode: "loki" };
+    const { result, rerender } = renderHook(
+      ({ mode }: { mode: AgentMode }) => useLokiTimer({ mode, onTrigger }),
+      { initialProps }
+    );
 
     // Timer should be active
     expect(result.current.currentInterval).toBeGreaterThan(0);
@@ -177,9 +180,11 @@ describe("useLokiTimer", () => {
 
   it("handles mode switching correctly", () => {
     const onTrigger = vi.fn();
-    const { result, rerender } = renderHook(({ mode }) => useLokiTimer({ mode, onTrigger }), {
-      initialProps: { mode: "off" as const },
-    });
+    const initialProps: { mode: AgentMode } = { mode: "off" };
+    const { result, rerender } = renderHook(
+      ({ mode }: { mode: AgentMode }) => useLokiTimer({ mode, onTrigger }),
+      { initialProps }
+    );
 
     // Initially off
     expect(result.current.currentInterval).toBe(0);

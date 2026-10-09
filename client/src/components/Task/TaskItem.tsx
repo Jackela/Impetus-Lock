@@ -7,6 +7,7 @@
  * @module components/Task/TaskItem
  */
 
+import type { JSX } from "react";
 import styles from "./TaskItem.module.css";
 import type { StoredTask } from "../../types/task";
 

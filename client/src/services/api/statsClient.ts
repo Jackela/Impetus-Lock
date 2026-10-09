@@ -1,3 +1,6 @@
+import { cookieAuthOptions } from "./cookieAuth";
+import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
+
 /**
  * Stats API Client
  */
@@ -22,11 +25,12 @@ export interface InterventionBreakdown {
 
 /** Error thrown when a stats API request fails. */
 export class StatsAPIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  /** HTTP status code. */
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "StatsAPIError";
   }
 }
@@ -34,21 +38,37 @@ export class StatsAPIError extends Error {
 /**
  * Fetch aggregate writing statistics for the current user.
  *
+ * @param options - Query cancellation and captured account authorization
  * @returns The stats record
  */
-export async function fetchStats(): Promise<StatsRecord> {
-  const res = await fetch(`${API_BASE_URL}/stats/`, { credentials: "include" });
+export async function fetchStats(options?: RemoteRequestOptions): Promise<StatsRecord> {
+  const res = await sessionFetch(
+    `${API_BASE_URL}/stats/`,
+    cookieAuthOptions({ credentials: "include" }),
+    options
+  );
   if (!res.ok) throw new StatsAPIError(res.status, "Failed to fetch stats");
-  return res.json();
+  const data = await res.json();
+  assertCurrentSession(options?.session);
+  return data;
 }
 
 /**
  * Fetch the Muse vs Loki intervention breakdown.
  *
+ * @param options - Query cancellation and captured account authorization
  * @returns The intervention count breakdown
  */
-export async function fetchInterventionBreakdown(): Promise<InterventionBreakdown> {
-  const res = await fetch(`${API_BASE_URL}/stats/breakdown`, { credentials: "include" });
+export async function fetchInterventionBreakdown(
+  options?: RemoteRequestOptions
+): Promise<InterventionBreakdown> {
+  const res = await sessionFetch(
+    `${API_BASE_URL}/stats/breakdown`,
+    cookieAuthOptions({ credentials: "include" }),
+    options
+  );
   if (!res.ok) throw new StatsAPIError(res.status, "Failed to fetch breakdown");
-  return res.json();
+  const data = await res.json();
+  assertCurrentSession(options?.session);
+  return data;
 }

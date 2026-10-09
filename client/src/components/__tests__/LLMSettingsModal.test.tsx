@@ -5,7 +5,18 @@ import { LLMSettingsModal } from "../LLMSettingsModal";
 describe("LLMSettingsModal validations", () => {
   it("shows validation message when key format is invalid", () => {
     render(
-      <LLMSettingsModal open onClose={vi.fn()} config={null} onSave={vi.fn()} onClear={vi.fn()} />
+      <LLMSettingsModal
+        open
+        storageMode="session"
+        onModeChange={vi.fn()}
+        locked={false}
+        onUnlock={vi.fn()}
+        onLock={vi.fn()}
+        onClose={vi.fn()}
+        config={null}
+        onSave={vi.fn()}
+        onClear={vi.fn()}
+      />
     );
 
     const keyInput = screen.getByTestId("llm-key-input") as HTMLInputElement;

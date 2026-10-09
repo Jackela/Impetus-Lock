@@ -12,14 +12,18 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 
 class AsyncIdempotencyCache:
     """Async-friendly in-memory cache for idempotency key deduplication.
 
-    Stores intervention responses keyed by Idempotency-Key header (UUID).
+    Stores intervention responses keyed by the caller's scoped request identity.
     Entries expire after 15 seconds (configurable TTL).
+    Entries remain valid at exact expiry and expire once time exceeds it.
+    Writes reclaim all expired entries, including keys never read again.
     Uses asyncio locks to avoid blocking the event loop.
     """
 
@@ -32,6 +36,26 @@ class AsyncIdempotencyCache:
         self.ttl = ttl
         self._cache: dict[str, tuple[Any, float]] = {}
         self._lock = asyncio.Lock()
+        self._flights: dict[str, tuple[asyncio.Lock, int]] = {}
+
+    @asynccontextmanager
+    async def serialize(self, key: str) -> AsyncIterator[None]:
+        """Serialize work for one key within this process, releasing on every exit.
+
+        Count holders and waiters so cancellation cannot orphan a lock or let a
+        new caller bypass existing waiters. Idle locks are immediately reclaimed.
+        """
+        lock, users = self._flights.get(key, (asyncio.Lock(), 0))
+        self._flights[key] = (lock, users + 1)
+        try:
+            async with lock:
+                yield
+        finally:
+            _, users = self._flights[key]
+            if users == 1:
+                del self._flights[key]
+            else:
+                self._flights[key] = (lock, users - 1)
 
     async def get(self, key: str) -> Any | None:
         """Retrieve cached response if not expired."""
@@ -48,9 +72,15 @@ class AsyncIdempotencyCache:
             return response
 
     async def set(self, key: str, response: Any) -> None:
-        """Store response in cache with TTL expiry."""
+        """Remove expired entries and store response with a fresh TTL."""
         async with self._lock:
-            expiry = time.time() + self.ttl
+            current_time = time.time()
+            expired_keys = [
+                key for key, (_, expiry) in self._cache.items() if current_time > expiry
+            ]
+            for expired_key in expired_keys:
+                self._cache.pop(expired_key, None)
+            expiry = current_time + self.ttl
             self._cache[key] = (response, expiry)
 
     async def clear(self) -> None:

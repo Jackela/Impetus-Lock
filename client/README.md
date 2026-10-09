@@ -136,7 +136,7 @@ client/
 
 ### 环境要求 | Prerequisites
 
-- Node.js 24.x (matches the CI toolchain)
+- Node.js 22.13+ (22.x) or 24.x (`^22.13.0 || ^24.0.0`); 24.x is recommended to match the CI toolchain
 - npm (comes with Node.js)
 
 ### 安装 | Installation

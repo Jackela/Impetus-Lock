@@ -11,7 +11,7 @@ Constitutional Compliance:
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from server.domain.models.anchor import Anchor
 
@@ -125,6 +125,9 @@ class InterventionResponse(BaseModel):
         }
         ```
     """
+
+    # Defaults remain optional inputs but are always emitted in response JSON.
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
 
     action: Literal["provoke", "delete", "rewrite"] = Field(
         ...,

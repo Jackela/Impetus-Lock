@@ -47,11 +47,6 @@ function createTestQueryClient() {
         retry: false, // Disable retry for faster tests
       },
     },
-    logger: {
-      log: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    },
   });
 }
 
@@ -219,9 +214,11 @@ describe("useTasks", () => {
     expect(callCount).toBe(1);
 
     // Call refetch
-    await result.current.refetch();
+    const refetched = await result.current.refetch({ throwOnError: true });
 
     expect(callCount).toBe(2);
+    expect(refetched.status).toBe("success");
+    expect(refetched.data).toEqual(mockTaskListResponse);
     expect(result.current.data).toEqual(mockTasks);
   });
 

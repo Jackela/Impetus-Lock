@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
  * This test verifies what's currently working in the app
  */
 test.describe("Phase 5 Quick Check", () => {
-  test("verify current app state", async ({ page }) => {
+  test("verify current app state", async ({ page }, testInfo) => {
     // Navigate to app
     await page.goto("http://localhost:5173");
 
@@ -47,8 +47,8 @@ test.describe("Phase 5 Quick Check", () => {
     console.log(`Sensory feedback visible: ${feedbackVisible}`);
 
     // Take a screenshot
-    await page.screenshot({ path: "e2e-results/phase5-quick-check.png", fullPage: true });
-    console.log("📸 Screenshot saved to e2e-results/phase5-quick-check.png");
+    await page.screenshot({ path: testInfo.outputPath("phase5-quick-check.png"), fullPage: true });
+    console.log(`📸 Screenshot saved to ${testInfo.outputPath("phase5-quick-check.png")}`);
 
     // List all buttons
     const allButtons = await page.locator("button").allTextContents();

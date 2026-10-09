@@ -87,3 +87,6 @@ client/.frontend.pid
 
 # Generated prompt artifacts
 server/server/infrastructure/llm/prompts/generated_templates.py
+
+# Generated local browser authentication (never commit session cookies)
+client/e2e/storage-state.generated.json

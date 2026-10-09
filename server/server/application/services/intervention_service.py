@@ -10,6 +10,7 @@ Constitutional Compliance:
 - Article V (Documentation): Complete Google-style docstrings
 """
 
+import asyncio
 import time
 from uuid import UUID, uuid4
 
@@ -263,6 +264,8 @@ class InterventionService:
 
         Same business logic as generate_intervention(), but with async support
         for persisting intervention history to database via TaskRepository.
+        Synchronous generation runs in a worker thread. Cancellation waits for
+        that worker before propagating so caller-owned providers can close safely.
 
         Args:
             request: Intervention request with context and mode.
@@ -283,8 +286,25 @@ class InterventionService:
             # Intervention history is automatically persisted to database
             ```
         """
-        # Generate intervention using existing sync logic
-        response = self.generate_intervention(request, llm_override=llm_override)
+        # Keep synchronous provider calls off the event loop.
+        generation = asyncio.create_task(
+            asyncio.to_thread(self.generate_intervention, request, llm_override=llm_override)
+        )
+        try:
+            response = await asyncio.shield(generation)
+        except asyncio.CancelledError:
+            # Threads cannot be cancelled. Drain the worker before caller cleanup
+            # can close a request-local provider, including on repeated cancellation.
+            while not generation.done():
+                try:
+                    await asyncio.shield(generation)
+                except asyncio.CancelledError:
+                    continue
+                except Exception:
+                    break
+            if not generation.cancelled():
+                generation.exception()  # Retrieve worker failures; cancellation takes precedence.
+            raise
 
         repo = repository or self.task_repository
         # Persist to database if repository and task_id provided

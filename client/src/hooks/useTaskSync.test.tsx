@@ -109,8 +109,12 @@ describe("useTaskSync", () => {
     ]);
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result, rerender } = renderHook(
-      ({ externalTaskId }) => useTaskSync("default", { externalTaskId }),
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useTaskSync>,
+      { externalTaskId: string | null }
+    >(
+      ({ externalTaskId }: { externalTaskId: string | null }) =>
+        useTaskSync("default", { externalTaskId }),
       { initialProps: { externalTaskId: null } }
     );
 
@@ -133,8 +137,12 @@ describe("useTaskSync", () => {
     const fetchMock = mockFetchQueue([{ status: 200, body: task1 }]);
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result, rerender } = renderHook(
-      ({ externalTaskId }) => useTaskSync("default", { externalTaskId }),
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useTaskSync>,
+      { externalTaskId: string | null }
+    >(
+      ({ externalTaskId }: { externalTaskId: string | null }) =>
+        useTaskSync("default", { externalTaskId }),
       { initialProps: { externalTaskId: "task-1" } }
     );
 
@@ -158,8 +166,12 @@ describe("useTaskSync", () => {
     ]);
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result, rerender } = renderHook(
-      ({ externalTaskId }) => useTaskSync("default", { externalTaskId }),
+    const { result, rerender } = renderHook<
+      ReturnType<typeof useTaskSync>,
+      { externalTaskId: string | null }
+    >(
+      ({ externalTaskId }: { externalTaskId: string | null }) =>
+        useTaskSync("default", { externalTaskId }),
       { initialProps: { externalTaskId: "task-1" } }
     );
 

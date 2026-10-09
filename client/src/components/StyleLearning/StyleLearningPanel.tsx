@@ -7,6 +7,7 @@
  * @module components/StyleLearning/StyleLearningPanel
  */
 
+import type { JSX } from "react";
 import { useCallback } from "react";
 import { StyleInputForm } from "./StyleInputForm";
 import { StyleAnalysisResult } from "./StyleAnalysisResult";

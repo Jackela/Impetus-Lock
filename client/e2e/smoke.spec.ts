@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
+import { waitForReactHydration } from "./helpers/waitHelpers";
 
 test("homepage renders successfully", async ({ page }) => {
   await page.goto("/");

@@ -28,7 +28,7 @@ interface AppModalsProps {
 
   showCreateTaskModal: boolean;
   onCloseCreateTaskModal: () => void;
-  onTaskCreated: () => void;
+  onTaskCreated: (task: { id: string; title: string }) => void;
 
   currentProvider?: string | null;
 }
@@ -115,7 +115,7 @@ export function AppModals({
         locked={vaultLocked}
         onUnlock={onUnlock}
         onLock={onLock}
-        metadata={metadata}
+        metadata={metadata ?? undefined}
       />
 
       <CreateTaskModal

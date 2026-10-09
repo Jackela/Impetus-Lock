@@ -75,13 +75,14 @@ export function SensoryFeedback({ actionType }: SensoryFeedbackProps) {
   }
 
   // Map action type to animation name for data attribute
-  const animationName = {
+  const animationNames: Partial<Record<AIActionType, string>> = {
     [AIActionType.PROVOKE]: "glitch",
     [AIActionType.REWRITE]: "glitch",
     [AIActionType.DELETE]: "fadeout",
     [AIActionType.REJECT]: "shake",
     [AIActionType.ERROR]: "error-flash",
-  }[actionType];
+  };
+  const animationName = animationNames[actionType];
 
   return (
     <AnimatePresence mode="wait">

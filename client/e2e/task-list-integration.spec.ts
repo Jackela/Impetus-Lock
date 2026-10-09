@@ -134,10 +134,10 @@ test.describe("UX-003: Task List Integration", () => {
     }
   });
 
-  test("screenshot of task list integration", async ({ page }) => {
+  test("screenshot of task list integration", async ({ page }, testInfo) => {
     // Take a screenshot for visual verification
     await page.screenshot({
-      path: "e2e-results/ux-003-task-list-integration.png",
+      path: testInfo.outputPath("ux-003-task-list-integration.png"),
       fullPage: true,
     });
 
@@ -145,7 +145,7 @@ test.describe("UX-003: Task List Integration", () => {
     const toggleButton = page.locator('[data-testid="task-list-toggle"]');
     await toggleButton.click();
     await page.screenshot({
-      path: "e2e-results/ux-003-task-list-hidden.png",
+      path: testInfo.outputPath("ux-003-task-list-hidden.png"),
       fullPage: true,
     });
   });

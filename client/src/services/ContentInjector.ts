@@ -128,9 +128,15 @@ export function injectLockedBlock(
 
   // Create blockquote node with lock attributes
   const schema = state.schema;
+  const paragraphType = schema.nodes.paragraph;
+  const blockquoteType = schema.nodes.blockquote;
+  if (!paragraphType || !blockquoteType) {
+    logger.error("Injection skipped: schema requires paragraph and blockquote nodes");
+    return;
+  }
   const textNode = schema.text(contentWithLockMarker);
-  const paragraphNode = schema.nodes.paragraph.create(null, textNode);
-  const blockquoteNode = schema.nodes.blockquote.create(
+  const paragraphNode = paragraphType.create(null, textNode);
+  const blockquoteNode = blockquoteType.create(
     buildLockAttributes(lockId, source), // Lock metadata stored in node attributes
     paragraphNode
   );
@@ -293,11 +299,13 @@ export function rewriteRangeWithLock({
   const contentWithLockMarker = appendLockMarker(content, lockId, source);
   // Create paragraph node with lock attributes
   const schema = state.schema;
+  const paragraphType = schema.nodes.paragraph;
+  if (!paragraphType) {
+    logger.error("Rewrite skipped: schema requires a paragraph node");
+    return;
+  }
   const textNode = schema.text(contentWithLockMarker);
-  const paragraphNode = schema.nodes.paragraph.create(
-    buildLockAttributes(lockId, source),
-    textNode
-  );
+  const paragraphNode = paragraphType.create(buildLockAttributes(lockId, source), textNode);
 
   // Delete old range and insert new locked paragraph
   let tr = state.tr.delete(from, to);
@@ -346,11 +354,13 @@ export function rewriteLastSentenceWithLock(
   const contentWithLockMarker = appendLockMarker(content, lockId, source);
   // Create paragraph node with lock attributes
   const schema = state.schema;
+  const paragraphType = schema.nodes.paragraph;
+  if (!paragraphType) {
+    logger.error("Rewrite skipped: schema requires a paragraph node");
+    return;
+  }
   const textNode = schema.text(contentWithLockMarker);
-  const paragraphNode = schema.nodes.paragraph.create(
-    buildLockAttributes(lockId, source),
-    textNode
-  );
+  const paragraphNode = paragraphType.create(buildLockAttributes(lockId, source), textNode);
 
   // Delete old range and insert new locked paragraph
   let tr = state.tr.delete(range.from, range.to);

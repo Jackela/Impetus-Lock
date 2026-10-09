@@ -1,3 +1,6 @@
+import { cookieAuthOptions } from "./cookieAuth";
+import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
+
 /**
  * Achievement API Client
  */
@@ -24,11 +27,12 @@ export interface AchievementDefinition {
 
 /** Error thrown when an achievements API request fails. */
 export class AchievementAPIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  /** HTTP status code. */
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "AchievementAPIError";
   }
 }
@@ -36,26 +40,40 @@ export class AchievementAPIError extends Error {
 /**
  * Fetch all achievements earned by the current user.
  *
+ * @param options - Query cancellation and captured account authorization
  * @returns The earned achievement records and total count
  */
-export async function fetchAchievements(): Promise<{
+export async function fetchAchievements(options?: RemoteRequestOptions): Promise<{
   achievements: AchievementRecord[];
   total: number;
 }> {
-  const res = await fetch(`${API_BASE_URL}/achievements/`, { credentials: "include" });
+  const res = await sessionFetch(
+    `${API_BASE_URL}/achievements/`,
+    cookieAuthOptions({ credentials: "include" }),
+    options
+  );
   if (!res.ok) throw new AchievementAPIError(res.status, "Failed to fetch achievements");
-  return res.json();
+  const data = await res.json();
+  assertCurrentSession(options?.session);
+  return data;
 }
 
 /**
  * Fetch all achievement definitions available to earn.
  *
+ * @param options - Query cancellation and captured account authorization
  * @returns The achievement definitions
  */
-export async function fetchAchievementDefinitions(): Promise<{
+export async function fetchAchievementDefinitions(options?: RemoteRequestOptions): Promise<{
   achievements: AchievementDefinition[];
 }> {
-  const res = await fetch(`${API_BASE_URL}/achievements/definitions`, { credentials: "include" });
+  const res = await sessionFetch(
+    `${API_BASE_URL}/achievements/definitions`,
+    cookieAuthOptions({ credentials: "include" }),
+    options
+  );
   if (!res.ok) throw new AchievementAPIError(res.status, "Failed to fetch definitions");
-  return res.json();
+  const data = await res.json();
+  assertCurrentSession(options?.session);
+  return data;
 }

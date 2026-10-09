@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices, type ReporterDescription } from "@playwright/test";
 
 /**
  * Playwright E2E Test Configuration for Impetus Lock
@@ -11,7 +11,7 @@ import { defineConfig, devices } from "@playwright/test";
  */
 
 // Reporter configuration: list for CI, HTML for local development
-const reporters = process.env.CI
+const reporters: ReporterDescription[] = process.env.CI
   ? [
       ["list"], // Console output
       ["html", { open: "never" }], // HTML report
@@ -29,6 +29,8 @@ const shouldStartWebServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER !== "1";
 
 export default defineConfig({
   testDir: "./e2e",
+  // The real-auth suite owns its backend and configuration in a separate CI job.
+  testIgnore: "authenticated-editor.spec.ts",
 
   // Parallel execution settings - single worker in CI for stability
   fullyParallel: !process.env.CI,
@@ -56,7 +58,7 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
-    storageState: "./e2e/storage-state.json",
+    storageState: "./e2e/storage-state.generated.json",
     actionTimeout: 15000,
     navigationTimeout: 30000,
     viewport: { width: 1280, height: 720 },
@@ -68,9 +70,6 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        launchOptions: {
-          args: ["--disable-web-security", "--disable-features=IsolateOrigins,site-per-process"],
-        },
       },
     },
   ],
@@ -78,7 +77,7 @@ export default defineConfig({
   // Web server configuration - starts Vite dev server for frontend
   webServer: shouldStartWebServer
     ? {
-        command: "npm run dev -- --host",
+        command: `npm run dev -- --host --port ${Number(new URL(baseURL).port) || 5173}`,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120000,

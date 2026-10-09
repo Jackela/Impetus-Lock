@@ -5,7 +5,7 @@ import { waitForReactHydration, dismissWelcomeModal } from "./helpers/waitHelper
  * Debug test for manual trigger behavior
  */
 test.describe("Manual Trigger Debug", () => {
-  test("debug manual trigger and sensory feedback", async ({ page }) => {
+  test("debug manual trigger and sensory feedback", async ({ page }, testInfo) => {
     // Capture console logs
     const consoleLogs: string[] = [];
     const consoleErrors: string[] = [];
@@ -80,6 +80,6 @@ test.describe("Manual Trigger Debug", () => {
     }
 
     // Take screenshot
-    await page.screenshot({ path: "e2e-results/trigger-debug.png", fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath("trigger-debug.png"), fullPage: true });
   });
 });

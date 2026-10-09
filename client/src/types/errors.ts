@@ -34,7 +34,7 @@ export class AppError extends Error {
     this.context = context;
 
     // Maintain proper stack trace in V8 engines
-    if (Error.captureStackTrace) {
+    if ("captureStackTrace" in Error && typeof Error.captureStackTrace === "function") {
       Error.captureStackTrace(this, AppError);
     }
   }

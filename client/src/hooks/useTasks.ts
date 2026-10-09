@@ -14,10 +14,11 @@
  * @module hooks/useTasks
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 
-import { fetchTasks } from "../services/api/taskClient";
+import { fetchTasks, type TaskListResponse } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
+import { useOptionalAuth } from "../contexts/AuthContext";
 
 /** Result object returned by the useTasks hook. */
 export interface UseTasksResult {
@@ -34,7 +35,7 @@ export interface UseTasksResult {
   /** Current page offset */
   offset: number;
   /** Function to manually refetch the tasks */
-  refetch: () => Promise<void>;
+  refetch: UseQueryResult<TaskListResponse, Error>["refetch"];
 }
 
 /**
@@ -43,10 +44,14 @@ export interface UseTasksResult {
  *
  * @param limit - Maximum number of tasks to fetch
  * @param offset - Number of tasks to skip for pagination
+ * @param userId - Confirmed account ID, null while checking, or omitted for standalone use
+ * @param generation - Authorization lifetime, so restored accounts start fresh requests
  * @returns Stable React Query key for the given page
  */
-function getQueryKey(limit: number, offset: number) {
-  return ["tasks", { limit, offset }] as const;
+function getQueryKey(limit: number, offset: number, userId?: string | null, generation?: number) {
+  return userId === undefined
+    ? (["tasks", { limit, offset }] as const)
+    : (["tasks", userId, { limit, offset }, generation] as const);
 }
 
 /**
@@ -80,10 +85,26 @@ function getQueryKey(limit: number, offset: number) {
  */
 export function useTasks(options: { limit?: number; offset?: number } = {}): UseTasksResult {
   const { limit = 100, offset = 0 } = options;
+  const auth = useOptionalAuth();
+  const session = auth?.session;
 
   const query = useQuery({
-    queryKey: getQueryKey(limit, offset),
-    queryFn: () => fetchTasks({ limit, offset }),
+    queryKey: getQueryKey(
+      limit,
+      offset,
+      auth ? (auth.user?.id ?? null) : undefined,
+      auth?.generation
+    ),
+    enabled: auth === undefined || auth.remoteEnabled,
+    queryFn: ({ signal }) => fetchTasks({ limit, offset }, auth ? { session, signal } : undefined),
+    ...(auth
+      ? {
+          retry: (failures: number, error: Error) =>
+            error.name !== "AbortError" &&
+            (!("status" in error) || ![401, 403].includes(Number(error.status))) &&
+            failures < 2,
+        }
+      : {}),
   });
 
   return {

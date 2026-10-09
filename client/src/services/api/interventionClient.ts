@@ -14,6 +14,8 @@
 import type { components } from "../../types/api.generated";
 import { getVaultCache } from "../llmKeyVault";
 import { emitTelemetry } from "../telemetry";
+import { cookieAuthOptions } from "./cookieAuth";
+import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
 
 type InterventionRequest = components["schemas"]["InterventionRequest"];
 type InterventionResponse = components["schemas"]["InterventionResponse"];
@@ -23,6 +25,23 @@ type InterventionResponse = components["schemas"]["InterventionResponse"];
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const CONTRACT_VERSION = "2.0.0";
+
+function waitForRetry(delay: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    signal?.throwIfAborted();
+    const finish = () => {
+      signal?.removeEventListener("abort", cancel);
+      resolve();
+    };
+    const timer = setTimeout(finish, delay);
+    const cancel = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", cancel);
+      reject(new DOMException("Remote work is paused", "AbortError"));
+    };
+    signal?.addEventListener("abort", cancel, { once: true });
+  });
+}
 
 /**
  * Generate UUID v4 for Idempotency-Key.
@@ -48,8 +67,8 @@ function generateIdempotencyKey(): string {
   if (globalCrypto?.getRandomValues) {
     const buffer = new Uint8Array(16);
     globalCrypto.getRandomValues(buffer);
-    buffer[6] = (buffer[6] & 0x0f) | 0x40; // version 4
-    buffer[8] = (buffer[8] & 0x3f) | 0x80; // variant 10
+    buffer[6] = ((buffer[6] ?? 0) & 0x0f) | 0x40; // version 4
+    buffer[8] = ((buffer[8] ?? 0) & 0x3f) | 0x80; // variant 10
 
     const hex = Array.from(buffer, (b) => b.toString(16).padStart(2, "0")).join("");
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
@@ -66,13 +85,18 @@ function generateIdempotencyKey(): string {
  * Wraps HTTP errors with status code and error details.
  */
 export class InterventionAPIError extends Error {
-  constructor(
-    public status: number,
-    public errorCode: string,
-    message: string,
-    public details?: unknown
-  ) {
+  /** HTTP status code. */
+  status: number;
+  /** API error code. */
+  errorCode: string;
+  /** Additional error details. */
+  details?: unknown;
+
+  constructor(status: number, errorCode: string, message: string, details?: unknown) {
     super(message);
+    this.status = status;
+    this.errorCode = errorCode;
+    this.details = details;
     this.name = "InterventionAPIError";
   }
 }
@@ -87,6 +111,7 @@ export class InterventionAPIError extends Error {
  * @param options - Optional configuration
  * @param options.idempotencyKey - Custom idempotency key (auto-generated if not provided)
  * @param options.signal - AbortSignal for request cancellation
+ * @param options.session - Captured account authorization, or null to pause remote work
  * @param options.retries - Number of retry attempts on failure (default: 2)
  * @returns Intervention response from backend
  *
@@ -122,7 +147,7 @@ export class InterventionAPIError extends Error {
  */
 export async function generateIntervention(
   request: InterventionRequest,
-  options?: {
+  options?: RemoteRequestOptions & {
     idempotencyKey?: string;
     signal?: AbortSignal;
     retries?: number;
@@ -130,21 +155,31 @@ export async function generateIntervention(
 ): Promise<InterventionResponse> {
   const idempotencyKey = options?.idempotencyKey || generateIdempotencyKey();
   const maxRetries = options?.retries ?? 2;
+  const signals = [options?.signal, options?.session?.signal].filter(
+    (signal): signal is AbortSignal => signal !== undefined
+  );
+  const signal = signals.length ? AbortSignal.any(signals) : undefined;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(`${API_BASE_URL}/impetus/generate-intervention`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKey,
-          "X-Contract-Version": CONTRACT_VERSION,
-          ...buildLLMHeaders(),
-        },
-        body: JSON.stringify(request),
-        signal: options?.signal,
-      });
+      assertCurrentSession(options?.session);
+      signal?.throwIfAborted();
+      const response = await sessionFetch(
+        `${API_BASE_URL}/impetus/generate-intervention`,
+        cookieAuthOptions({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+            "X-Contract-Version": CONTRACT_VERSION,
+            ...buildLLMHeaders(),
+          },
+          body: JSON.stringify(request),
+          signal: options?.signal,
+        }),
+        options
+      );
 
       let data: unknown;
       try {
@@ -157,6 +192,8 @@ export async function generateIntervention(
           { originalError: parseError instanceof Error ? parseError.message : String(parseError) }
         );
       }
+      assertCurrentSession(options?.session);
+      options?.signal?.throwIfAborted();
 
       const parsedData = (data as Record<string, unknown>) || {};
 
@@ -203,10 +240,12 @@ export async function generateIntervention(
 
       return parsedData as InterventionResponse;
     } catch (error) {
+      assertCurrentSession(options?.session);
+      signal?.throwIfAborted();
       lastError = error as Error;
 
       if (error instanceof InterventionAPIError) {
-        if (error.status === 422 || error.status === 400) {
+        if ([400, 401, 403, 422].includes(error.status)) {
           throw error;
         }
       }
@@ -217,7 +256,7 @@ export async function generateIntervention(
 
       if (attempt < maxRetries) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await waitForRetry(delay, signal);
         continue;
       }
 
@@ -270,6 +309,7 @@ function currentProvider(): string | undefined {
  * @param context - Editor context text (e.g., last sentences before the cursor)
  * @param cursorPosition - Current cursor position
  * @param docVersion - Document version (for optimistic locking)
+ * @param options - Captured account authorization and cancellation
  * @returns Intervention response with provoke action
  *
  * @example
@@ -293,17 +333,21 @@ function currentProvider(): string | undefined {
 export async function triggerMuseIntervention(
   context: string,
   cursorPosition: number,
-  docVersion: number
+  docVersion: number,
+  options?: RemoteRequestOptions
 ): Promise<InterventionResponse> {
-  return generateIntervention({
-    context,
-    mode: "muse",
-    client_meta: {
-      doc_version: docVersion,
-      selection_from: cursorPosition,
-      selection_to: cursorPosition,
+  return generateIntervention(
+    {
+      context,
+      mode: "muse",
+      client_meta: {
+        doc_version: docVersion,
+        selection_from: cursorPosition,
+        selection_to: cursorPosition,
+      },
     },
-  });
+    options
+  );
 }
 
 /**
@@ -315,6 +359,7 @@ export async function triggerMuseIntervention(
  * @param context - Last 3-10 sentences from document (or full doc if <2000 chars)
  * @param cursorPosition - Current cursor position
  * @param docVersion - Document version (for optimistic locking)
+ * @param options - Captured account authorization and cancellation
  * @returns Intervention response with provoke or delete action
  *
  * @example
@@ -342,17 +387,21 @@ export async function triggerMuseIntervention(
 export async function triggerLokiIntervention(
   context: string,
   cursorPosition: number,
-  docVersion: number
+  docVersion: number,
+  options?: RemoteRequestOptions
 ): Promise<InterventionResponse> {
-  return generateIntervention({
-    context,
-    mode: "loki",
-    client_meta: {
-      doc_version: docVersion,
-      selection_from: cursorPosition,
-      selection_to: cursorPosition,
+  return generateIntervention(
+    {
+      context,
+      mode: "loki",
+      client_meta: {
+        doc_version: docVersion,
+        selection_from: cursorPosition,
+        selection_to: cursorPosition,
+      },
     },
-  });
+    options
+  );
 }
 
 /**

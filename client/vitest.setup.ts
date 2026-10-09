@@ -68,43 +68,9 @@ Object.defineProperty(window, "matchMedia", {
  * jsdom doesn't support AudioContext, so we need to mock it for testing.
  * This provides a minimal mock that tracks audio operations for test assertions.
  */
-class MockAudioContext {
-  destination = {};
-  currentTime = 0;
+import { TestAudioContext } from "./tests/fixtures/audio";
 
-  createBufferSource() {
-    return {
-      buffer: null,
-      connect: vi.fn(),
-      start: vi.fn(),
-      stop: vi.fn(),
-      disconnect: vi.fn(),
-    };
-  }
-
-  createGain() {
-    return {
-      gain: { value: 1 },
-      connect: vi.fn(),
-    };
-  }
-
-  decodeAudioData(arrayBuffer: ArrayBuffer) {
-    return Promise.resolve({
-      duration: 1.0,
-      length: 44100,
-      numberOfChannels: 2,
-      sampleRate: 44100,
-    });
-  }
-
-  close() {
-    return Promise.resolve();
-  }
-}
-
-global.AudioContext = MockAudioContext as unknown as typeof AudioContext;
-(window as Window).AudioContext = MockAudioContext as unknown as typeof AudioContext;
+vi.stubGlobal("AudioContext", TestAudioContext);
 
 /**
  * Mock fetch for static audio assets so Vitest doesn't try to resolve real files.
@@ -112,12 +78,7 @@ global.AudioContext = MockAudioContext as unknown as typeof AudioContext;
 const originalFetch = global.fetch;
 
 const mockFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-  const url =
-    typeof input === "string"
-      ? input
-      : input instanceof URL
-        ? input.href
-        : ((input as Request).url ?? "");
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
 
   if (url.includes("/src/assets/audio/")) {
     // Return a tiny ArrayBuffer to satisfy decodeAudioData
@@ -126,7 +87,7 @@ const mockFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Pr
   }
 
   if (originalFetch) {
-    return originalFetch(input as RequestInfo, init);
+    return originalFetch(input, init);
   }
 
   return new Response(null, { status: 200 });

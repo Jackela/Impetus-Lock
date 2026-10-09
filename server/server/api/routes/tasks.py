@@ -78,6 +78,7 @@ async def list_tasks(
     )
 
 
+@router.post("", response_model=TaskResponse, status_code=201, include_in_schema=False)
 @router.post("/", response_model=TaskResponse, status_code=201)
 async def create_task(
     request: TaskCreateRequest,

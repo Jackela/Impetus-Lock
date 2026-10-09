@@ -220,7 +220,7 @@ class TestAuthenticationMiddleware:
         # Disable TESTING mode for this test
         monkeypatch.setenv("TESTING", "")
 
-        token = JWTHandler.create_token("user_123")
+        token = JWTHandler.create_token("12345678-1234-1234-1234-123456789abc")
 
         response = client.get(
             "/protected",
@@ -228,8 +228,8 @@ class TestAuthenticationMiddleware:
             headers={"X-CSRF-Token": "csrf_token"},
         )
 
-        # Should pass auth, may fail CSRF but that's expected without proper setup
-        assert response.status_code in [200, 403]
+        # A safe authenticated read must reach the protected endpoint.
+        assert response.status_code == 200
 
     def test_invalid_token_rejected(self, client: TestClient) -> None:
         """Test invalid token is rejected."""
@@ -273,7 +273,7 @@ class TestAuthenticationMiddleware:
         # Disable TESTING mode
         monkeypatch.setenv("TESTING", "")
 
-        token = JWTHandler.create_token("user_123")
+        token = JWTHandler.create_token("12345678-1234-1234-1234-123456789abc")
 
         response = client.post(
             "/protected",
@@ -293,7 +293,7 @@ class TestAuthenticationMiddleware:
         # Disable TESTING mode
         monkeypatch.setenv("TESTING", "")
 
-        token = JWTHandler.create_token("user_123")
+        token = JWTHandler.create_token("12345678-1234-1234-1234-123456789abc")
 
         response = client.post(
             "/protected",

@@ -5,12 +5,15 @@ Provides lightweight persistence when PostgreSQL is unavailable.
 
 from __future__ import annotations
 
+from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
+from server.domain.errors import TaskVersionConflictError
 from server.domain.repositories.task_repository import TaskRepository
 
 ActionType = Literal["provoke", "delete", "rewrite"]
@@ -62,7 +65,7 @@ class InMemoryTaskRepository(TaskRepository):
             word_count=word_count,
             user_id=user_id,
         )
-        self._tasks[task.id] = task
+        self._tasks[task.id] = deepcopy(task)
         self._actions.setdefault(task.id, [])
         self._task_owners[task.id] = user_id
         return task
@@ -76,24 +79,41 @@ class InMemoryTaskRepository(TaskRepository):
         Returns:
             The stored task, or None when not found.
         """
-        return self._tasks.get(task_id)
+        return deepcopy(self._tasks.get(task_id))
 
     async def update_task(self, task: Task) -> Task:
-        """Replace the stored task with the given entity.
+        """Save an updated snapshot only if its previous version is current.
 
         Args:
             task: Updated task entity (identified by its id).
 
         Returns:
-            The same task entity after storage.
+            An independent snapshot of the saved task.
 
         Raises:
-            ValueError: If the task does not exist.
+            ValueError: If the task does not exist or its version conflicts.
         """
-        if task.id not in self._tasks:
+        current = self._tasks.get(task.id)
+        if current is None:
             raise ValueError(f"Task {task.id} not found")
-        self._tasks[task.id] = task
-        return task
+        if current.version != task.version - 1:
+            raise TaskVersionConflictError(task.version - 1, current.version)
+        # No await between the version comparison and replacement. Keep the
+        # immutable identity/creation fields, matching PostgreSQL persistence.
+        saved = replace(
+            current,
+            content=task.content,
+            lock_ids=deepcopy(task.lock_ids),
+            title=task.title,
+            category=task.category,
+            priority=task.priority,
+            due_date=task.due_date,
+            word_count=task.word_count,
+            updated_at=task.updated_at,
+            version=task.version,
+        )
+        self._tasks[task.id] = saved
+        return deepcopy(saved)
 
     async def delete_task(self, task_id: UUID) -> None:
         """Delete a task together with its actions and ownership record.
@@ -165,7 +185,7 @@ class InMemoryTaskRepository(TaskRepository):
             key=lambda t: t.created_at,
             reverse=True,
         )
-        return sorted_tasks[offset : offset + limit]
+        return deepcopy(sorted_tasks[offset : offset + limit])
 
     async def list_tasks_by_user(
         self, user_id: UUID, limit: int = 100, offset: int = 0
@@ -188,7 +208,7 @@ class InMemoryTaskRepository(TaskRepository):
         ]
         # Sort by created_at descending (newest first)
         sorted_tasks = sorted(user_tasks, key=lambda t: t.created_at, reverse=True)
-        return sorted_tasks[offset : offset + limit]
+        return deepcopy(sorted_tasks[offset : offset + limit])
 
     async def count_tasks_by_user(self, user_id: UUID) -> int:
         """Count total tasks for a specific user.
@@ -213,4 +233,4 @@ class InMemoryTaskRepository(TaskRepository):
         """
         if self._task_owners.get(task_id) != user_id:
             return None
-        return self._tasks.get(task_id)
+        return deepcopy(self._tasks.get(task_id))

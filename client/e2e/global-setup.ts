@@ -13,6 +13,7 @@
  * - Article V (Documentation): Comprehensive logging and error messages
  */
 
+import { request } from "@playwright/test";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
 import { dirname, resolve } from "path";
@@ -24,14 +25,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Configuration
 const BACKEND_HEALTH_URL = process.env.BACKEND_HEALTH_URL || "http://localhost:8000/health";
 const FRONTEND_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
-const BACKEND_START_TIMEOUT = 60000; // 60 seconds
 const FRONTEND_START_TIMEOUT = 60000; // 60 seconds
 const HEALTH_CHECK_INTERVAL = 2000; // 2 seconds
-
-interface SetupContext {
-  backendStarted: boolean;
-  frontendReady: boolean;
-}
 
 /**
  * Check if a service is healthy by making an HTTP request
@@ -211,15 +206,17 @@ async function verifyServices(): Promise<void> {
 async function seedTestData(): Promise<void> {
   console.log("\n🌱 Seeding test data...");
 
+  // Existing editor regressions run against the explicit TESTING backend.
+  // This generated debug-user cookie is not authentication acceptance evidence.
+  const backendURL = process.env.BACKEND_URL || new URL(BACKEND_HEALTH_URL).origin;
+  const api = await request.newContext({ baseURL: backendURL });
   try {
-    // Any test data that needs to be created before tests run
-    // This could include test users, default settings, etc.
-
-    console.log("✅ Test data ready");
-  } catch (error) {
-    console.error("\n⚠️  Failed to seed test data:");
-    console.error(error instanceof Error ? error.message : String(error));
-    // Don't throw - tests may still pass without pre-seeded data
+    const response = await api.post("/test/login");
+    if (!response.ok()) throw new Error(`Legacy test login failed: ${response.status()}`);
+    await api.storageState({ path: resolve(__dirname, "storage-state.generated.json") });
+    console.log("✅ Debug editor session ready (real auth is checked separately)");
+  } finally {
+    await api.dispose();
   }
 }
 

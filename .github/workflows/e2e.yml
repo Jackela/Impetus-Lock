@@ -148,24 +148,14 @@ jobs:
         working-directory: ${{ github.workspace }}/client
         run: npm ci
 
-      - name: Verify Playwright version compatibility
+      - name: Install the browser matching the locked Playwright package
         working-directory: ${{ github.workspace }}/client
-        run: |
-          PACKAGE_VERSION=$(node -p "require('./package.json').devDependencies['@playwright/test']" | sed 's/[^0-9.]//g')
-          INSTALLED_VERSION=$(npx playwright --version | grep -oP '\d+\.\d+\.\d+' | head -1)
-          echo "📦 package.json version: $PACKAGE_VERSION"
-          echo "🐳 Docker image version: $INSTALLED_VERSION"
-          if [ "$PACKAGE_VERSION" != "$INSTALLED_VERSION" ]; then
-            echo "❌ Version mismatch detected!"
-            echo "Please update .github/workflows/e2e.yml Docker image to: mcr.microsoft.com/playwright:v${PACKAGE_VERSION}-noble"
-            exit 1
-          fi
-          echo "✅ Versions match!"
+        run: npx playwright install chromium
 
       - name: Run Playwright E2E tests
         working-directory: ${{ github.workspace }}/client
         env:
-          VITE_API_URL: http://127.0.0.1:8000
+          VITE_API_URL: http://localhost:8000
         run: npm run test:e2e:ci
 
       - name: Upload Playwright report

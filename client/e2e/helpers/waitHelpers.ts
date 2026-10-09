@@ -5,7 +5,7 @@
  * Uses data-testid attributes + reasonable timeouts to avoid flaky tests.
  */
 
-import { Page, expect } from "@playwright/test";
+import { type Page, expect } from "@playwright/test";
 
 const WELCOME_STORAGE_KEY = "impetus-lock-welcome-dismissed";
 let welcomeDismissScriptInjected = false;

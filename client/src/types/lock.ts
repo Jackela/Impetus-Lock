@@ -75,6 +75,8 @@ export function isLockBlock(block: unknown): block is LockBlock {
   return (
     typeof block === "object" &&
     block !== null &&
+    "lock_id" in block &&
+    "is_deletable" in block &&
     typeof block.lock_id === "string" &&
     block.is_deletable === false
   );

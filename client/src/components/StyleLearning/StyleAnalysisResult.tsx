@@ -8,6 +8,7 @@
  */
 
 import type { StyleAnalysisResponse, StyleVector } from "./types";
+import type { JSX } from "react";
 import "./StyleAnalysisResult.css";
 
 /**
@@ -111,12 +112,17 @@ export function StyleAnalysisResult({
       <h3 className="result-heading">Style Analysis</h3>
 
       <div className="metrics-grid">
-        {METRICS.map((metric) => (
-          <div key={metric.key} className="metric-item">
-            <span className="metric-label">{metric.label}</span>
-            <span className="metric-value">{metric.format(style_vector[metric.key])}</span>
-          </div>
-        ))}
+        {METRICS.map((metric) => {
+          const value = style_vector[metric.key];
+          return (
+            <div key={metric.key} className="metric-item">
+              <span className="metric-label">{metric.label}</span>
+              <span className="metric-value">
+                {value === undefined ? "—" : metric.format(value)}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       <div className="confidence-section">
