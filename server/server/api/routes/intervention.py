@@ -9,6 +9,7 @@ Constitutional Compliance:
 """
 
 import hashlib
+import json
 import logging
 from typing import Annotated, cast
 from uuid import UUID
@@ -18,8 +19,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from server.api.dependencies import get_task_repository
+from server.api.dependencies import get_task_repository, get_task_service
 from server.application.services.intervention_service import InterventionService
+from server.application.services.task_service import TaskNotFoundError, TaskService
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
 from server.domain.models.intervention import InterventionRequest, InterventionResponse
@@ -96,6 +98,7 @@ async def generate_intervention(
     provider_registry: ProviderRegistry = Depends(get_provider_registry),
     idempotency_cache: AsyncIdempotencyCache = Depends(get_idempotency_cache),
     service: InterventionService = Depends(get_intervention_service),
+    task_service: TaskService = Depends(get_task_service),
 ) -> InterventionResponse | JSONResponse:
     """Generate AI intervention action based on context and mode.
 
@@ -113,6 +116,7 @@ async def generate_intervention(
 
     Raises:
         HTTPException 422: If contract_version mismatch or validation fails.
+        HTTPException 404: If the supplied task is missing or owned by another user.
         HTTPException 500: If LLM provider fails.
 
     Example:
@@ -142,112 +146,135 @@ async def generate_intervention(
             },
         )
 
-    # Check idempotency cache
-    cached_response = await idempotency_cache.get(idempotency_key)
-    if cached_response is not None:
-        # Return cached response (within 15s window)
-        response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
-        _set_cooldown_header(response, getattr(cached_response, "source", None), idempotency_key)
-        return cast(InterventionResponse, cached_response)
+    # Authorize the supplied task even when an idempotent response is cached.
+    task_id = _safe_uuid(task_id_header)
+    user_id = _safe_uuid(getattr(http_request.state, "user_id", None))
+    if task_id is not None:
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        try:
+            await task_service.get_task_for_user(user_id, task_id)
+        except TaskNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    overrides_provided = any(filter(None, [provider_header, model_header, api_key_header]))
-    http_request.state.llm_override = overrides_provided
-    http_request.state.llm_provider = None
-    provider: LLMProvider | None = None
-    overrides = (
-        ProviderOverride(
-            provider=provider_header,
-            model=model_header,
-            api_key=api_key_header,
-        )
-        if overrides_provided
-        else None
+    # Payload and provider overrides intentionally do not affect first-result retries.
+    # JSON preserves component boundaries without retaining any BYOK credentials.
+    effective_key = json.dumps(
+        [
+            str(user_id) if user_id is not None else None,
+            str(task_id) if task_id else None,
+            idempotency_key,
+        ]
     )
-
-    try:
-        provider = provider_registry.get_provider(
-            overrides=overrides,
-            allow_blank=False,
-        )
-        if provider is None:
-            raise LLMProviderError(
-                code="llm_not_configured",
-                message="LLM provider unavailable",
-                status_code=503,
+    async with idempotency_cache.serialize(effective_key):
+        # Check idempotency cache
+        cached_response = await idempotency_cache.get(effective_key)
+        if cached_response is not None:
+            # Return cached response (within 15s window)
+            response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
+            _set_cooldown_header(
+                response, getattr(cached_response, "source", None), idempotency_key
             )
-        http_request.state.llm_provider = getattr(provider, "provider_name", None)
-        logger.debug(
-            "Resolved LLM provider",
-            extra={
-                "provider": getattr(provider, "provider_name", "unknown"),
-                "override": overrides_provided,
-            },
+            return cast(InterventionResponse, cached_response)
+
+        overrides_provided = any(filter(None, [provider_header, model_header, api_key_header]))
+        http_request.state.llm_override = overrides_provided
+        http_request.state.llm_provider = None
+        provider: LLMProvider | None = None
+        overrides = (
+            ProviderOverride(
+                provider=provider_header,
+                model=model_header,
+                api_key=api_key_header,
+            )
+            if overrides_provided
+            else None
         )
 
-        # Delegate to service layer (SRP - endpoint handles HTTP only)
-        intervention_response = await service.generate_intervention_async(
-            request,
-            task_id=_safe_uuid(task_id_header),
-            repository=repository,
-            llm_override=provider,
-        )
+        try:
+            provider = provider_registry.get_provider(
+                overrides=overrides,
+                allow_blank=False,
+            )
+            if provider is None:
+                raise LLMProviderError(
+                    code="llm_not_configured",
+                    message="LLM provider unavailable",
+                    status_code=503,
+                )
+            http_request.state.llm_provider = getattr(provider, "provider_name", None)
+            logger.debug(
+                "Resolved LLM provider",
+                extra={
+                    "provider": getattr(provider, "provider_name", "unknown"),
+                    "override": overrides_provided,
+                },
+            )
 
-        # Commit persistence when applicable
-        if session is not None:
-            try:
-                await session.commit()
-            except (OperationalError, RuntimeError) as e:
-                await session.rollback()
-                raise HTTPException(
-                    status_code=500,
-                    detail={
-                        "error": "DatabaseError",
-                        "message": "Failed to persist intervention",
-                        "details": {"db_error": str(e)},
-                    },
-                ) from e
+            # Delegate to service layer (SRP - endpoint handles HTTP only)
+            intervention_response = await service.generate_intervention_async(
+                request,
+                task_id=task_id,
+                repository=repository,
+                llm_override=provider,
+            )
 
-        # Publish only responses whose applicable persistence has committed.
-        await idempotency_cache.set(idempotency_key, intervention_response)
+            # Commit persistence when applicable
+            if session is not None:
+                try:
+                    await session.commit()
+                except (OperationalError, RuntimeError) as e:
+                    await session.rollback()
+                    raise HTTPException(
+                        status_code=500,
+                        detail={
+                            "error": "DatabaseError",
+                            "message": "Failed to persist intervention",
+                            "details": {"db_error": str(e)},
+                        },
+                    ) from e
 
-        response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
-        _set_cooldown_header(response, intervention_response.source, idempotency_key)
+            # Publish only responses whose applicable persistence has committed.
+            await idempotency_cache.set(effective_key, intervention_response)
 
-        return intervention_response
+            response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
+            _set_cooldown_header(response, intervention_response.source, idempotency_key)
 
-    except LLMProviderError as exc:
-        logger.info(
-            "LLM provider error",
-            extra={"provider": exc.provider, "code": exc.code},
-        )
-        return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
+            return intervention_response
 
-    except ValueError as e:
-        # Validation error from service layer
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "error": "ValidationError",
-                "message": str(e),
-            },
-        ) from e
+        except LLMProviderError as exc:
+            logger.info(
+                "LLM provider error",
+                extra={"provider": exc.provider, "code": exc.code},
+            )
+            return JSONResponse(status_code=exc.status_code, content=exc.to_dict())
 
-    except RuntimeError as e:
-        # LLM provider failure
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "error": "InternalServerError",
-                "message": "LLM service unavailable",
-                "details": {"llm_error": str(e)},
-            },
-        ) from e
+        except ValueError as e:
+            # Validation error from service layer
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "ValidationError",
+                    "message": str(e),
+                },
+            ) from e
 
-    finally:
-        # Release per-request providers (e.g. BYOK) on every exit; shared
-        # cached instances must survive to serve subsequent requests.
-        if provider is not None and not provider_registry.is_cached(provider):
-            close_provider(provider)
+        except RuntimeError as e:
+            # LLM provider failure
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "InternalServerError",
+                    "message": "LLM service unavailable",
+                    "details": {"llm_error": str(e)},
+                },
+            ) from e
+
+        finally:
+            # Release per-request providers (e.g. BYOK) on every exit; shared
+            # cached instances must survive to serve subsequent requests.
+            if provider is not None and not provider_registry.is_cached(provider):
+                close_provider(provider)
 
 
 def _safe_uuid(value: str | None) -> UUID | None:

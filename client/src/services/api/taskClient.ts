@@ -1,3 +1,6 @@
+import { cookieAuthOptions } from "./cookieAuth";
+import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
+
 /**
  * Task API Client
  *
@@ -48,6 +51,11 @@ type ApiTaskResponse = components["schemas"]["TaskResponse"];
  * Includes HTTP status code and optional error code.
  */
 export class TaskAPIError extends Error {
+  /** HTTP status code. */
+  status: number;
+  /** Optional API error code. */
+  code?: string;
+
   /**
    * Creates a new TaskAPIError.
    *
@@ -55,12 +63,10 @@ export class TaskAPIError extends Error {
    * @param message - Error message
    * @param code - Optional error code (e.g., "version_conflict")
    */
-  constructor(
-    public status: number,
-    message: string,
-    public code?: string
-  ) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
+    this.status = status;
+    this.code = code;
     this.name = "TaskAPIError";
   }
 }
@@ -131,9 +137,13 @@ export interface FetchTasksOptions {
  * Fetch a paginated list of tasks for the current user.
  *
  * @param options - Query options for pagination, filtering, and sorting
+ * @param requestOptions - Captured account and cancellation for this request
  * @returns The task list response with pagination metadata
  */
-export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskListResponse> {
+export async function fetchTasks(
+  options: FetchTasksOptions = {},
+  requestOptions?: RemoteRequestOptions
+): Promise<TaskListResponse> {
   const { limit = 100, offset = 0, filter, sort } = options;
   const url = new URL(`${API_BASE_URL}/tasks/`);
 
@@ -166,9 +176,13 @@ export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskL
     url.searchParams.set("sort_order", sort.order);
   }
 
-  const res = await fetch(url.toString(), {
-    credentials: "include",
-  });
+  const res = await sessionFetch(
+    url.toString(),
+    cookieAuthOptions({
+      credentials: "include",
+    }),
+    requestOptions
+  );
 
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to fetch tasks");
@@ -181,6 +195,7 @@ export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskL
     tasks: ApiTaskResponse[];
   };
 
+  assertCurrentSession(requestOptions?.session);
   return {
     total: data.total,
     limit: data.limit,
@@ -193,6 +208,7 @@ export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskL
  * Fetch a single task by ID.
  *
  * @param taskId - Task identifier
+ * @param options - Captured account and cancellation for this request
  * @returns Task record
  * @throws {TaskAPIError} If task not found (404) or fetch fails
  *
@@ -202,14 +218,22 @@ export async function fetchTasks(options: FetchTasksOptions = {}): Promise<TaskL
  * console.log(task.content);
  * ```
  */
-export async function fetchTask(taskId: string): Promise<TaskRecord> {
-  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
-    credentials: "include",
-  });
+export async function fetchTask(
+  taskId: string,
+  options?: RemoteRequestOptions
+): Promise<TaskRecord> {
+  const res = await sessionFetch(
+    `${API_BASE_URL}/tasks/${taskId}`,
+    cookieAuthOptions({
+      credentials: "include",
+    }),
+    options
+  );
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to fetch task");
   }
   const data = (await res.json()) as ApiTaskResponse;
+  assertCurrentSession(options?.session);
   return mapTask(data);
 }
 
@@ -242,28 +266,37 @@ export interface CreateTaskParams {
  * Create a new task.
  *
  * @param params - Task content, lock ids, and optional metadata
+ * @param options - Captured account and cancellation for this request
  * @returns The created task record
  */
-export async function createTask(params: CreateTaskParams): Promise<TaskRecord> {
+export async function createTask(
+  params: CreateTaskParams,
+  options?: RemoteRequestOptions
+): Promise<TaskRecord> {
   const { content, lockIds = [], category, priority, dueDate } = params;
 
-  const res = await fetch(`${API_BASE_URL}/tasks`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      content,
-      lock_ids: lockIds,
-      category,
-      priority,
-      due_date: dueDate,
+  const res = await sessionFetch(
+    `${API_BASE_URL}/tasks`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        content,
+        lock_ids: lockIds,
+        category,
+        priority,
+        due_date: dueDate,
+      }),
     }),
-  });
+    options
+  );
 
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to create task");
   }
   const data = (await res.json()) as ApiTaskResponse;
+  assertCurrentSession(options?.session);
   return mapTask(data);
 }
 
@@ -289,24 +322,33 @@ export interface UpdateTaskParams {
  *
  * @param taskId - Identifier of the task to update
  * @param params - New content, lock ids, expected version, and metadata
+ * @param options - Captured account and cancellation for this request
  * @returns The updated task record
  */
-export async function updateTask(taskId: string, params: UpdateTaskParams): Promise<TaskRecord> {
+export async function updateTask(
+  taskId: string,
+  params: UpdateTaskParams,
+  options?: RemoteRequestOptions
+): Promise<TaskRecord> {
   const { content, lockIds, version, category, priority, dueDate } = params;
 
-  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      content,
-      lock_ids: lockIds,
-      version,
-      category,
-      priority,
-      due_date: dueDate,
+  const res = await sessionFetch(
+    `${API_BASE_URL}/tasks/${taskId}`,
+    cookieAuthOptions({
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        content,
+        lock_ids: lockIds,
+        version,
+        category,
+        priority,
+        due_date: dueDate,
+      }),
     }),
-  });
+    options
+  );
 
   if (res.status === 409) {
     throw new TaskAPIError(res.status, "Version conflict", "version_conflict");
@@ -317,6 +359,7 @@ export async function updateTask(taskId: string, params: UpdateTaskParams): Prom
   }
 
   const data = (await res.json()) as ApiTaskResponse;
+  assertCurrentSession(options?.session);
   return mapTask(data);
 }
 
@@ -332,25 +375,32 @@ export interface UpdateTaskMetadataParams {
  *
  * @param taskId - Task identifier
  * @param params - Metadata update parameters
+ * @param options - Captured account and cancellation for this request
  * @returns Updated task record
  * @throws {TaskAPIError} If task not found
  */
 export async function updateTaskMetadata(
   taskId: string,
-  params: UpdateTaskMetadataParams
+  params: UpdateTaskMetadataParams,
+  options?: RemoteRequestOptions
 ): Promise<TaskRecord> {
-  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}/metadata`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(params),
-  });
+  const res = await sessionFetch(
+    `${API_BASE_URL}/tasks/${taskId}/metadata`,
+    cookieAuthOptions({
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(params),
+    }),
+    options
+  );
 
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to update task metadata");
   }
 
   const data = (await res.json()) as ApiTaskResponse;
+  assertCurrentSession(options?.session);
   return mapTask(data);
 }
 
@@ -358,13 +408,18 @@ export async function updateTaskMetadata(
  * Delete a task.
  *
  * @param taskId - Task identifier
+ * @param options - Captured account and cancellation for this request
  * @throws {TaskAPIError} If task not found
  */
-export async function deleteTask(taskId: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/tasks/${taskId}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+export async function deleteTask(taskId: string, options?: RemoteRequestOptions): Promise<void> {
+  const res = await sessionFetch(
+    `${API_BASE_URL}/tasks/${taskId}`,
+    cookieAuthOptions({
+      method: "DELETE",
+      credentials: "include",
+    }),
+    options
+  );
 
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to delete task");

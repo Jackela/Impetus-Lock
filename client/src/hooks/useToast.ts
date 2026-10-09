@@ -60,7 +60,7 @@ export interface UseToastReturn {
  */
 export function useToast(defaultDuration: number = DEFAULT_DURATION): UseToastReturn {
   const [state, setState] = useState<ToastState>({ toasts: [] });
-  const timeoutsRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const idCounterRef = useRef(0);
 
   const clearTimeoutById = useCallback((id: string) => {

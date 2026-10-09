@@ -33,8 +33,11 @@ describe("useLokiTimer", () => {
       Math.floor(0.9 * 0xffffffff),
     ];
     let callCount = 0;
-    cryptoSpy = vi.spyOn(crypto, "getRandomValues").mockImplementation((array: Uint32Array) => {
-      array[0] = bucketSeeds[callCount % bucketSeeds.length];
+    cryptoSpy = vi.spyOn(crypto, "getRandomValues").mockImplementation((array) => {
+      if (!(array instanceof Uint32Array)) throw new Error("Expected a Uint32Array");
+      const seed = bucketSeeds[callCount % bucketSeeds.length];
+      if (seed === undefined) throw new Error("Missing timer seed");
+      array[0] = seed;
       callCount += 1;
       return array;
     });

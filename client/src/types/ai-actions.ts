@@ -10,22 +10,25 @@
  *
  * @see {@link ../config/sensory-feedback.ts} for action-specific feedback configuration
  */
-export enum AIActionType {
+export const AIActionType = {
   /** Muse mode: Inject provocative content to help overcome writer's block */
-  PROVOKE = "provoke",
+  PROVOKE: "provoke",
 
   /** Muse/Loki mode: Replace inline spans with locked rewrites */
-  REWRITE = "rewrite",
+  REWRITE: "rewrite",
 
   /** Loki mode: Delete user-selected text as punishment */
-  DELETE = "delete",
+  DELETE: "delete",
 
   /** Lock enforcement: Prevent deletion of locked content */
-  REJECT = "reject",
+  REJECT: "reject",
 
   /** API failure: Display error feedback when AI actions fail (P3 US3) */
-  ERROR = "error",
+  ERROR: "error",
 
   /** Loki manual chaos trigger (development tooling) */
-  CHAOS = "chaos",
-}
+  CHAOS: "chaos",
+} as const;
+
+/** Values accepted by AIActionType. */
+export type AIActionType = (typeof AIActionType)[keyof typeof AIActionType];

@@ -1,5 +1,8 @@
 name: CI
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: ["main"]
@@ -24,6 +27,7 @@ jobs:
   lint:
     name: Lint (Backend + Frontend)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Debug information
         run: |
@@ -37,6 +41,9 @@ jobs:
           node --version || true
 
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.sha }}
 
       # Backend lint
       - name: Set up Python 3.11
@@ -47,7 +54,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
@@ -102,6 +109,7 @@ jobs:
   type-check:
     name: Type Check (Backend + Frontend)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Debug information
         run: |
@@ -111,6 +119,9 @@ jobs:
           node --version || true
 
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.sha }}
 
       # Backend type check
       - name: Set up Python 3.11
@@ -121,7 +132,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
@@ -139,7 +150,7 @@ jobs:
 
       - name: Run mypy
         working-directory: ./server
-        run: poetry run mypy . --no-site-packages --ignore-missing-imports
+        run: poetry run mypy .
 
       # Frontend type check
       - name: Set up Node.js
@@ -162,6 +173,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:7-alpine
         ports:
@@ -180,6 +204,9 @@ jobs:
           poetry --version || true
 
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.sha }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -190,7 +217,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
@@ -212,14 +239,20 @@ jobs:
         run: poetry run pytest tests/ --cov=server --cov-report=term-missing -v -n auto --tb=short || (echo "::error::Tests failed" && exit 1)
         env:
           REDIS_URL: redis://localhost:6379/0
+          REQUIRE_REDIS_TESTS: "1"
 
-      - name: Enforce lock-critical line coverage
+      - name: Report lock-critical line coverage
         working-directory: ./server
         run: poetry run coverage report --rcfile=coverage-critical.ini
+
+      - name: Enforce per-file lock-critical line coverage
+        working-directory: ./server
+        run: poetry run python check_critical_coverage.py
 
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       TZ: UTC # Force UTC timezone for consistent date formatting in snapshots
     steps:
@@ -231,6 +264,9 @@ jobs:
           npm --version || true
 
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

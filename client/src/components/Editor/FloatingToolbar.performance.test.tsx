@@ -5,13 +5,10 @@
  * T085: Verify no editor degradation with large documents (>1000 lines)
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "@testing-library/react";
 import { FloatingToolbar } from "./FloatingToolbar";
-import type { Editor } from "@milkdown/core";
-
-// Mock editor type for testing
-type MockEditor = Pick<Editor, "action">;
+import { createToolbarEditor } from "../../../tests/fixtures/editor";
 
 /**
  * V8-specific Performance interface extension.
@@ -26,30 +23,14 @@ interface V8Performance extends Performance {
 }
 
 describe("FloatingToolbar - Performance Tests", () => {
-  let mockEditor: MockEditor;
+  let fixture: ReturnType<typeof createToolbarEditor>;
+  let mockEditor: typeof fixture.editor;
 
   beforeEach(() => {
-    mockEditor = {
-      action: vi.fn((callback) => {
-        callback({
-          get: vi.fn(() => ({
-            state: {
-              selection: { empty: false, from: 0, to: 10, $from: { marks: vi.fn(() => []) } },
-              schema: {
-                marks: {
-                  strong: { isInSet: vi.fn(() => false) },
-                  em: { isInSet: vi.fn(() => false) },
-                },
-              },
-              doc: { rangeHasMark: vi.fn(() => false) },
-            },
-            coordsAtPos: vi.fn(() => ({ left: 100, top: 100, right: 200, bottom: 120 })),
-            dispatch: vi.fn(),
-          })),
-        });
-      }),
-    };
+    fixture = createToolbarEditor(1500);
+    mockEditor = fixture.editor;
   });
+  afterEach(() => fixture.view.destroy());
 
   // T084: Verify <100ms delay from button click to formatting applied (SC-005)
   it("should execute command within 100ms of button click (SC-005)", async () => {

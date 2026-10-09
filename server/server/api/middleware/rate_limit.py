@@ -3,9 +3,9 @@
 import os
 from collections.abc import Awaitable, Callable
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from server.infrastructure.rate_limiting import limiter
 
@@ -42,6 +42,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if any(path.startswith(excluded) for excluded in self.EXCLUDED_PATHS):
             return await call_next(request)
 
-        await limiter.check_rate_limit(request)
+        try:
+            await limiter.check_rate_limit(request)
+        except HTTPException as exc:
+            return JSONResponse(
+                status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers
+            )
 
         return await call_next(request)

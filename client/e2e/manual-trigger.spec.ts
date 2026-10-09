@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
+import { waitForReactHydration } from "./helpers/waitHelpers";
 import { mockInterventionSuccess, mockInterventionFailure } from "./helpers/interventionMocks";
 
 async function enableMuseMode(page: Page) {

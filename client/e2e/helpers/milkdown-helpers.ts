@@ -6,7 +6,7 @@
  * so these helpers use the ProseMirror DOM structure and commands.
  */
 
-import { Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 const MILKDOWN_ROOT = '[data-testid="editor-ready"] .milkdown';
 const PROSEMIRROR_EDITABLE = '[data-testid="editor-ready"] .milkdown .ProseMirror';
@@ -35,8 +35,8 @@ export async function insertText(page: Page, text: string): Promise<void> {
 /**
  * Insert locked content block into Milkdown editor.
  *
- * Creates a content block with lock marker comment that will be
- * enforced by the P1 lock system.
+ * Uses the existing ContentInjector entry to create the node and register its
+ * lock in the real manager; typing a marker alone does not create that state.
  *
  * @param page - Playwright page object
  * @param content - Content text (without lock marker)
@@ -52,8 +52,23 @@ export async function insertLockedContent(
   lockId: string,
   source: "muse" | "loki" = "muse"
 ): Promise<void> {
-  const lockedText = `${content} <!-- lock:${lockId} source:${source} -->`;
-  await insertText(page, lockedText);
+  await page.waitForFunction(() => "insertLockedContentForTest" in window);
+  await page.evaluate(
+    ({ content, lockId, source }) => {
+      const helper = (
+        window as unknown as {
+          insertLockedContentForTest: (
+            content: string,
+            lockId: string,
+            source: "muse" | "loki"
+          ) => void;
+        }
+      ).insertLockedContentForTest;
+      helper(content, lockId, source);
+    },
+    { content, lockId, source }
+  );
+  await page.locator(`[data-lock-id="${lockId}"]`).first().waitFor({ state: "visible" });
 }
 
 /**
@@ -167,7 +182,7 @@ export async function clearEditor(page: Page): Promise<void> {
   await editor.click();
 
   // Select all and delete
-  await page.keyboard.press("Control+A");
+  await page.keyboard.press("ControlOrMeta+A");
   await page.keyboard.press("Backspace");
 
   // Wait a moment for deletion to process
@@ -179,7 +194,7 @@ export async function clearEditor(page: Page): Promise<void> {
 
   // If not empty after clearing, try again (handles cases where sidebar or other elements interfere)
   if (trimmedContent !== "") {
-    await page.keyboard.press("Control+A");
+    await page.keyboard.press("ControlOrMeta+A");
     await page.keyboard.press("Backspace");
     await page.waitForTimeout(100);
   }

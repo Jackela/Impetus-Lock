@@ -16,6 +16,7 @@ from uuid import UUID
 
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
+from server.domain.errors import TaskVersionConflictError
 from server.domain.repositories.task_repository import TaskRepository
 from server.domain.transactions import NullTransaction, TransactionSupport
 
@@ -368,7 +369,10 @@ class TaskService:
         )
 
         # Persist changes
-        updated = await self._repository.update_task(entity)
+        try:
+            updated = await self._repository.update_task(entity)
+        except TaskVersionConflictError as conflict:
+            raise VersionMismatchError(conflict.expected, conflict.actual) from conflict
 
         return TaskDTO.from_entity(updated)
 
@@ -586,7 +590,10 @@ class TaskService:
             word_count=word_count,
         )
 
-        updated_task = await self._repository.update_task(task)
+        try:
+            updated_task = await self._repository.update_task(task)
+        except TaskVersionConflictError as conflict:
+            raise VersionMismatchError(conflict.expected, conflict.actual) from conflict
         await self._transaction.commit()
         return updated_task
 

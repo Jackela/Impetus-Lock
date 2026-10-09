@@ -10,6 +10,11 @@ describe("TaskList", () => {
     lock_ids: [],
     created_at: "2025-02-04T10:00:00Z",
     updated_at: "2025-02-04T10:00:00Z",
+    title: "Test task",
+    category: "WRITING",
+    priority: "MEDIUM",
+    due_date: null,
+    word_count: 0,
     version: 1,
   };
 
@@ -19,6 +24,11 @@ describe("TaskList", () => {
     lock_ids: ["lock-1", "lock-2"],
     created_at: "2025-02-04T09:00:00Z",
     updated_at: "2025-02-04T10:00:00Z",
+    title: "Test task",
+    category: "WRITING",
+    priority: "MEDIUM",
+    due_date: null,
+    word_count: 0,
     version: 2,
   };
 

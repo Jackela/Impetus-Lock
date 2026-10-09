@@ -132,8 +132,7 @@ async def test_delete_history_not_found(repository: StyleHistoryRepository) -> N
     """Test deleting non-existent history record."""
     fake_id = uuid4()
     deleted = await repository.delete(history_id=fake_id)
-    # Delete always returns True in simplified implementation
-    assert deleted is True
+    assert deleted is False
 
 
 @pytest.mark.asyncio

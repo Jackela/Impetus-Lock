@@ -13,21 +13,27 @@ export type { TaskRecord };
 /**
  * Task categories for organizing work.
  */
-export enum TaskCategory {
-  WRITING = "WRITING",
-  PLANNING = "PLANNING",
-  RESEARCH = "RESEARCH",
-  REVIEW = "REVIEW",
-}
+export const TaskCategory = {
+  WRITING: "WRITING",
+  PLANNING: "PLANNING",
+  RESEARCH: "RESEARCH",
+  REVIEW: "REVIEW",
+} as const;
+
+/** Values accepted by TaskCategory. */
+export type TaskCategory = (typeof TaskCategory)[keyof typeof TaskCategory];
 
 /**
  * Task priorities for focus management.
  */
-export enum TaskPriority {
-  HIGH = "HIGH",
-  MEDIUM = "MEDIUM",
-  LOW = "LOW",
-}
+export const TaskPriority = {
+  HIGH: "HIGH",
+  MEDIUM: "MEDIUM",
+  LOW: "LOW",
+} as const;
+
+/** Values accepted by TaskPriority. */
+export type TaskPriority = (typeof TaskPriority)[keyof typeof TaskPriority];
 
 /**
  * Task stored in localStorage.
@@ -116,17 +122,18 @@ export type StorageErrorType =
  * Error class for storage operations.
  */
 export class StorageError extends Error {
+  /** Storage error classification. */
+  type: StorageErrorType;
+
   /**
    * Creates a new StorageError.
    *
    * @param type - Error type classification
    * @param message - Human-readable error message
    */
-  constructor(
-    public type: StorageErrorType,
-    message: string
-  ) {
+  constructor(type: StorageErrorType, message: string) {
     super(message);
+    this.type = type;
     this.name = "StorageError";
   }
 }

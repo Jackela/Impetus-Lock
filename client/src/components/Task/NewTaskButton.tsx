@@ -6,6 +6,7 @@
  * @module components/Task/NewTaskButton
  */
 
+import type { JSX } from "react";
 import { useState, useRef, useCallback } from "react";
 import styles from "./NewTaskButton.module.css";
 

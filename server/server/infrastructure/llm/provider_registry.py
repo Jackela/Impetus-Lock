@@ -7,7 +7,9 @@ import importlib.util
 import logging
 import os
 from dataclasses import dataclass
+from threading import Lock
 from typing import TYPE_CHECKING, Literal, cast
+from weakref import WeakSet
 
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
@@ -223,6 +225,11 @@ class ProviderRegistry:
         )
         self._default_configs = self._load_default_configs()
         self._default_instances: dict[ProviderName, LLMProvider] = {}
+        # A retired provider stays alive through its active worker. Weak tracking
+        # joins it at shutdown without retaining closed instances after reload.
+        self._sol_instances: WeakSet[LLMProvider] = WeakSet()
+        self._sol_lock = Lock()
+        self._sol_closing = False
 
     def reload(self) -> None:
         """Reload env backed defaults (used by tests).
@@ -235,6 +242,29 @@ class ProviderRegistry:
         for provider in self._default_instances.values():
             close_provider(provider)
         self._default_instances.clear()
+
+    def close(self) -> None:
+        """Close cached OpenAI Sol ownership and join its active SDK workers.
+
+        Legacy OpenAI close/wait hooks are no-ops; other providers retain their
+        existing lifecycle. Keep cache identity until request cleanup finishes.
+        """
+        with self._sol_lock:
+            self._sol_closing = True
+            providers = list(self._sol_instances)
+            current = self._default_instances.get("openai")
+            if current is not None and not any(provider is current for provider in providers):
+                providers.append(current)
+        # Retire all tracked clients before joining any active SDK completion.
+        for provider in providers:
+            close_provider(provider)
+        for provider in providers:
+            wait_closed = getattr(provider, "wait_closed", None)
+            if callable(wait_closed):
+                try:
+                    wait_closed()
+                except Exception:
+                    logger.warning("Failed to wait for OpenAI provider shutdown.")
 
     def is_cached(self, provider: LLMProvider) -> bool:
         """Check whether ``provider`` is one of the shared cached instances.
@@ -376,6 +406,15 @@ class ProviderRegistry:
 
         provider = self._instantiate(config)
         if cacheable:
+            if config.provider == "openai" and getattr(provider, "owns_sol_client", False) is True:
+                with self._sol_lock:
+                    closing = self._sol_closing
+                    if not closing:
+                        self._sol_instances.add(provider)
+                if closing:
+                    # A reload/build racing with shutdown must not open a new
+                    # cached Sol lifetime after the shutdown snapshot was taken.
+                    close_provider(provider)
             self._default_instances[config.provider] = provider
         return provider
 

@@ -47,7 +47,7 @@ export function useSensoryFeedback(
 ): UseSensoryFeedbackReturn {
   const { defaultDuration = DEFAULT_FEEDBACK_DURATION_MS } = options;
   const [currentAction, setCurrentAction] = useState<AIActionType | null>(null);
-  const actionResetTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const actionResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearSensoryAction = useCallback(() => {
     if (actionResetTimerRef.current) {

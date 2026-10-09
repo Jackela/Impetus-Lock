@@ -7,7 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import IntegrityError, OperationalError
 
+from server.auth import get_current_user
 from server.infrastructure.persistence.style_history_repository import StyleHistoryRepository
+from server.models.user import User
 
 router = APIRouter(prefix="/style/history", tags=["style-history"])
 
@@ -48,12 +50,15 @@ def get_repository() -> StyleHistoryRepository:
 
 @router.post("", response_model=StyleHistoryResponse, status_code=201)
 async def create_history(
-    request: StyleHistoryCreate, repo: StyleHistoryRepository = Depends(get_repository)
+    request: StyleHistoryCreate,
+    current_user: User = Depends(get_current_user),
+    repo: StyleHistoryRepository = Depends(get_repository),
 ) -> StyleHistoryResponse:
     """Create a new style history record.
 
     Args:
         request: Style history data
+        current_user: Authenticated owner of the history
         repo: Repository instance
 
     Returns:
@@ -62,9 +67,12 @@ async def create_history(
     Raises:
         HTTPException: 400 if validation fails, 409 if conflict, 503 if DB unavailable
     """
+    if request.user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Style history not found")
+
     try:
         history = await repo.create(
-            user_id=request.user_id, text=request.text, style_vector=request.style_vector
+            user_id=str(current_user.id), text=request.text, style_vector=request.style_vector
         )
         return StyleHistoryResponse(
             id=history.id,
@@ -94,6 +102,7 @@ async def get_user_history(
     user_id: str,
     limit: int = Query(10, ge=1, le=100, description="Max records to return"),
     offset: int = Query(0, ge=0, description="Number of records to skip"),
+    current_user: User = Depends(get_current_user),
     repo: StyleHistoryRepository = Depends(get_repository),
 ) -> StyleHistoryListResponse:
     """Get style history for a user with pagination.
@@ -102,13 +111,17 @@ async def get_user_history(
         user_id: User identifier
         limit: Maximum records to return (default 10)
         offset: Records to skip (default 0)
+        current_user: Authenticated owner of the history
         repo: Repository instance
 
     Returns:
         Paginated list of history records
     """
-    items = await repo.get_by_user(user_id=user_id, limit=limit, offset=offset)
-    total = await repo.count_by_user(user_id=user_id)
+    if user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Style history not found")
+
+    items = await repo.get_by_user(user_id=str(current_user.id), limit=limit, offset=offset)
+    total = await repo.count_by_user(user_id=str(current_user.id))
 
     return StyleHistoryListResponse(
         items=[
@@ -129,12 +142,15 @@ async def get_user_history(
 
 @router.get("/{history_id}", response_model=StyleHistoryResponse)
 async def get_history_by_id(
-    history_id: UUID, repo: StyleHistoryRepository = Depends(get_repository)
+    history_id: UUID,
+    current_user: User = Depends(get_current_user),
+    repo: StyleHistoryRepository = Depends(get_repository),
 ) -> StyleHistoryResponse:
     """Get a specific style history record by ID.
 
     Args:
         history_id: History record UUID
+        current_user: Authenticated owner of the history
         repo: Repository instance
 
     Returns:
@@ -143,7 +159,7 @@ async def get_history_by_id(
     Raises:
         HTTPException: 404 if not found
     """
-    history = await repo.get_by_id(history_id=history_id)
+    history = await repo.get_by_id(history_id=history_id, user_id=str(current_user.id))
     if not history:
         raise HTTPException(status_code=404, detail="Style history not found")
 
@@ -158,17 +174,20 @@ async def get_history_by_id(
 
 @router.delete("/{history_id}", status_code=204)
 async def delete_history(
-    history_id: UUID, repo: StyleHistoryRepository = Depends(get_repository)
+    history_id: UUID,
+    current_user: User = Depends(get_current_user),
+    repo: StyleHistoryRepository = Depends(get_repository),
 ) -> None:
     """Delete a style history record.
 
     Args:
         history_id: History record UUID to delete
+        current_user: Authenticated owner of the history
         repo: Repository instance
 
     Raises:
         HTTPException: 404 if not found
     """
-    deleted = await repo.delete(history_id=history_id)
+    deleted = await repo.delete(history_id=history_id, user_id=str(current_user.id))
     if not deleted:
         raise HTTPException(status_code=404, detail="Style history not found")

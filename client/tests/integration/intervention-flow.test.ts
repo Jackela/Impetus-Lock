@@ -12,47 +12,16 @@
  * - Article V (Documentation): JSDoc comments
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { generateIntervention } from "../../src/services/api/interventionClient";
 import { lockManager } from "../../src/services/LockManager";
 import type { components } from "../../src/types/api.generated";
-import type { Transaction } from "@milkdown/prose/state";
-import type { Node as ProsemirrorNode } from "@milkdown/prose/model";
+import { EditorState, type Transaction } from "@milkdown/prose/state";
+import { Schema } from "@milkdown/prose/model";
+import { EditorView } from "@milkdown/prose/view";
+import { deleteWithoutUndo, insertWithoutUndo } from "../../src/components/Editor/UndoBypass";
 
 type InterventionResponse = components["schemas"]["InterventionResponse"];
-
-interface MockTransaction {
-  delete: ReturnType<typeof vi.fn>;
-  setMeta: ReturnType<typeof vi.fn>;
-  insert?: ReturnType<typeof vi.fn>;
-}
-
-interface MockEditorView {
-  state: {
-    doc: {
-      content: {
-        size: number;
-      };
-    };
-    tr: MockTransaction;
-    schema: {
-      text: (str: string) => ProsemirrorNode;
-    };
-    plugins: unknown[];
-  };
-  dispatch: (tr: Transaction) => void;
-}
-
-type AIEditorView = {
-  state: {
-    doc: {
-      content: {
-        size: number;
-      };
-    };
-    tr: MockTransaction;
-  };
-};
 
 // Clear singleton lock state before every test in this file so assertions
 // stay order-independent under --sequence.shuffle (tests leave locks behind).
@@ -221,6 +190,7 @@ describe("Integration: API → Lock Application → Enforcement", () => {
         client_meta: { doc_version: 1, selection_from: 0, selection_to: 0 },
       });
 
+      expect(response.lock_id).toBe(mockResp.lock_id);
       lockManager.applyLock(response.lock_id!, { source: response.source });
     }
 
@@ -375,158 +345,64 @@ Final paragraph.
 });
 
 describe("Integration: Undo Bypass for AI Actions", () => {
-  /**
-   * Test T041: AI delete actions bypass Undo stack.
-   *
-   * Simulates AI Delete action using UndoBypass module.
-   * Verifies that transaction is marked with addToHistory: false.
-   */
-  it("should bypass undo stack for AI delete actions", () => {
-    const mockTransactions: Transaction[] = [];
-    const mockDispatch = vi.fn((tr: Transaction) => {
-      mockTransactions.push(tr);
+  const views: EditorView[] = [];
+  function fixture() {
+    const schema = new Schema({
+      nodes: {
+        doc: { content: "paragraph+" },
+        paragraph: { content: "text*", toDOM: () => ["p", 0] },
+        text: {},
+      },
     });
-
-    const mockView: MockEditorView = {
-      state: {
-        doc: {
-          content: {
-            size: 1000,
-          },
-        },
-        tr: {
-          delete: vi.fn().mockReturnThis(),
-          setMeta: vi.fn().mockReturnThis(),
-        },
-        schema: {
-          text: vi.fn((str: string) => str as unknown as ProsemirrorNode),
-        },
-        plugins: [],
+    const doc = schema.node(
+      "doc",
+      null,
+      schema.node("paragraph", null, schema.text("x".repeat(998)))
+    );
+    const transactions: Transaction[] = [];
+    const view = new EditorView(document.createElement("div"), {
+      state: EditorState.create({ schema, doc }),
+      dispatchTransaction(tr) {
+        transactions.push(tr);
+        view.updateState(view.state.apply(tr));
       },
-      dispatch: mockDispatch,
-    };
-
-    const deleteWithoutUndo = (view: MockEditorView, from: number, to: number): boolean => {
-      const { state, dispatch } = view;
-
-      if (from < 0 || to > state.doc.content.size || from >= to) {
-        return false;
-      }
-
-      let tr = state.tr.delete(from, to);
-      tr = tr.setMeta("addToHistory", false);
-      tr = tr.setMeta("aiAction", true);
-      tr = tr.setMeta("actionType", "delete");
-
-      dispatch(tr);
-      return true;
-    };
-
-    // Execute AI delete
-    const success = deleteWithoutUndo(mockView, 100, 200);
-
-    // Verify success
-    expect(success).toBe(true);
-    expect(mockDispatch).toHaveBeenCalledTimes(1);
-
-    // Verify transaction meta flags
-    const tr = mockView.state.tr;
-    expect(tr.setMeta).toHaveBeenCalledWith("addToHistory", false);
-    expect(tr.setMeta).toHaveBeenCalledWith("aiAction", true);
-    expect(tr.setMeta).toHaveBeenCalledWith("actionType", "delete");
+    });
+    views.push(view);
+    return { view, transactions };
+  }
+  afterEach(() => {
+    for (const view of views.splice(0)) view.destroy();
   });
-
-  /**
-   * Test: AI insert actions bypass Undo stack.
-   */
+  function expectMetadata(transactions: Transaction[], action: string) {
+    expect(transactions).toHaveLength(1);
+    expect(transactions[0]?.getMeta("addToHistory")).toBe(false);
+    expect(transactions[0]?.getMeta("aiAction")).toBe(true);
+    expect(transactions[0]?.getMeta("actionType")).toBe(action);
+  }
+  it("should bypass undo stack for AI delete actions", () => {
+    const { view, transactions } = fixture();
+    expect(deleteWithoutUndo(view, 100, 200)).toBe(true);
+    expect(view.state.doc.textContent).toHaveLength(898);
+    expectMetadata(transactions, "delete");
+  });
   it("should bypass undo stack for AI insert actions", () => {
-    const mockDispatch = vi.fn();
-
-    const mockView = {
-      state: {
-        doc: {
-          content: {
-            size: 1000,
-          },
-        },
-        tr: {
-          insert: vi.fn().mockReturnThis(),
-          setMeta: vi.fn().mockReturnThis(),
-        },
-        schema: {
-          text: vi.fn((str: string) => str),
-        },
-        plugins: [],
-      },
-      dispatch: mockDispatch,
-    };
-
-    const insertWithoutUndo = (
-      view: MockEditorView,
-      pos: number,
-      content: string | ProsemirrorNode
-    ): boolean => {
-      const { state, dispatch } = view;
-
-      if (pos < 0 || pos > state.doc.content.size) {
-        return false;
-      }
-
-      let node = typeof content === "string" ? state.schema.text(content) : content;
-      let tr = state.tr.insert!(pos, node);
-      tr = tr.setMeta("addToHistory", false);
-      tr = tr.setMeta("aiAction", true);
-      tr = tr.setMeta("actionType", "provoke");
-
-      dispatch(tr);
-      return true;
-    };
-
-    // Execute AI insert
+    const { view, transactions } = fixture();
     const content = "Test content <!-- lock:lock_test source:muse -->";
-    const success = insertWithoutUndo(mockView, 500, content);
-
-    expect(success).toBe(true);
-    expect(mockDispatch).toHaveBeenCalledTimes(1);
-
-    const tr = mockView.state.tr;
-    expect(tr.setMeta).toHaveBeenCalledWith("addToHistory", false);
-    expect(tr.setMeta).toHaveBeenCalledWith("aiAction", true);
-    expect(tr.setMeta).toHaveBeenCalledWith("actionType", "provoke");
+    expect(insertWithoutUndo(view, 500, content)).toBe(true);
+    expect(view.state.doc.textContent).toContain(content);
+    expectMetadata(transactions, "provoke");
   });
-
-  /**
-   * Test: Invalid ranges are rejected.
-   */
   it("should reject invalid deletion ranges", () => {
-    const mockView = {
-      state: {
-        doc: {
-          content: {
-            size: 1000,
-          },
-        },
-        tr: {
-          delete: vi.fn().mockReturnThis(),
-        },
-      },
-      dispatch: vi.fn(),
-    };
-
-    const deleteWithoutUndo = (view: AIEditorView, from: number, to: number): boolean => {
-      const { state } = view;
-
-      if (from < 0 || to > state.doc.content.size || from >= to) {
-        return false;
-      }
-
-      return true;
-    };
-
-    // Test invalid ranges
-    expect(deleteWithoutUndo(mockView, -10, 100)).toBe(false); // Negative from
-    expect(deleteWithoutUndo(mockView, 100, 2000)).toBe(false); // to > docSize
-    expect(deleteWithoutUndo(mockView, 500, 500)).toBe(false); // from === to
-    expect(deleteWithoutUndo(mockView, 600, 500)).toBe(false); // from > to
+    const { view, transactions } = fixture();
+    for (const [from, to] of [
+      [-10, 100],
+      [100, 2000],
+      [500, 500],
+      [600, 500],
+    ] as const) {
+      expect(deleteWithoutUndo(view, from, to)).toBe(false);
+    }
+    expect(transactions).toHaveLength(0);
+    expect(view.state.doc.textContent).toBe("x".repeat(998));
   });
 });

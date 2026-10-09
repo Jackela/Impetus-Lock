@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { dismissWelcomeModal } from "./helpers/waitHelpers";
 
 /**
  * UX-003: Task List Integration E2E Tests
@@ -12,10 +13,11 @@ import { test, expect } from "@playwright/test";
 test.describe("UX-003: Task List Integration", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to app
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
 
     // Wait for app to load
     await page.waitForSelector(".app", { timeout: 10000 });
+    await dismissWelcomeModal(page);
   });
 
   test("task list sidebar is visible by default", async ({ page }) => {
@@ -134,10 +136,10 @@ test.describe("UX-003: Task List Integration", () => {
     }
   });
 
-  test("screenshot of task list integration", async ({ page }) => {
+  test("screenshot of task list integration", async ({ page }, testInfo) => {
     // Take a screenshot for visual verification
     await page.screenshot({
-      path: "e2e-results/ux-003-task-list-integration.png",
+      path: testInfo.outputPath("ux-003-task-list-integration.png"),
       fullPage: true,
     });
 
@@ -145,7 +147,7 @@ test.describe("UX-003: Task List Integration", () => {
     const toggleButton = page.locator('[data-testid="task-list-toggle"]');
     await toggleButton.click();
     await page.screenshot({
-      path: "e2e-results/ux-003-task-list-hidden.png",
+      path: testInfo.outputPath("ux-003-task-list-hidden.png"),
       fullPage: true,
     });
   });

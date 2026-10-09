@@ -5,7 +5,7 @@
  * Uses data-testid attributes + reasonable timeouts to avoid flaky tests.
  */
 
-import { Page, expect } from "@playwright/test";
+import { type Page, expect } from "@playwright/test";
 
 const WELCOME_STORAGE_KEY = "impetus-lock-welcome-dismissed";
 let welcomeDismissScriptInjected = false;
@@ -51,15 +51,7 @@ export async function dismissWelcomeModal(page: Page, timeout = 5000): Promise<b
   }
 
   await getStartedButton.click();
-  await overlay.waitFor({ state: "hidden", timeout }).catch(() => undefined);
-
-  const stillVisible = await overlay.isVisible().catch(() => false);
-  if (stillVisible) {
-    await page.evaluate(() => {
-      const el = document.querySelector(".welcome-modal-overlay");
-      el?.parentElement?.removeChild(el);
-    });
-  }
+  await overlay.waitFor({ state: "hidden", timeout });
   return true;
 }
 

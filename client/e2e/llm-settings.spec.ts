@@ -1,11 +1,9 @@
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { dismissWelcomeModal } from "./helpers/waitHelpers";
 
 async function openLLMSettings(page: Page) {
-  const welcomeButton = page.getByRole("button", { name: "Get Started" });
-  if (await welcomeButton.isVisible().catch(() => false)) {
-    await welcomeButton.click();
-  }
+  await dismissWelcomeModal(page);
 
   const modal = page.getByTestId("config-error-modal");
   if (await modal.isVisible().catch(() => false)) {

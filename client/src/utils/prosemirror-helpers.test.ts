@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { hasMark, getHeadingLevel, isInBulletList } from "./prosemirror-helpers";
 import { EditorState, TextSelection } from "@milkdown/prose/state";
-import { MarkType, Schema } from "@milkdown/prose/model";
+import { Schema } from "@milkdown/prose/model";
 
 // Create a basic schema for testing
 const basicSchema = new Schema({
@@ -38,8 +38,8 @@ const basicSchema = new Schema({
 describe("hasMark", () => {
   it("should return false when markType is null or undefined", () => {
     const state = EditorState.create({ schema: basicSchema });
-    expect(hasMark(state, null as unknown as MarkType)).toBe(false);
-    expect(hasMark(state, undefined as unknown as MarkType)).toBe(false);
+    expect(hasMark(state, null)).toBe(false);
+    expect(hasMark(state, undefined)).toBe(false);
   });
 
   it("should return false when mark is not active in empty selection (cursor position)", () => {
@@ -56,7 +56,7 @@ describe("hasMark", () => {
 
   it("should return true when mark is active in empty selection (cursor within marked text)", () => {
     // Create state with cursor inside bold text
-    const boldText = basicSchema.text("Bold", [basicSchema.marks.strong.create()]);
+    const boldText = basicSchema.text("Bold", [basicSchema.mark("strong")]);
     const doc = basicSchema.node("doc", null, [
       basicSchema.node("paragraph", null, [boldText, basicSchema.text(" normal")]),
     ]);
@@ -85,7 +85,7 @@ describe("hasMark", () => {
   });
 
   it("should return true when mark is active across entire text selection", () => {
-    const boldText = basicSchema.text("Bold text", [basicSchema.marks.strong.create()]);
+    const boldText = basicSchema.text("Bold text", [basicSchema.mark("strong")]);
     const doc = basicSchema.node("doc", null, [basicSchema.node("paragraph", null, [boldText])]);
     const state = EditorState.create({
       schema: basicSchema,

@@ -8,13 +8,26 @@
  * 4. Fixed hook dependency issues with useCallback and refs
  */
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Editor, rootCtx, defaultValueCtx, editorViewCtx, serializerCtx, parserCtx, remarkCtx } from "@milkdown/core";
-import { preserveLockMarkers, restoreLockMarkers } from "../../utils/editorMarkdown";
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
+import {
+  Editor,
+  rootCtx,
+  defaultValueCtx,
+  editorViewCtx,
+  editorViewOptionsCtx,
+  serializerCtx,
+  parserCtx,
+  remarkCtx,
+} from "@milkdown/core";
+import {
+  preserveLockMarkers,
+  restoreLockMarkers,
+  validateRecoveredLocks,
+} from "../../utils/editorMarkdown";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
-import type { Node as ProseMirrorNode } from "@milkdown/prose/model";
+import { Plugin } from "@milkdown/prose/state";
 import { useLockManager, LockManagerProvider } from "../../contexts/LockManagerContext";
 import type { LockManager } from "../../services/LockManager";
 import { createLockTransactionFilter } from "./TransactionFilter";
@@ -26,6 +39,7 @@ import {
   triggerMuseIntervention,
   triggerLokiIntervention,
 } from "../../services/api/interventionClient";
+import type { RemoteSession } from "../../services/api/remoteSession";
 import {
   injectLockedBlock,
   deleteContentAtAnchor,
@@ -67,10 +81,17 @@ declare global {
     insertLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
     rewriteLockedContentForTest?: (content: string, lockId: string, source?: AgentSource) => void;
     triggerManualDeleteForTest?: () => void;
+    triggerMuseRewriteForTest?: () => void;
   }
 }
 
 interface EditorCoreProps {
+  /** Captured authenticated session; null pauses AI while allowing local writing. */
+  session?: RemoteSession | null;
+  /** Stable identity of the currently displayed account draft. */
+  requestIdentity?: string;
+  /** Report recovery failure while retaining the original content and metadata. */
+  onRecoveryError?: (error: Error) => void;
   initialContent?: string;
   mode?: AgentMode;
   onChange?: (markdown: string, lockIds: string[]) => void;
@@ -123,6 +144,9 @@ const logger = createLogger("EditorCore");
  * @param root0.onTimerUpdate - Callback with remaining seconds in Muse mode
  * @param root0.onInterventionError - Callback surfacing intervention errors to parent UI
  * @param root0.contentVersion - Counter triggering content updates without remounting
+ * @param root0.session - Current remote authorization or null for local writing
+ * @param root0.requestIdentity - Stable identity of the current account draft
+ * @param root0.onRecoveryError - Callback reporting unsafe draft recovery
  * @returns The rendered editor with toolbars and sensory feedback
  */
 const EditorCoreInner: React.FC<EditorCoreProps> = ({
@@ -136,17 +160,56 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   onTimerUpdate,
   onInterventionError,
   contentVersion,
+  session,
+  requestIdentity,
+  onRecoveryError,
 }) => {
   // Get LockManager from context (DIP - Article IV)
   const lockManager = useLockManager();
 
   const editorRef = useRef<Editor | null>(null);
+  const recoveryBlockedRef = useRef(true);
+  const [recoveryFailure, setRecoveryFailure] = useState<{ error: Error; markdown: string } | null>(
+    null
+  );
+  const onRecoveryErrorRef = useRef(onRecoveryError);
+  const mountedRef = useRef(true);
+  const requestContextRef = useRef({ session, requestIdentity });
+  useLayoutEffect(() => {
+    requestContextRef.current = { session, requestIdentity };
+    onRecoveryErrorRef.current = onRecoveryError;
+  }, [session, requestIdentity, onRecoveryError]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const isCurrentRequest = useCallback(
+    (
+      editor: Editor,
+      identity: string | undefined,
+      capturedSession: RemoteSession | null | undefined
+    ) =>
+      mountedRef.current &&
+      !recoveryBlockedRef.current &&
+      editorRef.current === editor &&
+      requestContextRef.current.requestIdentity === identity &&
+      requestContextRef.current.session === capturedSession &&
+      capturedSession !== null &&
+      (!capturedSession || (capturedSession.isCurrent() && !capturedSession.signal.aborted)),
+    []
+  );
   const [docVersion, setDocVersion] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [currentAction, setCurrentAction] = useState<AIActionType | null>(null);
 
   // T014: Expose editor instance for FloatingToolbar
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const remoteEnabled =
+    session !== null &&
+    !recoveryFailure &&
+    (!session || (session.isCurrent() && !session.signal.aborted));
 
   // T017: Responsive toolbar - detect mobile viewport
   const isMobile = useMediaQuery("(max-width: 767px)");
@@ -171,36 +234,126 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   // Track if delete is currently executing (separate from trigger processing)
   const isDeletingRef = useRef(false);
 
-  // Track last processed content version to avoid duplicate updates
-  const lastContentVersionRef = useRef(contentVersion);
+  // Uncontrolled content/locks are a mount-time value, even if props arrive later.
+  const initialDocumentRef = useRef({ initialContent, initialLocks });
+  const lastLoadedContentRef = useRef<{
+    content: string;
+    version: number;
+    locks: string[];
+  } | null>(null);
 
-  // Handle content version changes - update editor content without remounting
-  useEffect(() => {
-    if (contentVersion === undefined) return;
-    if (lastContentVersionRef.current === contentVersion) return;
+  const recoverLocks = useCallback(
+    (editor: Editor, markdown: string, locks: string[]): string[] | null => {
+      return editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        try {
+          const ids = validateRecoveredLocks(
+            markdown,
+            locks,
+            ctx.get(remarkCtx),
+            ctx.get(parserCtx)
+          );
+          recoveryBlockedRef.current = false;
+          setRecoveryFailure(null);
+          view.setProps({ editable: () => !recoveryBlockedRef.current });
+          return ids;
+        } catch (error) {
+          const failure = error instanceof Error ? error : new Error(String(error));
+          recoveryBlockedRef.current = true;
+          view.setProps({ editable: () => false });
+          setRecoveryFailure({ error: failure, markdown });
+          onRecoveryErrorRef.current?.(failure);
+          return null;
+        }
+      });
+    },
+    []
+  );
 
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    // Update the editor content when contentVersion changes
-    editor.action((ctx) => {
-      const view = ctx.get(editorViewCtx);
-      const currentContent = restoreLockMarkers(ctx.get(serializerCtx)(view.state.doc), ctx.get(remarkCtx));
-
-      // Only update if content actually changed
-      if (currentContent !== initialContent) {
-        const tr = view.state.tr;
-        const document = ctx.get(parserCtx)(preserveLockMarkers(initialContent || "", ctx.get(remarkCtx)));
-        tr.replaceWith(0, view.state.doc.content.size, document.content);
-        view.dispatch(tr);
+  const reconcileContent = useCallback(
+    (editor: Editor) => {
+      if (contentVersion === undefined) return;
+      const locks = initialLocks ?? [];
+      const previous = lastLoadedContentRef.current;
+      if (
+        previous?.version === contentVersion &&
+        previous.content === initialContent &&
+        previous.locks.length === locks.length &&
+        previous.locks.every((lock, index) => lock === locks[index])
+      ) {
+        return;
       }
-    });
+      const recoveredIds = recoverLocks(editor, initialContent, locks);
+      if (!recoveredIds) return;
 
-    lastContentVersionRef.current = contentVersion;
-  }, [contentVersion, initialContent]);
+      const loaded = editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        const currentContent = restoreLockMarkers(
+          ctx.get(serializerCtx)(view.state.doc),
+          ctx.get(remarkCtx)
+        );
+        const document = ctx.get(parserCtx)(
+          preserveLockMarkers(initialContent, ctx.get(remarkCtx))
+        );
+        if (!document) return false;
+        // Markdown serializers normalize spacing and final newlines. Compare
+        // parsed documents before attempting a replacement protected by locks.
+        const canonicalContent = restoreLockMarkers(
+          ctx.get(serializerCtx)(document),
+          ctx.get(remarkCtx)
+        );
+        if (
+          currentContent !== initialContent &&
+          currentContent !== canonicalContent &&
+          !view.state.doc.eq(document)
+        ) {
+          const before = view.state.doc;
+          view.dispatch(
+            view.state.tr
+              .replaceWith(0, before.content.size, document.content)
+              .setMeta("loadedContent", true)
+              .setMeta("addToHistory", false)
+          );
+          // Native filters still decide whether the replacement is permitted.
+          if (view.state.doc === before) return false;
+        }
+        recoveredIds.forEach((lockId) => lockManager.applyLock(lockId));
+        lockManager
+          .extractLockEntriesFromMarkdown(initialContent)
+          .filter(({ lockId }) => recoveredIds.includes(lockId))
+          .forEach(({ lockId, source }) => lockManager.applyLock(lockId, { source }));
+        refreshLockDecorations(view);
+        return true;
+      });
+      if (!loaded) {
+        const failure = new Error(
+          "The restored draft could not replace the current locked document. Export the original and retry recovery."
+        );
+        recoveryBlockedRef.current = true;
+        editor.action((ctx) => ctx.get(editorViewCtx).setProps({ editable: () => false }));
+        setRecoveryFailure({ error: failure, markdown: initialContent });
+        onRecoveryErrorRef.current?.(failure);
+        return;
+      }
+
+      lastLoadedContentRef.current = {
+        content: initialContent,
+        version: contentVersion,
+        locks: [...locks],
+      };
+    },
+    [contentVersion, initialContent, initialLocks, lockManager, recoverLocks]
+  );
+
+  // The asynchronous initializer must reconcile the latest committed props.
+  const reconcileContentRef = useRef(reconcileContent);
+  useEffect(() => {
+    reconcileContentRef.current = reconcileContent;
+    if (editorInstance) reconcileContent(editorInstance);
+  }, [reconcileContent, editorInstance]);
 
   // Animation durations from centralized config
-  const actionResetTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const actionResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showSensoryAction = useCallback(
     (
@@ -236,6 +389,8 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   const handleStuck = useCallback(async () => {
     const editor = editorRef.current;
     if (!editor) return;
+    const captured = requestContextRef.current;
+    if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
 
     try {
       const view = editor.action((ctx) => ctx.get(editorViewCtx));
@@ -255,7 +410,10 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const fullText = view.state.doc.textContent;
       const contextWindow = ensureContext(extractLastSentences(fullText, 3));
 
-      const response = await triggerMuseIntervention(contextWindow, cursorPosition, docVersion);
+      const response = await triggerMuseIntervention(contextWindow, cursorPosition, docVersion, {
+        session: captured.session,
+      });
+      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
 
       const resolvedSource: AgentSource = response.source ?? "muse";
 
@@ -291,16 +449,26 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         }
       }
     } catch (error) {
+      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
       logger.error("Muse intervention failed", error);
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, lockManager, onInterventionError, showSensoryAction]);
+  }, [
+    cursorPosition,
+    docVersion,
+    lockManager,
+    onInterventionError,
+    showSensoryAction,
+    isCurrentRequest,
+  ]);
 
   // Handle Loki chaos trigger
   const handleLokiTrigger = useCallback(async () => {
     const editor = editorRef.current;
     if (!editor) return;
+    const captured = requestContextRef.current;
+    if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
 
     const now = Date.now();
     if (now - lastLokiTriggerRef.current < LOKI_COOLDOWN_MS) {
@@ -313,7 +481,10 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const fullText = view.state.doc.textContent;
       const contextWindow = ensureContext(extractLastSentences(fullText, 3));
 
-      const response = await triggerLokiIntervention(contextWindow, cursorPosition, docVersion);
+      const response = await triggerLokiIntervention(contextWindow, cursorPosition, docVersion, {
+        session: captured.session,
+      });
+      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
 
       const resolvedSource: AgentSource = response.source ?? "loki";
 
@@ -348,11 +519,19 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         }
       }
     } catch (error) {
+      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
       logger.error("Loki intervention failed", error);
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [cursorPosition, docVersion, lockManager, onInterventionError, showSensoryAction]);
+  }, [
+    cursorPosition,
+    docVersion,
+    lockManager,
+    onInterventionError,
+    showSensoryAction,
+    isCurrentRequest,
+  ]);
 
   // Handle manual delete trigger (Test Delete button)
   const handleManualDelete = useCallback(() => {
@@ -363,6 +542,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
     const editor = editorRef.current;
     if (!editor) return;
+
+    const captured = requestContextRef.current;
+    if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
 
     // Set flag IMMEDIATELY before any other operations
     isDeletingRef.current = true;
@@ -397,7 +579,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         isDeletingRef.current = false;
       }, DELETE_RESET_DELAY_MS); // Ensure all state updates complete
     }
-  }, [showSensoryAction]);
+  }, [showSensoryAction, isCurrentRequest]);
 
   // Stable refs for callback functions to avoid useEffect re-runs
   const handleStuckRef = useRef(handleStuck);
@@ -419,7 +601,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
   // Writing state machine for STUCK detection (Muse mode)
   const { onInput } = useWritingState({
-    mode,
+    mode: remoteEnabled ? mode : "off",
     onStuck: handleStuck,
     onTimerUpdate, // T004: Forward timer updates to parent (App.tsx)
   });
@@ -435,7 +617,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
   // Random chaos timer (Loki mode)
   useLokiTimer({
-    mode,
+    mode: remoteEnabled ? mode : "off",
     onTrigger: handleLokiTrigger,
   });
 
@@ -443,6 +625,12 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
   // Handle external manual trigger
   useEffect(() => {
+    if (!remoteEnabled) {
+      lastProcessedTriggerRef.current = externalTrigger ?? null;
+      isProcessingTriggerRef.current = false;
+      if (externalTrigger) onTriggerProcessed?.();
+      return;
+    }
     // Prevent re-entry - if already processing a trigger, skip
     if (isProcessingTriggerRef.current) {
       return;
@@ -495,7 +683,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       lastProcessedTriggerRef.current = null;
       isProcessingTriggerRef.current = false;
     }
-  }, [externalTrigger, onTriggerProcessed, mode, showSensoryAction]);
+  }, [externalTrigger, onTriggerProcessed, mode, showSensoryAction, remoteEnabled]);
 
   // Initialize editor - don't use loading state
   const { get } = useEditor((root) => {
@@ -503,6 +691,10 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       Editor.make()
         .config((ctx) => {
           ctx.set(rootCtx, root);
+          ctx.update(editorViewOptionsCtx, (options) => ({
+            ...options,
+            editable: () => !recoveryBlockedRef.current,
+          }));
           // Use empty string as default if no initialContent provided
           ctx.set(defaultValueCtx, preserveLockMarkers(initialContent || "", ctx.get(remarkCtx)));
         })
@@ -542,6 +734,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
       while (!editor && mounted && attempts < maxAttempts) {
         await new Promise((resolve) => setTimeout(resolve, EDITOR_RETRY_INTERVAL_MS));
+        if (!mounted) return;
         editor = getEditor();
         attempts++;
       }
@@ -554,6 +747,12 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       }
 
       editorRef.current = editor;
+      const initialDocument = initialDocumentRef.current;
+      const recoveredIds = recoverLocks(
+        editor,
+        initialDocument.initialContent,
+        initialDocument.initialLocks ?? []
+      );
 
       // T014: Expose editor instance for FloatingToolbar
       setEditorInstance(editor);
@@ -569,6 +768,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           lockId: string,
           source: AgentSource = "muse"
         ) => {
+          if (recoveryBlockedRef.current) return;
           return editor.action((ctx) => {
             const view = ctx.get(editorViewCtx);
             // Use same method as ContentInjector
@@ -592,9 +792,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       // T008: Apply lock content decorations for visual styling FIRST
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-        if (initialLocks && initialLocks.length > 0) {
-          initialLocks.forEach((lockId) => lockManager.applyLock(lockId));
-        }
+        recoveredIds?.forEach((lockId) => lockManager.applyLock(lockId));
         applyLockDecorations(view, lockManager);
       });
 
@@ -605,38 +803,57 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           showSensoryAction(AIActionType.REJECT, { duration: REJECTION_FEEDBACK_DURATION_MS });
         });
 
-        const existingFilter = view.props.filterTransaction;
-
-        view.setProps({
-          filterTransaction: (tr, state) => {
-            if (!lockFilter(tr, state)) {
-              return false;
-            }
-            return existingFilter ? existingFilter(tr, state) : true;
-          },
-        });
+        view.updateState(
+          view.state.reconfigure({
+            plugins: [
+              ...view.state.plugins,
+              new Plugin({
+                filterTransaction: (tr) => !tr.docChanged || !recoveryBlockedRef.current,
+              }),
+              new Plugin({ filterTransaction: lockFilter }),
+            ],
+          })
+        );
       });
 
       // Extract locks from initial content
-      if (initialContent) {
-        const entries = lockManager.extractLockEntriesFromMarkdown(initialContent);
-        entries.forEach(({ lockId, source }) => lockManager.applyLock(lockId, { source }));
+      if (recoveredIds && initialDocumentRef.current.initialContent) {
+        const entries = lockManager.extractLockEntriesFromMarkdown(
+          initialDocumentRef.current.initialContent
+        );
+        entries
+          .filter(({ lockId }) => recoveredIds.includes(lockId))
+          .forEach(({ lockId, source }) => lockManager.applyLock(lockId, { source }));
       }
+
+      reconcileContentRef.current(editor);
 
       // Add listener for user input
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
         const originalDispatchTransaction = view.dispatch.bind(view);
+        let dispatchDepth = 0;
 
         view.dispatch = (tr) => {
-          // CRITICAL: Call filterTransaction BEFORE processing to allow blocking
-          // This must be done manually since we override dispatch
-          if (view.props.filterTransaction) {
-            const allowed = view.props.filterTransaction(tr, view.state);
-            if (!allowed) {
-              return; // Block the transaction
-            }
+          if (
+            !mountedRef.current ||
+            editorRef.current !== editor ||
+            (tr.docChanged && recoveryBlockedRef.current)
+          )
+            return;
+          // Let every installed state plugin filter the transaction before
+          // reporting input or persistence changes for an accepted edit.
+          const previousState = view.state;
+          dispatchDepth++;
+          try {
+            originalDispatchTransaction(tr);
+          } finally {
+            dispatchDepth--;
           }
+          // Commonmark updates heading IDs via a nested dispatch. Report the
+          // final document once for the outer edit, including those updates.
+          if (dispatchDepth > 0 || view.state === previousState || tr.getMeta("loadedContent"))
+            return;
 
           if (tr.docChanged) {
             setDocVersion((v) => v + 1);
@@ -646,21 +863,50 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
             onInputRef.current();
 
             // Auto-detect and register locks from content changes
-            // CRITICAL: Scan BEFORE originalDispatchTransaction to ensure locks are registered
-            // before TransactionFilter checks them on the NEXT transaction (e.g., deletion).
+            // Register accepted locks before the NEXT transaction (e.g., deletion).
             // Uses same pattern as LockDecorations (which successfully detects locks).
-            tr.doc.descendants((node) => {
-              const metadata = extractLockAttributes(node as ProseMirrorNode, lockManager);
+            const liveLocks = new Set<string>();
+            view.state.doc.descendants((node) => {
+              if (node.type.name === "code_block") return false;
+              if (node.isText && node.marks.some((mark) => mark.type.name === "inlineCode")) return;
+              if (!node.isTextblock && !node.isText) return;
+              const metadata = extractLockAttributes(node, lockManager);
+              if (node.isTextblock && metadata) {
+                let prose = "";
+                node.descendants((child) => {
+                  if (child.isText)
+                    prose += child.marks.some((mark) => mark.type.name === "inlineCode")
+                      ? "\n"
+                      : child.textContent;
+                });
+                const markers = [
+                  ...prose.matchAll(/<!--\s*lock:([^\s>]+)(?:\s+source:([^\s>]+))?\s*-->/gi),
+                ];
+                markers.forEach((match) => liveLocks.add(match[1]!));
+                if (!markers.some((match) => match[1] === metadata.lockId)) return;
+              }
+              if (metadata?.lockId) liveLocks.add(metadata.lockId);
               if (metadata?.lockId && !lockManager.hasLock(metadata.lockId)) {
                 lockManager.applyLock(metadata.lockId, { source: metadata.source });
                 refreshLockDecorations(view);
               }
             });
 
-            const markdown = restoreLockMarkers(ctx.get(serializerCtx)(tr.doc), ctx.get(remarkCtx));
+            // Only an accepted AI action may retire locks whose writing it
+            // intentionally removed. Recovery and ordinary edits keep strict
+            // missing-lock validation instead of silently discarding locks.
+            if (tr.getMeta("aiAction")) {
+              lockManager.getAllLocks().forEach((id) => {
+                if (!liveLocks.has(id)) lockManager.removeLock(id);
+              });
+              refreshLockDecorations(view);
+            }
+            const markdown = restoreLockMarkers(
+              ctx.get(serializerCtx)(view.state.doc),
+              ctx.get(remarkCtx)
+            );
             onChangeRef.current?.(markdown, lockManager.getAllLocks());
           }
-          originalDispatchTransaction(tr);
         };
       });
 
@@ -678,7 +924,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     return () => {
       mounted = false;
     };
-  }, [initialContent, initialLocks, lockManager, showSensoryAction]);
+  }, [lockManager, showSensoryAction, recoverLocks]);
 
   // Always render immediately - no loading state
   return (
@@ -686,16 +932,25 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       className="editor-container"
       style={{ position: "relative" }}
       data-testid="editor-ready"
-      data-state="ready"
+      data-state={recoveryFailure ? "recovery-error" : "ready"}
     >
-      <Milkdown />
+      {recoveryFailure && (
+        <>
+          <p role="alert">{recoveryFailure.error.message}</p>
+          <pre data-testid="unrecovered-draft">{recoveryFailure.markdown}</pre>
+        </>
+      )}
+      <div hidden={Boolean(recoveryFailure)}>
+        <Milkdown />
+      </div>
       <SensoryFeedback actionType={currentAction} />
       {/* T017-T018: Responsive toolbar - conditional rendering based on viewport */}
-      {isMobile ? (
-        <BottomDockedToolbar editor={editorInstance} />
-      ) : (
-        <FloatingToolbar editor={editorInstance} />
-      )}
+      {!recoveryFailure &&
+        (isMobile ? (
+          <BottomDockedToolbar editor={editorInstance} />
+        ) : (
+          <FloatingToolbar editor={editorInstance} />
+        ))}
     </div>
   );
 };

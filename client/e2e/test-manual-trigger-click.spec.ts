@@ -6,7 +6,7 @@ import { mockInterventionSuccess } from "./helpers/interventionMocks";
  * Test manual trigger button click and sensory feedback
  */
 test.describe("Manual Trigger Click Test", () => {
-  test("clicking manual trigger shows sensory feedback", async ({ page }) => {
+  test("clicking manual trigger shows sensory feedback", async ({ page }, testInfo) => {
     await page.goto("http://localhost:5173");
     await waitForReactHydration(page);
     await mockInterventionSuccess(page);
@@ -61,7 +61,10 @@ test.describe("Manual Trigger Click Test", () => {
     });
 
     // Take screenshot
-    await page.screenshot({ path: "e2e-results/manual-trigger-clicked.png", fullPage: true });
+    await page.screenshot({
+      path: testInfo.outputPath("manual-trigger-clicked.png"),
+      fullPage: true,
+    });
     console.log("📸 Screenshot saved");
 
     // Wait for animation if visible

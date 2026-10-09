@@ -3,9 +3,11 @@
 @module auth.router
 """
 
+import os
+import secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -64,20 +66,32 @@ class AuthResponse(BaseModel):
     user: UserResponse
 
 
-def _set_auth_cookie(response: Response, token: str) -> None:
+def _set_auth_cookie(response: Response, token: str, http_request: Request) -> None:
     """Set the authentication cookie.
 
     Args:
         response: FastAPI response object.
         token: JWT access token.
+        http_request: Request carrying the effective scheme and configured environment.
     """
+    environment = os.getenv("APP_ENV", os.getenv("ENV", "development"))
+    secure = http_request.url.scheme == "https" or environment == "production"
     response.set_cookie(
         key="access_token",
         value=token,
         httponly=True,
-        secure=False,  # Set to True in production with HTTPS
+        secure=secure,
         samesite="lax",
         max_age=86400,  # 24 hours
+        path="/",
+    )
+    response.set_cookie(
+        key="csrf_token",
+        value=secrets.token_urlsafe(32),
+        httponly=False,
+        secure=secure,
+        samesite="lax",
+        max_age=86400,
         path="/",
     )
 
@@ -89,6 +103,7 @@ def _clear_auth_cookie(response: Response) -> None:
         response: FastAPI response object.
     """
     response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="csrf_token", path="/")
 
 
 @router.post(
@@ -99,6 +114,7 @@ def _clear_auth_cookie(response: Response) -> None:
 async def register(
     request: RegisterRequest,
     response: Response,
+    http_request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> AuthResponse:
     """Register a new user.
@@ -106,6 +122,7 @@ async def register(
     Args:
         request: Registration request with email and password.
         response: Response object for setting cookies.
+        http_request: Incoming request used to protect HTTPS cookies.
         session: Database session.
 
     Returns:
@@ -132,7 +149,7 @@ async def register(
 
     # Set auth cookie
     if result.token:
-        _set_auth_cookie(response, result.token)
+        _set_auth_cookie(response, result.token, http_request)
 
     return AuthResponse(user=UserResponse(id=str(result.user.id), email=result.user.email))
 
@@ -141,6 +158,7 @@ async def register(
 async def login(
     request: LoginRequest,
     response: Response,
+    http_request: Request,
     session: AsyncSession = Depends(get_session),
 ) -> AuthResponse:
     """Login a user.
@@ -148,6 +166,7 @@ async def login(
     Args:
         request: Login request with email and password.
         response: Response object for setting cookies.
+        http_request: Incoming request used to protect HTTPS cookies.
         session: Database session.
 
     Returns:
@@ -167,7 +186,7 @@ async def login(
 
     # Set auth cookie
     if result.token:
-        _set_auth_cookie(response, result.token)
+        _set_auth_cookie(response, result.token, http_request)
 
     return AuthResponse(user=UserResponse(id=str(result.user.id), email=result.user.email))
 

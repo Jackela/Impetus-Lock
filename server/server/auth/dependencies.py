@@ -4,13 +4,25 @@
 """
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Cookie, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.auth.utils import decode_access_token
 from server.infrastructure.persistence.database import get_session
 from server.models.user import User
+
+
+def _parse_user_id(subject: object) -> UUID | None:
+    """Accept only a valid UUID subject before querying the user repository."""
+    if not isinstance(subject, str):
+        return None
+    try:
+        return UUID(subject)
+    except ValueError:
+        return None
 
 
 async def get_current_user(
@@ -43,18 +55,11 @@ async def get_current_user(
     if payload is None:
         raise credentials_exception
 
-    user_id = payload.get("sub")
+    user_id = _parse_user_id(payload.get("sub"))
     if user_id is None:
         raise credentials_exception
 
     # Get user from database
-    from uuid import UUID
-
-    from sqlalchemy import select
-
-    if isinstance(user_id, str):
-        user_id = UUID(user_id)
-
     result = await session.execute(select(User).where(User.id == user_id))
     user: User | None = result.scalar_one_or_none()
 
@@ -84,16 +89,9 @@ async def get_current_user_optional(
     if payload is None:
         return None
 
-    user_id = payload.get("sub")
+    user_id = _parse_user_id(payload.get("sub"))
     if user_id is None:
         return None
-
-    from uuid import UUID
-
-    from sqlalchemy import select
-
-    if isinstance(user_id, str):
-        user_id = UUID(user_id)
 
     result = await session.execute(select(User).where(User.id == user_id))
     user: User | None = result.scalar_one_or_none()

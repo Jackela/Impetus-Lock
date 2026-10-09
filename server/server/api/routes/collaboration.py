@@ -46,9 +46,9 @@ def get_connection_manager() -> ConnectionManager:
     """Dependency factory for ConnectionManager.
 
     Returns:
-        ConnectionManager instance.
+        Shared ConnectionManager instance used by the collaboration service.
     """
-    return ConnectionManager()
+    return connection_manager
 
 
 async def get_current_user_ws(websocket: WebSocket) -> dict[str, Any]:

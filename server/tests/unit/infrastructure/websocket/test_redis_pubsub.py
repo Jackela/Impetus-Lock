@@ -21,8 +21,9 @@ from server.infrastructure.websocket.redis_pubsub import RedisPubSubManager
 class TestRedisPubSubManagerInitialization:
     """Tests for RedisPubSubManager initialization."""
 
-    def test_default_initialization(self) -> None:
+    def test_default_initialization(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization with default values."""
+        monkeypatch.delenv("REDIS_URL", raising=False)
         manager = RedisPubSubManager()
 
         assert manager.redis_url == "redis://localhost:6379/0"
@@ -409,6 +410,7 @@ class TestRedisPubSubManagerListening:
             ) as mock_sleep,
         ):
             await manager.connect()
+            await manager.subscribe("test_channel", lambda data: None)
             manager._running = True
             await manager._listen()
 

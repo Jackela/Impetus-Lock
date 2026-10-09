@@ -13,6 +13,7 @@
  * - Article V (Documentation): Comprehensive logging and error messages
  */
 
+import { request } from "@playwright/test";
 import { execSync } from "child_process";
 import { existsSync } from "fs";
 import { dirname, resolve } from "path";
@@ -24,14 +25,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Configuration
 const BACKEND_HEALTH_URL = process.env.BACKEND_HEALTH_URL || "http://localhost:8000/health";
 const FRONTEND_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
-const BACKEND_START_TIMEOUT = 60000; // 60 seconds
 const FRONTEND_START_TIMEOUT = 60000; // 60 seconds
 const HEALTH_CHECK_INTERVAL = 2000; // 2 seconds
-
-interface SetupContext {
-  backendStarted: boolean;
-  frontendReady: boolean;
-}
 
 /**
  * Check if a service is healthy by making an HTTP request
@@ -61,7 +56,7 @@ async function checkDbHealth(): Promise<boolean> {
     const response = await fetch(dbHealthUrl, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) return false;
     const data = await response.json();
-    return data.status === "ok";
+    return data.is_healthy === true;
   } catch {
     return false;
   }
@@ -123,11 +118,7 @@ async function verifyBackend(): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
-    // In TESTING mode with in-memory fallback, this is not fatal
-    console.log(
-      "⚠️  Database not fully ready, but continuing (TESTING mode may use in-memory fallback)"
-    );
-    return;
+    throw new Error("The PostgreSQL database health check failed");
   }
 
   throw new Error("Backend is not running. Please start the backend before running E2E tests.");
@@ -139,15 +130,13 @@ async function verifyBackend(): Promise<void> {
 async function initializeDatabase(): Promise<void> {
   console.log("\n🗄️  Checking database connectivity...");
 
-  // Database initialization is handled by the backend in TESTING mode
-  // with graceful fallback to in-memory repository
+  // Browser checks require the actual PostgreSQL repository.
   if (await checkDbHealth()) {
     console.log("✅ Database is connected and healthy");
     return;
   }
 
-  console.log("⚠️  Database health check not available");
-  console.log("   In TESTING mode, the backend will use in-memory fallback");
+  throw new Error("The PostgreSQL database health check failed");
 }
 
 /**
@@ -157,20 +146,16 @@ async function runMigrations(): Promise<void> {
   console.log("\n🔄 Checking database migrations...");
 
   // Migrations are already run by the workflow before backend starts
-  // In TESTING mode with graceful fallback, database connectivity issues
-  // won't prevent tests from running (backend uses in-memory fallback)
+  // Confirm the maintained schema before exercising real repository behavior.
 
   try {
     const serverDir = resolve(__dirname, "../../server");
     const alembicIniPath = resolve(serverDir, "alembic.ini");
     if (!existsSync(alembicIniPath)) {
-      console.log("⚠️  No alembic.ini found, skipping migrations");
-      return;
+      throw new Error("The required Alembic configuration is missing");
     }
 
-    // Try to run migrations but don't fail if they don't work
-    // The workflow has already run migrations, and in TESTING mode
-    // the backend has graceful fallback
+    // Running an already applied migration is safe and still verifies the schema.
     execSync("poetry run alembic upgrade head", {
       cwd: serverDir,
       stdio: "pipe",
@@ -184,7 +169,7 @@ async function runMigrations(): Promise<void> {
 
     console.log("✅ Database migrations completed");
   } catch (error) {
-    console.log("⚠️  Migration check failed (may already be applied or using fallback)");
+    throw new Error("Database migrations failed", { cause: error });
   }
 }
 
@@ -211,15 +196,17 @@ async function verifyServices(): Promise<void> {
 async function seedTestData(): Promise<void> {
   console.log("\n🌱 Seeding test data...");
 
+  // Existing editor regressions run against the explicit TESTING backend.
+  // This generated debug-user cookie is not authentication acceptance evidence.
+  const backendURL = process.env.BACKEND_URL || new URL(BACKEND_HEALTH_URL).origin;
+  const api = await request.newContext({ baseURL: backendURL });
   try {
-    // Any test data that needs to be created before tests run
-    // This could include test users, default settings, etc.
-
-    console.log("✅ Test data ready");
-  } catch (error) {
-    console.error("\n⚠️  Failed to seed test data:");
-    console.error(error instanceof Error ? error.message : String(error));
-    // Don't throw - tests may still pass without pre-seeded data
+    const response = await api.post("/test/login");
+    if (!response.ok()) throw new Error(`Legacy test login failed: ${response.status()}`);
+    await api.storageState({ path: resolve(__dirname, "storage-state.generated.json") });
+    console.log("✅ Debug editor session ready (real auth is checked separately)");
+  } finally {
+    await api.dispose();
   }
 }
 

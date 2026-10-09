@@ -227,12 +227,12 @@ test.describe("Welcome Modal - New User Experience", () => {
 });
 
 test.describe("Welcome Modal - Integration with App", () => {
-  test.skip("should allow user to interact with app after dismissing modal", async ({ page }) => {
+  test.skip("should allow user to interact with app after dismissing modal", async () => {
     // This test is redundant - already covered by other tests
     // Modal interaction is tested in other tests
   });
 
-  test.skip("should not block app functionality while modal is open", async ({ page }) => {
+  test.skip("should not block app functionality while modal is open", async () => {
     // This test is redundant - modal blocking is expected behavior
     // Other tests verify modal can be dismissed
   });

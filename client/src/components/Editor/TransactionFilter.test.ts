@@ -98,7 +98,7 @@ describe("createLockTransactionFilter - Block Deletion of Locked Nodes", () => {
     const lockedNode = createMockLockedNode("lock_test_123", "muse");
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(lockedNode);
         },
         resolve: vi.fn(),
@@ -128,7 +128,7 @@ describe("createLockTransactionFilter - Block Deletion of Locked Nodes", () => {
     const unlockedNode = createMockUnlockedNode();
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(unlockedNode);
         },
         resolve: vi.fn(),
@@ -168,7 +168,7 @@ describe("createLockTransactionFilter - Block Deletion of Locked Nodes", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(nodeWithComment);
         },
         resolve: vi.fn(),
@@ -201,7 +201,7 @@ describe("createLockTransactionFilter - Block Deletion of Locked Nodes", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(nodeWithUnregisteredLock);
         },
         resolve: vi.fn(),
@@ -234,7 +234,7 @@ describe("createLockTransactionFilter - Block Deletion of Locked Nodes", () => {
     const lockedNode = createMockLockedNode("lock_feedback_test", "loki");
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(lockedNode);
         },
         resolve: vi.fn(),
@@ -308,7 +308,7 @@ describe("createLockTransactionFilter - Multiple Nodes and Steps", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           nodes.forEach((node) => callback(node));
         },
         resolve: vi.fn(),
@@ -339,7 +339,7 @@ describe("createLockTransactionFilter - Multiple Nodes and Steps", () => {
     let callCount = 0;
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callCount++;
           // First step: unlocked node
           // Second step: locked node
@@ -377,7 +377,7 @@ describe("createLockTransactionFilter - Multiple Nodes and Steps", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           // Return multiple unlocked nodes
           for (let i = 0; i < 5; i++) {
             callback(createMockUnlockedNode());
@@ -432,7 +432,7 @@ describe("createLockTransactionFilter - Mark-based Locks", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(nodeWithLockedMark);
         },
         resolve: vi.fn(),
@@ -470,7 +470,7 @@ describe("createLockTransactionFilter - Mark-based Locks", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(nodeWithoutLockMark);
         },
         resolve: vi.fn(),
@@ -506,7 +506,7 @@ describe("createLockTransactionFilter - Mark-based Locks", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(nodeWithoutMarks);
         },
         resolve: vi.fn(),
@@ -678,7 +678,7 @@ describe("createLockTransactionFilter - Edge Cases", () => {
     const lockedNode = createMockLockedNode("lock_test", "muse");
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           callback(lockedNode);
         },
         resolve: vi.fn(),
@@ -708,7 +708,7 @@ describe("createLockTransactionFilter - Edge Cases", () => {
 
     const mockState: MockEditorState = {
       doc: {
-        nodesBetween: (from, to, callback) => {
+        nodesBetween: (_from, _to, callback) => {
           // First node is locked, should return false to stop iteration
           const lockedNode = createMockLockedNode("lock_first", "muse");
           const result = callback(lockedNode);

@@ -26,8 +26,8 @@ interface StyleComparisonChartProps {
 
 interface ChartDataPoint {
   metric: string;
-  text1: number;
-  text2: number;
+  text1: number | undefined;
+  text2: number | undefined;
 }
 
 function prepareChartData(vector1: StyleVector, vector2: StyleVector): ChartDataPoint[] {
@@ -41,8 +41,8 @@ function prepareChartData(vector1: StyleVector, vector2: StyleVector): ChartData
 
   return metrics.map(({ key, label }) => ({
     metric: label,
-    text1: vector1[key as keyof StyleVector] as number,
-    text2: vector2[key as keyof StyleVector] as number,
+    text1: vector1[key],
+    text2: vector2[key],
   }));
 }
 
@@ -119,7 +119,9 @@ export function StyleComparisonChart({
               fillOpacity={0.3}
             />
             <Tooltip
-              formatter={(value: number) => value.toFixed(2)}
+              formatter={(value) =>
+                typeof value === "number" ? value.toFixed(2) : String(value ?? "")
+              }
               contentStyle={{
                 backgroundColor: "#fff",
                 border: "1px solid #ccc",

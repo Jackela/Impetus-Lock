@@ -15,7 +15,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { waitForAppReady } from "./helpers/waitHelpers";
+import { waitForAppReady } from "../../e2e/helpers/waitHelpers";
 
 test.describe("Loki Mode - Provoke Action Flow", () => {
   test.beforeEach(async ({ page }) => {

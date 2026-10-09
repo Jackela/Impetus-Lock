@@ -1,22 +1,31 @@
 import { test, expect } from "@playwright/test";
+import { dismissWelcomeModal } from "./helpers/waitHelpers";
 
-/**
- * Ensures the BYOK onboarding checklist guides new users.
- */
-
-test("BYOK onboarding checklist guides setup", async ({ page }) => {
+/** Verify the current in-app BYOK guidance and configuration contract. */
+test("BYOK onboarding guides provider setup and key removal", async ({ page }) => {
   await page.goto("/");
+  await dismissWelcomeModal(page);
+  await page.getByTestId("llm-settings-trigger").click();
 
-  const checklist = page.locator(".onboarding-checklist");
-  await expect(checklist).toBeVisible();
-
-  const steps = checklist.locator("li");
-  await expect(steps).toHaveCount(3);
-
-  const firstStep = steps.nth(0).locator('input[type="checkbox"]');
-  await firstStep.check();
-  await expect(firstStep).toBeChecked();
-
-  await expect(steps.nth(0)).toContainText("Launch dev stack");
-  await expect(steps.nth(1)).toContainText("Open LLM Settings");
+  const dialog = page
+    .getByRole("dialog")
+    .filter({ has: page.getByRole("heading", { name: "LLM Settings" }) });
+  await expect(dialog.getByText("How this works", { exact: true })).toBeVisible();
+  await expect(dialog).toContainText("Choose a provider and model");
+  await page.getByTestId("storage-mode-select").selectOption("session");
+  await expect(page.getByTestId("storage-mode-select")).toHaveValue("session");
+  await page.getByTestId("llm-provider-select").selectOption("gemini");
+  await expect(dialog.getByRole("link", { name: "Google Gemini API docs" })).toHaveAttribute(
+    "href",
+    "https://ai.google.dev/gemini-api/docs"
+  );
+  await expect(page.getByTestId("llm-model-input")).toHaveValue("gemini-2.0-flash-lite");
+  await page.getByTestId("llm-key-input").fill("AIza-controlled-browser-fixture-only0000000000");
+  const save = page.getByTestId("llm-settings-save");
+  await expect(save).toBeEnabled();
+  await save.click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByTestId("llm-settings-trigger")).toContainText("Google Gemini");
+  await page.getByTestId("forget-llm-key-button").click();
+  await expect(page.getByTestId("llm-settings-trigger")).toHaveText("LLM Settings");
 });

@@ -19,8 +19,6 @@
  * @see openspec/changes/chrome-audit-polish/design.md#2-timer-visibility
  */
 
-import React from "react";
-
 interface TimerIndicatorProps {
   /**
    * Progress percentage (0-100) of STUCK timer.
@@ -78,10 +76,7 @@ export function TimerIndicator({ progress, visible, remainingTime }: TimerIndica
       aria-valuemax={100}
       aria-live="polite"
     >
-      <div
-        className="timer-indicator__fill"
-        style={{ width: `${normalizedProgress}%` }}
-      />
+      <div className="timer-indicator__fill" style={{ width: `${normalizedProgress}%` }} />
       <span className="timer-indicator__count" aria-hidden="true">
         {remainingTime}s
       </span>

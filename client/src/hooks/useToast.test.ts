@@ -69,7 +69,7 @@ describe("useToast Hook", () => {
     });
 
     expect(result.current.toasts).toHaveLength(2);
-    expect(result.current.toasts[0].id).not.toBe(result.current.toasts[1].id);
+    expect(result.current.toasts[0]?.id).not.toBe(result.current.toasts[1]?.id);
   });
 
   it("dismisses toast by id", () => {
@@ -82,13 +82,14 @@ describe("useToast Hook", () => {
 
     expect(result.current.toasts).toHaveLength(2);
 
-    const idToRemove = result.current.toasts[0].id;
+    const idToRemove = result.current.toasts[0]?.id;
+    if (!idToRemove) throw new Error("Expected a toast id");
     act(() => {
       result.current.dismiss(idToRemove);
     });
 
     expect(result.current.toasts).toHaveLength(1);
-    expect(result.current.toasts[0].message).toBe("Second");
+    expect(result.current.toasts[0]?.message).toBe("Second");
   });
 
   it("dismisses all toasts", () => {
@@ -164,7 +165,8 @@ describe("useToast Hook", () => {
       result.current.showSuccess("Test toast");
     });
 
-    const id = result.current.toasts[0].id;
+    const id = result.current.toasts[0]?.id;
+    if (!id) throw new Error("Expected a toast id");
 
     // Manually dismiss before auto-dismiss
     act(() => {
@@ -209,6 +211,6 @@ describe("useToast Hook", () => {
 
     expect(id).toBeDefined();
     expect(id).toMatch(/^toast-\d+-\d+$/);
-    expect(result.current.toasts[0].id).toBe(id);
+    expect(result.current.toasts[0]?.id).toBe(id);
   });
 });

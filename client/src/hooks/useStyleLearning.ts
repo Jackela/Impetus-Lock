@@ -10,6 +10,8 @@
 import { useState, useCallback } from "react";
 import { analyzeStyle, StyleAPIError } from "../services/api/styleClient";
 import type { StyleAnalysisResponse } from "../components/StyleLearning/types";
+import { useOptionalAuth } from "../contexts/AuthContext";
+import type { RemoteSession } from "../services/api/remoteSession";
 
 /**
  * State for style learning feature.
@@ -58,33 +60,50 @@ export interface UseStyleLearningReturn extends StyleLearningState {
  * ```
  */
 export function useStyleLearning(): UseStyleLearningReturn {
-  const [state, setState] = useState<StyleLearningState>({
+  const auth = useOptionalAuth();
+  const session = auth?.session;
+  const [state, setState] = useState<StyleLearningState & { session?: RemoteSession | null }>({
     isLoading: false,
     result: null,
     error: null,
   });
 
-  const analyze = useCallback(async (text: string, uid: string) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
-    try {
-      const result = await analyzeStyle(text, uid);
-      setState({ isLoading: false, result, error: null });
-    } catch (err) {
-      const errorMessage =
-        err instanceof StyleAPIError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Failed to analyze style";
-
+  const analyze = useCallback(
+    async (text: string, uid: string) => {
+      const current = (): boolean => auth === undefined || !!session?.isCurrent();
+      if (!current()) return;
       setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage,
+        isLoading: true,
+        result: prev.session === session ? prev.result : null,
+        error: null,
+        session,
       }));
-    }
-  }, []);
+
+      try {
+        const result = await analyzeStyle(
+          text,
+          session?.userId ?? uid,
+          auth ? { session } : undefined
+        );
+        if (current()) setState({ isLoading: false, result, error: null, session });
+      } catch (err) {
+        if (!current()) return;
+        const errorMessage =
+          err instanceof StyleAPIError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Failed to analyze style";
+
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage,
+        }));
+      }
+    },
+    [auth, session]
+  );
 
   const clearResult = useCallback(() => {
     setState((prev) => ({ ...prev, result: null }));
@@ -98,8 +117,11 @@ export function useStyleLearning(): UseStyleLearningReturn {
     setState({ isLoading: false, result: null, error: null });
   }, []);
 
+  const visible = auth === undefined || (state.session === session && !!session?.isCurrent());
   return {
-    ...state,
+    isLoading: visible && state.isLoading,
+    result: visible ? state.result : null,
+    error: visible ? state.error : null,
     analyze,
     clearResult,
     clearError,

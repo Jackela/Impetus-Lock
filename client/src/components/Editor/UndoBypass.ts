@@ -12,6 +12,7 @@
  */
 
 import type { Transaction } from "@milkdown/prose/state";
+import type { Node } from "@milkdown/prose/model";
 import type { EditorView } from "@milkdown/prose/view";
 import { createLogger } from "../../utils/logger";
 
@@ -51,7 +52,13 @@ export function deleteWithoutUndo(view: EditorView, from: number, to: number): b
   const { state, dispatch } = view;
 
   // Validate positions
-  if (from < 0 || to > state.doc.content.size || from >= to) {
+  if (
+    !Number.isInteger(from) ||
+    !Number.isInteger(to) ||
+    from < 0 ||
+    to > state.doc.content.size ||
+    from >= to
+  ) {
     logger.error("Invalid deletion range", { from, to, docSize: state.doc.content.size });
     return false;
   }
@@ -113,15 +120,11 @@ export function isAIAction(tr: Transaction): boolean {
  * // → Insertion persists (not in Undo stack)
  * ```
  */
-export function insertWithoutUndo(
-  view: EditorView,
-  pos: number,
-  content: string | Record<string, unknown>
-): boolean {
+export function insertWithoutUndo(view: EditorView, pos: number, content: string | Node): boolean {
   const { state, dispatch } = view;
 
   // Validate position
-  if (pos < 0 || pos > state.doc.content.size) {
+  if (!Number.isInteger(pos) || pos < 0 || pos > state.doc.content.size) {
     logger.error("Invalid insertion position", { pos, docSize: state.doc.content.size });
     return false;
   }

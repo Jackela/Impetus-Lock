@@ -1,3 +1,6 @@
+import { cookieAuthOptions } from "./cookieAuth";
+import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
+
 /**
  * Style Learning API Client
  *
@@ -13,19 +16,13 @@
 
 import type { StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
-/** Re-export of the style analysis and apply response types. */
-export type { StyleAnalysisResponse, StyleApplyResponse } from "./types";
-
 /** Re-export of the style learning API response types. */
 export type { StyleVector, StyleAnalysisResponse, StyleApplyResponse } from "./types";
 
 /**
  * Options for API calls.
  */
-export interface StyleClientOptions {
-  /** AbortSignal for request cancellation */
-  signal?: AbortSignal;
-}
+export type StyleClientOptions = RemoteRequestOptions;
 
 /**
  * API client configuration.
@@ -93,26 +90,32 @@ export async function analyzeStyle(
   userId: string,
   options?: StyleClientOptions
 ): Promise<StyleAnalysisResponse> {
-  const response = await fetch(`${API_BASE_URL}/style/analyze`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      text,
-      user_id: userId,
+  const response = await sessionFetch(
+    `${API_BASE_URL}/style/analyze`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        user_id: userId,
+      }),
+      signal: options?.signal,
     }),
-    signal: options?.signal,
-  });
+    options
+  );
 
   let data: unknown;
   try {
     data = await response.json();
   } catch (parseError) {
+    assertCurrentSession(options?.session);
     throw new StyleAPIError(response.status, "ParseError", "Failed to parse response JSON", {
       originalError: parseError instanceof Error ? parseError.message : String(parseError),
     });
   }
+  assertCurrentSession(options?.session);
 
   // Type guard to safely check parsed data
   function isRecord(value: unknown): value is Record<string, unknown> {
@@ -164,18 +167,21 @@ export async function applyStyle(
   intensity: number = 1.0,
   options?: StyleClientOptions
 ): Promise<StyleApplyResponse> {
-  const response = await fetch(`${API_BASE_URL}/style/apply`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      text,
-      user_id: userId,
-      intensity,
-    }),
-    signal: options?.signal,
-  });
+  const response = await fetch(
+    `${API_BASE_URL}/style/apply`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text,
+        user_id: userId,
+        intensity,
+      }),
+      signal: options?.signal,
+    })
+  );
 
   let data: unknown;
   try {

@@ -1,3 +1,5 @@
+import { cookieAuthOptions } from "./cookieAuth";
+
 /**
  * Template API Client
  */
@@ -16,11 +18,12 @@ export interface TemplateRecord {
 
 /** Error thrown when a templates API request fails. */
 export class TemplateAPIError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
+  /** HTTP status code. */
+  status: number;
+
+  constructor(status: number, message: string) {
     super(message);
+    this.status = status;
     this.name = "TemplateAPIError";
   }
 }
@@ -31,7 +34,10 @@ export class TemplateAPIError extends Error {
  * @returns The template records and total count
  */
 export async function fetchTemplates(): Promise<{ templates: TemplateRecord[]; total: number }> {
-  const res = await fetch(`${API_BASE_URL}/templates/`, { credentials: "include" });
+  const res = await fetch(
+    `${API_BASE_URL}/templates/`,
+    cookieAuthOptions({ credentials: "include" })
+  );
   if (!res.ok) throw new TemplateAPIError(res.status, "Failed to fetch templates");
   return res.json();
 }
@@ -43,7 +49,10 @@ export async function fetchTemplates(): Promise<{ templates: TemplateRecord[]; t
  * @returns The template record
  */
 export async function fetchTemplate(id: string): Promise<TemplateRecord> {
-  const res = await fetch(`${API_BASE_URL}/templates/${id}`, { credentials: "include" });
+  const res = await fetch(
+    `${API_BASE_URL}/templates/${id}`,
+    cookieAuthOptions({ credentials: "include" })
+  );
   if (!res.ok) throw new TemplateAPIError(res.status, "Failed to fetch template");
   return res.json();
 }
@@ -56,12 +65,15 @@ export async function fetchTemplate(id: string): Promise<TemplateRecord> {
  * @returns The created template record
  */
 export async function createTemplate(name: string, content: string): Promise<TemplateRecord> {
-  const res = await fetch(`${API_BASE_URL}/templates/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ name, content }),
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/templates/`,
+    cookieAuthOptions({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name, content }),
+    })
+  );
   if (!res.ok) throw new TemplateAPIError(res.status, "Failed to create template");
   return res.json();
 }
@@ -72,9 +84,12 @@ export async function createTemplate(name: string, content: string): Promise<Tem
  * @param id - Identifier of the template to delete
  */
 export async function deleteTemplate(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/templates/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/templates/${id}`,
+    cookieAuthOptions({
+      method: "DELETE",
+      credentials: "include",
+    })
+  );
   if (!res.ok) throw new TemplateAPIError(res.status, "Failed to delete template");
 }

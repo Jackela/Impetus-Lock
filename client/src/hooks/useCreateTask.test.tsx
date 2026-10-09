@@ -11,9 +11,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { useState } from "react";
+import { fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCreateTask } from "./useCreateTask";
+import { CreateTaskModal } from "../components/CreateTaskModal/CreateTaskModal";
 import type { TaskRecord } from "../types/task";
 
 // Mock fetch globally
@@ -49,11 +51,6 @@ function createTestQueryClient() {
       mutations: {
         retry: false, // Disable retry for faster tests
       },
-    },
-    logger: {
-      log: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
     },
   });
 }
@@ -102,6 +99,69 @@ describe("useCreateTask", () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
+  });
+
+  it("closes the creation modal and selects the new task after a successful request", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(mockTaskResponse), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    function TaskCreationScreen() {
+      const [open, setOpen] = useState(true);
+      const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+      return (
+        <>
+          <p role="status">
+            {selectedTaskId ? `Selected task: ${selectedTaskId}` : "No task selected"}
+          </p>
+          <CreateTaskModal
+            open={open}
+            onClose={() => setOpen(false)}
+            onSuccess={(task) => setSelectedTaskId(task.id)}
+          />
+        </>
+      );
+    }
+
+    render(<TaskCreationScreen />, { wrapper: createWrapper(createTestQueryClient()) });
+    fireEvent.change(screen.getByRole("textbox", { name: "Task Title *" }), {
+      target: { value: "New task content" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create Task" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent("Selected task: task-1");
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows a creation error and keeps the modal form editable after a failed request", async () => {
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
+    const onClose = vi.fn();
+    const onSuccess = vi.fn();
+
+    render(<CreateTaskModal open onClose={onClose} onSuccess={onSuccess} />, {
+      wrapper: createWrapper(createTestQueryClient()),
+    });
+    const titleInput = screen.getByRole("textbox", { name: "Task Title *" });
+    fireEvent.change(titleInput, { target: { value: "Keep this draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create Task" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Failed to create task");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(titleInput).toHaveValue("Keep this draft");
+    expect(titleInput).toBeEnabled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+
+    fireEvent.change(titleInput, { target: { value: "Edited draft" } });
+    expect(titleInput).toHaveValue("Edited draft");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Task" })).toBeEnabled();
   });
 
   it("creates a task successfully via mutate", async () => {
@@ -183,6 +243,30 @@ describe("useCreateTask", () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
     expect(createdTask).toEqual(mockCreatedTask);
+  });
+
+  it("invokes caller success and settled callbacks when awaiting creation", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(mockTaskResponse), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const onSuccess = vi.fn((task: TaskRecord) => task.id);
+    const onSettled = vi.fn();
+    const { result } = renderHook(() => useCreateTask(), {
+      wrapper: createWrapper(createTestQueryClient()),
+    });
+
+    const createdTask = await result.current.mutateAsync(
+      { content: "New task content" },
+      { onSuccess, onSettled }
+    );
+
+    expect(createdTask).toEqual(mockCreatedTask);
+    expect(onSuccess.mock.calls[0]?.[0]).toEqual(mockCreatedTask);
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onSettled).toHaveBeenCalledTimes(1);
   });
 
   it("handles API error and sets error state", async () => {

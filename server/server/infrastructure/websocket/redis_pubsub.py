@@ -145,6 +145,10 @@ class RedisPubSubManager:
 
         while self._running:
             try:
+                if not self._message_handlers:
+                    # Redis has no pub/sub connection until the first subscription.
+                    await asyncio.sleep(0.05)
+                    continue
                 message = await self._pubsub.get_message(
                     ignore_subscribe_messages=True, timeout=1.0
                 )

@@ -193,8 +193,8 @@ export function LLMSettingsModal({
               Keys stay in this browser only and are never logged.
             </p>
             <p>
-              Need a key? Read the provider guide below and follow the onboarding checklist on the
-              left before triggering Muse/Loki.
+              Choose a provider and model, then paste your API key and save. The provider guide
+              below explains how to get a key before triggering Muse/Loki.
             </p>
             <p>
               Storage mode: <strong>{modeChoice}</strong>

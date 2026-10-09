@@ -31,7 +31,9 @@ class AnchorPos(BaseModel):
         ```
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True, json_schema_serialization_defaults_required=True
+    )
 
     type: Literal["pos"] = "pos"
     from_: int = Field(..., alias="from", ge=0, description="ProseMirror position (0-based)")
@@ -57,7 +59,9 @@ class AnchorRange(BaseModel):
         ```
     """
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True, json_schema_serialization_defaults_required=True
+    )
 
     type: Literal["range"] = "range"
     from_: int = Field(..., alias="from", ge=0, description="Start position (inclusive)")
@@ -81,6 +85,8 @@ class AnchorLockId(BaseModel):
         }
         ```
     """
+
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
 
     type: Literal["lock_id"] = "lock_id"
     ref_lock_id: str = Field(..., min_length=1, description="UUID of referenced lock")

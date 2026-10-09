@@ -69,11 +69,10 @@ test.describe("Locked Content Styling", () => {
     await expect(lockedContent).toBeAttached({ timeout: 5000 });
     await lockedContent.hover();
 
-    const hoverBackground = await lockedContent.evaluate(
-      (el) => window.getComputedStyle(el).backgroundColor
-    );
-    // Hover state maintains source-specific tint (Muse green: rgba(34, 197, 94, 0.08))
-    expect(hoverBackground).toMatch(/rgba?\(\s*34/);
+    // Wait for the CSS transition to settle before checking the hover treatment.
+    await expect(lockedContent).toHaveCSS("background-color", "rgba(255, 255, 255, 0.04)");
+    await expect(lockedContent).toHaveCSS("border-left-width", "5px");
+    await expect(lockedContent).toHaveCSS("box-shadow", "rgba(34, 197, 94, 0.15) 0px 0px 20px 0px");
   });
 
   test("Multiple locked blocks have independent styling", async ({ page }) => {

@@ -37,12 +37,14 @@ test.describe("Loki Mode - Delete Action", () => {
 
     // Get initial content
     const initialText = await editor.textContent();
+    if (initialText === null) throw new Error("Expected editor text");
     expect(initialText).toContain(testContent);
 
     // Wait for Loki intervention
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -57,6 +59,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
       // Get content after deletion
       const finalText = await editor.textContent();
+      if (finalText === null) throw new Error("Expected editor text");
 
       // Some content should be deleted (text length decreased)
       expect(finalText.length).toBeLessThan(initialText.length);
@@ -71,9 +74,10 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type("第一句话。第二句话。第三句话。第四句话。第五句话。");
 
     // Wait for delete intervention
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -101,9 +105,10 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type(testContent);
 
     // Wait for delete intervention
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -131,9 +136,10 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type("淡出动画测试文本。需要足够长以通过安全检查。继续添加内容确保测试有效。");
 
     // Wait for the intervention response
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -161,6 +167,7 @@ test.describe("Loki Mode - Delete Action", () => {
       // Get the anchor range to verify what was deleted
       const { from, to } = responseBody.anchor;
       const deletedLength = to - from;
+      expect(deletedLength).toBeGreaterThan(0);
 
       // Verify deletion occurred by checking text length decreased
       expect(editorText?.length || 0).toBeLessThan(
@@ -207,9 +214,10 @@ test.describe("Loki Mode - Delete Action", () => {
       });
     });
 
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -251,9 +259,10 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type("短文本测试。"); // Only ~7 chars
 
     // Wait for intervention
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -276,9 +285,10 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type(boundaryContent);
 
     // Wait for intervention
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -309,9 +319,10 @@ test.describe("Loki Mode - Delete Action", () => {
     }
 
     // Wait for delete intervention
-    const response = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const response = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const responseBody = await response.json();
 
@@ -325,6 +336,7 @@ test.describe("Loki Mode - Delete Action", () => {
 
       // Verify editor still has content
       const remainingText = await editor.textContent();
+      if (remainingText === null) throw new Error("Expected editor text");
       expect(remainingText.length).toBeGreaterThan(0);
     }
   });
@@ -337,9 +349,10 @@ test.describe("Loki Mode - Delete Action", () => {
     await editor.type("测试删除后锁定功能。需要足够的内容来通过安全检查。继续添加文字以确保有效。");
 
     // Wait for first intervention (might be Provoke or Delete)
-    const firstResponse = await page
-      .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-      .timeout(150000);
+    const firstResponse = await page.waitForResponse(
+      (response) => response.url().includes("/impetus/generate-intervention"),
+      { timeout: 150000 }
+    );
 
     const firstBody = await firstResponse.json();
 
@@ -357,9 +370,10 @@ test.describe("Loki Mode - Delete Action", () => {
     } else if (firstBody.action === "delete") {
       // After delete, lock system should still work for future interventions
       // Wait for next intervention
-      const secondResponse = await page
-        .waitForResponse((response) => response.url().includes("/impetus/generate-intervention"))
-        .timeout(150000);
+      const secondResponse = await page.waitForResponse(
+        (response) => response.url().includes("/impetus/generate-intervention"),
+        { timeout: 150000 }
+      );
 
       const secondBody = await secondResponse.json();
 

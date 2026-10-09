@@ -96,7 +96,7 @@ def _build_retry_options(attempts: int) -> Any:
             initial_delay=_RETRY_INITIAL_DELAY_SECONDS,
             max_delay=_RETRY_MAX_DELAY_SECONDS,
             exp_base=_RETRY_EXP_BASE,
-            http_status_codes=_RETRIABLE_STATUS_CODES,
+            http_status_codes=list(_RETRIABLE_STATUS_CODES),
         ),
     )
 
@@ -261,13 +261,15 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             GenerateContentConfig with temperature, max_output_tokens,
             response_mime_type and safety_settings.
         """
-        from google.genai.types import GenerateContentConfig
+        from google.genai.types import GenerateContentConfig, SafetySetting
 
         return GenerateContentConfig(
             temperature=self.temperature,
             max_output_tokens=512,
             response_mime_type="application/json",
-            safety_settings=self.safety_settings,
+            safety_settings=[
+                SafetySetting.model_validate(setting) for setting in self.safety_settings
+            ],
         )
 
     def _generate_content(self, full_prompt: str, generation_config: Any) -> Any:
@@ -465,8 +467,8 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 model=self.model,
                 contents=text,
             )
-            tokens: int = result.total_tokens
-            return tokens
+            tokens = result.total_tokens
+            return tokens if tokens is not None else len(text) // 4
         except Exception:
             # Fallback: rough estimate (1 token ≈ 4 characters for most languages)
             return len(text) // 4

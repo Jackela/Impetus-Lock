@@ -7,6 +7,7 @@
  * @module components/StyleLearning/StyleInputForm
  */
 
+import type { JSX } from "react";
 import { useState, useCallback, type FormEvent, type ChangeEvent } from "react";
 import "./StyleInputForm.css";
 

@@ -16,7 +16,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { waitForAppReady } from "./helpers/waitHelpers";
+import { waitForAppReady } from "../../e2e/helpers/waitHelpers";
 
 test.describe("Muse Mode - Intervention Flow", () => {
   test.beforeEach(async ({ page }) => {
@@ -380,7 +380,7 @@ test.describe("Muse Mode - Error Handling", () => {
     await page.clock.install();
 
     // Step 2: Mock API to timeout
-    await page.route("**/impetus/generate-intervention", async (route) => {
+    await page.route("**/impetus/generate-intervention", async () => {
       // Don't respond, simulating a timeout
       await new Promise(() => {}); // Never resolves
     });

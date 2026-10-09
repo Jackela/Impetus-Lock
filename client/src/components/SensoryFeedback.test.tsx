@@ -34,7 +34,7 @@ describe("SensoryFeedback", () => {
       animationKey: "test-key",
       variants: {
         initial: { opacity: 1 },
-        animate: { opacity: 0 },
+        animate: { opacity: 0, transition: { duration: 0, ease: "linear" } },
         exit: { opacity: 0 },
       },
     });
@@ -56,9 +56,9 @@ describe("SensoryFeedback", () => {
   it("plays Glitch animation for PROVOKE action", () => {
     const mockVariants = {
       initial: { opacity: 1 },
-      animate: { opacity: [1, 0.5, 1, 0.3, 1, 0], transition: { duration: 1.5 } },
+      animate: { opacity: [1, 0.5, 1, 0.3, 1, 0], transition: { duration: 1.5, ease: "linear" } },
       exit: { opacity: 0 },
-    };
+    } satisfies ReturnType<typeof useAnimationController>["variants"];
 
     vi.mocked(useAnimationController).mockReturnValue({
       animationKey: "provoke-123",
@@ -91,7 +91,7 @@ describe("SensoryFeedback", () => {
       initial: { opacity: 1 },
       animate: { opacity: 0, transition: { duration: 0.75, ease: "easeOut" } },
       exit: { opacity: 0 },
-    };
+    } satisfies ReturnType<typeof useAnimationController>["variants"];
 
     vi.mocked(useAnimationController).mockReturnValue({
       animationKey: "delete-456",
@@ -151,11 +151,19 @@ describe("SensoryFeedback", () => {
     vi.mocked(useAnimationController)
       .mockReturnValueOnce({
         animationKey: "provoke-1",
-        variants: { initial: {}, animate: {}, exit: {} },
+        variants: {
+          initial: { opacity: 1 },
+          animate: { opacity: 0, transition: { duration: 0, ease: "linear" } },
+          exit: { opacity: 0 },
+        },
       })
       .mockReturnValueOnce({
         animationKey: "delete-2",
-        variants: { initial: {}, animate: {}, exit: {} },
+        variants: {
+          initial: { opacity: 1 },
+          animate: { opacity: 0, transition: { duration: 0, ease: "linear" } },
+          exit: { opacity: 0 },
+        },
       });
 
     const { rerender } = render(<SensoryFeedback actionType={AIActionType.PROVOKE} />);
@@ -203,9 +211,9 @@ describe("SensoryFeedback", () => {
 
     const mockReducedVariants = {
       initial: { opacity: 1 },
-      animate: { opacity: 0.5, transition: { duration: 0.2 } },
+      animate: { opacity: 0.5, transition: { duration: 0.2, ease: "linear" } },
       exit: { opacity: 0 },
-    };
+    } satisfies ReturnType<typeof useAnimationController>["variants"];
 
     vi.mocked(useAnimationController).mockReturnValue({
       animationKey: "reduced-provoke",

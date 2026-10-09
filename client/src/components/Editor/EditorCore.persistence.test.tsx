@@ -98,11 +98,8 @@ describe("EditorCore persistence", () => {
         const { schema } = view.state;
         view.dispatch(
           view.state.tr.insert(view.state.doc.content.size, [
-            schema.nodes.paragraph.create(
-              null,
-              schema.text(literal, [schema.marks.inlineCode.create()])
-            ),
-            schema.nodes.code_block.create(null, schema.text(literal)),
+            schema.node("paragraph", null, schema.text(literal, [schema.mark("inlineCode")])),
+            schema.node("code_block", null, schema.text(literal)),
           ])
         );
       })
@@ -156,7 +153,7 @@ describe("EditorCore persistence", () => {
             view.dispatch(
               view.state.tr.insert(
                 from,
-                view.state.schema.nodes.paragraph.create(null, view.state.schema.text("Replace me"))
+                view.state.schema.node("paragraph", null, view.state.schema.text("Replace me"))
               )
             );
             rewriteRangeWithLock({
