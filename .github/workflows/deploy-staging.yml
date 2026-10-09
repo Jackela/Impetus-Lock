@@ -50,9 +50,11 @@ jobs:
         id: meta
         run: |
           VERSION=sha-$(git rev-parse --short HEAD)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "api_image=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/impetus-api" >> $GITHUB_OUTPUT
-          echo "client_image=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/impetus-client" >> $GITHUB_OUTPUT
+          {
+          echo "version=$VERSION"
+          echo "api_image=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/impetus-api"
+          echo "client_image=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/impetus-client"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build and push API image
         uses: docker/build-push-action@v5
@@ -88,15 +90,23 @@ jobs:
     name: Deploy to Staging
     needs: build-and-push
     runs-on: ubuntu-latest
+    outputs:
+      deployed: ${{ steps.deploy.outputs.deployed }}
+    env:
+      STAGING_HOST: ${{ secrets.STAGING_HOST }}
+      STAGING_USER: ${{ secrets.STAGING_USER }}
+      STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
     environment:
       name: staging
       url: ${{ steps.deploy.outputs.url }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.ref || github.sha }}
 
       - name: Setup SSH
-        if: ${{ secrets.STAGING_SSH_KEY != '' }}
+        if: ${{ env.STAGING_HOST != '' && env.STAGING_SSH_KEY != '' }}
         uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
@@ -110,59 +120,30 @@ jobs:
           API_IMAGE: ${{ needs.build-and-push.outputs.api_image }}:${{ needs.build-and-push.outputs.version }}
           CLIENT_IMAGE: ${{ needs.build-and-push.outputs.client_image }}:${{ needs.build-and-push.outputs.version }}
         run: |
+          echo "deployed=false" >> "$GITHUB_OUTPUT"
           if [ -z "$STAGING_HOST" ]; then
-            echo "⚠️ STAGING_HOST not set - skipping remote deployment"
-            echo "Images have been pushed to registry. Manual deployment required."
-            echo "url=https://github.com/${{ github.repository }}/packages" >> $GITHUB_OUTPUT
+            echo "Remote staging deployment is not configured; images only."
+            echo "url=https://github.com/${{ github.repository }}/packages" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          echo "🚀 Deploying to staging server: $STAGING_HOST"
-
-          # Create deployment script
-          cat > deploy.sh << 'EOF'
-          set -e
-          cd ${{ env.DEPLOY_DIR }}
-
-          # Pull latest images
-          echo "📦 Pulling images..."
-          docker pull ${{ env.API_IMAGE }}
-          docker pull ${{ env.CLIENT_IMAGE }}
-
-          # Update docker-compose with new images
-          export API_IMAGE=${{ env.API_IMAGE }}
-          export CLIENT_IMAGE=${{ env.CLIENT_IMAGE }}
-
-          # Stop existing containers gracefully
-          echo "🛑 Stopping existing containers..."
-          docker-compose -f docker-compose.prod.yml down --timeout 30
-
-          # Start services
-          echo "▶️ Starting services..."
-          docker-compose -f docker-compose.prod.yml up -d
-
-          # Wait for services
-          sleep 15
-
-          # Health checks
-          echo "🏥 Running health checks..."
-          curl -sf http://localhost:8000/health || exit 1
-          curl -sf http://localhost/health || exit 1
-
-          echo "✅ Deployment successful!"
-          EOF
-
-          # Copy and execute deployment script
-          scp -o StrictHostKeyChecking=no deploy.sh ${{ env.STAGING_USER }}@${{ env.STAGING_HOST }}:/tmp/
-          ssh -o StrictHostKeyChecking=no ${{ env.STAGING_USER }}@${{ env.STAGING_HOST }} 'bash /tmp/deploy.sh'
-
-          echo "url=http://${{ env.STAGING_HOST }}" >> $GITHUB_OUTPUT
+          if [ -z "$STAGING_USER" ] || [ -z "$STAGING_SSH_KEY" ]; then
+            echo "::error::STAGING_USER and STAGING_SSH_KEY are required when STAGING_HOST is set"
+            exit 1
+          fi
+          # Use the existing deployment implementation with the server's compose/env files.
+          scp -o StrictHostKeyChecking=no scripts/deploy-staging.sh "$STAGING_USER@$STAGING_HOST:/tmp/impetus-deploy-staging.sh"
+          printf -v remote_command 'DEPLOY_DIR=%q API_IMAGE=%q CLIENT_IMAGE=%q bash /tmp/impetus-deploy-staging.sh --deploy-only' "$DEPLOY_DIR" "$API_IMAGE" "$CLIENT_IMAGE"
+          ssh -o StrictHostKeyChecking=no "$STAGING_USER@$STAGING_HOST" "$remote_command"
+          {
+            echo "deployed=true"
+            echo "url=http://$STAGING_HOST"
+          } >> "$GITHUB_OUTPUT"
 
   health-check:
     name: Health Checks
     needs: deploy-staging
     runs-on: ubuntu-latest
-    if: always() && needs.deploy-staging.result == 'success'
+    if: needs.deploy-staging.result == 'success' && needs.deploy-staging.outputs.deployed == 'true'
     steps:
       - name: Wait for services
         run: sleep 30
@@ -171,7 +152,7 @@ jobs:
         env:
           STAGING_HOST: ${{ secrets.STAGING_HOST }}
         run: |
-          HOST="${STAGING_HOST:-localhost}"
+          HOST="${STAGING_HOST:?STAGING_HOST is required for a deployed environment}"
           echo "Checking API health at http://${HOST}:8000/health"
           curl -sf "http://${HOST}:8000/health" || exit 1
           echo "✅ API is healthy"
@@ -180,7 +161,7 @@ jobs:
         env:
           STAGING_HOST: ${{ secrets.STAGING_HOST }}
         run: |
-          HOST="${STAGING_HOST:-localhost}"
+          HOST="${STAGING_HOST:?STAGING_HOST is required for a deployed environment}"
           echo "Checking database health at http://${HOST}:8000/health/db"
           curl -sf "http://${HOST}:8000/health/db" || exit 1
           echo "✅ Database is healthy"
@@ -189,7 +170,7 @@ jobs:
         env:
           STAGING_HOST: ${{ secrets.STAGING_HOST }}
         run: |
-          HOST="${STAGING_HOST:-localhost}"
+          HOST="${STAGING_HOST:?STAGING_HOST is required for a deployed environment}"
           echo "Checking client health at http://${HOST}/health"
           curl -sf "http://${HOST}/health" || exit 1
           echo "✅ Client is healthy"
@@ -202,17 +183,21 @@ jobs:
     steps:
       - name: Deployment Summary
         run: |
-          echo "## Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ needs.build-and-push.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **API Image:** ${{ needs.build-and-push.outputs.api_image }}:${{ needs.build-and-push.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Client Image:** ${{ needs.build-and-push.outputs.client_image }}:${{ needs.build-and-push.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          {
+          echo "## Staging Deployment Summary"
+          echo ""
+          echo "- **Version:** ${{ needs.build-and-push.outputs.version }}"
+          echo "- **API Image:** ${{ needs.build-and-push.outputs.api_image }}:${{ needs.build-and-push.outputs.version }}"
+          echo "- **Client Image:** ${{ needs.build-and-push.outputs.client_image }}:${{ needs.build-and-push.outputs.version }}"
+          echo ""
 
+          echo "- **Remote deployment:** ${{ needs.deploy-staging.outputs.deployed || 'false' }}"
           if [ "${{ needs.health-check.result }}" == "success" ]; then
-            echo "✅ **Health Checks:** PASSED" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.health-check.result }}" == "skipped" ]; then
-            echo "⚠️ **Health Checks:** SKIPPED (remote deployment not configured)" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Health Checks:** PASSED"
+          elif [ "${{ needs.deploy-staging.outputs.deployed }}" == "false" ] && [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+            echo "⚠️ **Health Checks:** SKIPPED (remote deployment not configured)"
           else
-            echo "❌ **Health Checks:** FAILED" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Deployment or Health Checks:** FAILED"
           fi
+
+          } >> "$GITHUB_STEP_SUMMARY"
