@@ -32,6 +32,19 @@ jobs:
       run:
         working-directory: server
     services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:7-alpine
         ports:
@@ -53,7 +66,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
@@ -77,6 +90,7 @@ jobs:
         run: poetry run pytest tests/ -v --tb=short -n auto -m "not e2e" --cov=server --cov-report=xml --junitxml=junit-matrix.xml
         env:
           REDIS_URL: redis://localhost:6379/0
+          REQUIRE_REDIS_TESTS: "1"
 
       - name: Upload test results
         if: always()
