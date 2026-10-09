@@ -47,7 +47,6 @@ function App() {
   const [mode, setMode] = useState<AgentMode>("off");
   const [manualTrigger, setManualTrigger] = useState<AIActionType | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Pick<TaskRecord, "id" | "title"> | null>(null);
   const [showStats, setShowStats] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
 
@@ -132,7 +131,6 @@ function App() {
         )
       );
       setEditingTaskId(null);
-      setSelectedTask(null);
       createLocalDraft(payload.content, locks);
       setLegacyNotice(
         "Imported as a new draft. The original is still available until you discard it."
@@ -190,7 +188,6 @@ function App() {
         setEditorReady(false);
         editorRef.current = null;
       }
-      setSelectedTask(task);
       setEditingTaskId(task.id);
     },
     [currentTaskId]
@@ -262,7 +259,6 @@ function App() {
               disabled={!remoteEnabled}
               onClick={() => {
                 setEditingTaskId(null);
-                setSelectedTask(null);
                 void resolveConflict("new");
               }}
             >
@@ -332,7 +328,7 @@ function App() {
         onModeChange={setMode}
         onManualTrigger={handleManualTrigger}
         onTaskClick={handleTaskClick}
-        selectedTaskId={currentTaskId ?? selectedTask?.id}
+        selectedTaskId={currentTaskId ?? undefined}
         taskStatus={
           taskError || recoveryError
             ? "error"

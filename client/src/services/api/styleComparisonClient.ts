@@ -1,4 +1,5 @@
 import { cookieAuthOptions } from "./cookieAuth";
+import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
 
 /**
  * Style Comparison API Client
@@ -54,10 +55,7 @@ export interface StyleComparisonResponse {
 /**
  * Options for API calls.
  */
-export interface StyleComparisonOptions {
-  /** AbortSignal for request cancellation */
-  signal?: AbortSignal;
-}
+export type StyleComparisonOptions = RemoteRequestOptions;
 
 /**
  * API client configuration.
@@ -125,7 +123,7 @@ export async function compareStyles(
   vector2: StyleVector,
   options?: StyleComparisonOptions
 ): Promise<StyleComparisonResponse> {
-  const response = await fetch(
+  const response = await sessionFetch(
     `${API_BASE_URL}/style/compare`,
     cookieAuthOptions({
       method: "POST",
@@ -137,13 +135,15 @@ export async function compareStyles(
         vector2,
       }),
       signal: options?.signal,
-    })
+    }),
+    options
   );
 
   let data: unknown;
   try {
     data = await response.json();
   } catch (parseError) {
+    assertCurrentSession(options?.session);
     throw new StyleComparisonAPIError(
       response.status,
       "ParseError",
@@ -153,6 +153,8 @@ export async function compareStyles(
       }
     );
   }
+
+  assertCurrentSession(options?.session);
 
   // Type guard to safely check parsed data
   function isRecord(value: unknown): value is Record<string, unknown> {

@@ -7,9 +7,10 @@
  * @module hooks/useStyleComparison
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { StyleComparisonResponse } from "../services/api/styleComparisonClient";
 import { compareStyles } from "../services/api/styleComparisonClient";
+import { useOptionalAuth } from "../contexts/AuthContext";
 import type { StyleHistoryRecord } from "../services/api/styleHistoryClient";
 
 /**
@@ -58,11 +59,21 @@ interface UseStyleComparisonResult {
  * @returns Selected styles, comparison result, and selection/comparison actions
  */
 export function useStyleComparison(): UseStyleComparisonResult {
+  const auth = useOptionalAuth();
+  const session = auth?.session;
   const [firstStyle, setFirstStyle] = useState<StyleHistoryRecord | null>(null);
   const [secondStyle, setSecondStyle] = useState<StyleHistoryRecord | null>(null);
   const [comparisonResult, setComparisonResult] = useState<StyleComparisonResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFirstStyle(null);
+    setSecondStyle(null);
+    setComparisonResult(null);
+    setLoading(false);
+    setError(null);
+  }, [session]);
 
   const selectFirstStyle = useCallback((record: StyleHistoryRecord) => {
     setFirstStyle(record);
@@ -77,6 +88,8 @@ export function useStyleComparison(): UseStyleComparisonResult {
   }, []);
 
   const performComparison = useCallback(async (): Promise<boolean> => {
+    const current = () => auth === undefined || !!session?.isCurrent();
+    if (!current()) return false;
     if (!firstStyle || !secondStyle) {
       setError("Both styles must be selected before comparing");
       return false;
@@ -87,10 +100,16 @@ export function useStyleComparison(): UseStyleComparisonResult {
     setComparisonResult(null);
 
     try {
-      const result = await compareStyles(firstStyle.style_vector, secondStyle.style_vector);
+      const result = await compareStyles(
+        firstStyle.style_vector,
+        secondStyle.style_vector,
+        auth ? { session } : undefined
+      );
+      if (!current()) return false;
       setComparisonResult(result);
       return true;
     } catch (err) {
+      if (!current()) return false;
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -98,9 +117,9 @@ export function useStyleComparison(): UseStyleComparisonResult {
       }
       return false;
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [firstStyle, secondStyle]);
+  }, [firstStyle, secondStyle, auth, session]);
 
   const clearComparison = useCallback(() => {
     setFirstStyle(null);
