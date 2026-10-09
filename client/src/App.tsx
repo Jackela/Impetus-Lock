@@ -310,8 +310,10 @@ function App() {
             <button
               type="button"
               onClick={() => {
-                setRecoveryError(null);
-                setRecoveryAttempt((v) => v + 1);
+                if (recoveryError) {
+                  setRecoveryError(null);
+                  setRecoveryAttempt((v) => v + 1);
+                }
                 void Promise.resolve(retry()).catch(() => {});
               }}
             >

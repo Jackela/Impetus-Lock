@@ -11,6 +11,74 @@ afterEach(() => {
 });
 
 describe("the actual authenticated editor entry", () => {
+  it("retries a task storage failure without remounting the retained editor", async () => {
+    localStorage.setItem("impetus-lock-welcome-dismissed", "true");
+    const records = ["A", "B"].map((id) => ({
+      id,
+      title: id,
+      content: `Writing ${id}`,
+      lock_ids: [],
+      version: 1,
+      created_at: "2026-10-07T00:00:00Z",
+      updated_at: "2026-10-07T00:00:00Z",
+      category: "WRITING",
+      priority: "MEDIUM",
+      due_date: null,
+      word_count: 2,
+    }));
+    for (const [index, record] of records.entries()) {
+      writeOwnedDraft("account-a", {
+        draftId: record.id,
+        taskId: record.id,
+        content: record.content,
+        lockIds: [],
+        version: 1,
+        versionKnown: true,
+        dirty: false,
+        updatedAt: index === 0 ? 2 : 1,
+      });
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async (input) => {
+        const path = new URL(String(input), window.location.href).pathname;
+        if (path === "/auth/me") return Response.json({ id: "account-a", email: "a@example.com" });
+        if (path === "/tasks/")
+          return Response.json({ tasks: records, total: 2, limit: 100, offset: 0 });
+        const task = records.find((record) => path === `/tasks/${record.id}`);
+        return task ? Response.json(task) : new Response(new ArrayBuffer(8));
+      })
+    );
+    const { container } = render(
+      <AppProviders>
+        <App />
+      </AppProviders>
+    );
+    await waitFor(() =>
+      expect(container.querySelector(".ProseMirror")).toHaveTextContent("Writing A")
+    );
+    const originalGet = Storage.prototype.getItem;
+    const get = vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (
+      this: Storage,
+      key
+    ) {
+      if (key === "impetus.draft.account-a.B")
+        throw new DOMException("Controlled read failure", "SecurityError");
+      return originalGet.call(this, key);
+    });
+    try {
+      fireEvent.click(await screen.findByTestId("task-item-B"));
+      await screen.findByRole("button", { name: "Retry draft recovery" });
+      const retainedEditor = container.querySelector(".ProseMirror");
+      fireEvent.click(screen.getByRole("button", { name: "Retry draft recovery" }));
+      expect(container.querySelector(".ProseMirror")).toBe(retainedEditor);
+      expect(retainedEditor).toHaveTextContent("Writing A");
+      expect(screen.getByTestId("task-item-A")).toHaveAttribute("aria-selected", "true");
+    } finally {
+      get.mockRestore();
+    }
+  });
+
   it("never labels a server draft as saved when its locks cannot be restored", async () => {
     localStorage.setItem("impetus-lock-welcome-dismissed", "true");
     writeOwnedDraft("account-a", {

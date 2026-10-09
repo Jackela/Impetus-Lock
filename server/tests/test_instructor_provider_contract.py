@@ -7,9 +7,10 @@ import json
 import os
 import socket
 from collections.abc import Callable, Iterator
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
-from threading import Event
+from threading import Event, Lock
 from typing import Any
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -71,11 +72,14 @@ class Wire:
     raw: OpenAI | None = None
     clients: list[OpenAI] = field(default_factory=list)
     close_error: Exception | None = None
+    record_lock: Any = field(default_factory=Lock, repr=False)
 
     def handle(self, req: httpx2.Request) -> httpx2.Response:
-        reply = self.replies[min(len(self.records), len(self.replies) - 1)]
-        record = {"url": str(req.url), "request": json.loads(req.content)}
-        self.records.append(record)
+        # Reserve a response atomically; request parsing can yield to another worker.
+        with self.record_lock:
+            reply = self.replies[min(len(self.records), len(self.replies) - 1)]
+            record = {"url": str(req.url), "request": json.loads(req.content)}
+            self.records.append(record)
         try:
             response = reply() if callable(reply) else reply
         except Exception as exc:
@@ -674,3 +678,39 @@ async def test_sol_http_failure_is_not_cached_and_semantics_keep_422(
         )
     assert retried.status_code == cached.status_code == 200 and retried.json() == cached.json()
     assert len(wire.records) == attempts + 1 and wire.closed == len(wire.clients) == 2
+
+
+def test_wire_reserves_distinct_replies_before_concurrent_request_parsing() -> None:
+    """A blocked first parse cannot make another worker consume the same fixture reply."""
+    entered, released, second_started, second_finished = Event(), Event(), Event(), Event()
+
+    class BlockedRequest(httpx2.Request):
+        @property
+        def content(self) -> bytes:
+            entered.set()
+            assert released.wait(5)
+            return super().content
+
+    wire = Wire([{"reply": "first"}, {"reply": "second"}])
+    first_request = BlockedRequest("POST", "https://fixture.invalid", content=b"{}")
+    second_request = httpx2.Request("POST", "https://fixture.invalid", content=b"{}")
+
+    def second() -> httpx2.Response:
+        second_started.set()
+        try:
+            return wire.handle(second_request)
+        finally:
+            second_finished.set()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first = executor.submit(wire.handle, first_request)
+        try:
+            assert entered.wait(2)
+            other = executor.submit(second)
+            assert second_started.wait(2)
+            # The broken fixture finishes the second request while the first parse is held.
+            second_finished.wait(0.2)
+        finally:
+            released.set()
+        assert first.result(timeout=5).json() == {"reply": "first"}
+        assert other.result(timeout=5).json() == {"reply": "second"}
