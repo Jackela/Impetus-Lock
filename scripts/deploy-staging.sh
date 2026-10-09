@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${DEPLOY_DIR:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io}"
 DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-impetus-lock}"
-VERSION="${1:-staging}"
+VERSION="${1:-}"
 COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.prod.yml"
 ENV_FILE="${PROJECT_ROOT}/.env.staging"
 
@@ -57,7 +57,7 @@ check_prerequisites() {
     fi
     
     # Check if we're in a git repo
-    if ! git rev-parse --git-dir &> /dev/null; then
+    if ! git -C "$PROJECT_ROOT" rev-parse --git-dir &> /dev/null; then
         error "Not in a git repository"
     fi
     
@@ -337,6 +337,9 @@ case "${1:-}" in
         exit 0
         ;;
 esac
+
+# Normal builds retain a commit-specific tag; server-only operations never need Git.
+VERSION="${VERSION:-staging-$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)}"
 
 # Run main deployment
 main
