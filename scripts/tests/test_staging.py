@@ -9,6 +9,29 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class StagingContract(unittest.TestCase):
+    def test_workflow_metadata_normalizes_owner_and_preserves_version(self):
+        workflow = (ROOT / '.github/workflows/deploy-staging.yml').read_text()
+        block = workflow.split('      - name: Generate metadata\n', 1)[1].split('\n      - name:', 1)[0]
+        script = block.split('        run: |\n', 1)[1]
+        script = '\n'.join(line[10:] for line in script.splitlines())
+        sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, text=True).strip()
+        for owner in ('Jackela', 'MiXeD-Owner42', 'already-lowercase'):
+            with self.subTest(owner=owner), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / 'outputs'
+                env = {**os.environ, 'GITHUB_OUTPUT': str(output), 'DOCKER_REGISTRY': 'ghcr.io', 'DOCKER_NAMESPACE': owner}
+                expanded = script.replace('${{ env.DOCKER_REGISTRY }}', 'ghcr.io').replace('${{ env.DOCKER_NAMESPACE }}', owner)
+                result = subprocess.run(['bash', '-eu', '-o', 'pipefail', '-c', expanded], cwd=ROOT, env=env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                metadata = dict(line.split('=', 1) for line in output.read_text().splitlines())
+                self.assertEqual(metadata, {
+                    'version': f'sha-{sha}',
+                    'api_image': f'ghcr.io/{owner.lower()}/impetus-api',
+                    'client_image': f'ghcr.io/{owner.lower()}/impetus-client',
+                })
+                for service in ('api', 'client'):
+                    for tag in (metadata['version'], 'staging', 'latest'):
+                        self.assertRegex(f'{metadata[service + "_image"]}:{tag}', r'^ghcr\.io/[a-z0-9-]+/impetus-(api|client):(sha-[a-f0-9]+|staging|latest)$')
+
     def test_unconfigured_and_incomplete_remote(self):
         workflow = (ROOT / '.github/workflows/deploy-staging.yml').read_text()
         block = workflow.split('          echo "deployed=false"', 1)[1].split('\n  health-check:', 1)[0]
