@@ -15,10 +15,10 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PROJECT_ROOT="${DEPLOY_DIR:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io}"
 DOCKER_NAMESPACE="${DOCKER_NAMESPACE:-impetus-lock}"
-VERSION="${1:-staging-$(git rev-parse --short HEAD)}"
+VERSION="${1:-staging}"
 COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.prod.yml"
 ENV_FILE="${PROJECT_ROOT}/.env.staging"
 
@@ -159,7 +159,7 @@ push_images() {
     if ! docker info | grep -q "Username"; then
         warn "Not logged in to Docker registry"
         info "Please run: docker login $DOCKER_REGISTRY"
-        read -p "Press Enter to continue after logging in..."
+        read -r -p "Press Enter to continue after logging in..."
     fi
     
     for service in "${SERVICES[@]}"; do
@@ -209,8 +209,11 @@ run_health_checks() {
     local client_healthy=false
     
     # Get ports from env file
-    local api_port=$(grep "API_PORT" "$ENV_FILE" | cut -d '=' -f2 || echo "8000")
-    local client_port=$(grep "CLIENT_PORT" "$ENV_FILE" | cut -d '=' -f2 || echo "80")
+    local api_port client_port
+    api_port=$(sed -n 's/^API_PORT=//p' "$ENV_FILE")
+    client_port=$(sed -n 's/^CLIENT_PORT=//p' "$ENV_FILE")
+    api_port="${api_port:-8000}"
+    client_port="${client_port:-80}"
     
     while [ $attempt -le $max_attempts ]; do
         info "Health check attempt $attempt/$max_attempts"
@@ -296,6 +299,14 @@ main() {
 
 # Handle script arguments
 case "${1:-}" in
+    --deploy-only)
+        [[ -f "$COMPOSE_FILE" ]] || error "Missing server compose file: $COMPOSE_FILE"
+        [[ -f "$ENV_FILE" ]] || error "Missing server environment file: $ENV_FILE"
+        : "${API_IMAGE:?API_IMAGE is required}" "${CLIENT_IMAGE:?CLIENT_IMAGE is required}"
+        command -v docker-compose >/dev/null || error "Docker Compose is not installed"
+        deploy_staging
+        exit 0
+        ;;
     --status)
         show_status
         exit 0
@@ -313,6 +324,7 @@ case "${1:-}" in
         echo ""
         echo "Options:"
         echo "  version         Deploy specific version (default: staging-<git-sha>)"
+        echo "  --deploy-only   Deploy existing registry images (requires API_IMAGE and CLIENT_IMAGE)"
         echo "  --status        Show deployment status"
         echo "  --rollback      Rollback to previous deployment"
         echo "  --cleanup       Clean up old Docker images"
