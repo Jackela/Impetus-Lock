@@ -1,5 +1,6 @@
 """R09 regression for authenticated style profile ownership over real HTTP/SQL."""
 
+import os
 from collections.abc import AsyncIterator
 from uuid import uuid4
 
@@ -14,7 +15,9 @@ from server.models.style import StyleModel
 from server.models.style_history import StyleHistoryModel
 from server.models.user import User
 
-POSTGRES_TEST_URL = "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+POSTGRES_TEST_URL = os.getenv(
+    "POSTGRES_TEST_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+)
 
 
 @pytest.fixture(scope="session", autouse=True)

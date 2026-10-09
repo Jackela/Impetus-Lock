@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import openapiTS, { astToString, COMMENT_HEADER } from "openapi-typescript";
+import prettier from "prettier";
 
 // Reproducible offline generation: imports the app without starting its lifespan,
 // disables dotenv/test routes, and never starts a server or calls a provider.
@@ -42,11 +43,13 @@ const schemas = schema.components.schemas;
 // Preserve existing components["schemas"]["Anchor"] consumers using the actual
 // response union. No API path, payload field or server schema is changed.
 schemas.Anchor = structuredClone(schemas.InterventionResponse.properties.anchor);
-const generated =
+const generated = await prettier.format(
   COMMENT_HEADER +
   "// Generator: openapi-typescript 7.13.0; source: offline FastAPI app.openapi().\n" +
   "// Regenerate: npm run api:generate; verify drift: npm run api:check.\n\n" +
-  astToString(await openapiTS(schema, { defaultNonNullable: false }));
+  astToString(await openapiTS(schema, { defaultNonNullable: false })),
+  { ...(await prettier.resolveConfig(output)), parser: "typescript" }
+);
 
 if (check) {
   let current;

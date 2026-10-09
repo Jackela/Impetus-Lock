@@ -155,6 +155,7 @@ jobs:
         working-directory: ${{ github.workspace }}/client
         env:
           VITE_API_URL: http://localhost:8000
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
         run: npm run test:e2e:ci
 
       - name: Upload Playwright report

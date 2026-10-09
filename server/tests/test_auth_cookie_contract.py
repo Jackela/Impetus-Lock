@@ -222,3 +222,97 @@ async def test_csrf_rejects_missing_or_wrong_values_and_preserves_safe_methods(
         assert response.status_code == 405
     mounted_auth_client.cookies.set("access_token", "invalid.token.here")
     assert (await mounted_auth_client.get("/auth/me")).status_code == 401
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("scheme", "app_environment", "legacy_environment", "secure"),
+    [
+        ("http", "development", "development", False),
+        ("https", "development", "development", True),
+        ("http", "production", "development", True),
+        ("http", None, "production", True),
+    ],
+)
+async def test_auth_cookies_follow_scheme_and_existing_environment(
+    mounted_auth_client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+    scheme: str,
+    app_environment: str | None,
+    legacy_environment: str,
+    secure: bool,
+) -> None:
+    """Actual register/login responses preserve local HTTP and secure HTTPS/production cookies."""
+    if app_environment is None:
+        monkeypatch.delenv("APP_ENV", raising=False)
+    else:
+        monkeypatch.setenv("APP_ENV", app_environment)
+    monkeypatch.setenv("ENV", legacy_environment)
+    mounted_auth_client.base_url = f"{scheme}://test"
+    credentials = {"email": "cookie-security@example.com", "password": "securePassword123"}
+    for path, status in [("/auth/register", 201), ("/auth/login", 200)]:
+        mounted_auth_client.cookies.clear()
+        response = await mounted_auth_client.post(path, json=credentials)
+        assert response.status_code == status
+        cookies: SimpleCookie[str] = SimpleCookie()
+        for header in response.headers.get_list("set-cookie"):
+            cookies.load(header)
+        for name in ("access_token", "csrf_token"):
+            assert bool(cookies[name]["secure"]) is secure, f"Wrong Secure flag for {name}"
+            assert cookies[name]["samesite"] == "lax"
+            assert cookies[name]["path"] == "/"
+        assert bool(cookies["access_token"]["httponly"]) is True
+        assert bool(cookies["csrf_token"]["httponly"]) is False
+    if scheme == "https":
+        assert (await mounted_auth_client.get("/auth/me")).status_code == 200
+        # HTTPX's cookie jar must withhold actual Secure cookies on a downgrade.
+        assert (await mounted_auth_client.get("http://test/auth/me")).status_code == 401
+        csrf = mounted_auth_client.cookies.get("csrf_token")
+        assert (
+            await mounted_auth_client.post("/auth/logout", headers={"X-CSRF-Token": csrf})
+        ).status_code == 204
+        assert list(mounted_auth_client.cookies) == []
+
+
+@pytest.mark.asyncio
+async def test_auth_router_independently_rejects_signed_malformed_uuid(
+    monkeypatch: pytest.MonkeyPatch, db_session: AsyncSession
+) -> None:
+    """The dependency rejects a signed bad subject even without an outer middleware gate."""
+    from fastapi import FastAPI
+
+    from server.auth.router import router
+    from server.infrastructure.persistence.database import get_session
+
+    monkeypatch.delenv("TESTING", raising=False)
+    monkeypatch.setenv("JWT_SECRET", "r04-cookie-contract-test-secret-only")
+    app = FastAPI()
+    app.include_router(router)
+
+    async def isolated_session() -> AsyncIterator[AsyncSession]:
+        yield db_session
+
+    app.dependency_overrides[get_session] = isolated_session
+    async with AsyncClient(
+        transport=ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test"
+    ) as client:
+        client.cookies.set("access_token", create_access_token("not-a-uuid"))
+        rejected = await client.get("/auth/me")
+        assert rejected.status_code == 401
+        assert rejected.headers["www-authenticate"] == "Bearer"
+        assert rejected.json() == {"detail": "Not authenticated"}
+        client.cookies.clear()
+        credentials = {"email": "router-positive@example.com", "password": "securePassword123"}
+        assert (await client.post("/auth/register", json=credentials)).status_code == 201
+        assert (await client.get("/auth/me")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_optional_auth_rejects_signed_malformed_uuid(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Optional authentication also rejects a malformed identity without raising a server error."""
+    from server.auth.dependencies import get_current_user_optional
+
+    monkeypatch.setenv("JWT_SECRET", "r04-cookie-contract-test-secret-only")
+    assert await get_current_user_optional(create_access_token("not-a-uuid"), db_session) is None

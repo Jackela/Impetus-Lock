@@ -83,6 +83,7 @@ export interface paths {
      *     Args:
      *         request: Login request with email and password.
      *         response: Response object for setting cookies.
+     *         http_request: Incoming request used to protect HTTPS cookies.
      *         session: Database session.
      *
      *     Returns:
@@ -164,6 +165,7 @@ export interface paths {
      *     Args:
      *         request: Registration request with email and password.
      *         response: Response object for setting cookies.
+     *         http_request: Incoming request used to protect HTTPS cookies.
      *         session: Database session.
      *
      *     Returns:
