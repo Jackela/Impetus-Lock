@@ -734,6 +734,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
       while (!editor && mounted && attempts < maxAttempts) {
         await new Promise((resolve) => setTimeout(resolve, EDITOR_RETRY_INTERVAL_MS));
+        if (!mounted) return;
         editor = getEditor();
         attempts++;
       }

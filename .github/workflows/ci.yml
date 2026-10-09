@@ -54,7 +54,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
@@ -132,7 +132,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
@@ -217,7 +217,7 @@ jobs:
       - name: Install Poetry
         run: |
           pipx install poetry
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
         uses: actions/cache@v4
@@ -239,6 +239,7 @@ jobs:
         run: poetry run pytest tests/ --cov=server --cov-report=term-missing -v -n auto --tb=short || (echo "::error::Tests failed" && exit 1)
         env:
           REDIS_URL: redis://localhost:6379/0
+          REQUIRE_REDIS_TESTS: "1"
 
       - name: Report lock-critical line coverage
         working-directory: ./server

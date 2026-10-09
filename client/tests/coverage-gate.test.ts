@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 import { expect, test } from "vitest";
 
 const criticalFiles = [
@@ -89,7 +90,7 @@ export default {
       ],
       { cwd: clientDir, encoding: "utf8", timeout: 45000 }
     );
-    const output = result.stdout + result.stderr;
+    const output = stripVTControlCharacters(result.stdout + result.stderr);
     console.info(output);
     expect(result.error).toBeUndefined();
     expect(result.signal).toBeNull();

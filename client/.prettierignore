@@ -39,3 +39,8 @@ src/components/WelcomeModal.tsx
 src/services/ContentInjector.ts
 src/styles/locked-content.css
 src/utils/logger.ts
+
+# Runtime browser output
+e2e/storage-state.generated.json
+test-results/
+playwright-report/

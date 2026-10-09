@@ -113,12 +113,12 @@ class StyleHistoryRepository:
         if self.session:
             result = await self.session.execute(query)
             await self.session.commit()
-            return cast(CursorResult[Any], result).rowcount > 0
+            return bool(cast(CursorResult[Any], result).rowcount > 0)
         else:
             async with get_db_manager().session() as session:
                 result = await session.execute(query)
                 await session.commit()
-                return cast(CursorResult[Any], result).rowcount > 0
+                return bool(cast(CursorResult[Any], result).rowcount > 0)
 
     async def count_by_user(self, user_id: str) -> int:
         """Count total style history records for a user."""

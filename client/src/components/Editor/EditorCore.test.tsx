@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useEditor } from "@milkdown/react";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { EditorCore } from "./EditorCore";
@@ -122,6 +123,23 @@ vi.mock("../SensoryFeedback", () => ({
 describe("EditorCore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("stops initialization polling after unmount without reporting an error", async () => {
+    vi.useFakeTimers();
+    const error = vi.spyOn(console, "error");
+    try {
+      const mounted = render(<EditorCore />);
+      const getter = vi.mocked(useEditor).mock.results.at(-1)?.value.get;
+      expect(getter).toHaveBeenCalledTimes(1);
+      mounted.unmount();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(getter).toHaveBeenCalledTimes(1);
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      error.mockRestore();
+      vi.useRealTimers();
+    }
   });
 
   /**

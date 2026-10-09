@@ -9,8 +9,8 @@ process.env.TZ = process.env.TZ || "UTC";
 
 const args = process.argv.slice(2);
 
-// Vitest forks hang on some local setups (notably WSL). Force vmThreads unless overridden.
-process.env.VITEST_POOL = process.env.VITEST_POOL || "vmThreads";
+// Standard forks isolate file-scoped mocks. Local environments can opt into another pool.
+process.env.VITEST_POOL = process.env.VITEST_POOL || "forks";
 const vitestArgs = args.length > 0 ? args : ["run"];
 
 const child = spawn("vitest", vitestArgs, {

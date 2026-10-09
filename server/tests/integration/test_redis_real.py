@@ -3,7 +3,7 @@
 These tests talk to an actual Redis server. They probe reachability once per
 test via the ``real_redis`` fixture and skip cleanly when no server listens
 at ``REDIS_URL`` (default ``redis://localhost:6379/0``). CI provides a Redis
-service container, so the tests execute there.
+service container and requires reachability with ``REQUIRE_REDIS_TESTS=1``.
 
 Class names intentionally avoid the substrings "RedisIntegration" and
 "redis_pubsub" so historical ``-k`` exclusion filters never match them.
@@ -47,7 +47,10 @@ async def real_redis() -> AsyncGenerator[redis_asyncio.Redis, None]:
         await asyncio.wait_for(client.ping(), timeout=2.0)
     except Exception as exc:
         await client.aclose()
-        pytest.skip(f"Redis not reachable at {REDIS_URL}: {exc}")
+        message = f"Redis not reachable at {REDIS_URL}: {exc}"
+        if os.getenv("REQUIRE_REDIS_TESTS") == "1":
+            pytest.fail(message)
+        pytest.skip(message)
 
     yield client
     await client.aclose()
