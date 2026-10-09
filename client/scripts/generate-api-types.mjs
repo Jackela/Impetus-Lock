@@ -45,9 +45,9 @@ const schemas = schema.components.schemas;
 schemas.Anchor = structuredClone(schemas.InterventionResponse.properties.anchor);
 const generated = await prettier.format(
   COMMENT_HEADER +
-  "// Generator: openapi-typescript 7.13.0; source: offline FastAPI app.openapi().\n" +
-  "// Regenerate: npm run api:generate; verify drift: npm run api:check.\n\n" +
-  astToString(await openapiTS(schema, { defaultNonNullable: false })),
+    "// Generator: openapi-typescript 7.13.0; source: offline FastAPI app.openapi().\n" +
+    "// Regenerate: npm run api:generate; verify drift: npm run api:check.\n\n" +
+    astToString(await openapiTS(schema, { defaultNonNullable: false })),
   { ...(await prettier.resolveConfig(output)), parser: "typescript" }
 );
 
