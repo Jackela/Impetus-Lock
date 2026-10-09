@@ -56,7 +56,7 @@ async function checkDbHealth(): Promise<boolean> {
     const response = await fetch(dbHealthUrl, { signal: AbortSignal.timeout(5000) });
     if (!response.ok) return false;
     const data = await response.json();
-    return data.status === "ok";
+    return data.is_healthy === true;
   } catch {
     return false;
   }
@@ -118,11 +118,7 @@ async function verifyBackend(): Promise<void> {
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
-    // In TESTING mode with in-memory fallback, this is not fatal
-    console.log(
-      "⚠️  Database not fully ready, but continuing (TESTING mode may use in-memory fallback)"
-    );
-    return;
+    throw new Error("The PostgreSQL database health check failed");
   }
 
   throw new Error("Backend is not running. Please start the backend before running E2E tests.");
@@ -134,15 +130,13 @@ async function verifyBackend(): Promise<void> {
 async function initializeDatabase(): Promise<void> {
   console.log("\n🗄️  Checking database connectivity...");
 
-  // Database initialization is handled by the backend in TESTING mode
-  // with graceful fallback to in-memory repository
+  // Browser checks require the actual PostgreSQL repository.
   if (await checkDbHealth()) {
     console.log("✅ Database is connected and healthy");
     return;
   }
 
-  console.log("⚠️  Database health check not available");
-  console.log("   In TESTING mode, the backend will use in-memory fallback");
+  throw new Error("The PostgreSQL database health check failed");
 }
 
 /**
@@ -152,20 +146,16 @@ async function runMigrations(): Promise<void> {
   console.log("\n🔄 Checking database migrations...");
 
   // Migrations are already run by the workflow before backend starts
-  // In TESTING mode with graceful fallback, database connectivity issues
-  // won't prevent tests from running (backend uses in-memory fallback)
+  // Confirm the maintained schema before exercising real repository behavior.
 
   try {
     const serverDir = resolve(__dirname, "../../server");
     const alembicIniPath = resolve(serverDir, "alembic.ini");
     if (!existsSync(alembicIniPath)) {
-      console.log("⚠️  No alembic.ini found, skipping migrations");
-      return;
+      throw new Error("The required Alembic configuration is missing");
     }
 
-    // Try to run migrations but don't fail if they don't work
-    // The workflow has already run migrations, and in TESTING mode
-    // the backend has graceful fallback
+    // Running an already applied migration is safe and still verifies the schema.
     execSync("poetry run alembic upgrade head", {
       cwd: serverDir,
       stdio: "pipe",
@@ -179,7 +169,7 @@ async function runMigrations(): Promise<void> {
 
     console.log("✅ Database migrations completed");
   } catch (error) {
-    console.log("⚠️  Migration check failed (may already be applied or using fallback)");
+    throw new Error("Database migrations failed", { cause: error });
   }
 }
 

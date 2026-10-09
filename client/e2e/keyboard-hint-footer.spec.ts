@@ -5,7 +5,7 @@
  * helpful guidance about the "?" keyboard shortcut without interfering
  * with the user's interaction with the editor.
  *
- * The footer has pointer-events: none to prevent accidental clicks.
+ * The footer also contains interactive export controls in the current app.
  *
  * @see openspec/changes/chrome-audit-polish/design.md#5-welcome-modal-hierarchy
  */
@@ -62,7 +62,7 @@ test.describe("Keyboard Hint Footer", () => {
     // Wait for modal to disappear
     await expect(page.locator(".welcome-modal")).not.toBeVisible();
 
-    // Try to click footer (should not work due to pointer-events: none)
+    // The footer remains interactive but clicking its hint does not reopen help.
     await page.locator(".app-footer").click({ force: true });
 
     // Modal should NOT reappear
@@ -114,11 +114,11 @@ test.describe("Keyboard Hint Footer", () => {
     const footer = page.locator(".app-footer");
 
     // Validate styling
-    await expect(footer).toHaveCSS("opacity", "0.4");
+    await expect(footer).toHaveCSS("opacity", "1");
     await expect(footer).toHaveCSS("font-size", "11px"); // 0.6875rem (updated in ElevenLabs design)
-    await expect(footer).toHaveCSS("position", "fixed");
+    await expect(footer).toHaveCSS("position", "relative");
     await expect(footer).toHaveCSS("text-align", "center");
-    await expect(footer).toHaveCSS("pointer-events", "none");
+    await expect(footer).toHaveCSS("pointer-events", "auto");
 
     // Validate kbd element styling
     const kbd = footer.locator("kbd");

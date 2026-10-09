@@ -17,16 +17,6 @@ import { waitForAppReady } from "./helpers/waitHelpers";
 import { insertLockedContent, clearEditor } from "./helpers/milkdown-helpers";
 
 test.describe("Lock Rejection Feedback", () => {
-  // Hide task sidebar to prevent click interception
-  test.beforeEach(async ({ page }) => {
-    // Inject CSS to hide sidebar before page loads
-    await page.addInitScript(`
-      const style = document.createElement('style');
-      style.textContent = '[data-testid="task-sidebar"] { display: none !important; }';
-      document.head.appendChild(style);
-    `);
-  });
-
   test("Lock rejection triggers sensory feedback (shake animation)", async ({ page }) => {
     // Capture console logs for debugging
     page.on("console", (msg) => {
@@ -48,7 +38,7 @@ test.describe("Lock Rejection Feedback", () => {
     await page.waitForTimeout(500);
 
     // Validate locked content exists (use blockquote selector to avoid strict mode violation)
-    const lockedContent = page.locator("blockquote.locked-content");
+    const lockedContent = page.locator(".locked-content");
     await expect(lockedContent).toBeAttached({ timeout: 5000 });
 
     // Capture content before deletion attempt
@@ -57,7 +47,7 @@ test.describe("Lock Rejection Feedback", () => {
     // Attempt to delete locked content by selecting all and pressing backspace
     const prosemirror = page.locator('.milkdown [contenteditable="true"]');
     await prosemirror.click();
-    await page.keyboard.press("Control+A"); // Select all (includes locked content)
+    await page.keyboard.press("ControlOrMeta+A"); // Select all (includes locked content)
     await page.keyboard.press("Backspace"); // Attempt to delete
 
     // Assert: SensoryFeedback element appears
@@ -94,7 +84,7 @@ test.describe("Lock Rejection Feedback", () => {
     await page.waitForTimeout(500);
 
     // Validate locked content exists (use blockquote selector to avoid strict mode violation)
-    const lockedContent = page.locator("blockquote.locked-content");
+    const lockedContent = page.locator(".locked-content");
     await expect(lockedContent).toBeAttached({ timeout: 5000 });
 
     // Capture editor content before deletion (more reliable than element-specific selector)
@@ -112,8 +102,8 @@ test.describe("Lock Rejection Feedback", () => {
     await page.waitForTimeout(200);
 
     // Try Control+X (cut)
-    await page.keyboard.press("Control+A");
-    await page.keyboard.press("Control+X");
+    await page.keyboard.press("ControlOrMeta+A");
+    await page.keyboard.press("ControlOrMeta+X");
     await page.waitForTimeout(200);
 
     // Assert: Editor content is unchanged (lock enforcement worked)
@@ -139,12 +129,12 @@ test.describe("Lock Rejection Feedback", () => {
     await insertLockedContent(page, "> AI-locked content", "test_lock_reject_003");
 
     // Wait for decorations to be applied
-    await expect(page.locator("blockquote.locked-content")).toBeAttached({ timeout: 5000 });
+    await expect(page.locator(".locked-content")).toBeAttached({ timeout: 5000 });
 
     // Trigger lock rejection
     const prosemirror = page.locator('.milkdown [contenteditable="true"]');
     await prosemirror.click();
-    await page.keyboard.press("Control+A");
+    await page.keyboard.press("ControlOrMeta+A");
     await page.keyboard.press("Backspace");
 
     // Assert: Sensory feedback appears
@@ -181,7 +171,7 @@ test.describe("Lock Rejection Feedback", () => {
       // Trigger lock rejection
       const prosemirror = page.locator('.milkdown [contenteditable="true"]');
       await prosemirror.click();
-      await page.keyboard.press("Control+A");
+      await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.press("Backspace");
 
       // Wait for feedback to appear

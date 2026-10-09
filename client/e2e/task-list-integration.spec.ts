@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { dismissWelcomeModal } from "./helpers/waitHelpers";
 
 /**
  * UX-003: Task List Integration E2E Tests
@@ -12,10 +13,11 @@ import { test, expect } from "@playwright/test";
 test.describe("UX-003: Task List Integration", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to app
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
 
     // Wait for app to load
     await page.waitForSelector(".app", { timeout: 10000 });
+    await dismissWelcomeModal(page);
   });
 
   test("task list sidebar is visible by default", async ({ page }) => {

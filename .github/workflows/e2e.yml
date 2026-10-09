@@ -119,8 +119,7 @@ jobs:
           # Now wait for database to be ready (critical for tests)
           echo "Waiting for database connection..."
           for i in {1..15}; do
-            DB_STATUS=$(curl -s http://localhost:8000/health/db 2>/dev/null | grep -o '"status":"ok"' || true)
-            if [ -n "$DB_STATUS" ]; then
+            if curl -fsS http://localhost:8000/health/db | python -c 'import json, sys; sys.exit(0 if json.load(sys.stdin).get("is_healthy") is True else 1)'; then
               echo "✅ Database is connected!"
               break
             fi
@@ -134,7 +133,7 @@ jobs:
           curl -s http://localhost:8000/health
           echo ""
           echo "Database check:"
-          curl -s http://localhost:8000/health/db
+          curl -fsS http://localhost:8000/health/db | python -c 'import json, sys; data=json.load(sys.stdin); print(data); sys.exit(0 if data.get("is_healthy") is True else 1)'
           echo ""
 
       - name: Set up Node.js
