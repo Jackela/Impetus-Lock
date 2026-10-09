@@ -50,10 +50,11 @@ jobs:
         id: meta
         run: |
           VERSION=sha-$(git rev-parse --short HEAD)
+          NAMESPACE=$(printf '%s' "$DOCKER_NAMESPACE" | tr '[:upper:]' '[:lower:]')
           {
           echo "version=$VERSION"
-          echo "api_image=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/impetus-api"
-          echo "client_image=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/impetus-client"
+          echo "api_image=$DOCKER_REGISTRY/$NAMESPACE/impetus-api"
+          echo "client_image=$DOCKER_REGISTRY/$NAMESPACE/impetus-client"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push API image
