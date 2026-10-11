@@ -3321,14 +3321,17 @@ test("performance baseline measures 10000 words and 10 locks with 30 input switc
       exactLockIds: locks,
     });
   };
-  const measure = (
+  const measure = async (
     kind: "input" | "switch" | "lock",
     marker: string,
     initialLength = 0
-  ): Promise<number> =>
-    page.evaluate(
-      ({ kind, marker, initialLength }) =>
-        new Promise<number>((resolve, reject) => {
+  ): Promise<() => Promise<number>> => {
+    // Confirm capture is installed before sending the native input. Preparing
+    // the listener is outside the interval, which still starts at the event.
+    await page.evaluate(
+      ({ kind, marker, initialLength }) => {
+        const observed = window as Window & { impetusPerformanceSample?: Promise<number> };
+        observed.impetusPerformanceSample = new Promise<number>((resolve, reject) => {
           const eventName =
             kind === "input" ? "beforeinput" : kind === "switch" ? "pointerdown" : "keydown";
           const timeout = window.setTimeout(() => {
@@ -3366,9 +3369,18 @@ test("performance baseline measures 10000 words and 10 locks with 30 input switc
             requestAnimationFrame(settle);
           }
           document.addEventListener(eventName, start, true);
-        }),
+        });
+      },
       { kind, marker, initialLength }
     );
+    return () =>
+      page.evaluate(() => {
+        const sample = (window as Window & { impetusPerformanceSample?: Promise<number> })
+          .impetusPerformanceSample;
+        if (!sample) throw new Error("Performance capture was not prepared");
+        return sample;
+      });
+  };
   const input: number[] = [];
   const switching: number[] = [];
   const lock: number[] = [];
@@ -3385,17 +3397,17 @@ test("performance baseline measures 10000 words and 10 locks with 30 input switc
     const initialLength = await page
       .locator(".ProseMirror")
       .evaluate((element) => element.textContent?.length ?? 0);
-    const measured = measure("input", "PerformanceAlpha", initialLength);
+    const measured = await measure("input", "PerformanceAlpha", initialLength);
     await page.keyboard.insertText("z");
-    input.push(await measured);
+    input.push(await measured());
     await verifyCompleteDocument("input", sample, alpha, "PerformanceAlpha", sample + 1);
   }
   for (let sample = 0; sample < 30; sample++) {
     const task = sample % 2 === 0 ? beta : alpha;
     const marker = sample % 2 === 0 ? "PerformanceBeta" : "PerformanceAlpha";
-    const measured = measure("switch", marker);
+    const measured = await measure("switch", marker);
     await page.getByTestId(`task-item-${task.id}`).click();
-    switching.push(await measured);
+    switching.push(await measured());
     await verifyCompleteDocument("switch", sample, task, marker, task.id === alpha.id ? 30 : 0);
   }
   for (let sample = 0; sample < 30; sample++) {
@@ -3427,9 +3439,9 @@ test("performance baseline measures 10000 words and 10 locks with 30 input switc
         })
       )
       .toContain("PerformanceAlpha");
-    const measured = measure("lock", "PerformanceAlpha");
+    const measured = await measure("lock", "PerformanceAlpha");
     await page.keyboard.press("Backspace");
-    lock.push(await measured);
+    lock.push(await measured());
     await expect(page.getByTestId("sensory-feedback")).toHaveAttribute("data-animation", "shake");
     await expect(page.locator(".ProseMirror")).toContainText("PerformanceAlpha");
     await verifyCompleteDocument("lock", sample, alpha, "PerformanceAlpha", 30);
