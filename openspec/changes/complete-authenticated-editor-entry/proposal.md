@@ -1,6 +1,22 @@
+## 2026-10-12 执行范围更新
+
+2026-10-12 用户明确决定跳过旁白检查，继续完成其余检查、PR、合并和多余分支清理。实际辅助技术未执行、未验证；此项为用户豁免，不能记作通过或据此宣称全站 WCAG 合规。远端操作现已获授权；不部署、不调用付费模型、不修改默认模型配置、不更新长期记忆的边界继续有效。整合以实时远端主线为基础，保留其既有修复和依赖，并验证新的组合候选。
+
+以下日期记录保留为历史授权和实施依据；与本次更新冲突的远端限制不再适用。
+
 # Change: 在当前编辑器接入完整登录与会话状态
 
-Status: Approved direction; candidate integration. This PR makes the already approved authentication behavior reviewable on the current remote base. Verification and release status are recorded in the PR; prior local-only approvals and evidence are not release evidence.
+## 2026-10-11 approved safety completion
+
+本轮用户明确授权在既有单页入口、认证政策和 DESIGN 内补全认证、账户隔离、草稿恢复、导出、可访问性与编辑性能。2026-10-07 的验证保留为历史证据，本轮完成标准以新任务清单及本轮 validation 记录为准。基线为干净本地 `main@c8d296e`，独立分支 `codex/authenticated-editor-safety`；已更新远端引用至 `origin/main@f069c3c`，本地与远端分叉，不直接整合依赖更新。原有工作区、候选分支、草稿及恢复材料保留。
+
+批准的补全包括退出或切换界面前保存最新正文与锁、共享 cookie 的请求预期账户校验、Web Locks 认证写操作协调、独立写作副本及选中任务恢复、未知版本冲突保护、旧稿拒读提示、创建结果未知处理和完整分页导出。协作、成就扩展、整体重设计、新认证平台、全面重构及大版本依赖迁移不在范围内。
+
+按用户指定的用户流程、HTTP、浏览器存储与真实数据库边界进行小步 TDD。只有全部本轮 DoD 满足，且两名新的只读复核者检查同一冻结候选后，才能创建本地提交并整合回本地主线；不 push、不操作远端 PR、不部署、不调用付费模型、不修改默认模型配置、不更新长期记忆。
+
+Status: Safety implementation and independent reviews are complete under the 2026-10-12 user AT waiver. Verification of integration against the current remote base and PR merge remain pending. No deployment or user acceptance is implied.
+
+本次用户提示词批准此提案的单页认证入口、登录与注册、会话过期后继续本地写作、未归属草稿显式导入/导出/丢弃，以及普通浏览器真实认证验证。允许隔离工作区、本地提交和验证通过后的本地主线整合；不授权其他提案、远端推送、PR、部署、付费模型调用或认证政策变更。批准不等于实现完成、验收或发布。
 
 ## Why
 

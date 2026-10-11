@@ -1,4 +1,21 @@
-Status: Implemented and locally verified on 2026-10-07. Checked items have actual evidence in validation.md; R04/R13 remain independent. No deployment or user acceptance is implied.
+Status: 2026-10-07 items below retain historical evidence. The safety checks are complete under the 2026-10-12 user AT waiver; integration and merge remain in progress. No deployment or user acceptance is implied.
+
+## 5. Approved 2026-10-11 safety completion
+
+- [x] 5.1 核实本地与实时远端基线、隔离分支和环境，保留原有工作；记录实际测试收集及跳过。
+- [x] 5.2 逐项 RED/GREEN：最终快照、预期账户、独立副本、未知版本、选中身份、旧稿拒读、完整分页、创建结果未知。
+- [x] 5.3 Web Locks 认证写请求协调、取消/页面关闭/迟到响应保护、广播和焦点检查；不支持时安全暂停。
+- [x] 5.4 完成恢复结果说明、表单、弹窗焦点、编辑器名称、格式键盘操作、选择语义、状态播报与既有 DESIGN 修正。
+- [x] 5.5 完成真实认证场景矩阵、浏览器存储/数据库比对和本轮实际停服重启恢复。
+- [x] 5.6 全部适用前后端质量、完整回归、锁覆盖、API、依赖及严格 OpenSpec 检查；关键保护可逆破坏实验。
+- [x] 5.7 两次独立 Chromium 冷启动、生产构建及 Firefox/WebKit 核心流程，无自动重试或核心跳过。
+- [x] 5.8 键盘、320 CSS 像素、200% 文字、400% 缩放、对比度、目标尺寸；实际辅助技术按 2026-10-12 用户决定豁免、未执行；10,000 词输入/切换/锁每项至少 30 样本 p95 <100ms。
+- [x] 5.9 两名新只读复核者检查同一冻结候选，原缺陷全部复查，无范围内 S0-S2 或未查明核心数据安全疑点。
+- [ ] 5.10 必要使用说明和验证状态准确；全部 DoD 后创建可审阅本地提交并整合，清理本轮临时服务和完整整合工作区，保留必要恢复材料。
+
+2026-10-12 用户明确决定跳过旁白检查，继续完成其余检查、PR、合并和多余分支清理。实际辅助技术未执行、未验证；此项为用户豁免，不能记作通过或据此宣称全站 WCAG 合规。远端操作现已获授权；不部署、不调用付费模型、不修改默认模型配置、不更新长期记忆的边界继续有效。整合以实时远端主线为基础，保留其既有修复和依赖，并验证新的组合候选。
+
+候选 12 的产品、浏览器、性能及独立复核结果见 validation。5.4、5.8 的实现和已执行检查完成，实际旁白检查已豁免；两名新只读复核者核对同一冻结候选，无范围内未解决 S0–S2。5.10 待实际提交、远端整合验证、PR 合并及清理完成后关闭。
 
 ## 1. Approval and baseline
 

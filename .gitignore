@@ -90,3 +90,7 @@ server/server/infrastructure/llm/prompts/generated_templates.py
 
 # Generated local browser authentication (never commit session cookies)
 client/e2e/storage-state.generated.json
+
+# Private authenticated-editor safety evidence and runtime credentials
+/.scratch/authenticated-editor-safety-2026-10-11/
+/.scratch/authenticated-editor-integration-2026-10-12/
