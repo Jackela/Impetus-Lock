@@ -38,7 +38,7 @@ async def test_foreign_task_intervention_is_rejected_before_generation_and_histo
     )
     monkeypatch.setattr(DebugLLMProvider, "generate_intervention", provider)
 
-    transport = ASGITransport(app=app)
+    transport = ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345))
     async with (
         AsyncClient(transport=transport, base_url="http://test") as owner,
         AsyncClient(transport=transport, base_url="http://test") as non_owner,
@@ -50,6 +50,7 @@ async def test_foreign_task_intervention_is_rejected_before_generation_and_histo
             )
             assert registered.status_code == 201
             client.headers["X-CSRF-Token"] = client.cookies["csrf_token"]
+            client.headers["X-Expected-User-ID"] = registered.json()["user"]["id"]
             assert (await client.get("/auth/me")).status_code == 200
 
         created = await owner.post("/tasks/", json={"content": "The door opened.", "lock_ids": []})
@@ -109,7 +110,7 @@ async def authenticated_intervention_clients(
         )
     )
     monkeypatch.setattr(DebugLLMProvider, "generate_intervention", provider)
-    transport = ASGITransport(app=app)
+    transport = ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345))
     async with (
         AsyncClient(transport=transport, base_url="http://test") as owner,
         AsyncClient(transport=transport, base_url="http://test") as non_owner,
@@ -121,6 +122,7 @@ async def authenticated_intervention_clients(
             )
             assert registered.status_code == 201
             client.headers["X-CSRF-Token"] = client.cookies["csrf_token"]
+            client.headers["X-Expected-User-ID"] = registered.json()["user"]["id"]
             assert (await client.get("/auth/me")).status_code == 200
         created = await owner.post("/tasks/", json={"content": "The door opened.", "lock_ids": []})
         assert created.status_code == 201
@@ -214,3 +216,49 @@ async def test_owner_and_optional_task_id_remain_supported(
     else:
         assert history.json()["total"] == 0
         assert actions == []
+
+
+async def test_shared_cookie_switch_rejects_old_page_before_tasks_ai_and_logout(
+    authenticated_intervention_clients: tuple[AsyncClient, AsyncClient, str, Mock],
+) -> None:
+    """A's old page cannot read, create, save, generate or log out as cookie account B."""
+    old_page, account_b, task_id, provider = authenticated_intervention_clients
+    account_a_cookies = dict(old_page.cookies)
+    account_a_csrf = old_page.headers["X-CSRF-Token"]
+    task_before = (await old_page.get(f"/tasks/{task_id}")).json()
+    b_before = (await account_b.get("/tasks/")).json()
+    old_page.cookies.clear()
+    old_page.cookies.update(account_b.cookies)
+    old_page.headers["X-CSRF-Token"] = account_b.cookies["csrf_token"]
+    requests = [
+        ("GET", "/tasks/", None, {}),
+        ("POST", "/tasks/", {"content": "Private A draft", "lock_ids": ["A-lock"]}, {}),
+        (
+            "PUT",
+            f"/tasks/{task_id}",
+            {
+                "content": "Private A draft",
+                "lock_ids": ["A-lock"],
+                "version": task_before["version"],
+            },
+            {},
+        ),
+        (
+            "POST",
+            "/impetus/generate-intervention",
+            _intervention_payload(),
+            {"Idempotency-Key": str(uuid4()), "X-Contract-Version": "2.0.0"},
+        ),
+        ("POST", "/auth/logout", None, {}),
+    ]
+    for method, path, payload, headers in requests:
+        response = await old_page.request(method, path, json=payload, headers=headers)
+        assert response.status_code == 409, (method, path, response.status_code)
+        assert response.json()["code"] == "account_mismatch"
+        assert not response.headers.get_list("set-cookie")
+    assert provider.call_count == 0
+    assert (await account_b.get("/tasks/")).json() == b_before
+    old_page.cookies.clear()
+    old_page.cookies.update(account_a_cookies)
+    old_page.headers["X-CSRF-Token"] = account_a_csrf
+    assert (await old_page.get(f"/tasks/{task_id}")).json() == task_before

@@ -225,7 +225,10 @@ class TestAuthenticationMiddleware:
         response = client.get(
             "/protected",
             cookies={"access_token": token, "csrf_token": "csrf_token"},
-            headers={"X-CSRF-Token": "csrf_token"},
+            headers={
+                "X-CSRF-Token": "csrf_token",
+                "X-Expected-User-ID": "12345678-1234-1234-1234-123456789abc",
+            },
         )
 
         # A safe authenticated read must reach the protected endpoint.
@@ -278,6 +281,7 @@ class TestAuthenticationMiddleware:
         response = client.post(
             "/protected",
             cookies={"access_token": token},
+            headers={"X-Expected-User-ID": "12345678-1234-1234-1234-123456789abc"},
             # Missing CSRF token
         )
 
@@ -298,7 +302,10 @@ class TestAuthenticationMiddleware:
         response = client.post(
             "/protected",
             cookies={"access_token": token, "csrf_token": "cookie_value"},
-            headers={"X-CSRF-Token": "header_value"},  # Different from cookie
+            headers={
+                "X-CSRF-Token": "header_value",  # Different from cookie
+                "X-Expected-User-ID": "12345678-1234-1234-1234-123456789abc",
+            },
         )
 
         assert response.status_code == 403

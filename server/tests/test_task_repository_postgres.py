@@ -27,7 +27,11 @@ async def repository_sessions() -> AsyncIterator[async_sessionmaker[AsyncSession
     schema = f"r19_repository_{uuid4().hex}"
     engine = create_async_engine(
         os.getenv(
-            "POSTGRES_TEST_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+            "POSTGRES_TEST_URL",
+            os.getenv(
+                "TEST_DATABASE_URL",
+                "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres",
+            ),
         ),
         execution_options={"schema_translate_map": {None: schema}},
         connect_args={"server_settings": {"statement_timeout": "10000"}},

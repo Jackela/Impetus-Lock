@@ -8,6 +8,7 @@
  */
 
 import { cookieAuthOptions } from "../services/api/cookieAuth";
+import { authenticationWrite, observeAuthenticationWrites } from "../services/api/authCoordination";
 import type { RemoteSession } from "../services/api/remoteSession";
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -36,7 +37,8 @@ export interface AuthContextType {
     | "check-error"
     | "expired"
     | "logging-out"
-    | "logout-unconfirmed";
+    | "logout-unconfirmed"
+    | "signed-out-local-error";
   /** The lifetime of currently authorized remote work. */
   session: RemoteSession | null;
   /** Whether protected requests may start. */
@@ -93,6 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   const sessionController = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
   const snapshots = useRef(new Set<() => void>());
+  const pageIdentity = useRef(crypto.randomUUID());
   const activeOperation = useRef<{
     kind: "check" | "login" | "register" | "logout";
     controller: AbortController;
@@ -170,6 +173,18 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
           setError(snapshotError?.message ?? null);
           setStatus("expired");
         },
+        onAccountMismatch: () => {
+          if (!nextSession.isCurrent()) return;
+          const snapshotError = pause();
+          cancelOperation();
+          setError(
+            "This browser is now signed in to another account. Remote work is paused; check the session before continuing." +
+              (snapshotError
+                ? " Your latest draft could not be saved on this device. Keep this page open and export your writing."
+                : " Your writing remains with this account.")
+          );
+          setStatus("check-error");
+        },
       };
       sessionController.current = controller;
       sessionRef.current = nextSession;
@@ -205,6 +220,13 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
           const nextUser = await response.json();
           if (current()) authorize(nextUser);
         } else if (response.status === 401) {
+          if (userRef.current && pause()) {
+            setError(
+              "The server confirms you are signed out, but your latest draft could not be saved on this device. Keep this page open, export your writing, or restore storage and check your session again."
+            );
+            setStatus("signed-out-local-error");
+            return;
+          }
           userRef.current = null;
           setUser(null);
           setStatus("anonymous");
@@ -238,6 +260,32 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     };
   }, [recheck]);
 
+  useEffect(() => {
+    const stop = observeAuthenticationWrites(pageIdentity.current, (stage) => {
+      if (stage === "started" && userRef.current) {
+        const snapshotError = pause();
+        setError(
+          "Your session is being changed in another tab. Remote work is paused." +
+            (snapshotError
+              ? " Your latest draft could not be saved. Keep this page open and export your writing."
+              : " Your writing remains with this account.")
+        );
+        if (!activeOperation.current) setStatus("check-error");
+      } else if (stage === "settled" && !activeOperation.current) {
+        void recheck();
+      }
+    });
+    return stop;
+  }, [pause, recheck]);
+
+  useEffect(() => {
+    const checkFocusedSession = (): void => {
+      if (!activeOperation.current && document.visibilityState !== "hidden") void recheck();
+    };
+    window.addEventListener("focus", checkFocusedSession);
+    return () => window.removeEventListener("focus", checkFocusedSession);
+  }, [recheck]);
+
   const submit = useCallback(
     (action: "login" | "register", email: string, password: string): Promise<void> => {
       if (activeOperation.current?.kind === action && activeOperation.current.promise)
@@ -258,14 +306,18 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       const current = (): boolean => activeOperation.current === operation;
       operation.promise = (async (): Promise<void> => {
         try {
-          const response = await fetch(
-            `${API_URL}/auth/${action}`,
-            cookieAuthOptions({
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, password }),
-              signal: operation.controller.signal,
-            })
+          const response = await authenticationWrite(
+            operation.controller.signal,
+            () =>
+              fetch(
+                `${API_URL}/auth/${action}`,
+                cookieAuthOptions({
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ email, password }),
+                })
+              ),
+            pageIdentity.current
           );
           const data: unknown = await response.json().catch(() => null);
           if (!current())
@@ -314,6 +366,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   const logout = useCallback((): Promise<void> => {
     if (activeOperation.current?.kind === "logout" && activeOperation.current.promise)
       return activeOperation.current.promise;
+    const expectedUserId = userRef.current?.id;
+    if (!expectedUserId) return Promise.reject(new Error("Check your session before signing out."));
     const snapshotError = pause();
     cancelOperation();
     setError(snapshotError?.message ?? null);
@@ -325,15 +379,30 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     const operation = startOperation("logout");
     const current = (): boolean => activeOperation.current === operation;
     operation.promise = (async (): Promise<void> => {
+      let serverSignedOut = false;
       try {
-        const response = await fetch(
-          `${API_URL}/auth/logout`,
-          cookieAuthOptions({ method: "POST", signal: operation.controller.signal })
+        const response = await authenticationWrite(
+          operation.controller.signal,
+          () =>
+            fetch(
+              `${API_URL}/auth/logout`,
+              cookieAuthOptions({
+                method: "POST",
+                headers: { "X-Expected-User-ID": expectedUserId },
+              })
+            ),
+          pageIdentity.current
         );
         if (!current()) return;
         if (response.status !== 204)
           throw new Error(
             `Logout has not been confirmed (HTTP ${response.status}). Please retry or check your session.`
+          );
+        serverSignedOut = true;
+        const finalSnapshotError = pause();
+        if (finalSnapshotError)
+          throw new Error(
+            "The server has signed out, but your latest draft could not be saved on this device. Keep this page open, export your writing, or restore storage and check your session again."
           );
         userRef.current = null;
         setUser(null);
@@ -345,7 +414,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             ? err.message
             : "Logout has not been confirmed. Please retry or check your session."
         );
-        setStatus("logout-unconfirmed");
+        setStatus(serverSignedOut ? "signed-out-local-error" : "logout-unconfirmed");
         throw err;
       } finally {
         if (current()) {

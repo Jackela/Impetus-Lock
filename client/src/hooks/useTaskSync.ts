@@ -8,13 +8,21 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createTask, fetchTask, updateTask, TaskAPIError } from "../services/api/taskClient";
+import {
+  createTask,
+  fetchTask,
+  fetchTasks,
+  updateTask,
+  TaskAPIError,
+} from "../services/api/taskClient";
 import type { TaskRecord } from "../services/api/taskClient";
 import type { RemoteSession } from "../services/api/remoteSession";
 import {
   newDraftId,
   inspectOwnedDrafts,
   writeOwnedDraft,
+  readDraftSelection,
+  writeDraftSelection,
   DraftRecoveryError,
   type DraftRecoveryIssue,
   type DraftSnapshot,
@@ -26,6 +34,9 @@ const LOCAL_META_KEY = "impetus.task.meta";
 type Draft = { content: string; lockIds: string[] };
 type TaskDraft = Draft & {
   draftId: string;
+  workingCopyOf?: string;
+  creationUncertain: boolean;
+  creationAttempt: Draft | null;
   updatedAt: number;
   ownerId?: string | null;
   session?: RemoteSession | null;
@@ -79,6 +90,8 @@ export const TaskSyncErrorMessages = {
     "Local draft could not be saved on this device. Keep this page open and retry or export your draft.",
   CONFLICT_REQUIRED:
     "The server has a different version. Your local draft and locks are kept. Choose the server version or save as a new draft.",
+  CREATE_UNCERTAIN:
+    "The task may have been created, but its result was not confirmed. Your draft is kept. Recheck existing tasks before explicitly creating another copy.",
 } as const;
 
 /**
@@ -192,6 +205,12 @@ export interface TaskSyncState {
   flushLocal: () => void;
   resolveConflict: (choice: "server" | "new") => void | Promise<void>;
   createLocalDraft: (content: string, lockIds: string[]) => void;
+  /** An earlier creation may have committed; automatic creation remains paused. */
+  creationUncertain: boolean;
+  /** Find complete matches to the attempted creation without assigning ownership. */
+  checkCreation: () => Promise<TaskRecord[]>;
+  /** Explicitly select an existing creation while retaining newer local writing. */
+  adoptCreation: (id: string) => Promise<void>;
 }
 
 /**
@@ -201,6 +220,8 @@ export interface UseTaskSyncOptions {
   /** External task ID to load. When changed, the hook will load the new task. */
   externalTaskId?: string | null;
   userId?: string | null;
+  /** Independent writing surface in this tab; selection survives refresh. */
+  writingContextId?: string;
   /** Undefined retains the legacy test contract; null explicitly pauses remote work. */
   session?: RemoteSession | null;
   registerSnapshot?: (callback: () => void) => () => void;
@@ -243,7 +264,8 @@ export interface UseTaskSyncOptions {
  * ```
  */
 export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions): TaskSyncState {
-  const { externalTaskId, userId, session, registerSnapshot, canSave } = options || {};
+  const { externalTaskId, userId, session, registerSnapshot, canSave, writingContextId } =
+    options || {};
   const context = useRef({ userId, session, canSave });
   context.current = { userId, session, canSave };
   const [content, setContent] = useState(defaultContent);
@@ -260,8 +282,13 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   }>({ ownerId: userId, issues: [] });
   const makeDraft = useCallback(
     (id: string | null = null, snapshot?: DraftSnapshot): TaskDraft => ({
-      draftId: snapshot?.draftId ?? newDraftId(),
-      updatedAt: snapshot?.updatedAt ?? Date.now(),
+      // Always fork restored storage. A duplicated tab can inherit sessionStorage,
+      // so a retained tab identifier cannot guarantee exclusive ownership.
+      draftId: newDraftId(),
+      ...(snapshot ? { workingCopyOf: snapshot.draftId } : {}),
+      creationUncertain: snapshot?.creationUncertain ?? false,
+      creationAttempt: snapshot?.creationAttempt ?? null,
+      updatedAt: Date.now(),
       ownerId: context.current.userId,
       session: context.current.session,
       taskId: id ?? snapshot?.taskId ?? null,
@@ -301,6 +328,16 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       dirty: draft.dirty,
       updatedAt: draft.updatedAt,
       ...(draft.recoveryIssue ? { recoveryOf: draft.recoveryIssue.key } : {}),
+      ...(draft.workingCopyOf ? { workingCopyOf: draft.workingCopyOf } : {}),
+      ...(draft.creationUncertain ? { creationUncertain: true } : {}),
+      ...(draft.creationAttempt
+        ? {
+            creationAttempt: {
+              content: draft.creationAttempt.content,
+              lockIds: [...draft.creationAttempt.lockIds],
+            },
+          }
+        : {}),
     }),
     []
   );
@@ -335,8 +372,10 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   const writeLocal = useCallback(
     (draft: TaskDraft) => {
       if (!sameOwner(draft)) return;
-      if (typeof draft.ownerId === "string") writeOwnedDraft(draft.ownerId, snapshotOf(draft));
-      else if (draft.ownerId === undefined) {
+      if (typeof draft.ownerId === "string") {
+        writeOwnedDraft(draft.ownerId, snapshotOf(draft));
+        if (visible(draft)) writeDraftSelection(draft.ownerId, draft.draftId, writingContextId);
+      } else if (draft.ownerId === undefined) {
         localStorage.removeItem(LOCAL_META_KEY);
         localStorage.setItem(LOCAL_CACHE_KEY, draft.content);
         if (draft.taskId)
@@ -353,7 +392,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       }
       draft.storageError = false;
     },
-    [sameOwner, snapshotOf]
+    [sameOwner, snapshotOf, visible, writingContextId]
   );
   const cacheDraft = useCallback(
     (draft: TaskDraft) => {
@@ -404,6 +443,41 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     },
     [cacheDraft, visible]
   );
+  const createRemote = useCallback(
+    async (draft: TaskDraft, payload: Draft) => {
+      if (typeof draft.ownerId === "string") {
+        draft.creationUncertain = true;
+        draft.creationAttempt = { content: payload.content, lockIds: [...payload.lockIds] };
+        draft.dirty = true;
+        try {
+          // A refresh after dispatch must not silently repeat an unacknowledged POST.
+          writeLocal(draft);
+        } catch (storageFailure) {
+          draft.creationUncertain = false;
+          draft.creationAttempt = null;
+          draft.storageError = true;
+          throw storageFailure;
+        }
+      }
+      try {
+        return await createTask(payload, requestOptions(draft));
+      } catch (failure) {
+        const unknown =
+          failure instanceof TaskAPIError && failure.code === "create_outcome_unknown";
+        const rejected =
+          failure instanceof TaskAPIError && failure.status >= 400 && failure.status < 500;
+        const mismatched =
+          failure instanceof Error && "code" in failure && failure.code === "account_mismatch";
+        if (!unknown && (rejected || mismatched || remoteAllowed(draft))) {
+          draft.creationUncertain = false;
+          draft.creationAttempt = null;
+          cacheDraft(draft);
+        }
+        throw failure;
+      }
+    },
+    [cacheDraft, remoteAllowed, requestOptions, writeLocal]
+  );
   const persist = useCallback(
     async (draft: TaskDraft) => {
       if (
@@ -412,7 +486,8 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         (draft.taskId && !draft.versionKnown) ||
         draft.saving ||
         !draft.pending ||
-        draft.conflict
+        draft.conflict ||
+        draft.creationUncertain
       )
         return;
       const requestSession = draft.session;
@@ -420,7 +495,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       draft.saving = true;
       if (visible(draft)) setIsSaving(true);
       try {
-        while (draft.pending && allowed() && !draft.conflict) {
+        while (draft.pending && allowed() && !draft.conflict && !draft.creationUncertain) {
           const payload = draft.pending;
           if (!mayWrite(draft, payload)) return;
           // Validation may itself invalidate a session or synchronously update
@@ -435,9 +510,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
                   { ...payload, version: draft.version },
                   requestOptions(draft)
                 )
-              : await createTask(payload, requestOptions(draft));
+              : await createRemote(draft, payload);
             if (!allowed()) return;
             draft.taskId = record.id;
+            draft.creationUncertain = false;
+            draft.creationAttempt = null;
             draft.version = record.version;
             draft.versionKnown = true;
             draft.dirty = draft.pending !== null;
@@ -480,7 +557,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
               showDraft(draft);
               break;
             }
-            draft.error = getErrorMessage(err, { operation: "save" });
+            draft.error = draft.creationUncertain
+              ? TaskSyncErrorMessages.CREATE_UNCERTAIN
+              : draft.storageError
+                ? TaskSyncErrorMessages.STORAGE_FAILED
+                : getErrorMessage(err, { operation: "save" });
             cacheDraft(draft);
             showDraft(draft);
           }
@@ -492,7 +573,16 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         }
       }
     },
-    [cacheDraft, mayWrite, remoteAllowed, requestOptions, showDraft, snapshotOf, visible]
+    [
+      cacheDraft,
+      createRemote,
+      mayWrite,
+      remoteAllowed,
+      requestOptions,
+      showDraft,
+      snapshotOf,
+      visible,
+    ]
   );
   const adoptTask = useCallback(
     (record: TaskRecord, draft: TaskDraft) => {
@@ -505,9 +595,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       }
       if (
         draft.ownerId !== undefined &&
-        draft.dirty &&
-        draft.versionKnown &&
-        draft.version !== record.version
+        (draft.versionKnown
+          ? draft.dirty && draft.version !== record.version
+          : (draft.dirty || draft.workingCopyOf !== undefined) &&
+            (draft.content !== record.content ||
+              JSON.stringify(draft.lockIds) !== JSON.stringify(record.lock_ids)))
       ) {
         draft.conflict = { local: snapshotOf(draft), server: record };
         draft.pending = null;
@@ -515,6 +607,12 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         draft.error = TaskSyncErrorMessages.CONFLICT_REQUIRED;
         showDraft(draft);
         return;
+      }
+      if (draft.ownerId !== undefined && draft.dirty && !draft.versionKnown) {
+        // Identical complete bodies establish that this unknown local version
+        // already exists on the server; there is no pending overwrite to send.
+        draft.dirty = false;
+        draft.pending = null;
       }
       Object.assign(draft, {
         taskId: record.id,
@@ -534,31 +632,61 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     },
     [persist, remoteAllowed, showDraft, snapshotOf]
   );
-  const readOwned = useCallback((id?: string | null) => {
-    if (typeof context.current.userId !== "string") return null;
-    let inspected;
-    try {
-      inspected = inspectOwnedDrafts(context.current.userId);
-    } catch {
-      throw new DraftStorageReadError(TaskSyncErrorMessages.STORAGE_FAILED);
-    }
-    setRecovery({ ownerId: context.current.userId, issues: inspected.issues });
-    const selected = inspected.drafts.find(
-      (draft) => !draft.recoveryOf && (id === undefined || draft.taskId === id)
-    );
-    if (selected) return selected;
-    const issues = inspected.issues.filter(
-      (issue) => id === undefined || issue.taskId === null || issue.taskId === id
-    );
-    if (id !== undefined) issues.sort((a, b) => Number(b.taskId === id) - Number(a.taskId === id));
-    const firstIssue = issues[0];
-    if (firstIssue)
-      throw new DraftRecoveryError(
-        issues,
-        inspected.drafts.find((draft) => draft.recoveryOf === firstIssue.key)
+  const readOwned = useCallback(
+    (id?: string | null) => {
+      if (typeof context.current.userId !== "string") return null;
+      let inspected;
+      let selectedId: string | null;
+      try {
+        inspected = inspectOwnedDrafts(context.current.userId);
+        selectedId = readDraftSelection(context.current.userId, writingContextId);
+      } catch {
+        throw new DraftStorageReadError(TaskSyncErrorMessages.STORAGE_FAILED);
+      }
+      setRecovery({ ownerId: context.current.userId, issues: inspected.issues });
+      const selectedKey =
+        selectedId === null
+          ? null
+          : `impetus.draft.${encodeURIComponent(context.current.userId).replace(/\./g, "%2E")}.${encodeURIComponent(selectedId)}`;
+      const selectedCopy = inspected.drafts.find((draft) => draft.draftId === selectedId);
+      const selectedIssue = inspected.issues.find(
+        (issue) =>
+          (issue.key === selectedKey || issue.key === selectedCopy?.recoveryOf) &&
+          (id === undefined || issue.taskId === null || issue.taskId === id)
       );
-    return null;
-  }, []);
+      if (selectedIssue)
+        throw new DraftRecoveryError(
+          [selectedIssue],
+          selectedCopy?.recoveryOf === selectedIssue.key
+            ? selectedCopy
+            : inspected.drafts.find((draft) => draft.recoveryOf === selectedIssue.key)
+        );
+      const exactSelected = inspected.drafts.find(
+        (draft) =>
+          draft.draftId === selectedId &&
+          !draft.recoveryOf &&
+          (id === undefined || draft.taskId === id)
+      );
+      if (exactSelected) return exactSelected;
+      const selected = inspected.drafts.find(
+        (draft) => !draft.recoveryOf && (id === undefined || draft.taskId === id)
+      );
+      if (selected) return selected;
+      const issues = inspected.issues.filter(
+        (issue) => id === undefined || issue.taskId === null || issue.taskId === id
+      );
+      if (id !== undefined)
+        issues.sort((a, b) => Number(b.taskId === id) - Number(a.taskId === id));
+      const firstIssue = issues[0];
+      if (firstIssue)
+        throw new DraftRecoveryError(
+          issues,
+          inspected.drafts.find((draft) => draft.recoveryOf === firstIssue.key)
+        );
+      return null;
+    },
+    [writingContextId]
+  );
   const showRecoveryFailure = useCallback(
     (draft: TaskDraft, failure: DraftRecoveryError) => {
       const issue = failure.issues[0];
@@ -595,11 +723,26 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       const previous = active.current!;
       if (previous.timer) window.clearTimeout(previous.timer);
       previous.timer = null;
+      if (previous.ownerId !== undefined && (previous.dirty || previous.storageError)) {
+        try {
+          writeLocal(previous);
+        } catch {
+          failedSelection.current = { ownerId: previous.ownerId, id };
+          previous.storageError = true;
+          previous.status = "error";
+          previous.error = TaskSyncErrorMessages.STORAGE_FAILED;
+          showDraft(previous);
+          return;
+        }
+      }
       cacheDraft(previous);
       const cached = drafts.current.get(id);
+      const restoringStopped = !!cached?.stopped;
       const retained =
-        cached && !cached.stopped && (cached.saving || cached.dirty || cached.status === "loading")
-          ? cached
+        cached && cached.ownerId === context.current.userId
+          ? cached.stopped
+            ? makeDraft(id, snapshotOf(cached))
+            : cached
           : null;
       let draft: TaskDraft;
       try {
@@ -626,7 +769,12 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       if (remoteAllowed(previous)) void persist(previous);
       active.current = draft;
       drafts.current.set(id, draft);
-      const needsLoad = force || !retained || (!draft.versionKnown && draft.status !== "loading");
+      const needsLoad =
+        force ||
+        restoringStopped ||
+        !retained ||
+        (!draft.versionKnown && draft.status !== "loading") ||
+        (!draft.dirty && !draft.saving && draft.status !== "loading");
       if (needsLoad) draft.status = remoteAllowed(draft) ? "loading" : "ready";
       showDraft(draft);
       if (!needsLoad || !remoteAllowed(draft) || draft.recoveryIssue) return;
@@ -654,6 +802,8 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       showDraft,
       showRecoveryFailure,
       showStorageReadFailure,
+      snapshotOf,
+      writeLocal,
     ]
   );
   const bootstrap = useCallback(async () => {
@@ -709,6 +859,12 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       if (draft.taskId) drafts.current.set(draft.taskId, draft);
       if (!allowed()) return;
       const creating = !draft.taskId;
+      if (creating && draft.creationUncertain) {
+        draft.status = "error";
+        draft.error = TaskSyncErrorMessages.CREATE_UNCERTAIN;
+        showDraft(draft);
+        return;
+      }
       const initial = { content: draft.content, lockIds: [...draft.lockIds] };
       if (creating && !mayWrite(draft, initial)) {
         draft.pending = { content: draft.content, lockIds: [...draft.lockIds] };
@@ -721,8 +877,10 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       if (creating && draft.ownerId !== undefined) draft.pending = null;
       const record = draft.taskId
         ? await fetchTask(draft.taskId, requestOptions(draft))
-        : await createTask(initial, requestOptions(draft));
+        : await createRemote(draft, initial);
       if (!allowed()) return;
+      draft.creationUncertain = false;
+      draft.creationAttempt = null;
       if (
         creating &&
         draft.ownerId !== undefined &&
@@ -743,7 +901,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         showStorageReadFailure(draft);
         return;
       }
-      draft.error = TaskSyncErrorMessages.API_UNAVAILABLE;
+      draft.error = draft.creationUncertain
+        ? TaskSyncErrorMessages.CREATE_UNCERTAIN
+        : draft.storageError
+          ? TaskSyncErrorMessages.STORAGE_FAILED
+          : TaskSyncErrorMessages.API_UNAVAILABLE;
       draft.status = "error";
       if (draft.ownerId === undefined && !draft.dirty && cachedContent !== null) {
         draft.content = cachedContent;
@@ -757,6 +919,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     }
   }, [
     adoptTask,
+    createRemote,
     makeDraft,
     mayWrite,
     readOwned,
@@ -861,7 +1024,8 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   const createLocalDraft = useCallback(
     (markdown: string, locks: string[]) => {
       const previous = active.current!;
-      cacheDraft(previous);
+      // A successful snapshot is required before replacing the visible writer.
+      flushLocal();
       drafts.current.set(previous.taskId ?? `local:${previous.draftId}`, previous);
       if (previous.timer) window.clearTimeout(previous.timer);
       previous.timer = null;
@@ -876,7 +1040,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       showDraft(draft);
       if (remoteAllowed(draft)) void persist(draft);
     },
-    [cacheDraft, makeDraft, persist, remoteAllowed, showDraft]
+    [flushLocal, makeDraft, persist, remoteAllowed, showDraft]
   );
   const resolveConflict = useCallback(
     (choice: "server" | "new") => {
@@ -972,6 +1136,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     // Editor readiness cannot substitute for the still-pending server version
     // check or start another create while bootstrap is in flight.
     if (draft.status === "loading") return;
+    if (draft.creationUncertain) {
+      draft.error = TaskSyncErrorMessages.CREATE_UNCERTAIN;
+      showDraft(draft);
+      return;
+    }
     if (draft.conflict) {
       if (!draft.conflict.server && draft.taskId) {
         try {
@@ -1004,6 +1173,80 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     showStorageReadFailure,
     snapshotOf,
   ]);
+  const checkCreation = useCallback(async (): Promise<TaskRecord[]> => {
+    const draft = active.current!;
+    const capturedSession = draft.session;
+    const allowed = () => remoteAllowed(draft) && draft.session === capturedSession;
+    if (!draft.creationUncertain || !allowed())
+      throw new Error("Sign in to recheck the unconfirmed creation.");
+    const attempt = draft.creationAttempt ?? draft;
+    const candidates: TaskRecord[] = [];
+    const seen = new Set<string>();
+    let total: number | null = null;
+    let offset = 0;
+    do {
+      if (!allowed()) throw new DOMException("Creation check cancelled", "AbortError");
+      const page = await fetchTasks(
+        { limit: 100, offset, sort: { field: "created_at", order: "asc" } },
+        requestOptions(draft)
+      );
+      if (!allowed()) throw new DOMException("Creation check cancelled", "AbortError");
+      total ??= page.total;
+      if (
+        !Number.isInteger(total) ||
+        total < 0 ||
+        page.total !== total ||
+        page.offset !== offset ||
+        page.tasks.length !== Math.min(100, total - offset) ||
+        page.tasks.some((record) => seen.has(record.id))
+      )
+        throw new Error("The task collection changed. Please recheck.");
+      for (const record of page.tasks) {
+        if (seen.has(record.id)) throw new Error("The task collection changed. Please recheck.");
+        seen.add(record.id);
+        if (
+          record.content === attempt.content &&
+          JSON.stringify(record.lock_ids) === JSON.stringify(attempt.lockIds)
+        )
+          candidates.push(record);
+      }
+      offset += page.tasks.length;
+    } while (offset < total);
+    // An empty result is not proof that the earlier POST never committed.
+    return candidates;
+  }, [remoteAllowed, requestOptions]);
+  const adoptCreation = useCallback(
+    async (id: string): Promise<void> => {
+      const draft = active.current!;
+      const capturedSession = draft.session;
+      const allowed = () =>
+        visible(draft) && remoteAllowed(draft) && draft.session === capturedSession;
+      if (!draft.creationUncertain || !allowed()) return;
+      const record = await fetchTask(id, requestOptions(draft));
+      if (!allowed()) return;
+      if (typeof draft.ownerId === "string") {
+        try {
+          writeOwnedDraft(draft.ownerId, {
+            ...snapshotOf(draft),
+            draftId: newDraftId(),
+            recoveryOf: draft.draftId,
+          });
+        } catch (failure) {
+          draft.storageError = true;
+          draft.error = TaskSyncErrorMessages.STORAGE_FAILED;
+          showDraft(draft);
+          throw failure;
+        }
+      }
+      draft.creationUncertain = false;
+      draft.creationAttempt = null;
+      draft.taskId = record.id;
+      draft.versionKnown = false;
+      draft.dirty = true;
+      adoptTask(record, draft);
+    },
+    [adoptTask, remoteAllowed, requestOptions, showDraft, snapshotOf, visible]
+  );
   const owned = active.current!.ownerId === userId;
   return {
     content: owned ? content : defaultContent,
@@ -1023,5 +1266,8 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     flushLocal,
     resolveConflict,
     createLocalDraft,
+    creationUncertain: owned && active.current!.creationUncertain,
+    checkCreation,
+    adoptCreation,
   };
 }

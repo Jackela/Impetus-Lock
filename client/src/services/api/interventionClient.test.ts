@@ -23,6 +23,25 @@ describe("generateIntervention", () => {
 
   afterEach(() => vi.useRealTimers());
 
+  it("does not retry an account mismatch even when the caller has not yet paused", async () => {
+    vi.useFakeTimers();
+    const session: RemoteSession = {
+      userId: "account-a",
+      generation: 1,
+      signal: new AbortController().signal,
+      isCurrent: () => true,
+      onUnauthorized: vi.fn(),
+      onAccountMismatch: vi.fn(),
+    };
+    const http = vi
+      .spyOn(global, "fetch")
+      .mockImplementation(async () => Response.json({ code: "account_mismatch" }, { status: 409 }));
+    const result = generateIntervention(baseRequest, { session }).catch((error: unknown) => error);
+    await vi.runAllTimersAsync();
+    expect(await result).toMatchObject({ name: "RemoteAccountMismatchError" });
+    expect(http).toHaveBeenCalledOnce();
+  });
+
   it.each([triggerMuseIntervention, triggerLokiIntervention])(
     "does not send a paused mode intervention",
     async (trigger) => {

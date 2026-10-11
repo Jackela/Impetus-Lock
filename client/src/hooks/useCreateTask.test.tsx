@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { useState } from "react";
-import { fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCreateTask } from "./useCreateTask";
 import { CreateTaskModal } from "../components/CreateTaskModal/CreateTaskModal";
@@ -85,6 +85,8 @@ describe("useCreateTask", () => {
   };
 
   beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
     vi.restoreAllMocks();
   });
 
@@ -140,7 +142,7 @@ describe("useCreateTask", () => {
   });
 
   it("shows a creation error and keeps the modal form editable after a failed request", async () => {
-    mockFetch.mockResolvedValueOnce(new Response(null, { status: 500 }));
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 422 }));
     const onClose = vi.fn();
     const onSuccess = vi.fn();
 
@@ -178,7 +180,7 @@ describe("useCreateTask", () => {
     expect(result.current.isLoading).toBe(false);
 
     // Trigger mutation
-    result.current.mutate({ content: "New task content" });
+    act(() => result.current.mutate({ content: "New task content" }));
 
     // Wait for completion
     await waitFor(() => {
@@ -207,10 +209,12 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({
-      content: "Locked task content",
-      lockIds: ["lock_1", "lock_2"],
-    });
+    act(() =>
+      result.current.mutate({
+        content: "Locked task content",
+        lockIds: ["lock_1", "lock_2"],
+      })
+    );
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -238,7 +242,10 @@ describe("useCreateTask", () => {
     });
 
     // Trigger mutation and wait for result
-    const createdTask = await result.current.mutateAsync({ content: "New task content" });
+    let createdTask: TaskRecord | undefined;
+    await act(async () => {
+      createdTask = await result.current.mutateAsync({ content: "New task content" });
+    });
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.error).toBeNull();
@@ -258,10 +265,13 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(createTestQueryClient()),
     });
 
-    const createdTask = await result.current.mutateAsync(
-      { content: "New task content" },
-      { onSuccess, onSettled }
-    );
+    let createdTask: TaskRecord | undefined;
+    await act(async () => {
+      createdTask = await result.current.mutateAsync(
+        { content: "New task content" },
+        { onSuccess, onSettled }
+      );
+    });
 
     expect(createdTask).toEqual(mockCreatedTask);
     expect(onSuccess.mock.calls[0]?.[0]).toEqual(mockCreatedTask);
@@ -280,7 +290,7 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ content: "" });
+    act(() => result.current.mutate({ content: "" }));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -297,14 +307,14 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ content: "New task" });
+    act(() => result.current.mutate({ content: "New task" }));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
     expect(result.current.error).toBeTruthy();
-    expect(result.current.error?.message).toContain("Network error");
+    expect(result.current.error).toMatchObject({ code: "create_outcome_unknown" });
   });
 
   it("invalidates tasks query cache on success", async () => {
@@ -329,7 +339,9 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(queryClient),
     });
 
-    await result.current.mutateAsync({ content: "New task" });
+    await act(async () => {
+      await result.current.mutateAsync({ content: "New task" });
+    });
 
     // Verify invalidateQueries was called with tasks query key
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ["tasks"] });
@@ -347,7 +359,7 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ content: "Delayed task" });
+    act(() => result.current.mutate({ content: "Delayed task" }));
 
     // Wait for loading state to be set (React Query updates state asynchronously)
     await waitFor(() => {
@@ -355,10 +367,12 @@ describe("useCreateTask", () => {
     });
 
     // Resolve the fetch
-    resolveFetch!({
-      ok: true,
-      json: async () => mockTaskResponse,
-    } as Response);
+    await act(async () => {
+      resolveFetch!({
+        ok: true,
+        json: async () => mockTaskResponse,
+      } as Response);
+    });
 
     // Wait for completion
     await waitFor(() => {
@@ -377,7 +391,9 @@ describe("useCreateTask", () => {
       wrapper: createWrapper(),
     });
 
-    await expect(result.current.mutateAsync({ content: "Bad task" })).rejects.toThrow();
+    await act(async () => {
+      await expect(result.current.mutateAsync({ content: "Bad task" })).rejects.toThrow();
+    });
 
     // After mutateAsync throws, the mutation is complete
     expect(result.current.isLoading).toBe(false);

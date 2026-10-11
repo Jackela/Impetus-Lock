@@ -2,6 +2,8 @@
 
 from collections.abc import AsyncIterator
 from http.cookies import SimpleCookie
+from unittest.mock import AsyncMock
+from uuid import uuid4
 
 import jwt
 import pytest
@@ -31,7 +33,10 @@ async def mounted_auth_client(
     app.dependency_overrides[get_session] = isolated_session
     try:
         async with AsyncClient(
-            transport=ASGITransport(app=app, raise_app_exceptions=False), base_url="http://test"
+            transport=ASGITransport(
+                app=app, raise_app_exceptions=False, client=(f"auth-{uuid4()}", 12345)
+            ),
+            base_url="http://test",
         ) as client:
             yield client
     finally:
@@ -89,7 +94,8 @@ async def test_mounted_middleware_accepts_existing_jwt_handler_token(
     # safe request, without involving the auth router's separate token decoder.
     safe = await mounted_auth_client.head("/auth/me")
     write = await mounted_auth_client.post(
-        "/auth/logout", headers={"X-CSRF-Token": "r04-legacy-csrf"}
+        "/auth/logout",
+        headers={"X-CSRF-Token": "r04-legacy-csrf", "X-Expected-User-ID": user_id},
     )
     assert (safe.status_code, write.status_code) == (405, 204)
 
@@ -143,7 +149,9 @@ async def test_login_read_and_logout_with_runtime_signing_configuration(
     assert me.status_code == 200
     assert me.json()["email"] == credentials["email"]
 
-    logged_out = await mounted_auth_client.post("/auth/logout", headers={"X-CSRF-Token": csrf})
+    logged_out = await mounted_auth_client.post(
+        "/auth/logout", headers={"X-CSRF-Token": csrf, "X-Expected-User-ID": me.json()["id"]}
+    )
     assert logged_out.status_code == 204
     assert sorted(mounted_auth_client.cookies.keys()) == []
     assert (await mounted_auth_client.get("/auth/me")).status_code == 401
@@ -210,11 +218,16 @@ async def test_csrf_rejects_missing_or_wrong_values_and_preserves_safe_methods(
     )
     assert registered.status_code == 201
     csrf = mounted_auth_client.cookies.get("csrf_token")
+    account_header = {"X-Expected-User-ID": registered.json()["user"]["id"]}
     for headers in ({}, {"X-CSRF-Token": "wrong"}):
-        rejected = await mounted_auth_client.post("/auth/logout", headers=headers)
+        rejected = await mounted_auth_client.post(
+            "/auth/logout", headers={**account_header, **headers}
+        )
         assert rejected.status_code == 403
     mounted_auth_client.cookies.delete("csrf_token")
-    rejected = await mounted_auth_client.post("/auth/logout", headers={"X-CSRF-Token": csrf})
+    rejected = await mounted_auth_client.post(
+        "/auth/logout", headers={**account_header, "X-CSRF-Token": csrf}
+    )
     assert rejected.status_code == 403
     for method in ("HEAD", "OPTIONS"):
         # The GET-only route returns 405; middleware must not turn safe reads into 403.
@@ -269,7 +282,10 @@ async def test_auth_cookies_follow_scheme_and_existing_environment(
         assert (await mounted_auth_client.get("http://test/auth/me")).status_code == 401
         csrf = mounted_auth_client.cookies.get("csrf_token")
         assert (
-            await mounted_auth_client.post("/auth/logout", headers={"X-CSRF-Token": csrf})
+            await mounted_auth_client.post(
+                "/auth/logout",
+                headers={"X-CSRF-Token": csrf, "X-Expected-User-ID": response.json()["user"]["id"]},
+            )
         ).status_code == 204
         assert list(mounted_auth_client.cookies) == []
 
@@ -316,3 +332,73 @@ async def test_optional_auth_rejects_signed_malformed_uuid(
 
     monkeypatch.setenv("JWT_SECRET", "r04-cookie-contract-test-secret-only")
     assert await get_current_user_optional(create_access_token("not-a-uuid"), db_session) is None
+
+
+@pytest.mark.asyncio
+async def test_old_account_logout_cannot_clear_new_account_cookie(
+    mounted_auth_client: AsyncClient,
+) -> None:
+    """A page expecting A must not log out the B identity in the shared cookie."""
+    first = await mounted_auth_client.post(
+        "/auth/register", json={"email": "account-a@example.com", "password": "securePassword123"}
+    )
+    first_id = first.json()["user"]["id"]
+    second = await mounted_auth_client.post(
+        "/auth/register", json={"email": "account-b@example.com", "password": "securePassword123"}
+    )
+    assert second.status_code == 201
+    second_id = second.json()["user"]["id"]
+    response = await mounted_auth_client.post(
+        "/auth/logout",
+        headers={
+            "X-CSRF-Token": mounted_auth_client.cookies.get("csrf_token"),
+            "X-Expected-User-ID": first_id,
+        },
+    )
+    assert response.status_code == 409
+    assert response.json()["code"] == "account_mismatch"
+    assert not response.headers.get_list("set-cookie")
+    me = await mounted_auth_client.get("/auth/me")
+    assert me.status_code == 200
+    assert me.json()["id"] == second_id
+
+
+@pytest.mark.asyncio
+async def test_protected_work_requires_explicit_account_but_me_can_discover_identity(
+    mounted_auth_client: AsyncClient,
+) -> None:
+    """Omitting the expected account must fail closed before protected business work."""
+    registered = await mounted_auth_client.post(
+        "/auth/register",
+        json={"email": "missing-account@example.com", "password": "securePassword123"},
+    )
+    assert registered.status_code == 201
+    me = await mounted_auth_client.get("/auth/me")
+    assert me.status_code == 200
+    for method, path in (("POST", "/auth/logout"), ("GET", "/tasks/")):
+        response = await mounted_auth_client.request(
+            method, path, headers={"X-CSRF-Token": mounted_auth_client.cookies.get("csrf_token")}
+        )
+        assert response.status_code == 428
+        assert response.json()["code"] == "expected_account_required"
+        assert not response.headers.get_list("set-cookie")
+
+
+@pytest.mark.asyncio
+async def test_auth_rate_limit_returns_actionable_429_without_clearing_session(
+    mounted_auth_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A real middleware rejection must be HTTP 429, with its retry delay intact."""
+    from server.infrastructure.rate_limiting import limiter
+
+    # The Redis transport is the external boundary; request, limiter and middleware are real.
+    redis = AsyncMock()
+    redis.incr.return_value = 4  # Registration allows exactly three per minute.
+    monkeypatch.setattr(limiter, "_redis", redis)
+    response = await mounted_auth_client.post(
+        "/auth/register", json={"email": "rate-limit@example.com", "password": "securePassword123"}
+    )
+    assert response.status_code == 429
+    assert response.headers["Retry-After"] == "60"
+    assert "Rate limit exceeded" in response.json()["detail"]
+    assert not response.headers.get_list("set-cookie")

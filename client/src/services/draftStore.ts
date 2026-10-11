@@ -10,6 +10,12 @@ export interface DraftSnapshot {
   updatedAt: number;
   /** Recovery backups remain available but are not selected automatically. */
   recoveryOf?: string;
+  /** A working copy keeps the source identity without rewriting its source. */
+  workingCopyOf?: string;
+  /** A dispatched creation has no definite success or rejection acknowledgement. */
+  creationUncertain?: boolean;
+  /** Complete body sent in that attempt, independently of subsequent editing. */
+  creationAttempt?: { content: string; lockIds: string[] };
 }
 
 /** An owned source that is preserved verbatim until its recovery error is resolved. */
@@ -58,7 +64,13 @@ function validSnapshot(value: unknown): value is DraftSnapshot {
     typeof draft.dirty === "boolean" &&
     typeof draft.updatedAt === "number" &&
     Number.isFinite(draft.updatedAt) &&
-    (draft.recoveryOf === undefined || typeof draft.recoveryOf === "string")
+    (draft.recoveryOf === undefined || typeof draft.recoveryOf === "string") &&
+    (draft.workingCopyOf === undefined || typeof draft.workingCopyOf === "string") &&
+    (draft.creationUncertain === undefined || typeof draft.creationUncertain === "boolean") &&
+    (draft.creationAttempt === undefined ||
+      (typeof draft.creationAttempt.content === "string" &&
+        Array.isArray(draft.creationAttempt.lockIds) &&
+        draft.creationAttempt.lockIds.every((id) => typeof id === "string")))
   );
 }
 
@@ -154,6 +166,35 @@ export function writeOwnedDraft(userId: string, draft: DraftSnapshot): void {
   );
 }
 
+/**
+ * Read the exact selected draft in this tab, separately from save ordering.
+ * @param userId - Server-confirmed account ID
+ * @param writingContextId - Writing surface within this tab
+ * @returns Selected draft identity, when retained
+ */
+export function readDraftSelection(userId: string, writingContextId = "editor"): string | null {
+  return sessionStorage.getItem(
+    `impetus.selection.${encodeURIComponent(userId)}.${encodeURIComponent(writingContextId)}`
+  );
+}
+
+/**
+ * Retain selection only for the current writing surface, never from a late save.
+ * @param userId - Server-confirmed account ID
+ * @param draftId - Selected local working copy
+ * @param writingContextId - Writing surface within this tab
+ */
+export function writeDraftSelection(
+  userId: string,
+  draftId: string,
+  writingContextId = "editor"
+): void {
+  sessionStorage.setItem(
+    `impetus.selection.${encodeURIComponent(userId)}.${encodeURIComponent(writingContextId)}`,
+    draftId
+  );
+}
+
 /** Unassigned cache data and its original strings for lossless export. */
 export interface LegacyDraft {
   contentRaw: string | null;
@@ -165,6 +206,8 @@ export interface LegacyDraft {
     version: number | null;
   } | null;
   error: string | null;
+  /** At least one original storage value has not been read successfully. */
+  readFailed?: boolean;
 }
 
 /**
@@ -172,8 +215,28 @@ export interface LegacyDraft {
  * @returns The original strings and validated basic payload, or null
  */
 export function readLegacyDraft(): LegacyDraft | null {
-  const contentRaw = localStorage.getItem("impetus.task.cache");
-  const metaRaw = localStorage.getItem("impetus.task.meta");
+  let contentRaw: string | null = null;
+  let metaRaw: string | null = null;
+  let readFailed = false;
+  try {
+    contentRaw = localStorage.getItem("impetus.task.cache");
+  } catch {
+    readFailed = true;
+  }
+  try {
+    metaRaw = localStorage.getItem("impetus.task.meta");
+  } catch {
+    readFailed = true;
+  }
+  if (readFailed)
+    return {
+      contentRaw,
+      metaRaw,
+      payload: null,
+      error:
+        "The unassigned draft could not be read. Keep this page open and retry when browser storage is available.",
+      readFailed: true,
+    };
   if (contentRaw === null && metaRaw === null) return null;
   const result: LegacyDraft = { contentRaw, metaRaw, payload: null, error: null };
   try {
@@ -209,6 +272,7 @@ export function readLegacyDraft(): LegacyDraft | null {
  */
 export function exportLegacyDraft(): string | null {
   const legacy = readLegacyDraft();
+  if (legacy?.readFailed) throw new Error(legacy.error ?? "The original draft could not be read.");
   return legacy ? JSON.stringify({ contentRaw: legacy.contentRaw, metaRaw: legacy.metaRaw }) : null;
 }
 

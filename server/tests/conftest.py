@@ -94,13 +94,31 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
 def initialize_test_database():
     """Initialize database and create all tables once per test session."""
     import asyncio
+    from unittest.mock import patch
+
+    from sqlalchemy.ext.asyncio import AsyncEngine
+    from sqlalchemy.pool import NullPool
 
     from server.infrastructure.persistence import database
     from server.infrastructure.persistence.models import Base
 
+    create_engine = database.create_async_engine
+
+    def isolated_test_engine(url: str, **options: Any) -> AsyncEngine:
+        # PostgreSQL connections belong to their event loop. The sync bootstrap
+        # and function-scoped async tests use different loops, so tests must not
+        # lend pooled connections between them. SQLite's in-memory pool remains.
+        if url.startswith("postgresql"):
+            options.pop("pool_size", None)
+            options.pop("max_overflow", None)
+            options.pop("pool_timeout", None)
+            options["poolclass"] = NullPool
+        return create_engine(url, **options)
+
     async def _setup() -> None:
         database._db_manager = None
-        manager = await database.init_database()
+        with patch.object(database, "create_async_engine", side_effect=isolated_test_engine):
+            manager = await database.init_database()
 
         if manager is not None and manager._engine is not None:
             # Ensure all model modules are loaded so their tables are in metadata

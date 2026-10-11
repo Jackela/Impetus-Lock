@@ -134,6 +134,7 @@ describe("account scoped task drafts", () => {
       server: remote,
     });
     expect(hook.result.current.hasUnsavedChanges).toBe(true);
+    const workingIdentity = hook.result.current.draftIdentity;
     act(() => hook.result.current.onChange("still local", ["lock-local", "lock-new"]));
     await advance(2000);
     expect(http).toHaveBeenCalledTimes(1);
@@ -145,7 +146,8 @@ describe("account scoped task drafts", () => {
       expect.objectContaining({
         content: "still local",
         lockIds: ["lock-local", "lock-new"],
-        recoveryOf: "retained",
+        recoveryOf: workingIdentity,
+        workingCopyOf: "retained",
       })
     );
   });
@@ -438,8 +440,12 @@ describe("account scoped task drafts", () => {
     act(() => hook.result.current.onChange("A retained in memory", ["lock-a"]));
     hook.rerender({ id: "B" });
     await advance();
-    act(() => hook.result.current.onChange("B retained", ["lock-b"]));
+    expect(hook.result.current.taskId).toBe("A");
+    expect(hook.result.current.content).toBe("A retained in memory");
     failA = false;
+    await act(async () => hook.result.current.retry());
+    expect(hook.result.current.taskId).toBe("B");
+    act(() => hook.result.current.onChange("B retained", ["lock-b"]));
     act(() => hook.result.current.flushLocal());
     expect(readOwnedDraft("alice", "A")).toMatchObject({
       content: "A retained in memory",
@@ -488,7 +494,9 @@ describe("account scoped task drafts", () => {
       dirty: true,
       version: 7,
     });
-    expect(canSave).toHaveBeenCalledWith("unvalidated", "missing marker", ["lock-missing"]);
+    expect(canSave).toHaveBeenCalledWith(hook.result.current.draftIdentity, "missing marker", [
+      "lock-missing",
+    ]);
     permits = true;
     await advance(2000);
     expect(http.mock.calls.filter(([, init]) => init?.method === "PUT")).toHaveLength(0);

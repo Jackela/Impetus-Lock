@@ -10,6 +10,22 @@ export interface RemoteSession {
   isCurrent: () => boolean;
   /** Reports a 401 only while this exact session is still current. */
   onUnauthorized: () => void;
+  /** Pauses this page when shared cookies authenticate a different account. */
+  onAccountMismatch?: () => void;
+}
+
+/** The request was rejected before business work because its account changed. */
+export class RemoteAccountMismatchError extends Error {
+  /** Machine-readable error from the request identity boundary. */
+  readonly code = "account_mismatch";
+  /** HTTP conflict differs from a task content version conflict. */
+  readonly status = 409;
+
+  /** Construct the account boundary failure without exposing another user's identity. */
+  constructor() {
+    super("The browser session belongs to a different account. Recheck the account to continue.");
+    this.name = "RemoteAccountMismatchError";
+  }
 }
 
 /** Optional lifetime guards for existing API clients. */
@@ -49,8 +65,27 @@ export async function sessionFetch(
     options?.signal && sessionSignal
       ? AbortSignal.any([options.signal, sessionSignal])
       : (options?.signal ?? sessionSignal);
-  const response = await fetch(input, signal ? { ...init, signal } : init);
+  const headers = new Headers(init.headers);
+  if (options?.session) headers.set("X-Expected-User-ID", options.session.userId);
+  const requestInit = options?.session ? { ...init, headers } : init;
+  const response = await fetch(input, signal ? { ...requestInit, signal } : requestInit);
   assertCurrentSession(options?.session);
+  if (response.status === 409) {
+    const failure: unknown = await response
+      .clone()
+      .json()
+      .catch(() => null);
+    assertCurrentSession(options?.session);
+    if (
+      typeof failure === "object" &&
+      failure !== null &&
+      "code" in failure &&
+      failure.code === "account_mismatch"
+    ) {
+      options?.session?.onAccountMismatch?.();
+      throw new RemoteAccountMismatchError();
+    }
+  }
   if (response.status === 401) options?.session?.onUnauthorized();
   return response;
 }

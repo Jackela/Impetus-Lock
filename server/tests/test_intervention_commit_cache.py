@@ -76,7 +76,10 @@ async def authenticated_commit_client(
             "access_token": JWTHandler.create_token(str(task.user_id)),
             "csrf_token": "r05-commit-cache-csrf",
         },
-        headers={"X-CSRF-Token": "r05-commit-cache-csrf"},
+        headers={
+            "X-CSRF-Token": "r05-commit-cache-csrf",
+            "X-Expected-User-ID": str(task.user_id),
+        },
     ) as client:
         yield client, session, str(task.id)
 
@@ -259,7 +262,9 @@ async def test_same_key_different_scopes_generate_independent_responses(
     assert first.status_code == 200
 
     if scope_change == "user":
-        client.cookies.set("access_token", JWTHandler.create_token(str(uuid4())))
+        new_user_id = str(uuid4())
+        client.cookies.set("access_token", JWTHandler.create_token(new_user_id))
+        client.headers["X-Expected-User-ID"] = new_user_id
     elif scope_change == "no-task":
         del headers["X-Task-Id"]
     else:

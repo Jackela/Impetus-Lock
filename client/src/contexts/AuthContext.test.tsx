@@ -77,9 +77,11 @@ it.each(["login", "register"] as const)(
     expect(result.current.status).toBe("anonymous");
     expect(result.current.isLoading).toBe(true);
     expect(result.current.remoteEnabled).toBe(false);
-    expect(
-      fetchSpy.mock.calls.filter(([url]) => String(url).endsWith(`/auth/${action}`))
-    ).toHaveLength(1);
+    await waitFor(() =>
+      expect(
+        fetchSpy.mock.calls.filter(([url]) => String(url).endsWith(`/auth/${action}`))
+      ).toHaveLength(1)
+    );
 
     await act(async () => {
       submission.resolve(new Response(JSON.stringify({ user: accountA })));
@@ -134,7 +136,7 @@ it("pauses remote work while logout waits and hides the account only after HTTP 
   const { result } = renderHook(() => useAuth(), { wrapper });
   await waitFor(() => expect(result.current.status).toBe("authenticated"));
   const session = result.current.session!;
-  const snapshot = vi.fn(() => expect(session.isCurrent()).toBe(true));
+  const snapshot = vi.fn();
   result.current.registerSnapshot(snapshot);
 
   let first!: Promise<void>;
@@ -151,8 +153,10 @@ it("pauses remote work while logout waits and hides the account only after HTTP 
   expect(result.current.remoteEnabled).toBe(false);
   expect(result.current.session).toBeNull();
   expect(snapshot).toHaveBeenCalledTimes(1);
-  expect(fetchSpy.mock.calls.filter(([url]) => String(url).endsWith("/auth/logout"))).toHaveLength(
-    1
+  await waitFor(() =>
+    expect(
+      fetchSpy.mock.calls.filter(([url]) => String(url).endsWith("/auth/logout"))
+    ).toHaveLength(1)
   );
 
   await act(async () => {
@@ -244,7 +248,8 @@ it.each([200, 401] as const)(
 
 it("does not let account A's delayed logout clear account B's confirmed session", async () => {
   const logoutResponse = deferred<Response>();
-  vi.spyOn(globalThis, "fetch")
+  const fetchSpy = vi
+    .spyOn(globalThis, "fetch")
     .mockResolvedValueOnce(new Response(JSON.stringify(accountA)))
     .mockReturnValueOnce(logoutResponse.promise)
     .mockResolvedValueOnce(new Response(JSON.stringify({ user: accountB })));
@@ -255,14 +260,21 @@ it("does not let account A's delayed logout clear account B's confirmed session"
   act(() => {
     logout = result.current.logout();
   });
-  await act(async () => result.current.login(accountB.email, "test-password"));
-  const sessionB = result.current.session;
+  await waitFor(() =>
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).endsWith("/auth/logout"))).toBe(true)
+  );
+  let login!: Promise<void>;
+  act(() => {
+    login = result.current.login(accountB.email, "test-password");
+  });
+  expect(fetchSpy.mock.calls.some(([url]) => String(url).endsWith("/auth/login"))).toBe(false);
 
   await act(async () => {
     logoutResponse.resolve(new Response(null, { status: 204 }));
-    await logout;
+    await Promise.all([logout, login]);
     sessionA.onUnauthorized();
   });
+  const sessionB = result.current.session;
 
   expect(result.current.status).toBe("authenticated");
   expect(result.current.user).toEqual(accountB);
@@ -456,10 +468,11 @@ it.each(["login", "register"] as const)(
 );
 
 it.each(["login", "register"] as const)(
-  "ignores a superseded %s success or failure after another account is confirmed",
+  "settles a superseded %s response before confirming the queued account",
   async (action) => {
     const oldSubmission = deferred<Response>();
-    vi.spyOn(globalThis, "fetch")
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(new Response(null, { status: 401 }))
       .mockReturnValueOnce(oldSubmission.promise)
       .mockResolvedValueOnce(new Response(JSON.stringify({ user: accountB })));
@@ -471,18 +484,28 @@ it.each(["login", "register"] as const)(
       ignoredSubmission = result.current[action](accountA.email, "test-password");
       ignoredResult = ignoredSubmission.catch(() => undefined);
     });
-    await act(async () =>
-      result.current[action === "login" ? "register" : "login"](accountB.email, "test-password")
+    await waitFor(() =>
+      expect(fetchSpy.mock.calls.some(([url]) => String(url).endsWith(`/auth/${action}`))).toBe(
+        true
+      )
     );
-    const sessionB = result.current.session;
+    let queuedSubmission!: Promise<void>;
+    act(() => {
+      queuedSubmission = result.current[action === "login" ? "register" : "login"](
+        accountB.email,
+        "test-password"
+      );
+    });
 
     await act(async () => {
       if (action === "login")
         oldSubmission.resolve(new Response(JSON.stringify({ user: accountA })));
-      else oldSubmission.reject(new Error("Old request disconnected"));
+      else oldSubmission.resolve(new Response(null, { status: 400 }));
       await ignoredResult;
       await expect(ignoredSubmission).rejects.toThrow("superseded");
+      await queuedSubmission;
     });
+    const sessionB = result.current.session;
 
     expect(result.current.user).toEqual(accountB);
     expect(result.current.status).toBe("authenticated");
@@ -492,6 +515,7 @@ it.each(["login", "register"] as const)(
 );
 
 afterEach(() => {
+  localStorage.removeItem("impetus.auth.pending");
   document.cookie = "csrf_token=; max-age=0; path=/";
   vi.restoreAllMocks();
   vi.resetAllMocks();

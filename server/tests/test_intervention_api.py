@@ -401,13 +401,17 @@ class TestInterventionAPIContract:
         """An authenticated owner's intervention is retrievable in task history."""
         monkeypatch.delenv("TESTING", raising=False)
         monkeypatch.setenv("JWT_SECRET", "r05-task-ownership-test-secret-only")
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as owner:
+        async with AsyncClient(
+            transport=ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345)),
+            base_url="http://test",
+        ) as owner:
             registered = await owner.post(
                 "/auth/register",
                 json={"email": f"r05-{uuid4()}@example.com", "password": "securePassword123"},
             )
             assert registered.status_code == 201
             owner.headers["X-CSRF-Token"] = owner.cookies["csrf_token"]
+            owner.headers["X-Expected-User-ID"] = registered.json()["user"]["id"]
             created = await owner.post(
                 "/tasks/", json={"content": "The door opened.", "lock_ids": []}
             )
