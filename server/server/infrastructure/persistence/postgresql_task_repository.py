@@ -278,7 +278,10 @@ class PostgreSQLTaskRepository(TaskRepository):
             ```
         """
         result = await self._session.execute(
-            select(TaskModel).order_by(TaskModel.created_at.desc()).limit(limit).offset(offset)
+            select(TaskModel)
+            .order_by(TaskModel.created_at.desc(), TaskModel.id.desc())
+            .limit(limit)
+            .offset(offset)
         )
 
         return [self._to_entity(m) for m in result.scalars().all()]
@@ -299,7 +302,7 @@ class PostgreSQLTaskRepository(TaskRepository):
         result = await self._session.execute(
             select(TaskModel)
             .where(TaskModel.user_id == user_id)
-            .order_by(TaskModel.created_at.desc())
+            .order_by(TaskModel.created_at.desc(), TaskModel.id.desc())
             .limit(limit)
             .offset(offset)
         )
