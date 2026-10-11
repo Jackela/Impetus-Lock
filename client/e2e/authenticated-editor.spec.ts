@@ -414,7 +414,7 @@ test("narrow authenticated editor keeps long account identity controls and norma
   const firstTask = page.locator(".task-list-item-button").first();
   const firstId = await firstTask.getAttribute("data-task-id");
   await firstTask.click();
-  await expect(page.getByTestId(`task-item-${firstId}`)).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId(`task-item-${firstId}`)).toHaveAttribute("aria-current", "true");
   await ready(page);
   const [openDrawerDownload] = await Promise.all([
     page.waitForEvent("download"),
@@ -637,13 +637,10 @@ test("task selection storage read failure retains actual A and explicit retry lo
   const recovery = page.getByRole("region", { name: "Draft recovery actions" });
   await expect(recovery).toContainText("could not be saved on this device");
   await expect(page.locator(".ProseMirror")).toContainText(textA);
-  await expect(page.getByTestId(`task-item-${recordA.id}`)).toHaveAttribute(
-    "aria-selected",
+  await expect(page.getByTestId(`task-item-${recordA.id}`)).toHaveAttribute("aria-current", "true");
+  await expect(page.getByTestId(`task-item-${recordB.id}`)).not.toHaveAttribute(
+    "aria-current",
     "true"
-  );
-  await expect(page.getByTestId(`task-item-${recordB.id}`)).toHaveAttribute(
-    "aria-selected",
-    "false"
   );
   await recovery.getByRole("button", { name: "Retry draft recovery" }).click();
   await expect(recovery).toContainText("could not be saved on this device");
@@ -655,10 +652,7 @@ test("task selection storage read failure retains actual A and explicit retry lo
   await recovery.getByRole("button", { name: "Retry draft recovery" }).click();
   await ready(page);
   await expect(page.locator(".ProseMirror")).toContainText(textB);
-  await expect(page.getByTestId(`task-item-${recordB.id}`)).toHaveAttribute(
-    "aria-selected",
-    "true"
-  );
+  await expect(page.getByTestId(`task-item-${recordB.id}`)).toHaveAttribute("aria-current", "true");
   await prefixWriting(page, " B retry continuation");
   expect((await savedText(page, "B retry continuation")).id).toBe(recordB.id);
   expect((await tasks(page)).find((task) => task.id === recordA.id)?.content).toBe(recordA.content);
@@ -1039,6 +1033,12 @@ test("locked local/server conflict keeps both versions and explicit server choic
   await login(page, alice);
   const conflict = page.getByRole("region", { name: "Version conflict" });
   await expect(conflict).toBeVisible();
+  // The expiry probe opens Statistics; close its restored public dialog normally.
+  const statistics = page.getByRole("dialog", { name: "Writing Statistics", exact: true });
+  if (await statistics.isVisible()) {
+    await statistics.getByRole("button", { name: "Close Stats", exact: true }).click();
+    await expect(statistics).toBeHidden();
+  }
   await expect(conflict).toContainText("Local protected conflict");
   await expect(conflict).toContainText("Server protected");
   await conflict.getByRole("button", { name: "Use server version" }).click();
