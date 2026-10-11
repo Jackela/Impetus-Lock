@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useCreateTask } from "../../hooks/useCreateTask";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 import { useOptionalAuth } from "../../contexts/AuthContext";
@@ -114,8 +114,9 @@ export function CreateTaskModal({
   const isExitingRef = useRef(false);
   const { ref: focusTrapRef } = useFocusTrap<HTMLDivElement>({ active: open });
 
-  // A session generation change pauses requests without replacing this account's input.
-  useEffect(() => {
+  // Initialize ownership before the form becomes interactive. A session
+  // generation change keeps this account's input because ownerId is unchanged.
+  useLayoutEffect(() => {
     if (open) {
       setIsExiting(false);
       isExitingRef.current = false;
