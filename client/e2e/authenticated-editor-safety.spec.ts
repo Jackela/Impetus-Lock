@@ -1457,6 +1457,131 @@ test("task selection storage read failure retains actual A and explicit retry lo
   expect(errors).toEqual([]);
 });
 
+test("task switch cancels failed B selection and retry resumes exact owned A saving and reload with locks", async ({
+  browser,
+}) => {
+  const page = await makePage(browser, alice);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await ready(page);
+  const textA = `Cancelled selection A ${randomUUID()}`;
+  await write(page, textA);
+  const lockA = `cancel_A_${randomUUID()}`;
+  await addLock(page, "Protected retained A", lockA);
+  const recordA = await savedText(page, lockA);
+  const textB = `Cancelled selection B ${randomUUID()}`;
+  const lockB = `cancel_B_${randomUUID()}`;
+  const recordB = await createServerTask(
+    page,
+    `${textB}\n\nProtected untouched B <!-- lock:${lockB} source:muse -->`,
+    [lockB]
+  );
+  const draftId = `cancel_B_${randomUUID()}`;
+  const key = `impetus.draft.${encodeURIComponent(alice.id)}.${encodeURIComponent(draftId)}`;
+  await page.evaluate(
+    ({ key, draftId, record }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          draftId,
+          content: record.content,
+          lockIds: record.lock_ids,
+          taskId: record.id,
+          version: record.version,
+          versionKnown: true,
+          dirty: false,
+          updatedAt: 1,
+        })
+      );
+    },
+    { key, draftId, record: recordB }
+  );
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await ready(page);
+  await expect(page.locator(".ProseMirror")).toContainText(textA);
+  let readsB = 0;
+  let writesA = 0;
+  let writesB = 0;
+  const saveOwners: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (path === `/tasks/${recordB.id}`) {
+      if (request.method() === "GET") readsB++;
+      if (request.method() === "PUT") writesB++;
+    }
+    if (path === `/tasks/${recordA.id}` && request.method() === "PUT") {
+      writesA++;
+      saveOwners.push(request.headers()["x-expected-user-id"] ?? "");
+    }
+  });
+  await page.evaluate((key) => {
+    const original = Storage.prototype.getItem;
+    Object.defineProperty(window, "restoreBrowserGetItem", {
+      configurable: true,
+      value: () => {
+        Storage.prototype.getItem = original;
+      },
+    });
+    Storage.prototype.getItem = function (candidate: string) {
+      if (candidate === key)
+        throw new DOMException("Controlled storage read failure", "SecurityError");
+      return original.call(this, candidate);
+    };
+  }, key);
+  await page.getByTestId(`task-item-${recordB.id}`).click();
+  const recovery = page.getByRole("region", { name: "Draft recovery actions" });
+  await expect(recovery).toContainText("could not be saved on this device");
+  await expect(page.locator(".ProseMirror")).toContainText(textA);
+  await expect(page.getByTestId(`task-item-${recordA.id}`)).toHaveAttribute("aria-current", "true");
+  expect(readsB).toBe(0);
+  await page.evaluate(() => {
+    (window as typeof window & { restoreBrowserGetItem: () => void }).restoreBrowserGetItem();
+  });
+  await page.getByTestId(`task-item-${recordA.id}`).click();
+  await recovery.getByRole("button", { name: "Retry draft recovery" }).click();
+  await ready(page);
+  await expect(recovery).toHaveCount(0);
+  await expect(page.getByTestId(`task-item-${recordA.id}`)).toHaveAttribute("aria-current", "true");
+  await expect(page.getByTestId(`task-item-${recordB.id}`)).not.toHaveAttribute(
+    "aria-current",
+    "true"
+  );
+  expect(readsB).toBe(0);
+  expect(await auditTask(browser, alice, recordA.id)).toEqual(recordA);
+  const tail = ` Continued retained A ${randomUUID()}`;
+  const expectedContent = recordA.content.replace(textA, `${textA}${tail}`);
+  await prefixWriting(page, tail);
+  const local = await ownedContinuation(page, recordA.id, tail, [lockA]);
+  expect(local.content).toBe(expectedContent);
+  const saved = await savedText(page, tail, recordA.id);
+  expect(saved.id).toBe(recordA.id);
+  expect(saved.content).toBe(expectedContent);
+  expect(saved.lock_ids).toEqual([lockA]);
+  expect(saved.version).toBe(recordA.version + 1);
+  expect(writesA).toBeGreaterThan(0);
+  expect(saveOwners).toEqual(Array(writesA).fill(alice.id));
+  expect(writesB).toBe(0);
+  expect(await auditTask(browser, alice, recordA.id)).toEqual(saved);
+  expect(await auditTask(browser, alice, recordB.id)).toEqual(recordB);
+  const otherOwner = await browser.newContext({
+    storageState: { cookies: bob.storage.cookies, origins: [] },
+  });
+  contexts.push(otherOwner);
+  const forbidden = await otherOwner.request.get(`${API}/tasks/${recordA.id}`, {
+    headers: { "X-Expected-User-ID": bob.id },
+  });
+  expect(forbidden.status()).toBe(404);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await ready(page);
+  await expect(page.getByTestId(`task-item-${recordA.id}`)).toHaveAttribute("aria-current", "true");
+  const restored = await savedText(page, tail, recordA.id);
+  expect(restored).toEqual(saved);
+  expect(await auditTask(browser, alice, recordB.id)).toEqual(recordB);
+  expect(writesB).toBe(0);
+  expect(errors).toEqual([]);
+});
+
 test("heading and locked noncanonical Markdown remains editable through selection save and reload", async ({
   browser,
 }) => {

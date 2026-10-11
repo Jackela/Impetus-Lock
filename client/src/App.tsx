@@ -32,7 +32,8 @@ function App() {
   const auth = useOptionalAuth();
   const remoteEnabled = auth?.remoteEnabled ?? true;
   const editorRef = useRef<Editor | null>(null);
-  const [editorReady, setEditorReady] = useState(false);
+  const editorIdentity = useRef<string | null>(null);
+  const [readyIdentity, setReadyIdentity] = useState<string | null>(null);
   const [recoveryAttempt, setRecoveryAttempt] = useState(0);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [legacyNotice, setLegacyNotice] = useState<string | null>(null);
@@ -40,8 +41,8 @@ function App() {
   const [creationChecking, setCreationChecking] = useState(false);
   const [creationCheckError, setCreationCheckError] = useState<string | null>(null);
   const recovery = useDraftRecovery();
-  const validateDraft = useCallback((_identity: string, content: string, locks: string[]) => {
-    if (!editorRef.current) return false;
+  const validateDraft = useCallback((identity: string, content: string, locks: string[]) => {
+    if (!editorRef.current || editorIdentity.current !== identity) return false;
     editorRef.current.action((ctx) =>
       validateRecoveredLocks(content, locks, ctx.get(remarkCtx), ctx.get(parserCtx))
     );
@@ -214,8 +215,6 @@ function App() {
     (task: Pick<TaskRecord, "id" | "title">) => {
       if (task.id !== currentTaskId) {
         setRecoveryError(null);
-        setEditorReady(false);
-        editorRef.current = null;
       }
       setEditingTaskId(task.id);
     },
@@ -268,7 +267,12 @@ function App() {
           <div className="recovery-actions">
             <button
               type="button"
-              disabled={!remoteEnabled || !editorReady || !recovery.legacy.payload}
+              disabled={
+                !remoteEnabled ||
+                readyIdentity !== draftIdentity ||
+                editorIdentity.current !== draftIdentity ||
+                !recovery.legacy.payload
+              }
               onClick={importLegacy}
             >
               Import as a new draft
@@ -323,7 +327,7 @@ function App() {
                   // Explicit replacement starts a fresh editor and lock manager;
                   // the prior document's locks must not reject the user's choice.
                   editorRef.current = null;
-                  setEditorReady(false);
+                  setReadyIdentity(null);
                   setRecoveryError(null);
                   setRecoveryAttempt((attempt) => attempt + 1);
                 } catch {
@@ -508,8 +512,10 @@ function App() {
             onChange={handleEditorChange}
             onRecoveryError={(error) => setRecoveryError(error.message)}
             onReady={(editor) => {
+              if (activeIdentity.current !== draftIdentity) return;
               editorRef.current = editor;
-              setEditorReady(true);
+              editorIdentity.current = draftIdentity;
+              setReadyIdentity(draftIdentity);
               void Promise.resolve(retry()).catch(() => {});
             }}
           />
