@@ -174,6 +174,8 @@ def up():
         "dotenv": "disabled",
         "paid_model_network": "blocked",
         "browser_security": "default",
+        "cookie_environment": "development",
+        "transport": "loopback HTTP",
         "jwt_signing": "private stable local file",
     }
     (HERE / "metadata.json").write_text(json.dumps(metadata, indent=2))

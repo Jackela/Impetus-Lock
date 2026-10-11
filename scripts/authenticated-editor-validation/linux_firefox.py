@@ -147,7 +147,7 @@ elif sys.argv[1] in {"run", "run-webkit-focus", "run-firefox-stock"}:
             "playwright",
             "test",
             "-c",
-            "playwright.auth.config.ts",
+            "playwright.safety.config.ts",
             *test_args,
             "--retries=0",
             "--max-failures=1",

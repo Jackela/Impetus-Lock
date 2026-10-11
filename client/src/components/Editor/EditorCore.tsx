@@ -696,7 +696,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
             ...options,
             editable: () => !recoveryBlockedRef.current,
             attributes: (state) => ({
-              ...(typeof options.attributes === "function" ? options.attributes(state) : options.attributes),
+              ...(typeof options.attributes === "function"
+                ? options.attributes(state)
+                : options.attributes),
               role: "textbox",
               "aria-label": "Writing editor",
               "aria-multiline": "true",
@@ -748,7 +750,9 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
       if (!mounted) return;
       if (!editor) {
-        logger.error("Editor failed to initialize", { timeoutMs: attempts * EDITOR_RETRY_INTERVAL_MS });
+        logger.error("Editor failed to initialize", {
+          timeoutMs: attempts * EDITOR_RETRY_INTERVAL_MS,
+        });
         return;
       }
 

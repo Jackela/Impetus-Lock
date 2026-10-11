@@ -124,7 +124,13 @@ async function waitForLoginWindow(page: Page): Promise<void> {
 
 async function tasks(page: Page): Promise<TaskRecord[]> {
   return page.evaluate(async (api) => {
-    const response = await fetch(`${api}/tasks/`, { credentials: "include" });
+    const user = (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+      id: string;
+    };
+    const response = await fetch(`${api}/tasks/`, {
+      credentials: "include",
+      headers: { "X-Expected-User-ID": user.id },
+    });
     if (!response.ok) throw new Error(`Real task read failed: ${response.status}`);
     const body = (await response.json()) as { tasks: TaskRecord[] };
     return body.tasks;
@@ -220,7 +226,15 @@ async function updateServer(
       const response = await fetch(`${api}/tasks/${task.id}`, {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf ?? "" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf ?? "",
+          "X-Expected-User-ID": (
+            (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+              id: string;
+            }
+          ).id,
+        },
         body: JSON.stringify({ content, lock_ids: lockIds, version: task.version }),
       });
       if (!response.ok) throw new Error(`Real CSRF task update failed: ${response.status}`);
@@ -245,7 +259,15 @@ async function createServerTask(
       const response = await fetch(`${api}/tasks`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf ?? "" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf ?? "",
+          "X-Expected-User-ID": (
+            (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+              id: string;
+            }
+          ).id,
+        },
         body: JSON.stringify({ content, lock_ids: lockIds }),
       });
       if (!response.ok) throw new Error(`Real task creation failed: ${response.status}`);
@@ -304,7 +326,13 @@ test("old account task survives the real backend restart with exact content lock
   await ready(page);
   const persisted = await page.evaluate(
     async ({ api, id }) => {
-      const response = await fetch(`${api}/tasks/${id}`, { credentials: "include" });
+      const user = (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+        id: string;
+      };
+      const response = await fetch(`${api}/tasks/${id}`, {
+        credentials: "include",
+        headers: { "X-Expected-User-ID": user.id },
+      });
       if (!response.ok) throw new Error(`Task after backend restart failed: ${response.status}`);
       return response.json() as Promise<TaskRecord>;
     },
@@ -1039,6 +1067,11 @@ test("real server rejects a wrong CSRF token and accepts the genuine browser coo
         headers: {
           "Content-Type": "application/json",
           "X-CSRF-Token": "wrong-local-contract-token",
+          "X-Expected-User-ID": (
+            (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+              id: string;
+            }
+          ).id,
         },
         body: JSON.stringify({
           content: "Must not be stored",

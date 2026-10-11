@@ -54,6 +54,7 @@ def environment(regression=False):
             "SECRET_KEY": settings["csrf"],
             "PYTHON_DOTENV_DISABLED": "1",
             "ENV": "production",
+            "APP_ENV": "development",
             "ALLOWED_ORIGINS": UI,
             "LOG_LEVEL": "WARNING",
             "LLM_DEFAULT_PROVIDER": "debug",

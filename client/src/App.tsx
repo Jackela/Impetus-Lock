@@ -161,7 +161,6 @@ function App() {
       );
       createLocalDraft(payload.content, locks);
       setEditingTaskId(null);
-      setSelectedTask(null);
       setLegacyNotice(
         "Imported as a new draft. The original is still available until you discard it."
       );
@@ -308,7 +307,6 @@ function App() {
                 try {
                   resolveConflict("new");
                   setEditingTaskId(null);
-                  setSelectedTask(null);
                 } catch {
                   /* The hook preserves and reports storage failures. */
                 }
@@ -375,7 +373,6 @@ function App() {
                 try {
                   createLocalDraft(taskContent, taskLocks);
                   setEditingTaskId(null);
-                  setSelectedTask(null);
                 } catch {
                   setCreationCheckError(
                     "Your current draft could not be preserved. Keep this page open and export it before switching drafts."
