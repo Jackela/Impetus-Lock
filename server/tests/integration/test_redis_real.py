@@ -83,6 +83,17 @@ class TestRealRedisCollaboration:
         assert "Error in Redis listener" not in caplog.text
         await manager.subscribe(channel, handler)
         try:
+            # SUBSCRIBE sends the command without waiting for Redis to confirm it.
+            try:
+                async with asyncio.timeout(5.0):
+                    while True:
+                        subscriptions = await real_redis.pubsub_numsub(channel)
+                        if subscriptions == [(channel.encode(), 1)]:
+                            break
+                        await asyncio.sleep(0.01)
+            except TimeoutError:
+                pytest.fail("Redis did not confirm one subscriber within 5 seconds")
+
             message = {
                 "type": "update",
                 "room_id": "room_1",
