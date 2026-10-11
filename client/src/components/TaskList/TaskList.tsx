@@ -74,7 +74,7 @@ export function TaskList({
                 type="button"
                 className={`task-list-item-button ${isSelected ? "selected" : ""}`}
                 onClick={() => onTaskClick?.(task)}
-                aria-selected={isSelected}
+                aria-current={isSelected ? "true" : undefined}
                 data-testid={`task-item-${task.id}`}
                 data-task-id={task.id}
               >

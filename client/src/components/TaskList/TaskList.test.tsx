@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { TaskList } from "./TaskList";
 import type { TaskRecord } from "../../types/task";
 
@@ -171,11 +172,20 @@ describe("TaskList", () => {
   });
 
   describe("accessibility", () => {
-    it("should have aria-selected on task items", () => {
+    it("identifies the current task on its native button without unsupported selection attributes", () => {
       render(<TaskList tasks={[mockTask]} selectedTaskId={mockTask.id} />);
 
       const taskButton = screen.getByTestId(`task-item-${mockTask.id}`);
-      expect(taskButton).toHaveAttribute("aria-selected", "true");
+      expect(taskButton).toHaveAttribute("aria-current", "true");
+      expect(taskButton).not.toHaveAttribute("aria-selected");
+    });
+
+    it.each(["{Enter}", " "])("opens the focused task once with %s", async (key) => {
+      const select = vi.fn();
+      render(<TaskList tasks={[mockTask]} onTaskClick={select} />);
+      screen.getByRole("button").focus();
+      await userEvent.setup().keyboard(key);
+      expect(select).toHaveBeenCalledExactlyOnceWith(mockTask);
     });
 
     it("should have role=list on list container", () => {

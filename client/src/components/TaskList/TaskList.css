@@ -12,7 +12,7 @@
   justify-content: center;
   padding: 3rem 1rem;
   text-align: center;
-  color: #6b7280;
+  color: var(--color-text-secondary, #a1a1aa);
 }
 
 .task-list-empty p {
@@ -34,23 +34,29 @@
 
 .task-list-item-button {
   width: 100%;
+  min-height: 44px;
   padding: 0.75rem 1rem;
   text-align: left;
   background: none;
   border: none;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 
 .task-list-item-button:hover {
-  background-color: #f9fafb;
+  background-color: var(--color-bg-elevated, #1a1a1a);
 }
 
 .task-list-item-button.selected {
-  background-color: #eff6ff;
-  border-left: 3px solid #3b82f6;
+  background-color: var(--color-accent-dim, rgba(34, 197, 94, 0.15));
+  border-left: 3px solid var(--color-accent, #22c55e);
   padding-left: calc(1rem - 3px);
+}
+
+.task-list-item-button:focus-visible {
+  outline: 2px solid var(--color-border-focus, #22c55e);
+  outline-offset: -3px;
 }
 
 .task-item-header {
@@ -62,11 +68,13 @@
 
 .task-item-title {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
   margin: 0;
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.25;
-  color: #111827;
+  color: var(--color-text-primary, #fafafa);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -79,9 +87,9 @@
   align-items: center;
   gap: 0.125rem;
   padding: 0.125rem 0.375rem;
-  background-color: #fef3c7;
-  color: #92400e;
-  border-radius: 9999px;
+  background-color: var(--color-lock-background, rgba(245, 158, 11, 0.06));
+  color: var(--color-warning, #f59e0b);
+  border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
   flex-shrink: 0;
@@ -101,7 +109,7 @@
   align-items: center;
   gap: 0.75rem;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--color-text-secondary, #a1a1aa);
 }
 
 .task-item-time {
@@ -110,9 +118,9 @@
 
 .task-item-version {
   padding: 0.125rem 0.375rem;
-  background-color: #e5e7eb;
-  color: #374151;
-  border-radius: 9999px;
+  background-color: var(--color-bg-elevated, #1a1a1a);
+  color: var(--color-text-secondary, #a1a1aa);
+  border-radius: 4px;
   font-size: 0.6875rem;
   font-weight: 500;
 }

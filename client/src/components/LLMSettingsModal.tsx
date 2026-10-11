@@ -8,6 +8,7 @@ import {
 } from "../hooks/useLLMConfig";
 import type { LLMConfig, LLMProviderName, VaultMetadata, VaultMode } from "../hooks/useLLMConfig";
 import { useTelemetry } from "../hooks/useTelemetry";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import "./LLMSettingsModal.css";
 
 interface LLMSettingsModalProps {
@@ -54,6 +55,15 @@ export function LLMSettingsModal({
   onLock,
   metadata,
 }: LLMSettingsModalProps) {
+  const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: open });
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", dismiss);
+    return () => window.removeEventListener("keydown", dismiss);
+  }, [onClose, open]);
   const { emitTelemetry } = useTelemetry();
   const [provider, setProvider] = useState<LLMProviderName>(config?.provider ?? "openai");
   const [model, setModel] = useState<string>(config?.model ?? getLLMRecommendedModel("openai"));
@@ -168,11 +178,17 @@ export function LLMSettingsModal({
   };
 
   return (
-    <div className="llm-settings__backdrop" role="dialog" aria-modal="true">
+    <div
+      ref={dialogRef}
+      className="llm-settings__backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="llm-settings-title"
+    >
       <div className="llm-settings__card">
         <header className="llm-settings__header">
           <div>
-            <h2>LLM Settings</h2>
+            <h2 id="llm-settings-title">LLM Settings</h2>
             <p>Keys are stored only in this browser and sent with each Muse/Loki request.</p>
           </div>
           <button

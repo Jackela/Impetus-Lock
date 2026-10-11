@@ -32,7 +32,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .app-header h1 {
@@ -182,7 +184,7 @@
 }
 
 .task-status {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
@@ -344,6 +346,7 @@
 
 .app-main {
   flex: 1;
+  min-height: 350px;
   overflow: hidden;
   background-color: var(--color-bg-primary);
   display: flex;
@@ -645,10 +648,18 @@
   font-size: inherit;
 }
 
+.app-footer .export-panel button,
+.app-footer .export-panel select {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 /* ═══════════════════════════════════════════════
    STYLE LEARNING OVERLAY
 ═══════════════════════════════════════════════ */
 
+.stats-overlay,
+.achievements-overlay,
 .style-learning-overlay {
   position: fixed;
   inset: 0;
@@ -662,6 +673,8 @@
   padding: var(--space-8);
 }
 
+.stats-modal,
+.achievements-modal,
 .style-learning-modal {
   position: relative;
   background-color: var(--color-bg-elevated);
@@ -672,14 +685,19 @@
   max-height: calc(100vh - var(--space-16));
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
+  box-sizing: border-box;
+  padding: var(--space-6);
+  padding-top: calc(var(--touch-target-min) + var(--space-6));
 }
 
+.stats-modal .close-button,
+.achievements-modal .close-button,
 .style-learning-modal .close-button {
   position: absolute;
   top: var(--space-4);
   right: var(--space-4);
-  width: 36px;
-  height: 36px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -688,12 +706,18 @@
   border-radius: var(--radius-lg);
   font-size: 1.25rem;
   cursor: pointer;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   transition:
     background-color 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease;
   z-index: 10;
+}
+
+.app-header button,
+.app-header select {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
 }
 
 .style-learning-modal .close-button:hover {
@@ -738,6 +762,12 @@ button:focus-visible {
 /* ═══════════════════════════════════════════════
    RESPONSIVE — TABLET (≤1100px)
 ═══════════════════════════════════════════════ */
+
+@media (max-height: 600px) {
+  .app-header {
+    position: relative;
+  }
+}
 
 @media (max-width: 1100px) {
   .app-header {
@@ -827,19 +857,8 @@ button:focus-visible {
   }
 
   .milkdown .ProseMirror {
-    font-size: var(--text-base);
     line-height: 1.75;
     min-height: 350px;
-  }
-
-  .milkdown .ProseMirror h1 {
-    font-size: 1.75rem;
-  }
-  .milkdown .ProseMirror h2 {
-    font-size: 1.35rem;
-  }
-  .milkdown .ProseMirror h3 {
-    font-size: 1.15rem;
   }
 }
 
@@ -850,10 +869,6 @@ button:focus-visible {
 @media (max-width: 480px) {
   .app-header {
     padding: var(--space-2) var(--space-3);
-  }
-
-  .app-header h1 {
-    font-size: var(--text-sm);
   }
 
   .controls {
@@ -869,7 +884,6 @@ button:focus-visible {
   }
 
   .milkdown .ProseMirror {
-    font-size: var(--text-base);
     line-height: 1.7;
     min-height: 300px;
   }

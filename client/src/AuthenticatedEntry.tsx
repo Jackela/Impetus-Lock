@@ -98,11 +98,12 @@ export function AuthenticatedEntry({ children }: { children: ReactNode }) {
       <div className="authenticated-workspace">
         <div className="account-bar">
           <span>
-            Signed in as <strong>{auth.user.email}</strong>
+            {auth.remoteEnabled ? "Signed in as " : "Workspace for "}
+            <strong>{auth.user.email}</strong>
           </span>
           <button
             type="button"
-            disabled={auth.isLoading}
+            disabled={auth.isLoading || auth.status === "signed-out-local-error"}
             onClick={() => void auth.logout().catch(() => {})}
           >
             Sign out
@@ -116,14 +117,16 @@ export function AuthenticatedEntry({ children }: { children: ReactNode }) {
               }
             >
               {auth.status === "expired"
-                ? "Session expired. Your draft is kept locally; you can keep writing. Sign in to resume saving."
+                ? "Session expired. Your writing stays open; you can keep writing. Sign in to resume saving."
                 : auth.status === "logging-out"
                   ? "Signing out… Remote work is paused."
                   : auth.status === "checking"
-                    ? "Checking your session… Your draft is kept locally."
+                    ? "Checking your session… Your writing stays open."
                     : auth.status === "logout-unconfirmed"
-                      ? "Sign out is not confirmed. Your draft is kept locally and remote work is paused."
-                      : "The session check failed. Your draft is kept locally and remote work is paused."}
+                      ? "Sign out is not confirmed. Your writing stays open and remote work is paused."
+                      : auth.status === "signed-out-local-error"
+                        ? "Server sign out is confirmed. Keep this page open to recover your writing."
+                        : "The session check failed. Your writing stays open and remote work is paused."}
             </p>
             {auth.error && <p className="session-error">{auth.error}</p>}
             {auth.status !== "checking" && auth.status !== "logging-out" && (

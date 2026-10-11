@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 // eslint-disable-next-line no-restricted-imports
 import { exportMarkdown, exportPdf } from "../../services/exportService";
 import "./ExportModal.css";
@@ -43,6 +44,7 @@ export function ExportModal({ open, content, htmlContent, onClose }: ExportModal
   const [isExiting, setIsExiting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const isExitingRef = useRef(false);
+  const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: open });
 
   useEffect(() => {
     if (open) {
@@ -100,6 +102,7 @@ export function ExportModal({ open, content, htmlContent, onClose }: ExportModal
 
   return (
     <div
+      ref={dialogRef}
       className={`export-modal-overlay${isExiting ? " modal-exit" : ""}`}
       onClick={(e) => {
         if (e.target === e.currentTarget && !isExporting && !isExitingRef.current) {
@@ -120,7 +123,6 @@ export function ExportModal({ open, content, htmlContent, onClose }: ExportModal
             <input
               id="export-filename"
               type="text"
-              autoFocus
               value={filename}
               onChange={(e) => setFilename(e.target.value)}
               disabled={isExporting}

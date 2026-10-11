@@ -200,7 +200,7 @@ it("keeps an old creation's errors, callbacks, and returned task out of account 
     creation.resolve(response(task("created-a"), 201));
     await settled;
   });
-  await expect(request).rejects.toMatchObject({ name: "AbortError" });
+  await expect(request).rejects.toMatchObject({ code: "create_outcome_unknown" });
 
   expect(result.current.auth.user).toEqual(accountB);
   expect(result.current.create.error).toBeNull();

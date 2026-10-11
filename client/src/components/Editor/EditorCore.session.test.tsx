@@ -1,9 +1,11 @@
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { editorViewCtx, type Editor } from "@milkdown/core";
+import { useCallback, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteSession } from "../../services/api/remoteSession";
 import { AIActionType } from "../../types/ai-actions";
 import { EditorCore } from "./EditorCore";
+import { ManualTriggerButton } from "../ManualTriggerButton";
 
 afterEach(() => {
   cleanup();
@@ -22,6 +24,85 @@ function currentSession(): RemoteSession {
 }
 
 describe("EditorCore remote request lifetime", () => {
+  it("accepts a second public Muse click after the parent clears the first trigger", async () => {
+    const session = currentSession();
+    const onReady = vi.fn<(editor: Editor) => void>();
+    const onChange = vi.fn();
+    const requests: RequestInit[] = [];
+    vi.spyOn(global, "fetch").mockImplementation(async (input, options) => {
+      if (!String(input).includes("/impetus/generate-intervention"))
+        return new Response(new ArrayBuffer(8));
+      requests.push(options ?? {});
+      const lastNode = view.state.doc.lastChild!;
+      return new Response(
+        JSON.stringify({
+          action: "rewrite",
+          content: `Protected contribution ${requests.length}.`,
+          lock_id: `manual-lock-${requests.length}`,
+          source: "muse",
+          anchor: {
+            type: "range",
+            from: view.state.doc.content.size - lastNode.nodeSize,
+            to: view.state.doc.content.size,
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    });
+    function Writer() {
+      const [trigger, setTrigger] = useState<AIActionType | null>(null);
+      const clearTrigger = useCallback(() => setTrigger(null), []);
+      return (
+        <>
+          <ManualTriggerButton mode="muse" onTrigger={setTrigger} />
+          <EditorCore
+            initialContent="Original writer.\n\nFirst editable target."
+            requestIdentity="manual-writer"
+            session={session}
+            mode="muse"
+            externalTrigger={trigger}
+            onTriggerProcessed={clearTrigger}
+            onReady={onReady}
+            onChange={onChange}
+          />
+        </>
+      );
+    }
+    const mounted = render(<Writer />);
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+    const view = onReady.mock.calls[0]![0].action((ctx) => ctx.get(editorViewCtx));
+    vi.useFakeTimers();
+    const button = mounted.getByRole("button", {
+      name: "I'm stuck! Trigger AI assistance",
+    });
+    await act(async () => button.click());
+    expect(requests).toHaveLength(1);
+    expect(onChange.mock.calls.at(-1)?.[1]).toEqual(["manual-lock-1"]);
+    const firstParagraphs = view.state.doc.toJSON().content;
+    act(() => button.click());
+    expect(requests).toHaveLength(1);
+    await act(async () => vi.advanceTimersByTimeAsync(4100));
+    expect(button).toBeEnabled();
+    act(() => {
+      const paragraph = view.state.schema.nodes.paragraph!.create(
+        null,
+        view.state.schema.text("Second editable target.")
+      );
+      view.dispatch(view.state.tr.insert(view.state.doc.content.size, paragraph));
+    });
+    await act(async () => button.click());
+    expect(requests).toHaveLength(2);
+    expect(JSON.parse(String(requests[1]!.body)).context).toContain("Second editable target.");
+    expect(view.state.doc.toJSON().content.slice(0, 2)).toEqual(firstParagraphs);
+    expect(view.state.doc.lastChild!.textContent).toContain("Protected contribution 2.");
+    expect(onChange.mock.calls.at(-1)?.[1]).toEqual(["manual-lock-1", "manual-lock-2"]);
+    const protectedDocument = view.state.doc;
+    act(() => view.dispatch(view.state.tr.delete(0, view.state.doc.content.size)));
+    expect(view.state.doc).toBe(protectedDocument);
+    await act(async () => vi.advanceTimersByTimeAsync(4100));
+    expect(requests).toHaveLength(2);
+  });
+
   it("pauses automatic and manual AI while retaining local writing and locks", async () => {
     const onReady = vi.fn<(editor: Editor) => void>();
     const onChange = vi.fn();

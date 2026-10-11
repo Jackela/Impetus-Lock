@@ -16,6 +16,7 @@ import type { TaskRecord } from "./types/task";
 import type { AgentMode } from "./hooks/useWritingState";
 import { AIActionType } from "./types/ai-actions";
 import { useOptionalAuth } from "./contexts/AuthContext";
+import { useFocusTrap } from "./hooks/useFocusTrap";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -107,6 +108,31 @@ export function AppLayout({
   const remoteEnabled = auth?.remoteEnabled ?? true;
   const { data: tasks, isLoading: tasksLoading, error: tasksError } = useTasks();
   const [showExportModal, setShowExportModal] = useState(false);
+  const statsFocus = useFocusTrap<HTMLDivElement>({ active: showStats && remoteEnabled });
+  const achievementsFocus = useFocusTrap<HTMLDivElement>({
+    active: showAchievements && remoteEnabled,
+  });
+  const styleFocus = useFocusTrap<HTMLDivElement>({ active: showStyleLearning && remoteEnabled });
+
+  useEffect(() => {
+    if (!remoteEnabled) return;
+    const closeOverlay = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (showStyleLearning) onShowStyleLearning();
+      else if (showAchievements) onToggleAchievements();
+      else if (showStats) onToggleStats();
+    };
+    window.addEventListener("keydown", closeOverlay);
+    return () => window.removeEventListener("keydown", closeOverlay);
+  }, [
+    remoteEnabled,
+    showStyleLearning,
+    showAchievements,
+    showStats,
+    onShowStyleLearning,
+    onToggleAchievements,
+    onToggleStats,
+  ]);
 
   // Keyboard shortcut: "?" to re-open welcome modal, Alt+T to toggle task list
   useEffect(() => {
@@ -206,6 +232,7 @@ export function AppLayout({
             className={`achievements-toggle ${showAchievements ? "active" : ""}`}
             onClick={onToggleAchievements}
             aria-pressed={showAchievements}
+            aria-label="Achievements"
             title="Toggle Achievements"
             data-testid="achievements-toggle"
           >
@@ -330,7 +357,13 @@ export function AppLayout({
 
       {showStats && remoteEnabled && (
         <div className="stats-overlay" data-testid="stats-overlay">
-          <div className="stats-modal">
+          <div
+            ref={statsFocus.ref}
+            className="stats-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Writing Statistics"
+          >
             <Stats />
             <button
               type="button"
@@ -346,7 +379,13 @@ export function AppLayout({
 
       {showAchievements && remoteEnabled && (
         <div className="achievements-overlay" data-testid="achievements-overlay">
-          <div className="achievements-modal">
+          <div
+            ref={achievementsFocus.ref}
+            className="achievements-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Achievements"
+          >
             <Achievements />
             <button
               type="button"
@@ -362,7 +401,13 @@ export function AppLayout({
 
       {showStyleLearning && remoteEnabled && (
         <div className="style-learning-overlay" data-testid="style-learning-overlay">
-          <div className="style-learning-modal">
+          <div
+            ref={styleFocus.ref}
+            className="style-learning-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Style Learning"
+          >
             <StyleLearningPanel userId={auth?.user?.id ?? "default-user"} />
             <button
               type="button"

@@ -15,6 +15,15 @@ const mockUseCreateTask = {
   mutateAsync: vi.fn(),
   isLoading: false,
   error: null,
+  creationUncertain: false,
+  pendingAttempt: null,
+  pendingAttempts: [],
+  checkCreation: vi.fn(),
+  adoptCreation: vi.fn(),
+  selectAttempt: vi.fn(),
+  retryRecovery: vi.fn(),
+  isCheckingCreation: false,
+  recoveryReadFailed: false,
 };
 
 describe("CreateTaskModal", () => {

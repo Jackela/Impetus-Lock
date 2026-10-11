@@ -1,4 +1,6 @@
 import "./ConfigErrorModal.css";
+import { useEffect } from "react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface ConfigErrorModalProps {
   visible: boolean;
@@ -29,17 +31,28 @@ export function ConfigErrorModal({
   errorMessage,
   provider,
 }: ConfigErrorModalProps) {
+  const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: visible });
+  useEffect(() => {
+    if (!visible) return;
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onDismiss();
+    };
+    window.addEventListener("keydown", dismiss);
+    return () => window.removeEventListener("keydown", dismiss);
+  }, [onDismiss, visible]);
   if (!visible) return null;
 
   return (
     <div
+      ref={dialogRef}
       className="config-error-modal__backdrop"
       role="alertdialog"
       aria-modal="true"
+      aria-labelledby="config-error-title"
       data-testid="config-error-modal"
     >
       <div className="config-error-modal__card">
-        <h2>LLM 服务不可用</h2>
+        <h2 id="config-error-title">LLM 服务不可用</h2>
         <p>
           Muse / Loki 在请求 LLM 时失败了。{provider ? `${provider} 返回:` : ""}{" "}
           {errorMessage || "后端没有可用的 API Key。"}

@@ -21,6 +21,36 @@ function Trap({
 }
 
 describe("useFocusTrap with a mounted DOM container", () => {
+  it("keeps the current field focused through edits and restores the trigger when a mounted dialog closes", () => {
+    const outside = render(<button>Open writing options</button>);
+    const trigger = screen.getByRole("button", { name: "Open writing options" });
+    trigger.focus();
+    const trap = render(
+      <Trap>
+        <input aria-label="First field" />
+        <input aria-label="Second field" />
+      </Trap>
+    );
+    const second = screen.getByRole("textbox", { name: "Second field" });
+    second.focus();
+    trap.rerender(
+      <Trap>
+        <input aria-label="First field" />
+        <input aria-label="Second field" defaultValue="continued writing" />
+      </Trap>
+    );
+    expect(second).toHaveFocus();
+    trap.rerender(
+      <Trap active={false}>
+        <input aria-label="First field" />
+        <input aria-label="Second field" />
+      </Trap>
+    );
+    expect(trigger).toHaveFocus();
+    trap.unmount();
+    outside.unmount();
+  });
+
   it("focuses the first control and wraps Tab in both directions", () => {
     render(
       <Trap>
@@ -50,7 +80,7 @@ describe("useFocusTrap with a mounted DOM container", () => {
     expect(button).toHaveFocus();
   });
 
-  it("leaves Tab untouched when no focusable controls remain", () => {
+  it("keeps Tab inside the dialog when its controls are temporarily disabled", () => {
     const { rerender } = render(
       <Trap>
         <button>Control</button>
@@ -62,8 +92,27 @@ describe("useFocusTrap with a mounted DOM container", () => {
       </Trap>
     );
     const dialog = screen.getByRole("dialog");
-    expect(fireEvent.keyDown(dialog, { key: "Tab" })).toBe(true);
-    expect(fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true })).toBe(true);
+    expect(fireEvent.keyDown(dialog, { key: "Tab" })).toBe(false);
+    expect(dialog).toHaveFocus();
+    expect(fireEvent.keyDown(dialog, { key: "Tab", shiftKey: true })).toBe(false);
+  });
+
+  it("skips hidden controls when choosing the initial focus and wrapping Tab", () => {
+    render(
+      <Trap>
+        <div hidden>
+          <button>Hidden</button>
+        </div>
+        <button>Visible first</button>
+        <button>Visible last</button>
+        <button style={{ display: "none" }}>Also hidden</button>
+      </Trap>
+    );
+    const first = screen.getByRole("button", { name: "Visible first" });
+    const last = screen.getByRole("button", { name: "Visible last" });
+    expect(first).toHaveFocus();
+    fireEvent.keyDown(first, { key: "Tab", shiftKey: true });
+    expect(last).toHaveFocus();
   });
 
   it("wraps around disabled and excluded controls", () => {

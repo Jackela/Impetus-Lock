@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCreateTask } from "../../hooks/useCreateTask";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
+import { useOptionalAuth } from "../../contexts/AuthContext";
+import type { TaskRecord } from "../../types/task";
+import { useModalFormRecovery } from "../../hooks/useModalFormRecovery";
 import "./CreateTaskModal.css";
 
 /**
@@ -55,36 +58,112 @@ export function CreateTaskModal({
   onSuccess?: (task: { id: string; title: string }) => void;
 }) {
   const [title, setTitle] = useState("");
+  const latestTitle = useRef(title);
+  latestTitle.current = title;
   const [error, setError] = useState<string | null>(null);
   const [isExiting, setIsExiting] = useState(false);
-  const { mutate, isLoading: isCreating } = useCreateTask();
+  const {
+    mutate,
+    isLoading: isCreating,
+    error: recoveryError,
+    creationUncertain,
+    pendingAttempt,
+    pendingAttempts,
+    checkCreation,
+    adoptCreation,
+    selectAttempt,
+    retryRecovery,
+    isCheckingCreation,
+    recoveryReadFailed,
+  } = useCreateTask();
+  const [candidates, setCandidates] = useState<TaskRecord[] | null>(null);
+  const [creatingAnother, setCreatingAnother] = useState(false);
+  const auth = useOptionalAuth();
+  const viewSession = auth?.session;
+  const ownerId = auth?.user?.id;
+  const remoteEnabled = auth === undefined || auth.remoteEnabled;
+  const formOwner = useRef(ownerId);
+  const ownsTitle = formOwner.current === ownerId;
+  const pendingSnapshot = useRef(pendingAttempt);
+  pendingSnapshot.current = pendingAttempt;
+  const currentView = useRef(viewSession);
+  currentView.current = viewSession;
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const busy = isCreating || isCheckingCreation;
+  const unconfirmed = creationUncertain && !creatingAnother;
+  const {
+    drafts: formRecoveries,
+    error: formRecoveryError,
+    preserveTitle,
+    retryRecovery: retryFormRecovery,
+  } = useModalFormRecovery({
+    open,
+    ownerId: formOwner.current,
+    titleRef: latestTitle,
+    unsubmitted: !busy && !unconfirmed,
+    separateFrom: creatingAnother ? pendingAttempt?.draftId : undefined,
+  });
+  const visibleError =
+    error ??
+    formRecoveryError ??
+    (creationUncertain && !creatingAnother
+      ? "Task creation could not be confirmed. The attempted content is retained below. Recheck before creating again."
+      : recoveryReadFailed
+        ? (recoveryError?.message ?? null)
+        : null);
   const isExitingRef = useRef(false);
-  const { ref: focusTrapRef } = useFocusTrap<HTMLDivElement>({ active: open && !isExiting });
+  const { ref: focusTrapRef } = useFocusTrap<HTMLDivElement>({ active: open });
 
-  // Reset form when modal opens
+  // A session generation change pauses requests without replacing this account's input.
   useEffect(() => {
     if (open) {
       setIsExiting(false);
       isExitingRef.current = false;
-      setTitle("");
+      formOwner.current = ownerId;
+      setTitle(pendingSnapshot.current?.content ?? "");
       setError(null);
+      setCandidates(null);
+      setCreatingAnother(false);
     }
-  }, [open]);
+    return () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, [open, ownerId]);
+  const handleRestoreTitle = (draft: (typeof formRecoveries)[number]) => {
+    if (!ownerId || busy) return;
+    try {
+      if (ownsTitle && title && title !== draft.content && (!creationUncertain || creatingAnother))
+        preserveTitle();
+      if (draft.workingCopyOf) selectAttempt(draft.workingCopyOf);
+      formOwner.current = ownerId;
+      setTitle(draft.content);
+      setCreatingAnother(creationUncertain);
+      setCandidates(null);
+      setError(null);
+    } catch (failure) {
+      setError(
+        failure instanceof Error
+          ? failure.message
+          : "The current title could not be retained. Keep this form open and retry."
+      );
+    }
+  };
 
   const handleClose = useCallback(() => {
-    if (!isCreating && !isExitingRef.current) {
+    if (!busy && !isExitingRef.current) {
       isExitingRef.current = true;
       setIsExiting(true);
       // Wait for exit animation to complete before closing
-      setTimeout(() => {
+      closeTimer.current = setTimeout(() => {
         setTitle("");
         setError(null);
         onClose();
       }, 150);
     }
-  }, [isCreating, onClose]);
+  }, [busy, onClose]);
 
   const handleSubmit = useCallback(() => {
+    if (!ownsTitle || !remoteEnabled || busy || unconfirmed || isExitingRef.current) return;
     const trimmedTitle = title.trim();
 
     // Validation: title must not be empty
@@ -96,9 +175,10 @@ export function CreateTaskModal({
     // Clear any previous errors
     setError(null);
 
-    // Call the mutation
+    // This explicit submission consumes the editable separate form.
+    setCreatingAnother(false);
     mutate(
-      { content: trimmedTitle },
+      { content: trimmedTitle, ...(creatingAnother ? { allowDuplicate: true } : {}) },
       {
         onSuccess: (task) => {
           setTitle("");
@@ -112,7 +192,60 @@ export function CreateTaskModal({
         },
       }
     );
-  }, [title, mutate, onClose, onSuccess]);
+  }, [
+    title,
+    mutate,
+    onClose,
+    onSuccess,
+    busy,
+    unconfirmed,
+    creatingAnother,
+    remoteEnabled,
+    ownsTitle,
+  ]);
+
+  const handleRecheck = async () => {
+    if (!remoteEnabled) return;
+    const captured = viewSession;
+    setError(null);
+    setCandidates(null);
+    try {
+      const found = await checkCreation();
+      if (currentView.current === captured) setCandidates(found);
+    } catch (failure) {
+      if (currentView.current === captured && (!captured || captured.isCurrent()))
+        setError(
+          failure instanceof Error ? failure.message : "Creation check failed. Please retry."
+        );
+    }
+  };
+  const handleAdopt = async (taskId: string) => {
+    if (!remoteEnabled) return;
+    const captured = viewSession;
+    setError(null);
+    try {
+      const task = await adoptCreation(taskId);
+      if (currentView.current !== captured || (captured && !captured.isCurrent())) return;
+      setTitle("");
+      setError(null);
+      onSuccess?.({ id: task.id, title: task.content });
+      onClose();
+    } catch (failure) {
+      if (currentView.current === captured && (!captured || captured.isCurrent()))
+        setError(
+          failure instanceof Error
+            ? failure.message
+            : "The task could not be selected. Please recheck."
+        );
+    }
+  };
+  const exportAttempt = () => {
+    if (!pendingAttempt) return;
+    const anchor = document.createElement("a");
+    anchor.href = `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(pendingAttempt))}`;
+    anchor.download = "unconfirmed-task-creation.json";
+    anchor.click();
+  };
 
   // Handle Escape key
   useEffect(() => {
@@ -129,12 +262,12 @@ export function CreateTaskModal({
   // Handle Enter key to submit
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && title.trim() && !isCreating) {
+      if (e.key === "Enter" && title.trim() && !busy && !unconfirmed) {
         e.preventDefault();
         handleSubmit();
       }
     },
-    [title, isCreating, handleSubmit]
+    [title, busy, unconfirmed, handleSubmit]
   );
 
   if (!open) {
@@ -145,7 +278,7 @@ export function CreateTaskModal({
     <div
       className={`create-task-modal-overlay${isExiting ? " modal-exit" : ""}`}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isCreating && !isExitingRef.current) {
+        if (e.target === e.currentTarget && !busy && !isExitingRef.current) {
           handleClose();
         }
       }}
@@ -163,42 +296,167 @@ export function CreateTaskModal({
             <input
               id="create-task-title"
               type="text"
-              autoFocus
-              value={title}
+              value={ownsTitle ? title : ""}
               onChange={(e) => {
+                latestTitle.current = e.target.value;
                 setTitle(e.target.value);
                 // Clear error when user starts typing
                 if (error) setError(null);
               }}
               onKeyDown={handleKeyDown}
-              disabled={isCreating}
+              disabled={busy || unconfirmed}
               placeholder="Enter task title..."
               maxLength={200}
               aria-invalid={error !== null}
-              aria-describedby={error ? "create-task-error" : undefined}
+              aria-describedby={visibleError ? "create-task-error" : undefined}
               data-testid="create-task-input"
             />
-            <span className="char-count">{title.length}/200</span>
+            <span className="char-count">{ownsTitle ? title.length : 0}/200</span>
           </div>
 
-          {error && (
+          {!remoteEnabled && (
+            <p role="status">
+              Task creation is paused while your account is checked. Your unsubmitted title remains
+              editable.
+            </p>
+          )}
+          {visibleError && (
             <div
               className="create-task-error"
               role="alert"
               id="create-task-error"
               data-testid="create-task-error"
             >
-              {error}
+              {visibleError}
             </div>
           )}
         </div>
+
+        {formRecoveries.length > 0 && (
+          <details className="create-task-recovery">
+            <summary>Saved unsubmitted task titles</summary>
+            <p>
+              These inputs belong to this account. Restore a title explicitly before submitting it.
+            </p>
+            {formRecoveries.map((draft) => (
+              <div key={draft.draftId}>
+                <pre aria-label="Saved unsubmitted title" tabIndex={0}>
+                  {draft.content}
+                </pre>
+                <button type="button" disabled={busy} onClick={() => handleRestoreTitle(draft)}>
+                  Restore unsubmitted title
+                </button>
+              </div>
+            ))}
+          </details>
+        )}
+        {pendingAttempt && (
+          <section className="create-task-recovery" aria-label="Unconfirmed task creation recovery">
+            <h3>Unconfirmed task creation</h3>
+            <p>
+              The server may already have created this task. Closing or refreshing keeps this
+              attempt. A new task may duplicate it.
+            </p>
+            {pendingAttempts.length > 1 && (
+              <label>
+                Retained attempt
+                <select
+                  aria-label="Retained attempt"
+                  value={pendingAttempt.draftId}
+                  disabled={busy || creatingAnother}
+                  onChange={(event) => {
+                    const attempt = pendingAttempts.find(
+                      (item) => item.draftId === event.target.value
+                    );
+                    selectAttempt(event.target.value);
+                    if (attempt) setTitle(attempt.content);
+                    setCreatingAnother(false);
+                    setCandidates(null);
+                  }}
+                >
+                  {pendingAttempts.map((attempt) => (
+                    <option key={attempt.draftId} value={attempt.draftId}>
+                      {attempt.content.slice(0, 60)} ({attempt.draftId.slice(-8)})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <pre aria-label="Attempted task content" tabIndex={0}>
+              {pendingAttempt.content}
+            </pre>
+            <p className="create-task-attempt-locks">
+              Locks: {pendingAttempt.lockIds.length ? pendingAttempt.lockIds.join(", ") : "none"}
+            </p>
+            <div className="create-task-recovery-actions">
+              <button type="button" onClick={exportAttempt} disabled={busy}>
+                Export attempted content
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRecheck()}
+                disabled={!remoteEnabled || busy || creatingAnother}
+              >
+                {isCheckingCreation ? "Checking..." : "Recheck creation"}
+              </button>
+              {!creatingAnother && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreatingAnother(true);
+                    setTitle(pendingAttempt.content);
+                    setError(null);
+                  }}
+                  disabled={busy}
+                >
+                  Create another task
+                </button>
+              )}
+            </div>
+            {candidates !== null && (
+              <div role="status">
+                {candidates.length === 0
+                  ? "No matching task was found. This does not prove that the earlier creation failed. You can recheck again or explicitly create another task."
+                  : "Matching tasks found. Choose the task you want to use; no task is selected automatically."}
+              </div>
+            )}
+            {candidates?.map((task) => (
+              <button
+                className="create-task-candidate"
+                key={task.id}
+                type="button"
+                aria-label={`Use task ${task.id}`}
+                disabled={!remoteEnabled || busy || creatingAnother}
+                onClick={() => void handleAdopt(task.id)}
+              >
+                Use task: {task.title || task.content} ({task.id})
+              </button>
+            ))}
+            {creatingAnother && (
+              <p role="status">
+                Creating another task may create a duplicate. The original attempt will remain
+                available for recovery.
+              </p>
+            )}
+          </section>
+        )}
+        {formRecoveryError && (
+          <button type="button" className="create-task-retry" onClick={retryFormRecovery}>
+            Retry title recovery
+          </button>
+        )}
+        {recoveryReadFailed && (
+          <button type="button" className="create-task-retry" onClick={retryRecovery}>
+            Retry recovery
+          </button>
+        )}
 
         <div className="create-task-actions">
           <button
             type="button"
             className="cancel-button"
             onClick={handleClose}
-            disabled={isCreating}
+            disabled={busy}
             data-testid="create-task-cancel"
           >
             Cancel
@@ -207,10 +465,21 @@ export function CreateTaskModal({
             type="button"
             className="confirm-button"
             onClick={handleSubmit}
-            disabled={isCreating || !title.trim()}
+            disabled={
+              !ownsTitle ||
+              !remoteEnabled ||
+              busy ||
+              unconfirmed ||
+              recoveryReadFailed ||
+              !title.trim()
+            }
             data-testid="create-task-confirm"
           >
-            {isCreating ? "Creating..." : "Create Task"}
+            {isCreating
+              ? "Creating..."
+              : creatingAnother
+                ? "Create another task anyway"
+                : "Create Task"}
           </button>
         </div>
       </div>

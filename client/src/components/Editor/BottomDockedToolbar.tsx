@@ -79,6 +79,7 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
 
       // Override dispatch to track selection changes
       view.dispatch = (tr) => {
+        originalDispatch(tr);
         // Track selection changes
         if (tr.selectionSet || tr.docChanged) {
           const { empty } = tr.selection;
@@ -102,9 +103,6 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
             });
           }
         }
-
-        // Call original dispatch to apply transaction
-        originalDispatch(tr);
       };
     });
   }, [editor]);
@@ -127,8 +125,8 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
         justifyContent: "center",
         gap: "8px",
         padding: "12px 16px",
-        backgroundColor: "var(--color-surface, #2a2a2a)",
-        borderTop: "1px solid var(--color-border, #444)",
+        backgroundColor: "var(--color-bg-elevated, #1a1a1a)",
+        borderTop: "1px solid var(--color-border, rgba(255, 255, 255, 0.08))",
         boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.2)",
         // Add safe-area-inset for iOS notch/home indicator
         paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
@@ -139,13 +137,16 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
         type="button"
         aria-label="Bold"
         aria-pressed={activeStates.bold}
-        onMouseDown={handleBold}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleBold}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.bold ? "var(--color-primary, #8b5cf6)" : "#3a3a3a",
-          color: "#fff",
+          background: activeStates.bold
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "var(--color-bg-secondary, #111111)",
+          color: "var(--color-text-primary, #fafafa)",
           borderRadius: "4px",
           cursor: "pointer",
           fontWeight: "bold",
@@ -161,13 +162,16 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
         type="button"
         aria-label="Italic"
         aria-pressed={activeStates.italic}
-        onMouseDown={handleItalic}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleItalic}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.italic ? "var(--color-primary, #8b5cf6)" : "#3a3a3a",
-          color: "#fff",
+          background: activeStates.italic
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "var(--color-bg-secondary, #111111)",
+          color: "var(--color-text-primary, #fafafa)",
           borderRadius: "4px",
           cursor: "pointer",
           fontStyle: "italic",
@@ -183,13 +187,16 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
         type="button"
         aria-label="Heading 1"
         aria-pressed={activeStates.h1}
-        onMouseDown={handleH1}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleH1}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.h1 ? "var(--color-primary, #8b5cf6)" : "#3a3a3a",
-          color: "#fff",
+          background: activeStates.h1
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "var(--color-bg-secondary, #111111)",
+          color: "var(--color-text-primary, #fafafa)",
           borderRadius: "4px",
           cursor: "pointer",
           fontWeight: "bold",
@@ -205,13 +212,16 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
         type="button"
         aria-label="Heading 2"
         aria-pressed={activeStates.h2}
-        onMouseDown={handleH2}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleH2}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.h2 ? "var(--color-primary, #8b5cf6)" : "#3a3a3a",
-          color: "#fff",
+          background: activeStates.h2
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "var(--color-bg-secondary, #111111)",
+          color: "var(--color-text-primary, #fafafa)",
           borderRadius: "4px",
           cursor: "pointer",
           fontWeight: "bold",
@@ -227,13 +237,16 @@ export const BottomDockedToolbar: FC<BottomDockedToolbarProps> = ({
         type="button"
         aria-label="Bullet list"
         aria-pressed={activeStates.bulletList}
-        onMouseDown={handleBulletList}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleBulletList}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.bulletList ? "var(--color-primary, #8b5cf6)" : "#3a3a3a",
-          color: "#fff",
+          background: activeStates.bulletList
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "var(--color-bg-secondary, #111111)",
+          color: "var(--color-text-primary, #fafafa)",
           borderRadius: "4px",
           cursor: "pointer",
           fontSize: "18px",

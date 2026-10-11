@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 import "./WelcomeModal.css";
 
 const STORAGE_KEY = "impetus-lock-welcome-dismissed";
@@ -28,6 +29,7 @@ interface WelcomeModalProps {
 export function WelcomeModal({ forceShow = false, onDismiss }: WelcomeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: isOpen });
 
   // Check localStorage on initial mount to show modal for new users
   useEffect(() => {
@@ -69,6 +71,7 @@ export function WelcomeModal({ forceShow = false, onDismiss }: WelcomeModalProps
 
   return (
     <div
+      ref={dialogRef}
       className="welcome-modal-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
