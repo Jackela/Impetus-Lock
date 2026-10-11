@@ -1,5 +1,6 @@
 """Run default-security Firefox in the matching official Playwright Linux image."""
 
+import json
 import subprocess
 import sys
 from pathlib import PurePosixPath
@@ -7,7 +8,10 @@ from pathlib import PurePosixPath
 from runtime import CONTEXT, HERE, ROOT, SOURCE
 
 NAME = "impetus-auth-safety-firefox"
-IMAGE = "mcr.microsoft.com/playwright:v1.63.0-noble"
+PLAYWRIGHT_VERSION = json.loads((ROOT / "client/package-lock.json").read_text())[
+    "packages"
+]["node_modules/@playwright/test"]["version"]
+IMAGE = f"mcr.microsoft.com/playwright:v{PLAYWRIGHT_VERSION}-noble"
 
 
 def docker(*args, **kwargs):
@@ -83,6 +87,18 @@ if sys.argv[1] == "prepare":
         ).stdout.strip()
         if label != "authenticated-editor-safety-2026-10-11":
             raise RuntimeError("Refusing to reuse a foreign Firefox container")
+        image = docker(
+            "inspect",
+            "--format",
+            "{{.Config.Image}}",
+            NAME,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        if image != IMAGE:
+            raise RuntimeError(
+                "Preserve existing evidence and recreate the owned container with the locked Playwright image"
+            )
         docker("start", NAME)
     sync()
     docker("cp", str(SOURCE / "linux-relay.mjs"), f"{NAME}:/work/linux-relay.mjs")

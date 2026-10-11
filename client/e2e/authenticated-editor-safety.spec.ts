@@ -71,7 +71,7 @@ async function restoreNativeBrowserFocus(page: Page): Promise<void> {
     await session.detach();
   } else if (engine === "webkit" && process.env.AUTH_E2E_WEBKIT_XVFB === "1") {
     expect(process.platform).toBe("linux");
-    // Playwright 1.63's local WebKit PageProxy protocol has no public session API.
+    // Playwright 1.64's local WebKit PageProxy protocol has no public session API.
     // Omitting optional active clears the automation override; false would force blur.
     const localPage = page as unknown as {
       _connection: {
@@ -3009,8 +3009,8 @@ for (const mode of ["unsubmitted", "another"] as const) {
             ? "public CDP; Emulation.setFocusEmulationEnabled false"
             : browser.browserType().name() === "firefox" &&
                 test.info().project.use.channel === "moz-firefox"
-              ? "Playwright 1.63 standard Mozilla WebDriver BiDi; official stock Firefox; two native-focus preferences false"
-              : "Playwright 1.63 private WebKit PageProxy; Emulation.setActiveAndFocused optional active cleared",
+              ? "Playwright 1.64 standard Mozilla WebDriver BiDi; official stock Firefox; two native-focus preferences false"
+              : "Playwright 1.64 private WebKit PageProxy; Emulation.setActiveAndFocused optional active cleared",
         method:
           browser.browserType().name() === "firefox" &&
           test.info().project.use.channel === "moz-firefox"
