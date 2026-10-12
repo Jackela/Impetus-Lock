@@ -14,7 +14,7 @@
 
 按用户指定的用户流程、HTTP、浏览器存储与真实数据库边界进行小步 TDD。只有全部本轮 DoD 满足，且两名新的只读复核者检查同一冻结候选后，才能创建本地提交并整合回本地主线；不 push、不操作远端 PR、不部署、不调用付费模型、不修改默认模型配置、不更新长期记忆。
 
-Status: Safety implementation and independent reviews are complete under the 2026-10-12 user AT waiver. Verification of integration against the current remote base and PR merge remain pending. No deployment or user acceptance is implied.
+Status: Safety implementation, verification against the current remote base and both independent reviews are complete. PR #207 merged on 2026-10-12 at 00:16:25 UTC as 13cf6cbafd7a6ef21611bff56d541f4988994f77; implementation worktrees, redundant branches and temporary services are cleaned up with verified recovery copies. Actual assistive technology remains waived, unexecuted and unverified. No deployment or user acceptance is implied.
 
 本次用户提示词批准此提案的单页认证入口、登录与注册、会话过期后继续本地写作、未归属草稿显式导入/导出/丢弃，以及普通浏览器真实认证验证。允许隔离工作区、本地提交和验证通过后的本地主线整合；不授权其他提案、远端推送、PR、部署、付费模型调用或认证政策变更。批准不等于实现完成、验收或发布。
 
