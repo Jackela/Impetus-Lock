@@ -1,4 +1,4 @@
-Status: 2026-10-07 items below retain historical evidence. The safety checks are complete under the 2026-10-12 user AT waiver; integration and merge remain in progress. No deployment or user acceptance is implied.
+Status: Safety implementation, current remote integration, independent reviews and PR #207 merge are complete. Implementation worktrees, redundant branches and temporary services are cleaned up with verified recovery copies. Actual assistive technology was waived by the user on 2026-10-12 and remains unexecuted and unverified. No deployment or user acceptance is implied.
 
 ## 5. Approved 2026-10-11 safety completion
 
@@ -11,11 +11,11 @@ Status: 2026-10-07 items below retain historical evidence. The safety checks are
 - [x] 5.7 两次独立 Chromium 冷启动、生产构建及 Firefox/WebKit 核心流程，无自动重试或核心跳过。
 - [x] 5.8 键盘、320 CSS 像素、200% 文字、400% 缩放、对比度、目标尺寸；实际辅助技术按 2026-10-12 用户决定豁免、未执行；10,000 词输入/切换/锁每项至少 30 样本 p95 <100ms。
 - [x] 5.9 两名新只读复核者检查同一冻结候选，原缺陷全部复查，无范围内 S0-S2 或未查明核心数据安全疑点。
-- [ ] 5.10 必要使用说明和验证状态准确；全部 DoD 后创建可审阅本地提交并整合，清理本轮临时服务和完整整合工作区，保留必要恢复材料。
+- [x] 5.10 必要使用说明和验证状态准确；全部 DoD 后创建可审阅本地提交并整合，清理本轮临时服务和完整整合工作区，保留必要恢复材料。
 
 2026-10-12 用户明确决定跳过旁白检查，继续完成其余检查、PR、合并和多余分支清理。实际辅助技术未执行、未验证；此项为用户豁免，不能记作通过或据此宣称全站 WCAG 合规。远端操作现已获授权；不部署、不调用付费模型、不修改默认模型配置、不更新长期记忆的边界继续有效。整合以实时远端主线为基础，保留其既有修复和依赖，并验证新的组合候选。
 
-候选 12 的产品、浏览器、性能及独立复核结果见 validation。5.4、5.8 的实现和已执行检查完成，实际旁白检查已豁免；两名新只读复核者核对同一冻结候选，无范围内未解决 S0–S2。5.10 待实际提交、远端整合验证、PR 合并及清理完成后关闭。
+原安全候选12与远端组合候选7的结果分别见 validation。当前组合产品两次Chromium冷启动各47项、官方stock Firefox18项、macOS WebKit18项与Linux WebKit两项真实焦点全部通过；精确PR头的必需CI完成。两名新只读复核者核对相同冻结候选，无范围内未解决S0–S2。PR #207已实际合并，六个原实施工作区与对应多余本地分支已清理，恢复副本验证完成，临时服务已停止；5.10按这些实际结果关闭。此后的三份文档收尾PR及其工作区清理单独完成，不预先记作已合并。
 
 ## 1. Approval and baseline
 
