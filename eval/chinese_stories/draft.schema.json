@@ -1,0 +1,31 @@
+{
+  "description": "Minimal schema returned directly by the LLM before backend post-processing.",
+  "properties": {
+    "action": {
+      "enum": [
+        "provoke",
+        "delete",
+        "rewrite"
+      ],
+      "title": "Action",
+      "type": "string"
+    },
+    "content": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Content"
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "title": "LLMInterventionDraft",
+  "type": "object"
+}

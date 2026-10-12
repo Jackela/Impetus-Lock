@@ -32,3 +32,25 @@ def test_templates_expose_versions() -> None:
     assert muse.version
     assert loki.version
     assert muse.render_user_prompt("ctx") != loki.render_user_prompt("ctx")
+
+
+def test_muse_prompt_forbids_delete_in_system_and_user_contract() -> None:
+    """Muse has only provoke/rewrite, even though providers parse Loki deletes."""
+    system, user = muse_prompt.get_muse_prompts("她把证词折进袖口。")
+
+    assert "MUST NOT return delete" in system
+    assert "**DELETE**" not in system
+    assert '{"action": "delete"}' not in system
+    assert "PROVOKE or REWRITE" in user
+    assert "DELETE" not in user
+
+
+def test_prompt_baseline_remains_distinct_from_fixed_muse() -> None:
+    """The stored before-template must not be mistaken for the fixed candidate."""
+    import tomllib
+    from pathlib import Path
+
+    baseline = Path(__file__).resolve().parents[2] / "eval/chinese_stories/baseline/muse.toml"
+    original = tomllib.loads(baseline.read_text(encoding="utf-8"))
+    assert '{"action": "delete"}' in original["system"]
+    assert original["version"] != get_prompt_template("muse").version

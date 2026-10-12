@@ -4,16 +4,18 @@
 Usage:
     python scripts/prompt_eval.py
 
-The script prints the rendered system/user prompts and sample DebugLLMProvider
-responses for a handful of canned contexts. No external LLM calls are made,
+With no arguments the script preserves its original prompt-printing smoke mode.
+For structured offline exports/checks, use `export`, `check`, or `compare` arguments.
+It prints rendered system/user prompts for a handful of canned contexts.
+No external LLM calls are made,
 so it can be used as a lightweight alternative to promptfoo for smoke testing.
 """
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 from textwrap import indent
-import tomllib
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_DIR = REPO_ROOT / "server" / "server" / "prompts"
@@ -59,4 +61,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        from story_eval import main as story_main
+
+        raise SystemExit(story_main())
     main()

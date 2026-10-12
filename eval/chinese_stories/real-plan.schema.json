@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Approval-needed one-call plan (generation unimplemented)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "approval",
+    "provider",
+    "model",
+    "case_id",
+    "split",
+    "mode",
+    "template_variant",
+    "template_version",
+    "template_digest",
+    "source_sha",
+    "source_state",
+    "calls",
+    "repeats",
+    "max_retries",
+    "parameters",
+    "cost_cap",
+    "currency",
+    "scoring",
+    "implementation_status",
+    "real_model_status"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "approval": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "provider": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "case_id": {
+      "const": "zh-story-001"
+    },
+    "split": {
+      "const": "development"
+    },
+    "mode": {
+      "const": "muse"
+    },
+    "template_variant": {
+      "const": "candidate"
+    },
+    "template_version": {
+      "type": "string"
+    },
+    "template_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "source_state": {
+      "const": "worktree_digest_manifest"
+    },
+    "calls": {
+      "const": 1
+    },
+    "repeats": {
+      "const": 1
+    },
+    "max_retries": {
+      "const": 0
+    },
+    "parameters": {
+      "type": [
+        "object",
+        "string"
+      ]
+    },
+    "cost_cap": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "currency": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "scoring": {
+      "const": [
+        "情节与人物一致性",
+        "突破是否具体",
+        "中文适配",
+        "续写空间"
+      ]
+    },
+    "implementation_status": {
+      "const": "generation_not_implemented"
+    },
+    "real_model_status": {
+      "const": "unassessed"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "approval": {
+            "type": "object",
+            "required": [
+              "approved",
+              "approved_by",
+              "approved_at",
+              "plan_digest"
+            ],
+            "properties": {
+              "approved": {
+                "const": true
+              },
+              "approved_by": {
+                "type": "string",
+                "minLength": 1
+              },
+              "approved_at": {
+                "type": "string",
+                "minLength": 1
+              },
+              "plan_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          },
+          "provider": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cost_cap": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parameters": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  ]
+}

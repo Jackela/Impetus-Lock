@@ -1,0 +1,61 @@
+{
+  "additionalProperties": true,
+  "description": "Validate imported field types before checking the writing/action contract.",
+  "properties": {
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "mode": {
+      "title": "Mode",
+      "type": "string"
+    },
+    "kind": {
+      "title": "Kind",
+      "type": "string"
+    },
+    "context": {
+      "title": "Context",
+      "type": "string"
+    },
+    "raw_output": {
+      "title": "Raw Output",
+      "type": "string"
+    },
+    "request": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Request"
+    },
+    "response": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Response"
+    }
+  },
+  "required": [
+    "case_id",
+    "mode",
+    "kind",
+    "context",
+    "raw_output"
+  ],
+  "title": "OutputRecord",
+  "type": "object"
+}

@@ -316,6 +316,7 @@ function currentProvider(): string | undefined {
  * @param cursorPosition - Current cursor position
  * @param docVersion - Document version (for optimistic locking)
  * @param options - Captured account authorization and cancellation
+ * @param options.selectionFrom - Start of a noncollapsed selection (defaults to cursor)
  * @returns Intervention response with provoke action
  *
  * @example
@@ -340,7 +341,7 @@ export async function triggerMuseIntervention(
   context: string,
   cursorPosition: number,
   docVersion: number,
-  options?: RemoteRequestOptions
+  options?: RemoteRequestOptions & { selectionFrom?: number }
 ): Promise<InterventionResponse> {
   return generateIntervention(
     {
@@ -348,7 +349,7 @@ export async function triggerMuseIntervention(
       mode: "muse",
       client_meta: {
         doc_version: docVersion,
-        selection_from: cursorPosition,
+        selection_from: options?.selectionFrom ?? cursorPosition,
         selection_to: cursorPosition,
       },
     },
@@ -366,6 +367,7 @@ export async function triggerMuseIntervention(
  * @param cursorPosition - Current cursor position
  * @param docVersion - Document version (for optimistic locking)
  * @param options - Captured account authorization and cancellation
+ * @param options.selectionFrom - Start of a noncollapsed selection (defaults to cursor)
  * @returns Intervention response with provoke or delete action
  *
  * @example
@@ -394,7 +396,7 @@ export async function triggerLokiIntervention(
   context: string,
   cursorPosition: number,
   docVersion: number,
-  options?: RemoteRequestOptions
+  options?: RemoteRequestOptions & { selectionFrom?: number }
 ): Promise<InterventionResponse> {
   return generateIntervention(
     {
@@ -402,7 +404,7 @@ export async function triggerLokiIntervention(
       mode: "loki",
       client_meta: {
         doc_version: docVersion,
-        selection_from: cursorPosition,
+        selection_from: options?.selectionFrom ?? cursorPosition,
         selection_to: cursorPosition,
       },
     },

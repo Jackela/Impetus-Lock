@@ -1,0 +1,28 @@
+{
+  "enabled": false,
+  "approval": null,
+  "provider": null,
+  "model": null,
+  "case_id": "zh-story-001",
+  "split": "development",
+  "mode": "muse",
+  "template_variant": "candidate",
+  "template_version": "2024-11-13.1",
+  "template_digest": "2699db50586118156c3c6fe1394ef164966285295e376fea8c872218c7e3161f",
+  "calls": 1,
+  "repeats": 1,
+  "max_retries": 0,
+  "parameters": "unknown",
+  "cost_cap": null,
+  "currency": null,
+  "scoring": [
+    "情节与人物一致性",
+    "突破是否具体",
+    "中文适配",
+    "续写空间"
+  ],
+  "implementation_status": "generation_not_implemented",
+  "real_model_status": "unassessed",
+  "source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+  "source_state": "worktree_digest_manifest"
+}

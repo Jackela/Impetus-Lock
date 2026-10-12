@@ -1,0 +1,228 @@
+{
+  "request": {
+    "$defs": {
+      "ClientMeta": {
+        "description": "Client-provided metadata about document state.\n\nAttributes:\n    doc_version: Document version counter (increments on each edit).\n    selection_from: Cursor position or selection start (ProseMirror absolute position).\n    selection_to: Selection end (same as from if no selection).\n\nExample:\n    ```json\n    {\n        \"doc_version\": 42,\n        \"selection_from\": 1234,\n        \"selection_to\": 1234\n    }\n    ```",
+        "properties": {
+          "doc_version": {
+            "description": "Document version counter",
+            "minimum": 0,
+            "title": "Doc Version",
+            "type": "integer"
+          },
+          "selection_from": {
+            "description": "Cursor/selection start position",
+            "minimum": 0,
+            "title": "Selection From",
+            "type": "integer"
+          },
+          "selection_to": {
+            "description": "Selection end position",
+            "minimum": 0,
+            "title": "Selection To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doc_version",
+          "selection_from",
+          "selection_to"
+        ],
+        "title": "ClientMeta",
+        "type": "object"
+      }
+    },
+    "description": "Request schema for POST /impetus/generate-intervention.\n\nMatches OpenAPI contract (intervention.yaml v2.0.0).\n\nAttributes:\n    context: Writing context for LLM decision-making.\n        - Muse mode: Last 3 sentences before cursor\n        - Loki mode: Full document or last 10 sentences (whichever shorter)\n    mode: Agent working mode (\"muse\" or \"loki\").\n    client_meta: Document state metadata (version, selection).\n\nExample:\n    ```python\n    request = InterventionRequest(\n        context=\"他打开门，犹豫着要不要进去。\",\n        mode=\"muse\",\n        client_meta=ClientMeta(\n            doc_version=42,\n            selection_from=1234,\n            selection_to=1234\n        )\n    )\n    ```",
+    "properties": {
+      "context": {
+        "description": "Writing context (last N sentences)",
+        "maxLength": 2000,
+        "minLength": 1,
+        "title": "Context",
+        "type": "string"
+      },
+      "mode": {
+        "description": "Agent mode: muse (STUCK) or loki (random)",
+        "enum": [
+          "muse",
+          "loki"
+        ],
+        "title": "Mode",
+        "type": "string"
+      },
+      "client_meta": {
+        "$ref": "#/$defs/ClientMeta",
+        "description": "Client document state metadata"
+      }
+    },
+    "required": [
+      "context",
+      "mode",
+      "client_meta"
+    ],
+    "title": "InterventionRequest",
+    "type": "object"
+  },
+  "response": {
+    "$defs": {
+      "AnchorLockId": {
+        "description": "Reference anchor using existing lock ID.\n\nUsed to position relative to or reference an existing locked block.\n\nAttributes:\n    type: Always \"lock_id\" to identify this anchor variant.\n    ref_lock_id: UUID of the referenced locked block.\n\nExample:\n    ```json\n    {\n        \"type\": \"lock_id\",\n        \"ref_lock_id\": \"lock_01j4z3m8a6q3qz2x8j4z3m8a\"\n    }\n    ```",
+        "properties": {
+          "type": {
+            "const": "lock_id",
+            "default": "lock_id",
+            "title": "Type",
+            "type": "string"
+          },
+          "ref_lock_id": {
+            "description": "UUID of referenced lock",
+            "minLength": 1,
+            "title": "Ref Lock Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref_lock_id"
+        ],
+        "title": "AnchorLockId",
+        "type": "object"
+      },
+      "AnchorPos": {
+        "description": "Single-point anchor using ProseMirror position.\n\nUsed for provoke actions when injecting at a specific cursor position.\n\nAttributes:\n    type: Always \"pos\" to identify this anchor variant.\n    from_: ProseMirror document position (0-based).\n\nExample:\n    ```json\n    {\n        \"type\": \"pos\",\n        \"from\": 1234\n    }\n    ```",
+        "properties": {
+          "type": {
+            "const": "pos",
+            "default": "pos",
+            "title": "Type",
+            "type": "string"
+          },
+          "from": {
+            "description": "ProseMirror position (0-based)",
+            "minimum": 0,
+            "title": "From",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from"
+        ],
+        "title": "AnchorPos",
+        "type": "object"
+      },
+      "AnchorRange": {
+        "description": "Range anchor using start and end positions.\n\nUsed for delete actions when removing a specific text range.\n\nAttributes:\n    type: Always \"range\" to identify this anchor variant.\n    from_: Start position (inclusive).\n    to: End position (exclusive).\n\nExample:\n    ```json\n    {\n        \"type\": \"range\",\n        \"from\": 1289,\n        \"to\": 1310\n    }\n    ```",
+        "properties": {
+          "type": {
+            "const": "range",
+            "default": "range",
+            "title": "Type",
+            "type": "string"
+          },
+          "from": {
+            "description": "Start position (inclusive)",
+            "minimum": 0,
+            "title": "From",
+            "type": "integer"
+          },
+          "to": {
+            "description": "End position (exclusive, must be > from)",
+            "exclusiveMinimum": 0,
+            "title": "To",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "title": "AnchorRange",
+        "type": "object"
+      }
+    },
+    "description": "Response schema for successful intervention generation.\n\nReturned by LLM via Instructor (strongly-typed structured output).\nMatches OpenAPI contract (intervention.yaml v2.0.0).\n\nAttributes:\n    action: Intervention action type (\"provoke\", \"delete\", \"rewrite\").\n    content: Markdown blockquote content (provoke) or inline replacement text (rewrite).\n    lock_id: UUID for un-deletable lock (required for provoke/rewrite).\n    anchor: Target position for injection/deletion.\n    action_id: Unique action identifier (UUID v4).\n    issued_at: Server timestamp when action was generated.\n\nExample (Provoke):\n    ```json\n    {\n        \"action\": \"provoke\",\n        \"content\": \"门后传来低沉的呼吸声。\",\n        \"lock_id\": \"lock_01j4z3m8a6q3qz2x8j4z3m8a\",\n        \"anchor\": {\"type\": \"pos\", \"from\": 1234},\n        \"action_id\": \"act_550e8400-e29b-41d4-a716-446655440000\",\n        \"source\": \"muse\",\n        \"issued_at\": \"2024-01-15T10:30:00Z\"\n    }\n    ```\n\nExample (Delete):\n    ```json\n    {\n        \"action\": \"delete\",\n        \"anchor\": {\"type\": \"range\", \"from\": 1289, \"to\": 1310},\n        \"action_id\": \"act_660e8400-e29b-41d4-a716-446655440001\",\n        \"source\": \"loki\",\n        \"issued_at\": \"2024-01-15T10:31:00Z\"\n    }\n    ```\n\nExample (Rewrite):\n    ```json\n    {\n        \"action\": \"rewrite\",\n        \"content\": \"他改为砸向那扇门\",\n        \"lock_id\": \"lock_01j...\",\n        \"anchor\": {\"type\": \"range\", \"from\": 120, \"to\": 140},\n        \"action_id\": \"act_77...\",\n        \"source\": \"muse\",\n        \"issued_at\": \"2024-01-15T10:32:00Z\"\n    }\n    ```",
+    "properties": {
+      "action": {
+        "description": "Intervention action: provoke (inject), delete (remove) or rewrite (surgical replace)",
+        "enum": [
+          "provoke",
+          "delete",
+          "rewrite"
+        ],
+        "title": "Action",
+        "type": "string"
+      },
+      "content": {
+        "anyOf": [
+          {
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Intervention content (blockquote for provoke, inline text for rewrite)",
+        "title": "Content"
+      },
+      "lock_id": {
+        "anyOf": [
+          {
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "UUID for un-deletable lock (required for provoke/rewrite actions)",
+        "title": "Lock Id"
+      },
+      "anchor": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/AnchorPos"
+          },
+          {
+            "$ref": "#/$defs/AnchorRange"
+          },
+          {
+            "$ref": "#/$defs/AnchorLockId"
+          }
+        ],
+        "description": "Target position (pos/range/lock_id)",
+        "title": "Anchor"
+      },
+      "action_id": {
+        "description": "Unique action identifier (UUID v4)",
+        "minLength": 1,
+        "title": "Action Id",
+        "type": "string"
+      },
+      "source": {
+        "description": "Agent mode responsible for the action",
+        "enum": [
+          "muse",
+          "loki"
+        ],
+        "title": "Source",
+        "type": "string"
+      },
+      "issued_at": {
+        "description": "Server timestamp when action was generated",
+        "format": "date-time",
+        "title": "Issued At",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action",
+      "anchor",
+      "action_id",
+      "source"
+    ],
+    "title": "InterventionResponse",
+    "type": "object"
+  }
+}
