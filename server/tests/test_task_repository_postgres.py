@@ -2,8 +2,8 @@
 
 import os
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -27,7 +27,11 @@ async def repository_sessions() -> AsyncIterator[async_sessionmaker[AsyncSession
     schema = f"r19_repository_{uuid4().hex}"
     engine = create_async_engine(
         os.getenv(
-            "POSTGRES_TEST_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+            "POSTGRES_TEST_URL",
+            os.getenv(
+                "TEST_DATABASE_URL",
+                "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres",
+            ),
         ),
         execution_options={"schema_translate_map": {None: schema}},
         connect_args={"server_settings": {"statement_timeout": "10000"}},
@@ -82,6 +86,96 @@ async def test_postgres_lists_paginate_and_count_only_owned_tasks(
         assert await repository.list_tasks(limit=1, offset=2) == [older]
         assert await repository.get_task_by_user(outsider.id, owner) is None
         assert await repository.get_task_by_user(uuid4(), owner) is None
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("scoped", [True, False], ids=["owned", "global"])
+async def test_postgres_pagination_keeps_same_time_tasks_in_stable_uuid_order(
+    repository_sessions: async_sessionmaker[AsyncSession], scoped: bool
+) -> None:
+    """Same-time tasks stay complete and ordered across pages without changing ownership."""
+    owner, other = uuid4(), uuid4()
+    created_at = datetime(2026, 10, 11, 21, 24, 49, 382758, tzinfo=UTC)
+    newer_id, older_id, other_id = UUID(int=1000), UUID(int=2000), UUID(int=3000)
+    async with repository_sessions() as session:
+        session.add_all(
+            [
+                User(id=uid, email=f"{uid}@r19.example", password_hash="test-only")
+                for uid in (owner, other)
+            ]
+        )
+        await session.flush()
+        session.add_all(
+            [
+                TaskModel(
+                    id=UUID(int=number),
+                    user_id=owner,
+                    content=f"Owned task {number}",
+                    lock_ids=[f"lock_{number}"],
+                    created_at=created_at,
+                    updated_at=created_at,
+                    version=number,
+                )
+                for number in range(1, 202)
+            ]
+            + [
+                TaskModel(
+                    id=newer_id,
+                    user_id=owner,
+                    content="Newest task",
+                    lock_ids=[],
+                    created_at=created_at + timedelta(seconds=1),
+                    updated_at=created_at,
+                ),
+                TaskModel(
+                    id=older_id,
+                    user_id=owner,
+                    content="Oldest task",
+                    lock_ids=[],
+                    created_at=created_at - timedelta(seconds=1),
+                    updated_at=created_at,
+                ),
+                TaskModel(
+                    id=other_id,
+                    user_id=other,
+                    content="Other account task",
+                    lock_ids=[],
+                    created_at=created_at,
+                    updated_at=created_at,
+                ),
+            ]
+        )
+        await session.commit()
+
+    expected_ids = [newer_id]
+    if not scoped:
+        expected_ids.append(other_id)
+    expected_ids.extend(UUID(int=number) for number in range(201, 0, -1))
+    expected_ids.append(older_id)
+    for _round in range(2):
+        async with repository_sessions() as session:
+            repository = PostgreSQLTaskRepository(session)
+            pages = [
+                (
+                    await repository.list_tasks_by_user(owner, limit=100, offset=offset)
+                    if scoped
+                    else await repository.list_tasks(limit=100, offset=offset)
+                )
+                for offset in (0, 100, 200)
+            ]
+            actual = [task for page in pages for task in page]
+            assert [len(page) for page in pages] == [100, 100, 3 if scoped else 4]
+            assert len({task.id for task in actual}) == len(expected_ids)
+            assert [task.id for task in actual] == expected_ids
+            assert await repository.count_tasks_by_user(owner) == 203
+            assert [task.id for task in await repository.list_tasks_by_user(other)] == [other_id]
+            assert await repository.get_task_by_user(other_id, owner) is None
+            for task in actual:
+                assert task.user_id == (other if task.id == other_id else owner)
+                if 1 <= task.id.int <= 201:
+                    assert task.content == f"Owned task {task.id.int}"
+                    assert task.lock_ids == [f"lock_{task.id.int}"]
+                    assert task.version == task.id.int
 
 
 @pytest.mark.integration

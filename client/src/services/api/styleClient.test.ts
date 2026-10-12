@@ -23,6 +23,14 @@ describe("styleClient", () => {
     vi.restoreAllMocks();
   });
 
+  it("does not submit style application while the captured account is paused", async () => {
+    const http = vi.spyOn(global, "fetch").mockResolvedValue(Response.json({ styled_text: "B" }));
+    await expect(applyStyle("A text", "account-a", 1, { session: null })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    expect(http).not.toHaveBeenCalled();
+  });
+
   describe("StyleAPIError", () => {
     it("should create error with status, code, and message", () => {
       const error = new StyleAPIError(400, "validation_error", "Invalid input");

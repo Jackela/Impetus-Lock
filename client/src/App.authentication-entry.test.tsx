@@ -42,10 +42,15 @@ describe("the actual authenticated editor entry", () => {
       }
       vi.stubGlobal(
         "fetch",
-        vi.fn<typeof fetch>(async (input) => {
+        vi.fn<typeof fetch>(async (input, init) => {
           const path = new URL(String(input), window.location.href).pathname;
           if (path === "/auth/me")
             return Response.json({ id: "account-a", email: "a@example.com" });
+          if ((path === "/tasks" || path === "/tasks/") && init?.method === "POST")
+            return Response.json(
+              { detail: "Creation refused in the local-draft fixture" },
+              { status: 403 }
+            );
           if (path === "/tasks/")
             return Response.json({ tasks: records, total: 2, limit: 100, offset: 0 });
           const task = records.find((record) => path === `/tasks/${record.id}`);
@@ -76,11 +81,10 @@ describe("the actual authenticated editor entry", () => {
         fireEvent.click(screen.getByRole("button", { name: "Retry draft recovery" }));
         expect(container.querySelector(".ProseMirror")).toBe(retainedEditor);
         expect(retainedEditor).toHaveTextContent("Writing A");
-        expect(screen.getByTestId("task-item-A")).toHaveAttribute(
-          "aria-selected",
-          String(hasRemoteTask)
-        );
-        expect(screen.getByTestId("task-item-B")).toHaveAttribute("aria-selected", "false");
+        if (hasRemoteTask)
+          expect(screen.getByTestId("task-item-A")).toHaveAttribute("aria-current", "true");
+        else expect(screen.getByTestId("task-item-A")).not.toHaveAttribute("aria-current");
+        expect(screen.getByTestId("task-item-B")).not.toHaveAttribute("aria-current");
       } finally {
         get.mockRestore();
       }

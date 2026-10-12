@@ -17,10 +17,11 @@ from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import delete
 
 from server.api.main import app
 from server.auth.dependencies import get_current_user
-from server.infrastructure.persistence.database import get_session_optional
+from server.infrastructure.persistence.database import get_db_manager, get_session_optional
 from server.models.user import User
 
 TEMPLATE_KEYS = {"id", "name", "content", "user_id", "created_at", "updated_at"}
@@ -47,12 +48,18 @@ def user_b() -> User:
 
 
 @pytest.fixture
-def current_user(user_a: User) -> AsyncGenerator[dict[str, User], None]:
+async def current_user(user_a: User, user_b: User) -> AsyncGenerator[dict[str, User], None]:
     """Override auth with a mutable holder so tests can switch users."""
+    async with get_db_manager().session() as session:
+        session.add_all([user_a, user_b])
+        await session.commit()
     holder = {"user": user_a}
     app.dependency_overrides[get_current_user] = lambda: holder["user"]
     yield holder
     app.dependency_overrides.pop(get_current_user, None)
+    async with get_db_manager().session() as session:
+        await session.execute(delete(User).where(User.id.in_([user_a.id, user_b.id])))
+        await session.commit()
 
 
 @pytest.fixture

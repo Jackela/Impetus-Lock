@@ -63,21 +63,15 @@
     line-height: 1.8 !important; /* More spacious line height (was 1.6 desktop) */
   }
 
-  /* Headings - scaled down for mobile */
+  /* Heading spacing adapts without reducing text when browser zoom changes the breakpoint. */
   .milkdown h1 {
-    font-size: 28px !important; /* Was 32px on desktop */
     margin-top: 1.5rem !important;
     margin-bottom: 1rem !important;
   }
 
   .milkdown h2 {
-    font-size: 24px !important; /* Was 28px on desktop */
     margin-top: 1.25rem !important;
     margin-bottom: 0.75rem !important;
-  }
-
-  .milkdown h3 {
-    font-size: 20px !important; /* Was 24px on desktop */
   }
 
   /* Paragraph spacing */
@@ -131,15 +125,6 @@
 
   .app-main {
     padding: 1rem 1.5rem;
-  }
-
-  /* Headings - intermediate sizing */
-  .milkdown h1 {
-    font-size: 30px !important; /* Between mobile 28px and desktop 32px */
-  }
-
-  .milkdown h2 {
-    font-size: 26px !important; /* Between mobile 24px and desktop 28px */
   }
 }
 

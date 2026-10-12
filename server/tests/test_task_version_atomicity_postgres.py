@@ -29,7 +29,10 @@ from server.infrastructure.persistence.transactions import SqlAlchemyTransaction
 from server.models.user import User
 
 POSTGRES_TEST_URL = os.getenv(
-    "POSTGRES_TEST_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+    "POSTGRES_TEST_URL",
+    os.getenv(
+        "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+    ),
 )
 
 
@@ -256,7 +259,9 @@ async def test_http_put_maps_atomic_postgres_conflict_to_409(
             )
 
     app.dependency_overrides[get_task_service] = service_dependency
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345)), base_url="http://test"
+    ) as client:
         outcomes = await asyncio.gather(
             *[
                 client.put(
@@ -278,3 +283,116 @@ async def test_http_put_maps_atomic_postgres_conflict_to_409(
         assert persisted.lock_ids == winner["lock_ids"]
         assert persisted.title == "Draft title"
         assert persisted.version == 1
+
+
+@pytest.fixture
+async def authenticated_postgres_clients(
+    postgres_sessions: async_sessionmaker[AsyncSession], monkeypatch: pytest.MonkeyPatch
+) -> AsyncIterator[tuple[AsyncClient, AsyncClient, str]]:
+    """Use real authentication and independent SQL sessions in this owned schema."""
+    from server.api.main import app
+    from server.infrastructure.persistence.database import get_session, get_session_optional
+
+    monkeypatch.delenv("TESTING", raising=False)
+    monkeypatch.setenv("JWT_SECRET", "account-delay-postgres-test-secret-only")
+
+    async def isolated_session() -> AsyncIterator[AsyncSession]:
+        async with postgres_sessions() as session:
+            yield session
+
+    previous = {
+        dependency: app.dependency_overrides.get(dependency)
+        for dependency in (get_session, get_session_optional)
+    }
+    for dependency in previous:
+        app.dependency_overrides[dependency] = isolated_session
+    try:
+        async with (
+            AsyncClient(
+                transport=ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345)),
+                base_url="http://test",
+            ) as account_a,
+            AsyncClient(
+                transport=ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345)),
+                base_url="http://test",
+            ) as account_b,
+        ):
+            for client in (account_a, account_b):
+                registered = await client.post(
+                    "/auth/register",
+                    json={
+                        "email": f"account-{uuid4()}@example.com",
+                        "password": "securePassword123",
+                    },
+                )
+                assert registered.status_code == 201
+                client.headers["X-CSRF-Token"] = client.cookies["csrf_token"]
+                client.headers["X-Expected-User-ID"] = registered.json()["user"]["id"]
+            created = await account_a.post(
+                "/tasks/", json={"content": "A original", "lock_ids": []}
+            )
+            assert created.status_code == 201
+            yield account_a, account_b, created.json()["id"]
+    finally:
+        for dependency, override in previous.items():
+            if override is None:
+                app.dependency_overrides.pop(dependency, None)
+            else:
+                app.dependency_overrides[dependency] = override
+
+
+@pytest.mark.integration
+async def test_admitted_a_save_commits_to_a_after_shared_cookie_switches_and_b_logs_out(
+    authenticated_postgres_clients: tuple[AsyncClient, AsyncClient, str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cookie changes do not retarget an A request already admitted before DB commit."""
+    old_page, account_b, task_id = authenticated_postgres_clients
+    account_a_cookies = dict(old_page.cookies)
+    account_a_headers = dict(old_page.headers)
+    original = (await old_page.get(f"/tasks/{task_id}")).json()
+    b_before = (await account_b.get("/tasks/")).json()
+    commit_entered = asyncio.Event()
+    release_commit = asyncio.Event()
+    commit = AsyncSession.commit
+
+    async def delayed_commit(session: AsyncSession) -> None:
+        commit_entered.set()
+        await release_commit.wait()
+        await commit(session)
+
+    monkeypatch.setattr(AsyncSession, "commit", delayed_commit)
+    pending = asyncio.create_task(
+        old_page.put(
+            f"/tasks/{task_id}",
+            json={
+                "content": "A late committed content",
+                "lock_ids": ["A-late-lock"],
+                "version": original["version"],
+            },
+        )
+    )
+    try:
+        await asyncio.wait_for(commit_entered.wait(), timeout=5)
+        old_page.cookies.clear()
+        old_page.cookies.update(account_b.cookies)
+        old_page.headers["X-Expected-User-ID"] = account_b.headers["X-Expected-User-ID"]
+        old_page.headers["X-CSRF-Token"] = account_b.headers["X-CSRF-Token"]
+        assert (await account_b.get("/tasks/")).json() == b_before
+        assert (await account_b.post("/auth/logout")).status_code == 204
+        release_commit.set()
+        response = await asyncio.wait_for(pending, timeout=5)
+        assert response.status_code == 200
+    finally:
+        release_commit.set()
+        if not pending.done():
+            pending.cancel()
+        await asyncio.gather(pending, return_exceptions=True)
+    old_page.cookies.clear()
+    old_page.cookies.update(account_a_cookies)
+    old_page.headers.clear()
+    old_page.headers.update(account_a_headers)
+    after = (await old_page.get(f"/tasks/{task_id}")).json()
+    assert after["content"] == "A late committed content"
+    assert after["lock_ids"] == ["A-late-lock"]
+    assert after["version"] == original["version"] + 1

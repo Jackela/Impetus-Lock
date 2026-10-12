@@ -63,7 +63,7 @@
   display: flex;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: var(--text-secondary, #666);
+  color: var(--color-text-secondary, #a1a1aa);
 }
 
 .word-count {
@@ -98,11 +98,12 @@
 }
 
 .submit-button {
+  min-height: var(--touch-target-min, 44px);
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   font-weight: 600;
-  color: white;
-  background-color: var(--primary-color, #4a90d9);
+  color: var(--color-text-inverted, #0a0a0a);
+  background-color: var(--color-accent, #22c55e);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -112,7 +113,8 @@
 }
 
 .submit-button:hover:not(:disabled) {
-  background-color: var(--primary-hover, #357abd);
+  color: var(--color-text-inverted, #0a0a0a);
+  background-color: #16a34a;
 }
 
 .submit-button:disabled {

@@ -29,8 +29,8 @@ const shouldStartWebServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER !== "1";
 
 export default defineConfig({
   testDir: "./e2e",
-  // The real-auth suite owns its backend and configuration in a separate CI job.
-  testIgnore: "authenticated-editor.spec.ts",
+  // Real-auth suites own their backend and configurations outside this TESTING entry.
+  testIgnore: ["authenticated-editor.spec.ts", "authenticated-editor-safety.spec.ts"],
 
   // Parallel execution settings - single worker in CI for stability
   fullyParallel: !process.env.CI,

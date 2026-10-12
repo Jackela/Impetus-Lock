@@ -24,7 +24,7 @@ exports[`TaskList > snapshot > should match snapshot with selected task 1`] = `
       class="task-list-item"
     >
       <button
-        aria-selected="true"
+        aria-current="true"
         class="task-list-item-button selected"
         data-task-id="task-1"
         data-testid="task-item-task-1"
@@ -69,7 +69,6 @@ exports[`TaskList > snapshot > should match snapshot with tasks 1`] = `
       class="task-list-item"
     >
       <button
-        aria-selected="false"
         class="task-list-item-button "
         data-task-id="task-1"
         data-testid="task-item-task-1"
@@ -101,7 +100,6 @@ exports[`TaskList > snapshot > should match snapshot with tasks 1`] = `
       class="task-list-item"
     >
       <button
-        aria-selected="false"
         class="task-list-item-button "
         data-task-id="task-2"
         data-testid="task-item-task-2"

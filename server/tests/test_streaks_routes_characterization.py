@@ -17,6 +17,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import delete
 
 from server.api.main import app
 from server.auth.dependencies import get_current_user
@@ -54,12 +55,18 @@ def user_b() -> User:
 
 
 @pytest.fixture
-def current_user(user_a: User) -> AsyncGenerator[dict[str, User], None]:
+async def current_user(user_a: User, user_b: User) -> AsyncGenerator[dict[str, User], None]:
     """Override auth with a mutable holder so tests can switch users."""
+    async with get_db_manager().session() as session:
+        session.add_all([user_a, user_b])
+        await session.commit()
     holder = {"user": user_a}
     app.dependency_overrides[get_current_user] = lambda: holder["user"]
     yield holder
     app.dependency_overrides.pop(get_current_user, None)
+    async with get_db_manager().session() as session:
+        await session.execute(delete(User).where(User.id.in_([user_a.id, user_b.id])))
+        await session.commit()
 
 
 @pytest.fixture
@@ -99,6 +106,16 @@ async def _update_streak(client: AsyncClient) -> dict[str, Any]:
     return response.json()
 
 
+async def _stored_timestamp_wire(value: datetime) -> str:
+    """Pin each declared backend's timestamp serialization without losing UTC values."""
+    async with get_db_manager().session() as session:
+        if session.get_bind().dialect.name == "postgresql":
+            # The original PostgreSQL migration declares TIMESTAMP WITH TIME ZONE.
+            return value.isoformat()
+    # SQLite DateTime roundtrips UTC wall time without retaining its timezone.
+    return value.replace(tzinfo=None).isoformat()
+
+
 class TestStreakGetContract:
     """Pins GET /streaks/."""
 
@@ -132,8 +149,7 @@ class TestStreakGetContract:
         assert set(data.keys()) == set(ZERO_RESPONSE.keys())
         assert data["current_streak_days"] == 3
         assert data["longest_streak_days"] == 5
-        # sqlite roundtrips the tz-aware seed value as naive UTC wall time.
-        assert data["streak_start_date"] == start.replace(tzinfo=None).isoformat()
+        assert data["streak_start_date"] == await _stored_timestamp_wire(start)
         assert data["grace_used"] is True
 
 
@@ -166,8 +182,7 @@ class TestStreakUpdateDateLogic:
 
         assert data["current_streak_days"] == 4
         assert data["longest_streak_days"] == 6
-        # sqlite roundtrips the tz-aware seed value as naive UTC wall time.
-        assert data["last_activity_date"] == now.replace(tzinfo=None).isoformat()
+        assert data["last_activity_date"] == await _stored_timestamp_wire(now)
 
     async def test_update_later_date_increments_and_raises_longest(
         self, async_client: AsyncClient, current_user: dict[str, User], user_a: User

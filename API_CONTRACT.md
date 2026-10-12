@@ -69,6 +69,11 @@ Development: http://127.0.0.1:8000/
 | `Idempotency-Key` | ✅ | string (UUID) | 请求幂等键。相同 key 在冷却窗口内返回相同结果 |
 | `X-Contract-Version` | ✅ | string | 客户端契约版本（必须等于 "2.0.0"） |
 | `Content-Type` | ✅ | string | 必须为 `application/json` |
+| `X-Expected-User-ID` | ✅ | string | 发起请求时由服务器确认的账户 ID，防止其他标签页更换共享 cookie 后执行到另一账户 |
+
+所有受保护请求（包括任务、AI、导出所需读取及退出）必须携带 `X-Expected-User-ID`。缺少该头返回 428 `expected_account_required`；与 cookie 认证账户不符返回 409 `account_mismatch`，在 CSRF 和业务执行前停止，不返回另一账户身份或清除其 cookie。匹配账户的错误 CSRF 仍返回 403。首次 `/auth/me` 身份发现可省略该头；若提供则仍须匹配。任务版本冲突的 409 与账户错配分别处理。
+
+任务创建没有新增幂等合同。POST 已发送后，网络中断、5xx 或无法验证完整成功响应均视为结果未知；保留尝试并重新检查，禁止自动重复提交。上述 `Idempotency-Key` 仅适用于已有 AI 行动合同。
 
 **Idempotency-Key 规范:**
 - 格式：UUID v4 (例如 `550e8400-e29b-41d4-a716-446655440000`)

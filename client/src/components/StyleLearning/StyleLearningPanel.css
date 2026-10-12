@@ -15,14 +15,14 @@
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary, #333);
+  color: var(--color-text-primary, #fafafa);
 }
 
 .panel-description {
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: var(--text-secondary, #666);
+  color: var(--color-text-secondary, #a1a1aa);
 }
 
 .result-container {

@@ -5,10 +5,67 @@ import { EditorCore } from "./EditorCore";
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
 describe("EditorCore content arriving during initialization", () => {
+  it("makes a delayed real editor usable as soon as it is ready, without waiting for another polling tick", async () => {
+    let releaseCreation = () => {};
+    const creationGate = new Promise<void>((resolve) => {
+      releaseCreation = resolve;
+    });
+    const makeEditor = Editor.make;
+    vi.spyOn(Editor, "make").mockImplementation(() => {
+      const editor = makeEditor();
+      const createEditor = editor.create;
+      vi.spyOn(editor, "create").mockImplementation(async () => {
+        const created = await createEditor();
+        await creationGate;
+        return created;
+      });
+      return editor;
+    });
+    vi.useFakeTimers();
+    const onReady = vi.fn<(editor: Editor) => void>();
+    const onChange = vi.fn<(markdown: string, lockIds: string[]) => void>();
+    const markdown =
+      "# Delayed writing\n\n> Protected writing <!-- lock:ready_lock source:muse -->";
+    const mounted = render(
+      <EditorCore
+        initialContent={markdown}
+        initialLocks={["ready_lock"]}
+        onReady={onReady}
+        onChange={onChange}
+      />
+    );
+    try {
+      await act(async () => vi.advanceTimersByTimeAsync(4_000));
+      expect(mounted.container.querySelector("h1")).toHaveTextContent("Delayed writing");
+      expect(onReady).not.toHaveBeenCalled();
+      await act(async () => releaseCreation());
+      // No clock advancement: actual library readiness must install the
+      // document's protection before the next input can be accepted.
+      expect(onReady).toHaveBeenCalledOnce();
+      const ready = onReady.mock.calls.at(0);
+      if (!ready) throw new Error("Editor did not initialize");
+      const view = ready[0].action((ctx) => ctx.get(editorViewCtx));
+      expect(mounted.container.querySelector('[data-lock-id="ready_lock"]')).toBeInTheDocument();
+      act(() => {
+        const before = view.state.doc;
+        const heading = before.firstChild;
+        if (!heading) throw new Error("Writing heading is missing");
+        view.dispatch(view.state.tr.delete(heading.nodeSize, before.content.size));
+        expect(view.state.doc.eq(before)).toBe(true);
+      });
+      expect(onChange).not.toHaveBeenCalled();
+      await act(async () => vi.advanceTimersByTimeAsync(100));
+      expect(onReady).toHaveBeenCalledOnce();
+    } finally {
+      releaseCreation();
+    }
+  });
+
   it.each([
     // Task.create returns version 0; TaskResponse preserves that value.
     ["new task version 0", 0, 0, "Loaded task"],

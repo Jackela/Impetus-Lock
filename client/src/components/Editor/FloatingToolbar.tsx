@@ -77,7 +77,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
 
   /**
    * Handle Bold formatting command.
-   * Uses onMouseDown to preserve selection (preventDefault pattern).
+   * Uses native click activation after pointer down preserves the selection.
    * Toggles strong mark on selected text.
    *
    * @param e - Mouse event from button click
@@ -93,7 +93,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
 
   /**
    * Handle Italic formatting command.
-   * Uses onMouseDown to preserve selection (preventDefault pattern).
+   * Uses native click activation after pointer down preserves the selection.
    * Toggles emphasis mark on selected text.
    *
    * @param e - Mouse event from button click
@@ -109,7 +109,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
 
   /**
    * Handle Heading 1 formatting command.
-   * Uses onMouseDown to preserve selection (preventDefault pattern).
+   * Uses native click activation after pointer down preserves the selection.
    * Converts selected paragraph to H1 heading.
    *
    * @param e - Mouse event from button click
@@ -125,7 +125,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
 
   /**
    * Handle Heading 2 formatting command.
-   * Uses onMouseDown to preserve selection (preventDefault pattern).
+   * Uses native click activation after pointer down preserves the selection.
    * Converts selected paragraph to H2 heading.
    *
    * @param e - Mouse event from button click
@@ -141,7 +141,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
 
   /**
    * Handle Bullet List formatting command.
-   * Uses onMouseDown to preserve selection (preventDefault pattern).
+   * Uses native click activation after pointer down preserves the selection.
    * Toggles bullet list formatting on selected paragraph.
    *
    * @param e - Mouse event from button click
@@ -240,6 +240,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
 
       // Override dispatch to track selection changes
       view.dispatch = (tr) => {
+        originalDispatch(tr);
         // Track selection changes
         if (tr.selectionSet || tr.docChanged) {
           const { empty } = tr.selection;
@@ -267,9 +268,6 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
             debouncedUpdatePosition();
           }
         }
-
-        // Call original dispatch to apply transaction
-        originalDispatch(tr);
       };
     });
   }, [editor, debouncedUpdatePosition]);
@@ -291,7 +289,7 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
         display: "flex",
         gap: "4px",
         padding: "4px",
-        backgroundColor: "var(--color-surface, #fff)",
+        backgroundColor: "var(--color-bg-elevated, #1a1a1a)",
         borderRadius: "4px",
         boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
       }}
@@ -301,13 +299,18 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
         type="button"
         aria-label="Bold"
         aria-pressed={activeStates.bold}
-        onMouseDown={handleBold}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleBold}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.bold ? "var(--color-primary, #007bff)" : "transparent",
-          color: activeStates.bold ? "#fff" : "var(--color-text, #000)",
+          background: activeStates.bold
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "transparent",
+          color: activeStates.bold
+            ? "var(--color-accent, #22c55e)"
+            : "var(--color-text-primary, #fafafa)",
           borderRadius: "2px",
           cursor: "pointer",
           fontWeight: "bold",
@@ -321,13 +324,18 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
         type="button"
         aria-label="Italic"
         aria-pressed={activeStates.italic}
-        onMouseDown={handleItalic}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleItalic}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.italic ? "var(--color-primary, #007bff)" : "transparent",
-          color: activeStates.italic ? "#fff" : "var(--color-text, #000)",
+          background: activeStates.italic
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "transparent",
+          color: activeStates.italic
+            ? "var(--color-accent, #22c55e)"
+            : "var(--color-text-primary, #fafafa)",
           borderRadius: "2px",
           cursor: "pointer",
           fontStyle: "italic",
@@ -341,13 +349,18 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
         type="button"
         aria-label="Heading 1"
         aria-pressed={activeStates.h1}
-        onMouseDown={handleH1}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleH1}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.h1 ? "var(--color-primary, #007bff)" : "transparent",
-          color: activeStates.h1 ? "#fff" : "var(--color-text, #000)",
+          background: activeStates.h1
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "transparent",
+          color: activeStates.h1
+            ? "var(--color-accent, #22c55e)"
+            : "var(--color-text-primary, #fafafa)",
           borderRadius: "2px",
           cursor: "pointer",
           fontWeight: "bold",
@@ -362,13 +375,18 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
         type="button"
         aria-label="Heading 2"
         aria-pressed={activeStates.h2}
-        onMouseDown={handleH2}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleH2}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.h2 ? "var(--color-primary, #007bff)" : "transparent",
-          color: activeStates.h2 ? "#fff" : "var(--color-text, #000)",
+          background: activeStates.h2
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "transparent",
+          color: activeStates.h2
+            ? "var(--color-accent, #22c55e)"
+            : "var(--color-text-primary, #fafafa)",
           borderRadius: "2px",
           cursor: "pointer",
           fontWeight: "bold",
@@ -383,13 +401,18 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
         type="button"
         aria-label="Bullet list"
         aria-pressed={activeStates.bulletList}
-        onMouseDown={handleBulletList}
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleBulletList}
         style={{
           minWidth: "44px",
           minHeight: "44px",
           border: "none",
-          background: activeStates.bulletList ? "var(--color-primary, #007bff)" : "transparent",
-          color: activeStates.bulletList ? "#fff" : "var(--color-text, #000)",
+          background: activeStates.bulletList
+            ? "var(--color-accent-dim, rgba(34, 197, 94, 0.15))"
+            : "transparent",
+          color: activeStates.bulletList
+            ? "var(--color-accent, #22c55e)"
+            : "var(--color-text-primary, #fafafa)",
           borderRadius: "2px",
           cursor: "pointer",
           fontSize: "1.1em",

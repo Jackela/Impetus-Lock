@@ -56,6 +56,8 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
 }: UseFocusTrapOptions): UseFocusTrapReturn<T> {
   const ref = useRef<T>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const exclusions = useRef(excludeSelectors);
+  exclusions.current = excludeSelectors;
 
   // Get all focusable elements within container
   const getFocusableElements = useCallback((): HTMLElement[] => {
@@ -75,15 +77,28 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
 
     // Filter out excluded elements
     return focusable.filter((el) => {
-      return !excludeSelectors.some((selector) => el.matches(selector));
+      if (
+        el.matches(':disabled, input[type="hidden"]') ||
+        el.closest('[hidden], [inert], [aria-hidden="true"]') ||
+        exclusions.current.some((selector) => el.matches(selector))
+      )
+        return false;
+      for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden") return false;
+      }
+      return true;
     });
-  }, [excludeSelectors]);
+  }, []);
 
   // Store the element that had focus before activation
   useEffect(() => {
     if (active) {
       const focusedElement = document.activeElement;
       triggerRef.current = focusedElement instanceof HTMLElement ? focusedElement : null;
+      return () => {
+        if (triggerRef.current?.isConnected) triggerRef.current.focus({ preventScroll: true });
+      };
     }
   }, [active]);
 
@@ -100,7 +115,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
     const firstElement = autoFocusEl || focusableElements[0];
 
     if (firstElement) {
-      firstElement.focus();
+      firstElement.focus({ preventScroll: true });
     }
   }, [active, getFocusableElements]);
 
@@ -117,7 +132,12 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
       const focusableElements = getFocusableElements();
       const firstElement = focusableElements[0];
       const lastElement = focusableElements[focusableElements.length - 1];
-      if (!firstElement || !lastElement) return;
+      if (!firstElement || !lastElement) {
+        e.preventDefault();
+        container.tabIndex = -1;
+        container.focus({ preventScroll: true });
+        return;
+      }
 
       // Shift+Tab on first element -> wrap to last
       if (e.shiftKey && document.activeElement === firstElement) {
@@ -134,15 +154,6 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
     container.addEventListener("keydown", handleKeyDown);
     return () => container.removeEventListener("keydown", handleKeyDown);
   }, [active, getFocusableElements]);
-
-  // Return focus to trigger element on deactivation
-  useEffect(() => {
-    return () => {
-      if (triggerRef.current) {
-        triggerRef.current.focus();
-      }
-    };
-  }, []);
 
   return { ref, triggerRef };
 }

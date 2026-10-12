@@ -167,7 +167,7 @@ export async function applyStyle(
   intensity: number = 1.0,
   options?: StyleClientOptions
 ): Promise<StyleApplyResponse> {
-  const response = await fetch(
+  const response = await sessionFetch(
     `${API_BASE_URL}/style/apply`,
     cookieAuthOptions({
       method: "POST",
@@ -180,17 +180,20 @@ export async function applyStyle(
         intensity,
       }),
       signal: options?.signal,
-    })
+    }),
+    options
   );
 
   let data: unknown;
   try {
     data = await response.json();
   } catch (parseError) {
+    assertCurrentSession(options?.session);
     throw new StyleAPIError(response.status, "ParseError", "Failed to parse response JSON", {
       originalError: parseError instanceof Error ? parseError.message : String(parseError),
     });
   }
+  assertCurrentSession(options?.session);
 
   // Type guard to safely check parsed data
   function isRecord(value: unknown): value is Record<string, unknown> {

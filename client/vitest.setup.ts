@@ -8,6 +8,18 @@ process.env.TZ = "UTC";
 
 import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
+import { browserLockFixture } from "./tests/fixtures/webLocks";
+import { BrowserBroadcastChannel } from "./tests/fixtures/broadcastChannel";
+
+// jsdom has no Web Locks. Auth unit tests model a supported browser;
+// dedicated capability tests remove this boundary and require fail-safe behavior.
+const browserLocks = browserLockFixture();
+Object.defineProperty(navigator, "locks", {
+  configurable: true,
+  get: () => browserLocks,
+});
+// Node's channel spans Vitest workers; separate browser contexts do not.
+vi.stubGlobal("BroadcastChannel", BrowserBroadcastChannel);
 
 /**
  * Mock matchMedia (for prefers-reduced-motion and responsive design support)

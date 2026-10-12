@@ -44,9 +44,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         try:
             await limiter.check_rate_limit(request)
-        except HTTPException as exc:
+        except HTTPException as error:
+            # Middleware runs outside FastAPI's route exception handler.
             return JSONResponse(
-                status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers
+                status_code=error.status_code,
+                content={"detail": error.detail},
+                headers=error.headers,
             )
 
         return await call_next(request)

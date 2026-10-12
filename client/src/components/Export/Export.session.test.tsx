@@ -105,7 +105,7 @@ it("disables account export during identity checking and when anonymous without 
   expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
 });
 
-it("downloads the current account's JSON using its captured session for both requests", async () => {
+it("downloads the current account's complete JSON using its captured session for every request", async () => {
   const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
     const path = new URL(String(url)).pathname;
     return response(path === "/auth/me" ? accountA : path === "/stats/" ? stats : tasks);
@@ -121,10 +121,11 @@ it("downloads the current account's JSON using its captured session for both req
   await waitFor(() => expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1));
 
   const protectedRequests = fetchSpy.mock.calls.filter(([url]) => !String(url).includes("/auth/"));
-  expect(protectedRequests).toHaveLength(2);
+  expect(protectedRequests).toHaveLength(3);
   for (const [, options] of protectedRequests) {
     expect(options?.signal).toBeInstanceOf(AbortSignal);
     expect(options?.credentials).toBe("include");
+    expect(new Headers(options?.headers).get("X-Expected-User-ID")).toBe(accountA.id);
   }
   const blob = createObjectURL.mock.calls[0]?.[0];
   expect(blob).toBeInstanceOf(Blob);

@@ -6,7 +6,7 @@
 }
 .authenticated-workspace > .app {
   flex: 1;
-  min-height: 0;
+  min-height: min-content;
   height: auto;
 }
 .authenticated-workspace > .account-bar,
@@ -15,25 +15,27 @@
   flex-shrink: 0;
 }
 .auth-entry {
+  box-sizing: border-box;
   min-height: 100dvh;
   display: grid;
   place-items: safe center;
   height: 100dvh;
   overflow: auto;
   padding: 24px;
-  background: var(--bg-primary, #111);
-  color: var(--text-primary, #eee);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 .auth-entry__card {
+  box-sizing: border-box;
   width: min(100%, 440px);
   padding: 28px;
-  border: 1px solid var(--border-color, #444);
+  border: 1px solid var(--color-border-strong);
   border-radius: 12px;
-  background: var(--bg-secondary, #1a1a1a);
+  background: var(--color-bg-secondary);
 }
 .auth-entry__intro {
   line-height: 1.5;
-  color: var(--text-secondary, #bbb);
+  color: var(--color-text-secondary);
 }
 .auth-entry .form-group,
 .session-sign-in .form-group {
@@ -46,9 +48,9 @@
   box-sizing: border-box;
   width: 100%;
   padding: 10px;
-  border: 1px solid var(--border-color, #666);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
-  background: var(--bg-primary, #111);
+  background: var(--color-bg-primary);
   color: inherit;
   font: inherit;
 }
@@ -57,21 +59,23 @@
 .session-notice button,
 .draft-recovery button {
   padding: 8px 12px;
-  min-height: 40px;
-  border: 1px solid var(--border-color, #777);
+  min-height: var(--touch-target-min);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
-  background: var(--bg-secondary, #222);
+  background: var(--color-bg-secondary);
   color: inherit;
   font: inherit;
   cursor: pointer;
+  overflow-wrap: anywhere;
 }
 .auth-entry button:focus-visible,
 .account-bar button:focus-visible,
 .session-notice button:focus-visible,
 .draft-recovery button:focus-visible,
+.draft-recovery summary:focus-visible,
 .auth-entry input:focus-visible,
 .session-sign-in input:focus-visible {
-  outline: 2px solid var(--accent-primary, #ae8aff);
+  outline: 2px solid var(--color-border-focus);
   outline-offset: 3px;
 }
 .auth-entry button:disabled,
@@ -84,7 +88,7 @@
 .auth-entry .error-message,
 .session-sign-in .error-message,
 .session-error {
-  color: var(--error-color, #ffaaa8);
+  color: var(--color-danger);
   line-height: 1.5;
 }
 .account-bar {
@@ -93,19 +97,19 @@
   justify-content: space-between;
   gap: 12px;
   padding: 8px 20px;
-  border-bottom: 1px solid var(--border-color, #444);
-  background: var(--bg-secondary, #1a1a1a);
-  color: var(--text-primary, #eee);
+  border-bottom: 1px solid var(--color-border-strong);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   overflow-wrap: anywhere;
 }
 .session-notice,
 .draft-recovery {
   margin: 12px 20px;
   padding: 12px 16px;
-  border: 1px solid var(--border-color, #777);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
-  background: var(--bg-secondary, #1a1a1a);
-  color: var(--text-primary, #eee);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
   line-height: 1.5;
 }
 .session-notice p,
@@ -123,6 +127,12 @@
 }
 .draft-recovery details {
   margin-top: 12px;
+}
+.draft-recovery summary {
+  box-sizing: border-box;
+  min-height: var(--touch-target-min);
+  padding-block: 8px;
+  cursor: pointer;
 }
 .draft-recovery pre {
   white-space: pre-wrap;
@@ -145,4 +155,9 @@
   .draft-recovery {
     margin: 8px 12px;
   }
+}
+
+.auth-entry input::placeholder,
+.session-sign-in input::placeholder {
+  color: var(--color-text-secondary);
 }

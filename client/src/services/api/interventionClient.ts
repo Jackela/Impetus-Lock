@@ -15,7 +15,12 @@ import type { components } from "../../types/api.generated";
 import { getVaultCache } from "../llmKeyVault";
 import { emitTelemetry } from "../telemetry";
 import { cookieAuthOptions } from "./cookieAuth";
-import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
+import {
+  assertCurrentSession,
+  sessionFetch,
+  RemoteAccountMismatchError,
+  type RemoteRequestOptions,
+} from "./remoteSession";
 
 type InterventionRequest = components["schemas"]["InterventionRequest"];
 type InterventionResponse = components["schemas"]["InterventionResponse"];
@@ -240,6 +245,7 @@ export async function generateIntervention(
 
       return parsedData as InterventionResponse;
     } catch (error) {
+      if (error instanceof RemoteAccountMismatchError) throw error;
       assertCurrentSession(options?.session);
       signal?.throwIfAborted();
       lastError = error as Error;

@@ -60,6 +60,31 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=401, content={"detail": "Invalid token"})
         request.state.user_id = payload["sub"]
 
+        expected_user = request.headers.get("X-Expected-User-ID")
+        # Identity discovery is the only protected read that can start without a
+        # page account. All business work, including logout, fails closed.
+        if not expected_user and request.url.path.rstrip("/") != "/auth/me":
+            return JSONResponse(
+                status_code=428,
+                content={
+                    "code": "expected_account_required",
+                    "detail": "A protected request must identify its expected account",
+                },
+            )
+        if expected_user:
+            try:
+                matches_account = UUID(expected_user) == UUID(subject)
+            except ValueError:
+                matches_account = False
+            if not matches_account:
+                return JSONResponse(
+                    status_code=409,
+                    content={
+                        "code": "account_mismatch",
+                        "detail": "The browser session belongs to a different account",
+                    },
+                )
+
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
             csrf_header = request.headers.get("X-CSRF-Token")
             csrf_cookie = request.cookies.get("csrf_token")

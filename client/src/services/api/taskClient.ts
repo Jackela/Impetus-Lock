@@ -1,5 +1,10 @@
 import { cookieAuthOptions } from "./cookieAuth";
-import { assertCurrentSession, sessionFetch, type RemoteRequestOptions } from "./remoteSession";
+import {
+  assertCurrentSession,
+  sessionFetch,
+  RemoteAccountMismatchError,
+  type RemoteRequestOptions,
+} from "./remoteSession";
 
 /**
  * Task API Client
@@ -69,6 +74,48 @@ export class TaskAPIError extends Error {
     this.code = code;
     this.name = "TaskAPIError";
   }
+}
+
+/** A task create may have committed; automatic retries could create a duplicate. */
+export class TaskCreationUnknownError extends TaskAPIError {
+  /** Construct a recoverable outcome that requires an explicit server recheck. */
+  constructor() {
+    super(
+      0,
+      "Task creation could not be confirmed. Keep the local draft and recheck before creating again.",
+      "create_outcome_unknown"
+    );
+    this.name = "TaskCreationUnknownError";
+  }
+}
+
+/**
+ * Check the fields required to confirm ownership and preserve complete writing.
+ * @param body - Parsed response that has not yet been trusted
+ * @param expectedId - Identity requested by a task read, when supplied
+ * @returns Response with validated identity, body, locks and version
+ */
+function checkedTask(body: unknown, expectedId?: string): ApiTaskResponse {
+  const data = body as Partial<ApiTaskResponse> | null;
+  if (
+    !data ||
+    typeof data !== "object" ||
+    typeof data.id !== "string" ||
+    !data.id ||
+    (expectedId !== undefined && data.id !== expectedId) ||
+    typeof data.content !== "string" ||
+    !Array.isArray(data.lock_ids) ||
+    !data.lock_ids.every((id) => typeof id === "string") ||
+    typeof data.version !== "number" ||
+    !Number.isInteger(data.version) ||
+    data.version < 0
+  )
+    throw new TaskAPIError(
+      502,
+      "The task response could not be confirmed. Keep your current writing and recheck.",
+      "invalid_task_response"
+    );
+  return data as ApiTaskResponse;
 }
 
 /**
@@ -232,9 +279,9 @@ export async function fetchTask(
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to fetch task");
   }
-  const data = (await res.json()) as ApiTaskResponse;
+  const data: unknown = await res.json();
   assertCurrentSession(options?.session);
-  return mapTask(data);
+  return mapTask(checkedTask(data, taskId));
 }
 
 /**
@@ -274,30 +321,43 @@ export async function createTask(
   options?: RemoteRequestOptions
 ): Promise<TaskRecord> {
   const { content, lockIds = [], category, priority, dueDate } = params;
-
-  const res = await sessionFetch(
-    `${API_BASE_URL}/tasks`,
-    cookieAuthOptions({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        content,
-        lock_ids: lockIds,
-        category,
-        priority,
-        due_date: dueDate,
+  assertCurrentSession(options?.session);
+  options?.signal?.throwIfAborted();
+  let res: Response;
+  try {
+    res = await sessionFetch(
+      `${API_BASE_URL}/tasks`,
+      cookieAuthOptions({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          content,
+          lock_ids: lockIds,
+          category,
+          priority,
+          due_date: dueDate,
+        }),
       }),
-    }),
-    options
-  );
+      options
+    );
+  } catch (error) {
+    if (error instanceof RemoteAccountMismatchError) throw error;
+    throw new TaskCreationUnknownError();
+  }
 
+  if (res.status >= 500) throw new TaskCreationUnknownError();
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to create task");
   }
-  const data = (await res.json()) as ApiTaskResponse;
-  assertCurrentSession(options?.session);
-  return mapTask(data);
+  try {
+    const body: unknown = await res.json();
+    const data = checkedTask(body);
+    assertCurrentSession(options?.session);
+    return mapTask(data);
+  } catch {
+    throw new TaskCreationUnknownError();
+  }
 }
 
 /**

@@ -124,7 +124,13 @@ async function waitForLoginWindow(page: Page): Promise<void> {
 
 async function tasks(page: Page): Promise<TaskRecord[]> {
   return page.evaluate(async (api) => {
-    const response = await fetch(`${api}/tasks/`, { credentials: "include" });
+    const user = (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+      id: string;
+    };
+    const response = await fetch(`${api}/tasks/`, {
+      credentials: "include",
+      headers: { "X-Expected-User-ID": user.id },
+    });
     if (!response.ok) throw new Error(`Real task read failed: ${response.status}`);
     const body = (await response.json()) as { tasks: TaskRecord[] };
     return body.tasks;
@@ -220,7 +226,15 @@ async function updateServer(
       const response = await fetch(`${api}/tasks/${task.id}`, {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf ?? "" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf ?? "",
+          "X-Expected-User-ID": (
+            (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+              id: string;
+            }
+          ).id,
+        },
         body: JSON.stringify({ content, lock_ids: lockIds, version: task.version }),
       });
       if (!response.ok) throw new Error(`Real CSRF task update failed: ${response.status}`);
@@ -245,7 +259,15 @@ async function createServerTask(
       const response = await fetch(`${api}/tasks`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf ?? "" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf ?? "",
+          "X-Expected-User-ID": (
+            (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+              id: string;
+            }
+          ).id,
+        },
         body: JSON.stringify({ content, lock_ids: lockIds }),
       });
       if (!response.ok) throw new Error(`Real task creation failed: ${response.status}`);
@@ -304,7 +326,13 @@ test("old account task survives the real backend restart with exact content lock
   await ready(page);
   const persisted = await page.evaluate(
     async ({ api, id }) => {
-      const response = await fetch(`${api}/tasks/${id}`, { credentials: "include" });
+      const user = (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+        id: string;
+      };
+      const response = await fetch(`${api}/tasks/${id}`, {
+        credentials: "include",
+        headers: { "X-Expected-User-ID": user.id },
+      });
       if (!response.ok) throw new Error(`Task after backend restart failed: ${response.status}`);
       return response.json() as Promise<TaskRecord>;
     },
@@ -386,7 +414,7 @@ test("narrow authenticated editor keeps long account identity controls and norma
   const firstTask = page.locator(".task-list-item-button").first();
   const firstId = await firstTask.getAttribute("data-task-id");
   await firstTask.click();
-  await expect(page.getByTestId(`task-item-${firstId}`)).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId(`task-item-${firstId}`)).toHaveAttribute("aria-current", "true");
   await ready(page);
   const [openDrawerDownload] = await Promise.all([
     page.waitForEvent("download"),
@@ -609,13 +637,10 @@ test("task selection storage read failure retains actual A and explicit retry lo
   const recovery = page.getByRole("region", { name: "Draft recovery actions" });
   await expect(recovery).toContainText("could not be saved on this device");
   await expect(page.locator(".ProseMirror")).toContainText(textA);
-  await expect(page.getByTestId(`task-item-${recordA.id}`)).toHaveAttribute(
-    "aria-selected",
+  await expect(page.getByTestId(`task-item-${recordA.id}`)).toHaveAttribute("aria-current", "true");
+  await expect(page.getByTestId(`task-item-${recordB.id}`)).not.toHaveAttribute(
+    "aria-current",
     "true"
-  );
-  await expect(page.getByTestId(`task-item-${recordB.id}`)).toHaveAttribute(
-    "aria-selected",
-    "false"
   );
   await recovery.getByRole("button", { name: "Retry draft recovery" }).click();
   await expect(recovery).toContainText("could not be saved on this device");
@@ -627,10 +652,7 @@ test("task selection storage read failure retains actual A and explicit retry lo
   await recovery.getByRole("button", { name: "Retry draft recovery" }).click();
   await ready(page);
   await expect(page.locator(".ProseMirror")).toContainText(textB);
-  await expect(page.getByTestId(`task-item-${recordB.id}`)).toHaveAttribute(
-    "aria-selected",
-    "true"
-  );
+  await expect(page.getByTestId(`task-item-${recordB.id}`)).toHaveAttribute("aria-current", "true");
   await prefixWriting(page, " B retry continuation");
   expect((await savedText(page, "B retry continuation")).id).toBe(recordB.id);
   expect((await tasks(page)).find((task) => task.id === recordA.id)?.content).toBe(recordA.content);
@@ -1011,6 +1033,12 @@ test("locked local/server conflict keeps both versions and explicit server choic
   await login(page, alice);
   const conflict = page.getByRole("region", { name: "Version conflict" });
   await expect(conflict).toBeVisible();
+  // The expiry probe opens Statistics; close its restored public dialog normally.
+  const statistics = page.getByRole("dialog", { name: "Writing Statistics", exact: true });
+  if (await statistics.isVisible()) {
+    await statistics.getByRole("button", { name: "Close Stats", exact: true }).click();
+    await expect(statistics).toBeHidden();
+  }
   await expect(conflict).toContainText("Local protected conflict");
   await expect(conflict).toContainText("Server protected");
   await conflict.getByRole("button", { name: "Use server version" }).click();
@@ -1039,6 +1067,11 @@ test("real server rejects a wrong CSRF token and accepts the genuine browser coo
         headers: {
           "Content-Type": "application/json",
           "X-CSRF-Token": "wrong-local-contract-token",
+          "X-Expected-User-ID": (
+            (await (await fetch(`${api}/auth/me`, { credentials: "include" })).json()) as {
+              id: string;
+            }
+          ).id,
         },
         body: JSON.stringify({
           content: "Must not be stored",

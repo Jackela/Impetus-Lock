@@ -16,7 +16,10 @@ from server.models.style_history import StyleHistoryModel
 from server.models.user import User
 
 POSTGRES_TEST_URL = os.getenv(
-    "POSTGRES_TEST_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+    "POSTGRES_TEST_URL",
+    os.getenv(
+        "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres"
+    ),
 )
 
 
@@ -82,7 +85,7 @@ async def authenticated_style_clients(
     app.dependency_overrides[get_session_optional] = isolated_session
     app.dependency_overrides[get_repository] = isolated_repository
     try:
-        transport = ASGITransport(app=app)
+        transport = ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345))
         async with (
             AsyncClient(transport=transport, base_url="http://test") as owner,
             AsyncClient(transport=transport, base_url="http://test") as non_owner,
@@ -94,6 +97,7 @@ async def authenticated_style_clients(
                 )
                 assert registered.status_code == 201
                 client.headers["X-CSRF-Token"] = client.cookies["csrf_token"]
+                client.headers["X-Expected-User-ID"] = registered.json()["user"]["id"]
                 assert (await client.get("/auth/me")).status_code == 200
             yield owner, non_owner
     finally:
@@ -310,7 +314,9 @@ async def test_style_operations_require_authentication(
         "text": "The writer observed the quiet river and recorded each detail carefully. " * 50,
         "style_vector": {"formality_score": 0.6},
     }
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as anonymous:
+    async with AsyncClient(
+        transport=ASGITransport(app=app, client=(f"auth-{uuid4()}", 12345)), base_url="http://test"
+    ) as anonymous:
         response = await anonymous.request(
             method, path.format(user_id=user_id, history_id=uuid4()), json=payload
         )

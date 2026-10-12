@@ -631,6 +631,11 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       if (externalTrigger) onTriggerProcessed?.();
       return;
     }
+    if (!externalTrigger) {
+      lastProcessedTriggerRef.current = null;
+      isProcessingTriggerRef.current = false;
+      return;
+    }
     // Prevent re-entry - if already processing a trigger, skip
     if (isProcessingTriggerRef.current) {
       return;
@@ -678,15 +683,11 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       return () => {
         clearTimeout(timer);
       };
-    } else if (!externalTrigger) {
-      // Reset the ref when trigger is cleared
-      lastProcessedTriggerRef.current = null;
-      isProcessingTriggerRef.current = false;
     }
   }, [externalTrigger, onTriggerProcessed, mode, showSensoryAction, remoteEnabled]);
 
-  // Initialize editor - don't use loading state
-  const { get } = useEditor((root) => {
+  // Render immediately and use the library's readiness signal for setup.
+  const { get, loading } = useEditor((root) => {
     return (
       Editor.make()
         .config((ctx) => {
@@ -694,6 +695,14 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           ctx.update(editorViewOptionsCtx, (options) => ({
             ...options,
             editable: () => !recoveryBlockedRef.current,
+            attributes: (state) => ({
+              ...(typeof options.attributes === "function"
+                ? options.attributes(state)
+                : options.attributes),
+              role: "textbox",
+              "aria-label": "Writing editor",
+              "aria-multiline": "true",
+            }),
           }));
           // Use empty string as default if no initialContent provided
           ctx.set(defaultValueCtx, preserveLockMarkers(initialContent || "", ctx.get(remarkCtx)));
@@ -739,10 +748,11 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         attempts++;
       }
 
-      if (!editor || !mounted) {
-        if (!editor) {
-          logger.error("Editor failed to initialize", { timeoutMs: attempts * 100 });
-        }
+      if (!mounted) return;
+      if (!editor) {
+        logger.error("Editor failed to initialize", {
+          timeoutMs: attempts * EDITOR_RETRY_INTERVAL_MS,
+        });
         return;
       }
 
@@ -924,7 +934,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     return () => {
       mounted = false;
     };
-  }, [lockManager, showSensoryAction, recoverLocks]);
+  }, [loading, lockManager, showSensoryAction, recoverLocks]);
 
   // Always render immediately - no loading state
   return (

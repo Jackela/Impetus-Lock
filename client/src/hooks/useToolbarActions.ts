@@ -43,11 +43,12 @@ export interface ToolbarActions {
  * @example
  * ```tsx
  * const actions = useToolbarActions(editor);
- * <button onMouseDown={actions.handleBold}>Bold</button>
+ * <button onMouseDown={(event) => event.preventDefault()} onClick={actions.handleBold}>Bold</button>
  * ```
  *
  * @remarks
- * - Handlers use onMouseDown (not onClick) to preserve selection
+ * - Native click handlers support pointer, keyboard, and assistive activation
+ * - Pointer down prevents focus loss before activating a formatting command
  * - preventDefault() prevents focus loss from editor
  * - All commands are Milkdown preset-commonmark commands
  */

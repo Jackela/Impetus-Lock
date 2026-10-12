@@ -16,13 +16,11 @@ function download(content: string, filename: string, type: string) {
  */
 export function useDraftRecovery() {
   const [error, setError] = useState<string | null>(null);
-  const [legacy, setLegacy] = useState(() => {
-    try {
-      return readLegacyDraft();
-    } catch {
-      return null;
-    }
-  });
+  const [legacy, setLegacy] = useState(readLegacyDraft);
+  const retryLegacy = useCallback(() => {
+    setLegacy(readLegacyDraft());
+    setError(null);
+  }, []);
   const exportLegacy = useCallback(() => {
     try {
       const content = exportLegacyDraft();
@@ -52,5 +50,5 @@ export function useDraftRecovery() {
       "application/json"
     );
   }, []);
-  return { legacy, error, exportLegacy, discardLegacy, exportCurrent, exportOwned };
+  return { legacy, error, retryLegacy, exportLegacy, discardLegacy, exportCurrent, exportOwned };
 }

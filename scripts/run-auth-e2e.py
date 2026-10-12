@@ -8,11 +8,11 @@ restart. Authentication bypasses and model credentials are removed.
 import http.cookiejar
 import json
 import os
-from pathlib import Path
 import subprocess
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,9 +29,14 @@ def run() -> None:
         if key in {"TESTING", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY"}:
             env.pop(key)
     env["JWT_SECRET"] = uuid4().hex + uuid4().hex
+    # This runner uses loopback HTTP; HTTPS/production Secure policy stays intact.
+    env["APP_ENV"] = "development"
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     subprocess.run(
-        ["poetry", "run", "alembic", "upgrade", "head"], cwd=ROOT / "server", env=env, check=True
+        ["poetry", "run", "alembic", "upgrade", "head"],
+        cwd=ROOT / "server",
+        env=env,
+        check=True,
     )
     log = (EVIDENCE / "backend.log").open("w")
     backend = None
@@ -71,25 +76,42 @@ def run() -> None:
     try:
         backend = start()
         cookies = http.cookiejar.CookieJar()
-        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookies))
+        opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(cookies)
+        )
+        expected_user = None
 
         def post(path: str, body: dict) -> dict:
             headers = {"Content-Type": "application/json"}
+            if expected_user is not None:
+                headers["X-Expected-User-ID"] = expected_user
             for cookie in cookies:
                 if cookie.name == "csrf_token":
                     headers["X-CSRF-Token"] = cookie.value
             request = urllib.request.Request(
-                API + path, data=json.dumps(body).encode(), headers=headers, method="POST"
+                API + path,
+                data=json.dumps(body).encode(),
+                headers=headers,
+                method="POST",
             )
             with opener.open(request, timeout=30) as response:
                 return json.load(response)
 
         email = f"restart-{uuid4()}@example.com"
-        post("/auth/register", {"email": email, "password": "localAuthPass!2026"})
-        content = "# Persisted writing\n\nProtected browser lock <!-- lock:lock_restart -->\n"
+        registered = post(
+            "/auth/register", {"email": email, "password": "localAuthPass!2026"}
+        )
+        expected_user = registered["user"]["id"]
+        content = (
+            "# Persisted writing\n\nProtected browser lock <!-- lock:lock_restart -->\n"
+        )
         task = post(
             "/tasks/",
-            {"content": content, "lock_ids": ["lock_restart"], "title": "Restart durability"},
+            {
+                "content": content,
+                "lock_ids": ["lock_restart"],
+                "title": "Restart durability",
+            },
         )
         (EVIDENCE / "browser-persisted-before-restart.json").write_text(
             json.dumps(
@@ -105,7 +127,9 @@ def run() -> None:
         backend.terminate()
         backend.wait(timeout=30)
         backend = start()
-        subprocess.run(["npm", "run", "test:e2e:auth"], cwd=ROOT / "client", env=env, check=True)
+        subprocess.run(
+            ["npm", "run", "test:e2e:auth"], cwd=ROOT / "client", env=env, check=True
+        )
     finally:
         if backend is not None and backend.poll() is None:
             backend.terminate()

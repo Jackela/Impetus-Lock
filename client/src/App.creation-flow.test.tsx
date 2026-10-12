@@ -91,10 +91,7 @@ describe("App task creation flow", () => {
       expect(container.querySelector(".milkdown .ProseMirror")).toHaveTextContent(
         "Existing task content"
       );
-      expect(screen.getByTestId(`task-item-${oldTask.id}`)).toHaveAttribute(
-        "aria-selected",
-        "true"
-      );
+      expect(screen.getByTestId(`task-item-${oldTask.id}`)).toHaveAttribute("aria-current", "true");
     });
 
     fireEvent.click(screen.getByTestId("new-task-button"));
@@ -111,14 +108,8 @@ describe("App task creation flow", () => {
       expect(container.querySelector(".milkdown .ProseMirror")).toHaveTextContent(
         "New writing task"
       );
-      expect(screen.getByTestId(`task-item-${newTask.id}`)).toHaveAttribute(
-        "aria-selected",
-        "true"
-      );
-      expect(screen.getByTestId(`task-item-${oldTask.id}`)).toHaveAttribute(
-        "aria-selected",
-        "false"
-      );
+      expect(screen.getByTestId(`task-item-${newTask.id}`)).toHaveAttribute("aria-current", "true");
+      expect(screen.getByTestId(`task-item-${oldTask.id}`)).not.toHaveAttribute("aria-current");
     });
   });
 });
