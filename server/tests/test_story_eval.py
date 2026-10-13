@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -11,6 +13,154 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from story_eval import check_record, export_inputs, load_cases, render_context  # noqa: E402
+
+
+@pytest.fixture
+def shallow_story_checkout(tmp_path: Path) -> Path:
+    """Exercise the current CLI with tracked files but no original Git history."""
+    checkout = tmp_path / "shallow"
+    subprocess.run(
+        ["git", "clone", "--depth=1", "--no-local", ROOT.as_uri(), str(checkout)],
+        check=True,
+        capture_output=True,
+    )
+    missing = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(checkout),
+            "cat-file",
+            "-e",
+            "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a^{commit}",
+        ],
+        capture_output=True,
+    )
+    assert missing.returncode != 0
+    # Include the candidate script while preserving the actual shallow repository.
+    shutil.copyfile(ROOT / "scripts/story_eval.py", checkout / "scripts/story_eval.py")
+    return checkout
+
+
+def test_export_preserves_pinned_baseline_in_shallow_checkout(
+    shallow_story_checkout: Path, tmp_path: Path
+) -> None:
+    """A CI-style checkout can export without substituting current prompts."""
+    target = tmp_path / "export.json"
+    outcome = subprocess.run(
+        [
+            sys.executable,
+            str(shallow_story_checkout / "scripts/story_eval.py"),
+            "export",
+            "--out",
+            str(target),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert outcome.returncode == 0, outcome.stdout + outcome.stderr
+    exported = json.loads(target.read_text())
+    assert len(exported["inputs"]) == 80
+    baseline = [row for row in exported["inputs"] if row["template_variant"] == "baseline"]
+    assert {row["template_source_sha"] for row in baseline} == {
+        "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a"
+    }
+    assert {row["mode"]: row["template_digest"] for row in baseline} == {
+        "muse": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "loki": "0ce7066693828e877a4c4946dd22c1963167ab9629555dd8e7cb190f3fc1cbc7",
+    }
+    assert exported["baseline_verification"] == {
+        "muse": "pinned_snapshot_digest",
+        "loki": "pinned_snapshot_digest",
+    }
+
+
+def test_shallow_comparison_keeps_outputs_empty_and_baseline_pinned(
+    shallow_story_checkout: Path, tmp_path: Path
+) -> None:
+    """Anonymous review materials remain usable and unassessed in shallow CI."""
+    target = tmp_path / "comparison"
+    outcome = subprocess.run(
+        [
+            sys.executable,
+            str(shallow_story_checkout / "scripts/story_eval.py"),
+            "compare",
+            "--out",
+            str(target),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert outcome.returncode == 0, outcome.stdout + outcome.stderr
+    cards = json.loads((target / "review_cards.json").read_text())["cards"]
+    assert len(cards) == 40
+    assert all(card["A"] is None and card["B"] is None for card in cards)
+    exported = json.loads((target / "identity_key.json").read_text())["export"]
+    assert exported["baseline_verification"] == {
+        "muse": "pinned_snapshot_digest",
+        "loki": "pinned_snapshot_digest",
+    }
+    assert exported["real_model_status"] == "unassessed"
+
+
+@pytest.mark.parametrize("mode", ["muse", "loki"])
+@pytest.mark.parametrize("command", ["export", "compare"])
+def test_modified_baseline_snapshot_is_rejected_without_history(
+    shallow_story_checkout: Path, tmp_path: Path, mode: str, command: str
+) -> None:
+    """Missing history never legitimizes an edited baseline snapshot."""
+    snapshot = shallow_story_checkout / f"eval/chinese_stories/baseline/{mode}.toml"
+    snapshot.write_bytes(snapshot.read_bytes() + b"\n# changed snapshot\n")
+    target = tmp_path / "result"
+    outcome = subprocess.run(
+        [
+            sys.executable,
+            str(shallow_story_checkout / "scripts/story_eval.py"),
+            command,
+            "--out",
+            str(target),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert outcome.returncode == 2, outcome.stdout + outcome.stderr
+    report = json.loads((target / "error.json" if command == "compare" else target).read_text())
+    assert report["exit_state"] == "input_error"
+    assert report["errors"] == [f"baseline_template_changed:{mode}"]
+
+
+@pytest.mark.parametrize(
+    ("failure", "error"),
+    [
+        ("check", "baseline_history_check_failed:muse"),
+        ("read", "baseline_history_read_failed:muse"),
+        ("mismatch", "baseline_template_changed:muse"),
+    ],
+)
+def test_baseline_git_failures_are_structured_not_snapshot_fallback(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, failure: str, error: str
+) -> None:
+    """Only absent history permits fallback; available history must match bytes."""
+    from typing import Any
+
+    import story_eval
+
+    run = subprocess.run
+
+    def git_result(command: list[str], **kwargs: Any) -> Any:
+        if command[0] == "git" and "--quiet" in command:
+            return subprocess.CompletedProcess(command, 128 if failure == "check" else 0)
+        if command[0] == "git" and command[3] == "show":
+            return subprocess.CompletedProcess(
+                command, 128 if failure == "read" else 0, stdout=b"different Git blob"
+            )
+        return run(command, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", git_result)
+    target = tmp_path / "error.json"
+    assert story_eval.main(["export", "--out", str(target)]) == 2
+    report = json.loads(target.read_text())
+    assert report["exit_state"] == "input_error"
+    assert report["errors"] == [error]
 
 
 def test_offline_cli_does_not_initialize_ambient_otlp_exporter(tmp_path: Path) -> None:
@@ -119,6 +269,20 @@ def test_export_separates_original_and_current_without_model_calls() -> None:
     assert before["render_input"] == after["render_input"]
     assert before["template_source_sha"] == "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a"
     assert exported["real_model_status"] == "unassessed"
+    history = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a^{commit}",
+        ],
+        capture_output=True,
+    )
+    verification = "git_commit_and_digest" if history.returncode == 0 else "pinned_snapshot_digest"
+    assert exported["baseline_verification"] == {"muse": verification, "loki": verification}
 
 
 def test_response_anchor_and_cursor_are_checked() -> None:

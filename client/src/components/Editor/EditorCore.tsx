@@ -84,7 +84,8 @@ function isValidResponseAnchor(
   if (!anchor || anchor.type === "lock_id") return true;
   const positions = anchor.type === "range" ? [anchor.from, anchor.to] : [anchor.from];
   for (const position of positions) {
-    if (!Number.isInteger(position) || position < 0 || position > state.doc.content.size) return false;
+    if (!Number.isInteger(position) || position < 0 || position > state.doc.content.size)
+      return false;
     const resolved = state.doc.resolve(position);
     const before = resolved.nodeBefore?.text?.slice(-1) ?? "";
     const after = resolved.nodeAfter?.text?.slice(0, 1) ?? "";
@@ -450,26 +451,46 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const fullText = requestState.doc.textBetween(0, cursorPosition, "\n", "\n");
       const contextWindow = ensureContext(extractLastSentences(fullText, 3, undefined, true));
 
-      const response = await triggerMuseIntervention(contextWindow, cursorPosition, requestVersion, {
-        session: captured.session,
-        selectionFrom: requestState.selection.from,
-      });
+      const response = await triggerMuseIntervention(
+        contextWindow,
+        cursorPosition,
+        requestVersion,
+        {
+          session: captured.session,
+          selectionFrom: requestState.selection.from,
+        }
+      );
       if (!isCurrentResponse()) return;
+      // With no local sentence, the server's context-derived tail can reach
+      // into a previous block (or position 0 for an empty document). Preserve
+      // the captured Muse insertion while still validating all numeric bounds.
+      const insertAtCapturedCursor =
+        response.action === "rewrite" &&
+        !museAnchor &&
+        requestState.selection.empty &&
+        response.anchor?.type === "range" &&
+        response.anchor.to === cursorPosition &&
+        isValidResponseAnchor(requestState, response.anchor, false);
       if (
         response.action !== "provoke" &&
+        !insertAtCapturedCursor &&
         !isValidResponseAnchor(
           requestState,
           response.anchor,
           response.action === "rewrite" || response.action === "delete"
         )
-      ) return;
+      )
+        return;
 
       const resolvedSource: AgentSource = response.source ?? "muse";
 
       if (response.action === "rewrite" && response.content && response.lock_id) {
         showSensoryAction(AIActionType.REWRITE);
-        const resolvedAnchor =
-          response.anchor && response.anchor.type === "range" ? response.anchor : museAnchor;
+        const resolvedAnchor = insertAtCapturedCursor
+          ? undefined
+          : response.anchor && response.anchor.type === "range"
+            ? response.anchor
+            : museAnchor;
         rewriteRangeWithLock({
           view,
           content: response.content,
@@ -506,12 +527,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [
-    lockManager,
-    onInterventionError,
-    showSensoryAction,
-    isCurrentRequest,
-  ]);
+  }, [lockManager, onInterventionError, showSensoryAction, isCurrentRequest]);
 
   // Handle Loki chaos trigger
   const handleLokiTrigger = useCallback(async () => {
@@ -539,10 +555,15 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       const fullText = requestState.doc.textBetween(0, cursorPosition, "\n", "\n");
       const contextWindow = ensureContext(extractLastSentences(fullText, 3, undefined, true));
 
-      const response = await triggerLokiIntervention(contextWindow, cursorPosition, requestVersion, {
-        session: captured.session,
-        selectionFrom: requestState.selection.from,
-      });
+      const response = await triggerLokiIntervention(
+        contextWindow,
+        cursorPosition,
+        requestVersion,
+        {
+          session: captured.session,
+          selectionFrom: requestState.selection.from,
+        }
+      );
       if (!isCurrentResponse()) return;
       if (
         !isValidResponseAnchor(
@@ -550,7 +571,8 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           response.anchor,
           response.action === "rewrite" || response.action === "delete"
         )
-      ) return;
+      )
+        return;
 
       const resolvedSource: AgentSource = response.source ?? "loki";
 
@@ -571,9 +593,10 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           view,
           content: response.content,
           lockId: response.lock_id,
-          anchor: response.anchor && response.anchor.type === "range"
-            ? response.anchor
-            : { type: "range", ...getLastSentenceRange(requestState) },
+          anchor:
+            response.anchor && response.anchor.type === "range"
+              ? response.anchor
+              : { type: "range", ...getLastSentenceRange(requestState) },
           source: resolvedSource,
         });
         if (view.state.doc === requestState.doc) return;
@@ -594,12 +617,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [
-    lockManager,
-    onInterventionError,
-    showSensoryAction,
-    isCurrentRequest,
-  ]);
+  }, [lockManager, onInterventionError, showSensoryAction, isCurrentRequest]);
 
   // Handle manual delete trigger (Test Delete button)
   const handleManualDelete = useCallback(() => {

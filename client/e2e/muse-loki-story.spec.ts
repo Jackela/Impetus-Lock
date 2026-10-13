@@ -304,24 +304,36 @@ test("Muse unfinished Chinese Markdown and emoji uses live middle cursor, even a
   await enforce(lock);
 });
 
-test("Muse at paragraph start inserts at the captured empty range after native cursor movement", async () => {
-  await caret(PARAGRAPH, 0);
-  const item = await trigger("muse");
-  expect(item.request.client_meta.selection_from).toBe(item.request.client_meta.selection_to);
-  expect(item.request.context).not.toContain(PARAGRAPH);
-  await caret("窗外的列车驶向远方。", 3);
-  const lock = await release(item, "muse", "provoke");
-  await expect(page.locator(".ProseMirror")).toContainText(REPLACEMENT);
-  const saved = await settled();
-  expect(saved.content).toBe(
-    `# 雨夜车站\n\n<br />\n\n${REPLACEMENT} <!-- lock:${lock} source:muse -->\n\n她握着**旧钥匙**。钟声响起🙂她还没说完\n\n窗外的列车驶向远方。\n\n${PROTECTED}`
-  );
-  expect(saved.lock_ids).toEqual([EXISTING, lock]);
-  expect(saved.version).toBeGreaterThan(task.version);
-  await enforce(lock);
-  await exactReload(saved, "muse-empty-captured-range");
-  await enforce(lock);
-});
+for (const action of ["provoke", "rewrite"] as const) {
+  test(`Muse ${action} at paragraph start inserts at the captured empty range after native cursor movement`, async () => {
+    await caret(PARAGRAPH, 0);
+    const item = await trigger("muse");
+    expect(item.request.client_meta.selection_from).toBe(item.request.client_meta.selection_to);
+    expect(item.request.context).not.toContain(PARAGRAPH);
+    await caret("窗外的列车驶向远方。", 3);
+    expect(item.request.client_meta.selection_to).toBe(7);
+    expect(item.request.context).toBe("雨夜车站\n");
+    // Actual InterventionService normalization for this captured request yields 2..7.
+    // The range reaches the preceding heading, which must remain intact.
+    const lock = await release(
+      item,
+      "muse",
+      action,
+      `story_${randomUUID()}`,
+      action === "rewrite" ? { type: "range", from: 2, to: 7 } : undefined
+    );
+    await expect(page.locator(".ProseMirror")).toContainText(REPLACEMENT);
+    const saved = await settled();
+    expect(saved.content).toBe(
+      `# 雨夜车站\n\n<br />\n\n${REPLACEMENT} <!-- lock:${lock} source:muse -->\n\n她握着**旧钥匙**。钟声响起🙂她还没说完\n\n窗外的列车驶向远方。\n\n${PROTECTED}`
+    );
+    expect(saved.lock_ids).toEqual([EXISTING, lock]);
+    expect(saved.version).toBeGreaterThan(task.version);
+    await enforce(lock);
+    await exactReload(saved, `muse-${action}-empty-captured-range`);
+    await enforce(lock);
+  });
+}
 
 for (const mode of ["muse", "loki"] as const) {
   test(`${mode} delayed response preserves continuing native Chinese typing exactly`, async () => {

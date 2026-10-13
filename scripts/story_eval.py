@@ -50,6 +50,11 @@ from server.infrastructure.llm.prompts.prompt_registry import (  # noqa: E402
 )
 
 BASE_SHA = "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a"
+# SHA-256 of the original Git blobs, retained for CI's shallow checkouts.
+BASE_TEMPLATE_DIGESTS = {
+    "muse": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+    "loki": "0ce7066693828e877a4c4946dd22c1963167ab9629555dd8e7cb190f3fc1cbc7",
+}
 CORPUS = ROOT / "eval/chinese_stories/cases.json"
 DIMENSIONS = ("情节与人物一致性", "突破是否具体", "中文适配", "续写空间")
 CHOICES = ("A", "B", "各有优劣", "都无帮助")
@@ -154,12 +159,36 @@ def _git(root: Path, *args: str) -> str:
     return subprocess.check_output(["git", "-C", str(root), *args], text=True).strip()
 
 
+def _baseline_template(root: Path, mode: str) -> tuple[bytes, str]:
+    raw = (root / "eval/chinese_stories/baseline" / f"{mode}.toml").read_bytes()
+    if hashlib.sha256(raw).hexdigest() != BASE_TEMPLATE_DIGESTS[mode]:
+        raise ValueError(f"baseline_template_changed:{mode}")
+    history = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", f"{BASE_SHA}^{{commit}}"],
+        capture_output=True,
+    )
+    if history.returncode == 1:
+        return raw, "pinned_snapshot_digest"
+    if history.returncode != 0:
+        raise ValueError(f"baseline_history_check_failed:{mode}")
+    original = subprocess.run(
+        ["git", "-C", str(root), "show", f"{BASE_SHA}:server/server/prompts/{mode}.toml"],
+        capture_output=True,
+    )
+    if original.returncode != 0:
+        raise ValueError(f"baseline_history_read_failed:{mode}")
+    if raw != original.stdout:
+        raise ValueError(f"baseline_template_changed:{mode}")
+    return raw, "git_commit_and_digest"
+
+
 def export_inputs(root: Path, split: str) -> dict[str, Any]:
     """Render both TOML variants on identical candidate inputs; never generate text."""
     corpus = root / "eval/chinese_stories/cases.json"
     cases = load_cases(corpus)
     rows: list[dict[str, Any]] = []
     head = _git(root, "rev-parse", "HEAD")
+    baselines = {mode: _baseline_template(root, mode) for mode in ("muse", "loki")}
     for case in cases:
         if split != "all" and case.split != split:
             continue
@@ -171,19 +200,7 @@ def export_inputs(root: Path, split: str) -> dict[str, Any]:
                     if variant == "baseline"
                     else root / "server/server/prompts" / f"{mode}.toml"
                 )
-                raw = path.read_bytes()
-                if variant == "baseline":
-                    original = subprocess.check_output(
-                        [
-                            "git",
-                            "-C",
-                            str(root),
-                            "show",
-                            f"{BASE_SHA}:server/server/prompts/{mode}.toml",
-                        ]
-                    )
-                    if raw != original:
-                        raise ValueError(f"baseline_template_changed:{mode}")
+                raw = baselines[mode][0] if variant == "baseline" else path.read_bytes()
                 data = tomllib.loads(raw.decode())
                 template = (
                     PromptTemplate(
@@ -227,6 +244,7 @@ def export_inputs(root: Path, split: str) -> dict[str, Any]:
         "base_sha": BASE_SHA,
         "head_sha": head,
         "head_tree_sha": _git(root, "rev-parse", "HEAD^{tree}"),
+        "baseline_verification": {mode: baseline[1] for mode, baseline in baselines.items()},
         "source_file_digests": {
             str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in [

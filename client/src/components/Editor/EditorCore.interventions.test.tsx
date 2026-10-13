@@ -388,7 +388,6 @@ describe("EditorCore intervention document snapshot", () => {
     }
   );
   it.each([
-    ["muse", "rewrite"],
     ["loki", "rewrite"],
     ["loki", "delete"],
   ] as const)(
@@ -410,12 +409,7 @@ describe("EditorCore intervention document snapshot", () => {
       const cursor = view.state.selection.to;
       const before = view.state.doc;
       onChange.mockClear();
-      mounted.rerender(
-        <EditorCore
-          {...props}
-          externalTrigger={mode === "muse" ? AIActionType.PROVOKE : AIActionType.CHAOS}
-        />
-      );
+      mounted.rerender(<EditorCore {...props} externalTrigger={AIActionType.CHAOS} />);
       await waitFor(() => expect(requests).toHaveLength(1));
       await act(async () =>
         requests[0]!.finish(
@@ -440,6 +434,124 @@ describe("EditorCore intervention document snapshot", () => {
       expect(onChange.mock.calls.at(-1)?.[1]).toEqual([]);
     }
   );
+
+  it.each([false, true])(
+    "keeps the captured blank-paragraph Muse insertion and existing locks (continued typing=%s)",
+    async (continuedTyping) => {
+      const requests = deferredInterventions();
+      const onReady = vi.fn<(editor: Editor) => void>();
+      const onChange = vi.fn();
+      const props = {
+        initialContent:
+          "必须保留的上一段。\n\n> 已有锁定内容 <!-- lock:existing-lock source:muse -->",
+        mode: "muse" as const,
+        onReady,
+        onChange,
+      };
+      const mounted = render(<EditorCore {...props} />);
+      await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+      const view = onReady.mock.calls[0]![0].action((ctx) => ctx.get(editorViewCtx));
+      const originalParagraph = view.state.doc.firstChild!;
+      const originalLock = view.state.doc.lastChild!;
+      act(() => {
+        view.dispatch(
+          view.state.tr.insert(originalParagraph.nodeSize, view.state.schema.node("paragraph"))
+        );
+        view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 12)));
+      });
+      mounted.rerender(<EditorCore {...props} externalTrigger={AIActionType.PROVOKE} />);
+      await waitFor(() => expect(requests).toHaveLength(1));
+      expect(requests[0]!.body.context).toBe("必须保留的上一段。\n");
+      expect(requests[0]!.body.client_meta.selection_from).toBe(12);
+      expect(requests[0]!.body.client_meta.selection_to).toBe(12);
+      act(() => {
+        view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 1)));
+        if (continuedTyping) view.dispatch(view.state.tr.insertText("作者继续写作。", 12));
+      });
+      const beforeResponse = view.state.doc;
+      onChange.mockClear();
+      await act(async () =>
+        requests[0]!.finish(
+          new Response(
+            JSON.stringify({
+              action: "rewrite",
+              content: "开场提示。",
+              lock_id: "opening-lock",
+              source: "muse",
+              // Actual InterventionService result for the asserted context/cursor.
+              anchor: { type: "range", from: 2, to: 12 },
+            })
+          )
+        )
+      );
+      if (continuedTyping) {
+        expect(view.state.doc).toBe(beforeResponse);
+        expect(onChange).not.toHaveBeenCalled();
+        act(() => view.dispatch(view.state.tr.insertText("仍可续写。", 12)));
+        expect(onChange.mock.calls.at(-1)?.[1]).toEqual(["existing-lock"]);
+      } else {
+        expect(view.state.doc.firstChild!.toJSON()).toEqual(originalParagraph.toJSON());
+        expect(view.state.doc.lastChild!.toJSON()).toEqual(originalLock.toJSON());
+        expect(view.state.doc.textContent).toBe(
+          `${originalParagraph.textContent}开场提示。 <!-- lock:opening-lock source:muse -->${originalLock.textContent}`
+        );
+        expect(onChange.mock.calls.at(-1)?.[1]).toEqual(["existing-lock", "opening-lock"]);
+        const protectedDocument = view.state.doc;
+        act(() => view.dispatch(view.state.tr.delete(0, view.state.doc.content.size)));
+        expect(view.state.doc).toBe(protectedDocument);
+      }
+    }
+  );
+
+  it.each([
+    { name: "zero-length", from: 12, to: 12, selectionFrom: 12 },
+    { name: "negative position", from: -1, to: 12, selectionFrom: 12 },
+    { name: "out-of-bounds", from: 2, to: 99, selectionFrom: 12 },
+    { name: "fractional position", from: 1.5, to: 12, selectionFrom: 12 },
+    { name: "nonempty selection", from: 2, to: 12, selectionFrom: 1 },
+  ])("rejects a blank-paragraph Muse rewrite with $name", async ({ from, to, selectionFrom }) => {
+    const requests = deferredInterventions();
+    const onReady = vi.fn<(editor: Editor) => void>();
+    const onChange = vi.fn();
+    const props = {
+      initialContent: "必须保留的上一段。",
+      mode: "muse" as const,
+      onReady,
+      onChange,
+    };
+    const mounted = render(<EditorCore {...props} />);
+    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+    const view = onReady.mock.calls[0]![0].action((ctx) => ctx.get(editorViewCtx));
+    act(() => {
+      view.dispatch(
+        view.state.tr.insert(view.state.doc.content.size, view.state.schema.node("paragraph"))
+      );
+      view.dispatch(
+        view.state.tr.setSelection(TextSelection.create(view.state.doc, selectionFrom, 12))
+      );
+    });
+    const before = view.state.doc;
+    onChange.mockClear();
+    mounted.rerender(<EditorCore {...props} externalTrigger={AIActionType.PROVOKE} />);
+    await waitFor(() => expect(requests).toHaveLength(1));
+    await act(async () =>
+      requests[0]!.finish(
+        new Response(
+          JSON.stringify({
+            action: "rewrite",
+            content: "不能写入",
+            lock_id: "invalid-lock",
+            source: "muse",
+            anchor: { type: "range", from, to },
+          })
+        )
+      )
+    );
+    expect(view.state.doc).toBe(before);
+    expect(onChange).not.toHaveBeenCalled();
+    act(() => view.dispatch(view.state.tr.insertText("继续写作", 12)));
+    expect(onChange.mock.calls.at(-1)?.[1]).toEqual([]);
+  });
 
   it.each(["rewrite", "delete"] as const)(
     "rejects a %s anchor splitting an emoji without registering a lock",
@@ -473,42 +585,55 @@ describe("EditorCore intervention document snapshot", () => {
     }
   );
 
-  it("keeps a valid explicit multi-block range without remapping it to the cursor sentence", async () => {
-    const requests = deferredInterventions();
-    const onReady = vi.fn<(editor: Editor) => void>();
-    const onChange = vi.fn();
-    const props = {
-      initialContent: "第一段需要替换。\n\n第二段也需要替换。\n\n最后这一段必须保留。",
-      mode: "loki" as const,
-      onReady,
-      onChange,
-    };
-    const mounted = render(<EditorCore {...props} />);
-    await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
-    const view = onReady.mock.calls[0]![0].action((ctx) => ctx.get(editorViewCtx));
-    act(() => view.dispatch(view.state.tr.setSelection(TextSelection.atEnd(view.state.doc))));
-    const to = view.state.doc.child(0).nodeSize + view.state.doc.child(1).nodeSize - 1;
-    mounted.rerender(<EditorCore {...props} externalTrigger={AIActionType.CHAOS} />);
-    await waitFor(() => expect(requests).toHaveLength(1));
-    await act(async () =>
-      requests[0]!.finish(
-        new Response(
-          JSON.stringify({
-            action: "rewrite",
-            content: "明确范围的替换。",
-            lock_id: "explicit-lock",
-            source: "loki",
-            anchor: { type: "range", from: 1, to },
-          })
+  it.each(["muse", "loki"] as const)(
+    "keeps a valid explicit %s multi-block range without remapping it to the cursor sentence",
+    async (mode) => {
+      const requests = deferredInterventions();
+      const onReady = vi.fn<(editor: Editor) => void>();
+      const onChange = vi.fn();
+      const props = {
+        initialContent: "第一段需要替换。\n\n第二段也需要替换。\n\n最后这一段必须保留。",
+        mode,
+        onReady,
+        onChange,
+      };
+      const mounted = render(<EditorCore {...props} />);
+      await waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+      const view = onReady.mock.calls[0]![0].action((ctx) => ctx.get(editorViewCtx));
+      act(() => {
+        view.dispatch(
+          view.state.tr.insert(view.state.doc.content.size, view.state.schema.node("paragraph"))
+        );
+        view.dispatch(view.state.tr.setSelection(TextSelection.atEnd(view.state.doc)));
+      });
+      const to = view.state.doc.child(0).nodeSize + view.state.doc.child(1).nodeSize - 1;
+      mounted.rerender(
+        <EditorCore
+          {...props}
+          externalTrigger={mode === "muse" ? AIActionType.PROVOKE : AIActionType.CHAOS}
+        />
+      );
+      await waitFor(() => expect(requests).toHaveLength(1));
+      await act(async () =>
+        requests[0]!.finish(
+          new Response(
+            JSON.stringify({
+              action: "rewrite",
+              content: "明确范围的替换。",
+              lock_id: "explicit-lock",
+              source: "loki",
+              anchor: { type: "range", from: 1, to },
+            })
+          )
         )
-      )
-    );
-    expect(view.state.doc.textContent).toContain("明确范围的替换。");
-    expect(view.state.doc.textContent).toContain("最后这一段必须保留。");
-    expect(view.state.doc.textContent).not.toContain("第一段需要替换。");
-    expect(view.state.doc.textContent).not.toContain("第二段也需要替换。");
-    expect(onChange.mock.calls.at(-1)?.[1]).toEqual(["explicit-lock"]);
-  });
+      );
+      expect(view.state.doc.textContent).toContain("明确范围的替换。");
+      expect(view.state.doc.textContent).toContain("最后这一段必须保留。");
+      expect(view.state.doc.textContent).not.toContain("第一段需要替换。");
+      expect(view.state.doc.textContent).not.toContain("第二段也需要替换。");
+      expect(onChange.mock.calls.at(-1)?.[1]).toEqual(["explicit-lock"]);
+    }
+  );
   it.each([
     ["provoke", false],
     ["rewrite", false],
@@ -544,6 +669,8 @@ describe("EditorCore intervention document snapshot", () => {
               content: "开场提示。",
               lock_id: "opening-lock",
               source: "muse",
+              anchor:
+                action === "rewrite" ? { type: "range", from: 0, to: 1 } : { type: "pos", from: 1 },
             })
           )
         )
@@ -575,6 +702,10 @@ describe("EditorCore intervention document snapshot", () => {
               content: "故事从这扇门开始。",
               lock_id: "empty-lock",
               source: "muse",
+              // InterventionService normalizes the empty-context fallback at cursor 1
+              // to this range; document position 0 is outside the empty paragraph.
+              anchor:
+                action === "rewrite" ? { type: "range", from: 0, to: 1 } : { type: "pos", from: 1 },
             })
           )
         )
