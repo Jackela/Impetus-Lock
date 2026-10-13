@@ -1,5 +1,6 @@
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { editorViewCtx, type Editor } from "@milkdown/core";
+import { TextSelection } from "@milkdown/prose/state";
 import { useCallback, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteSession } from "../../services/api/remoteSession";
@@ -89,6 +90,8 @@ describe("EditorCore remote request lifetime", () => {
         view.state.schema.text("Second editable target.")
       );
       view.dispatch(view.state.tr.insert(view.state.doc.content.size, paragraph));
+      // Insertion at an explicit position does not move the writer's selection.
+      view.dispatch(view.state.tr.setSelection(TextSelection.atEnd(view.state.doc)));
     });
     await act(async () => button.click());
     expect(requests).toHaveLength(2);

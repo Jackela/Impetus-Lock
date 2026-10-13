@@ -1,0 +1,718 @@
+{
+  "exit_state": "contract_failures",
+  "results": [
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "draft_schema:Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "raw_output": "{",
+        "response": {
+          "action": "provoke",
+          "content": "这是离线合同测试文本，不作为故事建议。",
+          "lock_id": "lock_63c20b6c-da08-4a83-874b-a83bf5a3d633",
+          "anchor": {
+            "type": "pos",
+            "from": 102
+          },
+          "action_id": "act_ed9121b7-fed3-42e3-aa53-f1c913c42628",
+          "source": "muse",
+          "issued_at": "2026-10-12T10:56:16.911448"
+        }
+      },
+      "service_replay": null,
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "muse_delete_forbidden",
+        "response_content_mismatch"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "raw_output": "{\"action\":\"delete\"}",
+        "response": {
+          "action": "provoke",
+          "content": "这是离线合同测试文本，不作为故事建议。",
+          "lock_id": "lock_63c20b6c-da08-4a83-874b-a83bf5a3d633",
+          "anchor": {
+            "type": "pos",
+            "from": 102
+          },
+          "action_id": "act_ed9121b7-fed3-42e3-aa53-f1c913c42628",
+          "source": "muse",
+          "issued_at": "2026-10-12T10:56:16.911448"
+        }
+      },
+      "service_replay": {
+        "action": "provoke",
+        "content": "重新审视你刚写下的句子，再给出更锋利的版本。",
+        "lock_id": "lock_f45d43dd-f891-4406-aa7e-8086e6c165c0",
+        "anchor": {
+          "type": "pos",
+          "from": 102
+        },
+        "action_id": "act_4ebfd983-8db5-43f7-942a-debafbbbf843",
+        "source": "muse",
+        "issued_at": "2026-10-12T11:20:20.912336"
+      },
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "mutation_missing_content"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "raw_output": "{\"action\":\"rewrite\"}",
+        "response": {
+          "action": "provoke",
+          "content": "这是离线合同测试文本，不作为故事建议。",
+          "lock_id": "lock_63c20b6c-da08-4a83-874b-a83bf5a3d633",
+          "anchor": {
+            "type": "pos",
+            "from": 102
+          },
+          "action_id": "act_ed9121b7-fed3-42e3-aa53-f1c913c42628",
+          "source": "muse",
+          "issued_at": "2026-10-12T10:56:16.911448"
+        }
+      },
+      "service_replay": null,
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "draft_schema:1 validation error for LLMInterventionDraft\naction\n  Input should be 'provoke', 'delete' or 'rewrite' [type=literal_error, input_value='unknown', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "raw_output": "{\"action\":\"unknown\"}",
+        "response": {
+          "action": "provoke",
+          "content": "这是离线合同测试文本，不作为故事建议。",
+          "lock_id": "lock_63c20b6c-da08-4a83-874b-a83bf5a3d633",
+          "anchor": {
+            "type": "pos",
+            "from": 102
+          },
+          "action_id": "act_ed9121b7-fed3-42e3-aa53-f1c913c42628",
+          "source": "muse",
+          "issued_at": "2026-10-12T10:56:16.911448"
+        }
+      },
+      "service_replay": null,
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "cursor_context_mismatch"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "光标之后的未提交正文。",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "raw_output": "{\"action\": \"provoke\", \"content\": \"这是离线合同测试文本，不作为故事建议。\"}",
+        "response": {
+          "action": "provoke",
+          "content": "这是离线合同测试文本，不作为故事建议。",
+          "lock_id": "lock_63c20b6c-da08-4a83-874b-a83bf5a3d633",
+          "anchor": {
+            "type": "pos",
+            "from": 102
+          },
+          "action_id": "act_ed9121b7-fed3-42e3-aa53-f1c913c42628",
+          "source": "muse",
+          "issued_at": "2026-10-12T10:56:16.911448"
+        }
+      },
+      "service_replay": {
+        "action": "provoke",
+        "content": "这是离线合同测试文本，不作为故事建议。",
+        "lock_id": "lock_1b69391e-5453-4e3c-95a2-2a631cb90e22",
+        "anchor": {
+          "type": "pos",
+          "from": 102
+        },
+        "action_id": "act_9346f798-8d2d-4ff6-a3dc-4fe248f16ef1",
+        "source": "muse",
+        "issued_at": "2026-10-12T11:20:20.913035"
+      },
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "response_missing_issued_at",
+        "response_schema:3 validation errors for InterventionResponse\nanchor\n  Field required [type=missing, input_value={'action': 'provoke'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\naction_id\n  Field required [type=missing, input_value={'action': 'provoke'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsource\n  Field required [type=missing, input_value={'action': 'provoke'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing",
+        "response_content_mismatch"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "raw_output": "{\"action\": \"provoke\", \"content\": \"这是离线合同测试文本，不作为故事建议。\"}",
+        "response": {
+          "action": "provoke"
+        }
+      },
+      "service_replay": {
+        "action": "provoke",
+        "content": "这是离线合同测试文本，不作为故事建议。",
+        "lock_id": "lock_31508ae4-1da1-4137-8135-4a44a2a17cfb",
+        "anchor": {
+          "type": "pos",
+          "from": 102
+        },
+        "action_id": "act_450e92ac-4ca3-4f7a-81a7-910a84b45c4b",
+        "source": "muse",
+        "issued_at": "2026-10-12T11:20:20.913267"
+      },
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "unexpected_anchor"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "raw_output": "{\"action\": \"provoke\", \"content\": \"这是离线合同测试文本，不作为故事建议。\"}",
+        "response": {
+          "action": "provoke",
+          "content": "这是离线合同测试文本，不作为故事建议。",
+          "lock_id": "lock_63c20b6c-da08-4a83-874b-a83bf5a3d633",
+          "anchor": {
+            "type": "pos",
+            "from": 2
+          },
+          "action_id": "act_ed9121b7-fed3-42e3-aa53-f1c913c42628",
+          "source": "muse",
+          "issued_at": "2026-10-12T10:56:16.911448"
+        }
+      },
+      "service_replay": {
+        "action": "provoke",
+        "content": "这是离线合同测试文本，不作为故事建议。",
+        "lock_id": "lock_a9481e23-1ead-43b0-aaf2-e80b60d186cf",
+        "anchor": {
+          "type": "pos",
+          "from": 102
+        },
+        "action_id": "act_53871546-5df2-4834-b4c1-4f14d4e68434",
+        "source": "muse",
+        "issued_at": "2026-10-12T11:20:20.913501"
+      },
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-001",
+      "verdict": "fail",
+      "errors": [
+        "cursor_metadata_mismatch"
+      ],
+      "input_record": {
+        "case_id": "zh-story-001",
+        "split": "development",
+        "mode": "muse",
+        "template_variant": "baseline",
+        "template_version": "2024-11-13",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "template_path": "eval/chinese_stories/baseline/muse.toml",
+        "template_dirty": false,
+        "render_input": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 102,
+            "selection_to": 102
+          }
+        },
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "method": "fixed_synthetic_contract_fixture",
+        "review_state": "unreviewed",
+        "writing_effect": "unassessed",
+        "kind": "simulated",
+        "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+        "request": {
+          "context": "“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+          "mode": "muse",
+          "client_meta": {
+            "doc_version": 1,
+            "selection_from": 1,
+            "selection_to": 1
+          }
+        },
+        "raw_output": "{\"action\": \"provoke\", \"content\": \"这是离线合同测试文本，不作为故事建议。\"}",
+        "response": {
+          "action": "provoke",
+          "content": "这是离线合同测试文本，不作为故事建议。",
+          "lock_id": "lock_63c20b6c-da08-4a83-874b-a83bf5a3d633",
+          "anchor": {
+            "type": "pos",
+            "from": 102
+          },
+          "action_id": "act_ed9121b7-fed3-42e3-aa53-f1c913c42628",
+          "source": "muse",
+          "issued_at": "2026-10-12T10:56:16.911448"
+        }
+      },
+      "service_replay": {
+        "action": "provoke",
+        "content": "这是离线合同测试文本，不作为故事建议。",
+        "lock_id": "lock_21768a33-800f-4595-9e85-4c0263261f8d",
+        "anchor": {
+          "type": "pos",
+          "from": 102
+        },
+        "action_id": "act_141c83b5-2b9f-4b20-8e3d-51ae1e81fa1f",
+        "source": "muse",
+        "issued_at": "2026-10-12T11:20:20.913722"
+      },
+      "guard_applied": false,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "offline_replay",
+        "model": "none",
+        "parameters": "not_applicable",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "e81eb925331e8f315201e45b592330bb7e3a6922c2975e600a1360a81521c2c3",
+        "template_version": "2024-11-13",
+        "template_source_sha": "cdb868dcf913326b2f1e0d663f12a277fc4c6b0a",
+        "source_sha": "unknown",
+        "method": "fixed_synthetic_contract_fixture"
+      }
+    },
+    {
+      "case_id": "zh-story-012",
+      "verdict": "fail",
+      "errors": [
+        "short_context_requires_provoke",
+        "response_action_mismatch",
+        "response_content_mismatch"
+      ],
+      "input_record": {
+        "case_id": "zh-story-012",
+        "mode": "loki",
+        "kind": "simulated",
+        "context": "她推开门，灯灭了。",
+        "raw_output": "{\"action\":\"delete\"}",
+        "response": {
+          "action": "delete",
+          "anchor": {
+            "type": "range",
+            "from": 1,
+            "to": 10
+          },
+          "action_id": "act_badguard",
+          "source": "loki",
+          "issued_at": "2026-10-12T00:00:00Z"
+        }
+      },
+      "service_replay": {
+        "action": "provoke",
+        "content": "文档内容太少，先扩写细节再让 Loki 介入。",
+        "lock_id": "lock_6e925c24-f0f4-45ba-b966-cf042de7ddaf",
+        "anchor": {
+          "type": "pos",
+          "from": 10
+        },
+        "action_id": "act_33140a13-662e-493c-a26d-087300d6ae8a",
+        "source": "loki",
+        "issued_at": "2026-10-12T11:20:20.913944"
+      },
+      "guard_applied": true,
+      "writing_effect": "unassessed",
+      "review_state": "unreviewed",
+      "qualitative_boundaries": "human_review_required",
+      "provenance": {
+        "provider": "unknown",
+        "model": "unknown",
+        "parameters": "unknown",
+        "cost": "unknown",
+        "tokens": "unknown",
+        "template_digest": "unknown",
+        "template_version": "unknown",
+        "template_source_sha": "unknown",
+        "source_sha": "unknown",
+        "method": "unknown"
+      }
+    }
+  ],
+  "real_model_status": "unassessed"
+}

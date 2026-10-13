@@ -27,7 +27,8 @@ import {
 import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
-import { Plugin } from "@milkdown/prose/state";
+import { Plugin, type EditorState } from "@milkdown/prose/state";
+import type { components } from "../../types/api.generated";
 import { useLockManager, LockManagerProvider } from "../../contexts/LockManagerContext";
 import type { LockManager } from "../../services/LockManager";
 import { createLockTransactionFilter } from "./TransactionFilter";
@@ -43,7 +44,6 @@ import type { RemoteSession } from "../../services/api/remoteSession";
 import {
   injectLockedBlock,
   deleteContentAtAnchor,
-  deleteLastSentence,
   rewriteRangeWithLock,
 } from "../../services/ContentInjector";
 import { SensoryFeedback } from "../SensoryFeedback";
@@ -72,7 +72,34 @@ import {
 const EMPTY_CONTEXT_FALLBACK = "用户尚未输入内容，但请求 Muse 提供一个开场提示来打破空白。";
 
 const ensureContext = (text: string) =>
-  text && text.trim().length > 0 ? text : EMPTY_CONTEXT_FALLBACK;
+  text && text.trim().length > 0 ? Array.from(text).slice(-2000).join("") : EMPTY_CONTEXT_FALLBACK;
+
+// Validate server positions against the captured ProseMirror document. Never
+// reinterpret explicit ranges as plain-text offsets or silently move a target.
+function isValidResponseAnchor(
+  state: EditorState,
+  anchor: components["schemas"]["Anchor"] | undefined,
+  cursorTailRange: boolean
+): boolean {
+  if (!anchor || anchor.type === "lock_id") return true;
+  const positions = anchor.type === "range" ? [anchor.from, anchor.to] : [anchor.from];
+  for (const position of positions) {
+    if (!Number.isInteger(position) || position < 0 || position > state.doc.content.size)
+      return false;
+    const resolved = state.doc.resolve(position);
+    const before = resolved.nodeBefore?.text?.slice(-1) ?? "";
+    const after = resolved.nodeAfter?.text?.slice(0, 1) ?? "";
+    if (/[\uD800-\uDBFF]/.test(before) && /[\uDC00-\uDFFF]/.test(after)) return false;
+  }
+  if (anchor.type !== "range") return true;
+  if (anchor.from >= anchor.to) return false;
+  if (cursorTailRange && anchor.to === state.selection.to) {
+    const from = state.doc.resolve(anchor.from);
+    const to = state.doc.resolve(anchor.to);
+    return from.sameParent(to) && from.parent.isTextblock;
+  }
+  return true;
+}
 
 declare global {
   interface Window {
@@ -174,11 +201,17 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   );
   const onRecoveryErrorRef = useRef(onRecoveryError);
   const mountedRef = useRef(true);
-  const requestContextRef = useRef({ session, requestIdentity });
+  const requestContextRef = useRef({ session, requestIdentity, mode, modeGeneration: 0 });
   useLayoutEffect(() => {
-    requestContextRef.current = { session, requestIdentity };
+    const previous = requestContextRef.current;
+    requestContextRef.current = {
+      session,
+      requestIdentity,
+      mode,
+      modeGeneration: previous.modeGeneration + (previous.mode === mode ? 0 : 1),
+    };
     onRecoveryErrorRef.current = onRecoveryError;
-  }, [session, requestIdentity, onRecoveryError]);
+  }, [session, requestIdentity, mode, onRecoveryError]);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -200,8 +233,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       (!capturedSession || (capturedSession.isCurrent() && !capturedSession.signal.aborted)),
     []
   );
-  const [docVersion, setDocVersion] = useState(0);
-  const [cursorPosition, setCursorPosition] = useState(0);
+  const docVersionRef = useRef(0);
   const [currentAction, setCurrentAction] = useState<AIActionType | null>(null);
 
   // T014: Expose editor instance for FloatingToolbar
@@ -391,9 +423,16 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     if (!editor) return;
     const captured = requestContextRef.current;
     if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
+    const view = editor.action((ctx) => ctx.get(editorViewCtx));
+    const requestState = view.state;
+    const requestVersion = docVersionRef.current;
+    const isCurrentResponse = () =>
+      isCurrentRequest(editor, captured.requestIdentity, captured.session) &&
+      requestContextRef.current.modeGeneration === captured.modeGeneration &&
+      docVersionRef.current === requestVersion &&
+      view.state.doc === requestState.doc;
 
     try {
-      const view = editor.action((ctx) => ctx.get(editorViewCtx));
       const museSentenceRange = getLastSentenceRange(view.state);
       const museAnchor =
         museSentenceRange.to > museSentenceRange.from
@@ -404,28 +443,60 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         source: AgentSource,
         shape: "inline" | "block"
       ) => {
+        if (view.state.doc === requestState.doc) return;
         lockManager.applyLock(lockId, { source, shape });
         refreshLockDecorations(view);
       };
-      const fullText = view.state.doc.textContent;
-      const contextWindow = ensureContext(extractLastSentences(fullText, 3));
+      const cursorPosition = requestState.selection.to;
+      const fullText = requestState.doc.textBetween(0, cursorPosition, "\n", "\n");
+      const contextWindow = ensureContext(extractLastSentences(fullText, 3, undefined, true));
 
-      const response = await triggerMuseIntervention(contextWindow, cursorPosition, docVersion, {
-        session: captured.session,
-      });
-      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
+      const response = await triggerMuseIntervention(
+        contextWindow,
+        cursorPosition,
+        requestVersion,
+        {
+          session: captured.session,
+          selectionFrom: requestState.selection.from,
+        }
+      );
+      if (!isCurrentResponse()) return;
+      // With no local sentence, the server's context-derived tail can reach
+      // into a previous block (or position 0 for an empty document). Preserve
+      // the captured Muse insertion while still validating all numeric bounds.
+      const insertAtCapturedCursor =
+        response.action === "rewrite" &&
+        !museAnchor &&
+        requestState.selection.empty &&
+        response.anchor?.type === "range" &&
+        response.anchor.to === cursorPosition &&
+        isValidResponseAnchor(requestState, response.anchor, false);
+      if (
+        response.action !== "provoke" &&
+        !insertAtCapturedCursor &&
+        !isValidResponseAnchor(
+          requestState,
+          response.anchor,
+          response.action === "rewrite" || response.action === "delete"
+        )
+      )
+        return;
 
       const resolvedSource: AgentSource = response.source ?? "muse";
 
       if (response.action === "rewrite" && response.content && response.lock_id) {
         showSensoryAction(AIActionType.REWRITE);
-        const resolvedAnchor =
-          response.anchor && response.anchor.type === "range" ? response.anchor : museAnchor;
+        const resolvedAnchor = insertAtCapturedCursor
+          ? undefined
+          : response.anchor && response.anchor.type === "range"
+            ? response.anchor
+            : museAnchor;
         rewriteRangeWithLock({
           view,
           content: response.content,
           lockId: response.lock_id,
           anchor: resolvedAnchor,
+          insertionPosition: resolvedAnchor ? undefined : museSentenceRange.to,
           source: resolvedSource,
         });
         registerLockWithDecorations(response.lock_id, resolvedSource, "inline");
@@ -437,6 +508,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           content: response.content,
           lockId: response.lock_id,
           anchor: museAnchor,
+          insertionPosition: museAnchor ? undefined : museSentenceRange.to,
           source: resolvedSource,
         });
         registerLockWithDecorations(response.lock_id, resolvedSource, "inline");
@@ -445,23 +517,17 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         if (response.anchor && response.anchor.type === "range") {
           deleteContentAtAnchor(view, response.anchor);
         } else {
-          deleteLastSentence(view);
+          const range = getLastSentenceRange(requestState);
+          if (range.from < range.to) deleteContentAtAnchor(view, { type: "range", ...range });
         }
       }
     } catch (error) {
-      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
+      if (!isCurrentResponse()) return;
       logger.error("Muse intervention failed", error);
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [
-    cursorPosition,
-    docVersion,
-    lockManager,
-    onInterventionError,
-    showSensoryAction,
-    isCurrentRequest,
-  ]);
+  }, [lockManager, onInterventionError, showSensoryAction, isCurrentRequest]);
 
   // Handle Loki chaos trigger
   const handleLokiTrigger = useCallback(async () => {
@@ -475,16 +541,38 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       return;
     }
     lastLokiTriggerRef.current = now;
+    const view = editor.action((ctx) => ctx.get(editorViewCtx));
+    const requestState = view.state;
+    const requestVersion = docVersionRef.current;
+    const isCurrentResponse = () =>
+      isCurrentRequest(editor, captured.requestIdentity, captured.session) &&
+      requestContextRef.current.modeGeneration === captured.modeGeneration &&
+      docVersionRef.current === requestVersion &&
+      view.state.doc === requestState.doc;
 
     try {
-      const view = editor.action((ctx) => ctx.get(editorViewCtx));
-      const fullText = view.state.doc.textContent;
-      const contextWindow = ensureContext(extractLastSentences(fullText, 3));
+      const cursorPosition = requestState.selection.to;
+      const fullText = requestState.doc.textBetween(0, cursorPosition, "\n", "\n");
+      const contextWindow = ensureContext(extractLastSentences(fullText, 3, undefined, true));
 
-      const response = await triggerLokiIntervention(contextWindow, cursorPosition, docVersion, {
-        session: captured.session,
-      });
-      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
+      const response = await triggerLokiIntervention(
+        contextWindow,
+        cursorPosition,
+        requestVersion,
+        {
+          session: captured.session,
+          selectionFrom: requestState.selection.from,
+        }
+      );
+      if (!isCurrentResponse()) return;
+      if (
+        !isValidResponseAnchor(
+          requestState,
+          response.anchor,
+          response.action === "rewrite" || response.action === "delete"
+        )
+      )
+        return;
 
       const resolvedSource: AgentSource = response.source ?? "loki";
 
@@ -505,9 +593,13 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           view,
           content: response.content,
           lockId: response.lock_id,
-          anchor: response.anchor && response.anchor.type === "range" ? response.anchor : undefined,
+          anchor:
+            response.anchor && response.anchor.type === "range"
+              ? response.anchor
+              : { type: "range", ...getLastSentenceRange(requestState) },
           source: resolvedSource,
         });
+        if (view.state.doc === requestState.doc) return;
         lockManager.applyLock(response.lock_id, { source: resolvedSource, shape: "inline" });
         refreshLockDecorations(view);
       } else if (response.action === "delete") {
@@ -515,23 +607,17 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         if (response.anchor && response.anchor.type === "range") {
           deleteContentAtAnchor(view, response.anchor);
         } else {
-          deleteLastSentence(view);
+          const range = getLastSentenceRange(requestState);
+          if (range.from < range.to) deleteContentAtAnchor(view, { type: "range", ...range });
         }
       }
     } catch (error) {
-      if (!isCurrentRequest(editor, captured.requestIdentity, captured.session)) return;
+      if (!isCurrentResponse()) return;
       logger.error("Loki intervention failed", error);
       onInterventionError?.(error as Error);
       showSensoryAction(AIActionType.ERROR);
     }
-  }, [
-    cursorPosition,
-    docVersion,
-    lockManager,
-    onInterventionError,
-    showSensoryAction,
-    isCurrentRequest,
-  ]);
+  }, [lockManager, onInterventionError, showSensoryAction, isCurrentRequest]);
 
   // Handle manual delete trigger (Test Delete button)
   const handleManualDelete = useCallback(() => {
@@ -862,13 +948,11 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
           }
           // Commonmark updates heading IDs via a nested dispatch. Report the
           // final document once for the outer edit, including those updates.
-          if (dispatchDepth > 0 || view.state === previousState || tr.getMeta("loadedContent"))
-            return;
+          if (dispatchDepth > 0 || view.state === previousState) return;
+          if (view.state.doc !== previousState.doc) docVersionRef.current += 1;
+          if (tr.getMeta("loadedContent")) return;
 
           if (tr.docChanged) {
-            setDocVersion((v) => v + 1);
-            const newPos = tr.selection.$head.pos;
-            setCursorPosition(newPos);
             // Use ref to avoid dependency issues
             onInputRef.current();
 

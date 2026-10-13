@@ -1,115 +1,67 @@
 import type { EditorState } from "@milkdown/prose/state";
 
-const SENTENCE_BOUNDARY = /[。！？!?.]/;
-const MIN_SENTENCE_LENGTH = 10;
+const SENTENCE_ENDINGS = /[。！？!?.]+[”’」』"']*|\n/g;
 const MAX_SENTENCE_LOOKBACK = 480;
 
-function sliceSentences(text: string): string[] {
-  if (!text) {
-    return [];
-  }
-
-  const sentences: string[] = [];
-  let start = 0;
-
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text.charAt(i);
-    if (SENTENCE_BOUNDARY.test(char) || char === "\n") {
-      const fragment = text.slice(start, i + 1);
-      if (fragment.trim()) {
-        sentences.push(fragment);
-      }
-      start = i + 1;
-    }
-  }
-
-  if (start < text.length) {
-    const fragment = text.slice(start);
-    if (fragment.trim()) {
-      sentences.push(fragment);
-    }
-  }
-
-  return sentences;
-}
-
 function computeStartOffset(text: string): number {
-  if (!text) {
-    return 0;
+  let start = 0;
+  let lastSentenceStart = 0;
+  for (const match of text.matchAll(SENTENCE_ENDINGS)) {
+    const end = match.index + match[0].length;
+    if (text.slice(start, end).trim()) lastSentenceStart = start;
+    start = end;
   }
-
-  const fragments = sliceSentences(text);
-  const lastFragment = fragments.at(-1);
-  if (!lastFragment) {
-    return Math.max(0, text.length - MIN_SENTENCE_LENGTH);
+  if (text.slice(start).trim()) lastSentenceStart = start;
+  while (lastSentenceStart < text.length && /\s/.test(text.charAt(lastSentenceStart))) {
+    lastSentenceStart += 1;
   }
-
-  const rawOffset = text.length - lastFragment.length;
-
-  let offset = rawOffset;
-  while (offset < text.length && /\s/.test(text.charAt(offset))) {
-    offset += 1;
-  }
-
-  return offset;
+  return lastSentenceStart;
 }
 
-function offsetToDocPos(state: EditorState, offset: number, limitPos: number): number {
+function offsetToDocPos(
+  state: EditorState,
+  offset: number,
+  startPos: number,
+  limitPos: number
+): number {
   let remaining = offset;
   let resolved = limitPos;
-
-  state.doc.nodesBetween(0, limitPos, (node, pos) => {
-    if (!node.isText) {
-      return true;
-    }
-
-    const text = node.text ?? "";
+  let found = false;
+  state.doc.nodesBetween(startPos, limitPos, (node, pos) => {
+    if (found) return false;
+    if (!node.isLeaf) return true;
+    const text = node.isText ? (node.text ?? "") : "\n";
     if (remaining <= text.length) {
       resolved = pos + remaining;
+      found = true;
       return false;
     }
-
     remaining -= text.length;
     return true;
   });
-
   return resolved;
 }
 
 /**
- * Compute the sentence range immediately preceding the current cursor.
+ * Compute the sentence immediately preceding the selection end.
  *
- * Uses document positions (not plain string lengths) so the returned range
- * can be passed directly to ProseMirror transactions.
+ * Resolves offsets inside the current textblock so formatting and earlier
+ * paragraphs cannot shift the range or cause unrelated writing to be replaced.
  *
- * @param state - ProseMirror editor state containing the cursor
- * @returns The `{ from, to }` document range of the last sentence
+ * @param state - ProseMirror editor state containing the selection
+ * @returns The exact document range of the last available sentence
  */
 export function getLastSentenceRange(state: EditorState): { from: number; to: number } {
-  const docSize = state.doc.content.size;
-  if (docSize === 0) {
-    return { from: 0, to: 0 };
-  }
-
-  const cursorPos = Math.max(0, Math.min(state.selection.from, docSize));
-  const fullText = state.doc.textBetween(0, cursorPos, "", "");
-  const windowStart = Math.max(0, fullText.length - MAX_SENTENCE_LOOKBACK);
-  const windowText = fullText.slice(windowStart);
-
-  const localOffset = computeStartOffset(windowText);
-  const startOffset = windowStart + localOffset;
-  const fromPos = offsetToDocPos(state, startOffset, cursorPos);
-  const toPos = offsetToDocPos(state, fullText.length, cursorPos);
-
-  if (toPos - fromPos < MIN_SENTENCE_LENGTH) {
-    return {
-      from: Math.max(0, cursorPos - MIN_SENTENCE_LENGTH),
-      to: cursorPos,
-    };
-  }
-
+  const cursorPos = state.selection.to;
+  const cursor = state.doc.resolve(cursorPos);
+  if (!cursor.parent.isTextblock) return { from: cursorPos, to: cursorPos };
+  const parentStart = cursor.start();
+  const fullText = cursor.parent.textBetween(0, cursor.parentOffset, "", "\n");
+  let windowStart = Math.max(0, fullText.length - MAX_SENTENCE_LOOKBACK);
+  if (windowStart > 0 && /[\uDC00-\uDFFF]/.test(fullText.charAt(windowStart))) windowStart += 1;
+  const startOffset = windowStart + computeStartOffset(fullText.slice(windowStart));
   return {
-    from: fromPos,
-    to: toPos,
+    from: offsetToDocPos(state, startOffset, parentStart, cursorPos),
+    to: cursorPos,
   };
 }

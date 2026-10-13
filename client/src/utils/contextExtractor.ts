@@ -23,7 +23,7 @@
  * Sentence delimiter regex pattern.
  * Matches Chinese and English sentence endings.
  */
-const SENTENCE_DELIMITERS = /[。！？.!?]+/g;
+const SENTENCE_DELIMITERS = /[。！？.!?]+[”’」』"']*/g;
 
 /**
  * Extracts last N sentences from text.
@@ -37,6 +37,7 @@ const SENTENCE_DELIMITERS = /[。！？.!?]+/g;
  * @param text - Full document text
  * @param count - Number of sentences to extract (default: 3)
  * @param cursorPos - Optional cursor position (extracts up to cursor)
+ * @param preserveWhitespace - Preserve literal suffix whitespace for cursor-relative anchors
  * @returns Extracted sentences concatenated as string
  *
  * @example
@@ -58,7 +59,12 @@ const SENTENCE_DELIMITERS = /[。！？.!?]+/g;
  * // Returns: '没有标点'
  * ```
  */
-export function extractLastSentences(text: string, count: number = 3, cursorPos?: number): string {
+export function extractLastSentences(
+  text: string,
+  count: number = 3,
+  cursorPos?: number,
+  preserveWhitespace = false
+): string {
   // Handle edge cases
   if (count <= 0) {
     return "";
@@ -89,24 +95,27 @@ export function extractLastSentences(text: string, count: number = 3, cursorPos?
 
     // Combine sentence with its delimiter (handle consecutive delimiters)
     if (sentenceText.trim() || parts.length === 0) {
-      const combined = sentenceText.trim() + delimiter;
+      const combined = (preserveWhitespace ? sentenceText : sentenceText.trim()) + delimiter;
       parts.push(combined);
     } else if (parts.length > 0) {
       // Consecutive delimiters: append to last sentence
-      parts[parts.length - 1] += delimiter;
+      parts[parts.length - 1] += (preserveWhitespace ? sentenceText : "") + delimiter;
     }
 
     lastIndex = match.index + delimiter.length;
   }
 
   // Handle remaining text after last delimiter (incomplete sentence)
-  const remaining = targetText.substring(lastIndex).trim();
-  if (remaining) {
+  const tail = targetText.substring(lastIndex);
+  const remaining = preserveWhitespace ? tail : tail.trim();
+  if (remaining.trim()) {
     // Only include incomplete sentence if we're at end of document (no cursor position)
     if (cursorPos === undefined) {
       parts.push(remaining);
     }
     // If cursor position specified, ignore incomplete sentence at cursor
+  } else if (preserveWhitespace && parts.length > 0) {
+    parts[parts.length - 1] += tail;
   }
 
   // If no sentences found, return entire text
@@ -117,6 +126,7 @@ export function extractLastSentences(text: string, count: number = 3, cursorPos?
   // Extract last N sentences
   const startIndex = Math.max(0, parts.length - count);
   const extracted = parts.slice(startIndex);
+  if (preserveWhitespace) return extracted.join("").trimStart();
 
   // Join sentences (preserve original spacing for English, no space for Chinese)
   const joined = extracted.join(" ");

@@ -252,6 +252,7 @@ export function deleteLastSentence(view: EditorView): void {
  * @param root0.content - New locked content to insert
  * @param root0.lockId - Lock identifier for the new content
  * @param root0.anchor - Optional anchor range specifying what to replace
+ * @param root0.insertionPosition - Captured local textblock position when no sentence exists
  * @param root0.source - Optional agent source for styling
  *
  * @example
@@ -274,15 +275,26 @@ export function rewriteRangeWithLock({
   content,
   lockId,
   anchor,
+  insertionPosition,
   source,
 }: {
   view: EditorView;
   content: string;
   lockId: string;
   anchor?: Extract<Anchor, { type: "range" }>;
+  insertionPosition?: number;
   source?: AgentSource;
 }): void {
   const { state, dispatch } = view;
+
+  if (!anchor && insertionPosition !== undefined) {
+    if (
+      !Number.isInteger(insertionPosition) ||
+      insertionPosition < 0 || insertionPosition > state.doc.content.size ||
+      !state.doc.resolve(insertionPosition).parent.isTextblock
+    ) return;
+    anchor = { type: "range", from: insertionPosition, to: insertionPosition };
+  }
 
   if (!anchor || anchor.type !== "range") {
     logger.warn("Rewrite skipped: anchor missing, falling back to sentence heuristic");
@@ -291,7 +303,8 @@ export function rewriteRangeWithLock({
   }
 
   const { from, to } = anchor;
-  if (from < 0 || to > state.doc.content.size || from >= to) {
+  const isCapturedInsertion = from === to && insertionPosition === from;
+  if (from < 0 || to > state.doc.content.size || from > to || (from === to && !isCapturedInsertion)) {
     logger.warn("Rewrite skipped: invalid anchor range", { anchor });
     return;
   }

@@ -39,12 +39,22 @@ def _slice_sentences(context: str) -> list[str]:
     sentences: list[str] = []
     start = 0
 
-    for idx, char in enumerate(trimmed):
+    idx = 0
+    while idx < len(trimmed):
+        char = trimmed[idx]
         if char in SENTENCE_BOUNDARIES or char == "\n":
+            # Keep a punctuation run and its closing quotes on the same sentence.
+            # Otherwise dialogue ends up targeting only the quote or final "!".
+            if char != "\n":
+                while idx + 1 < len(trimmed) and (
+                    trimmed[idx + 1] in SENTENCE_BOUNDARIES or trimmed[idx + 1] in "\"'”’」』"
+                ):
+                    idx += 1
             fragment = trimmed[start : idx + 1]
             if fragment and fragment.strip():
                 sentences.append(fragment)
             start = idx + 1
+        idx += 1
 
     if start < len(trimmed):
         fragment = trimmed[start:]
@@ -60,15 +70,15 @@ def compute_last_sentence_length(
     min_length: int = 12,
     max_length: int = 400,
 ) -> int:
-    """Estimate the character length of the sentence at the cursor tail.
+    """Measure the cursor-tail sentence in ProseMirror UTF-16 positions.
 
     Args:
         context: The context window sent by the client (ends at cursor).
-        min_length: Minimum fallback length when no punctuation is found.
-        max_length: Maximum window to rewrite to avoid document-wide deletes.
+        min_length: Fallback length when no sentence text is available.
+        max_length: Maximum UTF-16 window to avoid document-wide rewrites.
 
     Returns:
-        Number of characters belonging to the most recent sentence.
+        UTF-16 units belonging to the most recent sentence, including tail whitespace.
     """
     sentences = _slice_sentences(context)
     if not sentences:
@@ -78,8 +88,17 @@ def compute_last_sentence_length(
     if not candidate:
         return min_length
 
-    length = len(candidate)
-    return max(min_length, min(length, max_length))
+    # Context ends at the cursor. Include trailing whitespace in the distance
+    # back to the sentence start; trimming it would move the anchor into text.
+    candidate += context[len(context.rstrip()) :]
+    length = 0
+    for char in reversed(candidate):
+        units = 2 if ord(char) > 0xFFFF else 1
+        if length + units > max_length:
+            break
+        length += units
+    # A known short sentence must not borrow characters from the previous one.
+    return length
 
 
 def compute_last_sentence_anchor(
@@ -94,8 +113,8 @@ def compute_last_sentence_anchor(
     Args:
         cursor: Absolute cursor position reported by the client.
         context: Context window text ending at the cursor.
-        min_length: Minimum characters to rewrite when punctuation missing.
-        max_length: Maximum rewrite window size.
+        min_length: Fallback positions when sentence text is absent.
+        max_length: Maximum rewrite window in UTF-16 positions.
 
     Returns:
         Tuple of (from, to) document positions for rewrite anchors.

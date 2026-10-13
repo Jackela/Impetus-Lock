@@ -394,8 +394,10 @@ async def test_sol_registry_reload_defers_close_for_active_worker(
     [
         ("provoke", "A constraint.", {"type": "pos", "from": 200}),
         ("rewrite", "A replacement.", {"type": "range", "from": 184, "to": 200}),
-        ("delete", None, {"type": "range", "from": 80, "to": 200}),
-        ("delete", "Discarded content.", {"type": "range", "from": 80, "to": 200}),
+        # Delete, like rewrite, targets the final sentence; a fixed 120-position
+        # range could erase writing outside the supplied context.
+        ("delete", None, {"type": "range", "from": 184, "to": 200}),
+        ("delete", "Discarded content.", {"type": "range", "from": 184, "to": 200}),
     ],
 )
 def test_sol_three_actions_keep_service_contract(

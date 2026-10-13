@@ -108,9 +108,9 @@ class InterventionService:
         """Generate intervention action based on context and mode.
 
         Delegates to LLM provider while applying business rules:
-        - Muse mode: Always returns provoke (never delete)
-        - Loki mode: Can return provoke or delete
-        - Safety: Prevent delete if context <50 chars
+        - Muse mode: Returns provoke or rewrite, never delete
+        - Loki mode: Supports provoke, rewrite, and delete
+        - Safety: Prevent Loki delete/rewrite if context <50 chars
 
         Args:
             request: Intervention request with context and mode.
@@ -219,8 +219,9 @@ class InterventionService:
                 {"type": "pos", "from": request.client_meta.selection_from}
             )
 
-        # Ensure rewrite actions have sentence-accurate anchor ranges.
-        if response.action == "rewrite":
+        # Both destructive actions target the cursor-tail sentence in the
+        # submitted context, rather than a provider's fixed-length guess.
+        if response.action in {"rewrite", "delete"}:
             cursor = request.client_meta.selection_to or request.client_meta.selection_from
             if cursor is not None and cursor > 0:
                 start, end = compute_last_sentence_anchor(cursor, request.context)

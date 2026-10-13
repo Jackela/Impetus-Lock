@@ -1,0 +1,781 @@
+{
+  "provenance": "original synthetic Chinese stories authored for this offline corpus; no user manuscript",
+  "holdout_policy": "zh-story-021 through zh-story-024 fixed before outputs; never prompt-tune against holdout outputs",
+  "cases": [
+    {
+      "id": "zh-story-001",
+      "split": "development",
+      "features": [
+        "dialogue"
+      ],
+      "body": "“账是你记的？”许禾把煤油灯移向桌心。父亲盯着灯芯，没有看那本账。窗外传来河船的汽笛，今天是他答应还钱的最后一夜。“我只认得你的字。”许禾翻到空白的一页，父亲却先把手压了上去。“这一页，别给你姑姑看。”",
+      "selection": {
+        "from": 101,
+        "to": 101
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "让父女对话推动债务秘密，不用旁白揭底",
+      "must_preserve": [
+        "许禾与父亲的关系",
+        "父亲拒绝展示空白账页"
+      ],
+      "allowed_reversal": [
+        "账页以另一种方式藏字",
+        "姑姑与债务存在意外关联"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-002",
+      "split": "development",
+      "features": [
+        "dialogue-selection"
+      ],
+      "body": "车间停工以后，阿聿一直在修那台旧收音机。班长来取工牌，顺手问他：“你还等谁的广播？”阿聿把工牌推回去，说：“我等的不是通知。”外面已经有人把厂名的招牌拆到一半。班长站着没动，收音机忽然收到一阵有规律的敲击声。",
+      "selection": {
+        "from": 54,
+        "to": 62
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "把含糊回答改成能继续交锋的对白",
+      "must_preserve": [
+        "工厂停工",
+        "阿聿仍在修收音机"
+      ],
+      "allowed_reversal": [
+        "敲击声来自车间内部",
+        "班长知道广播的来源"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-003",
+      "split": "development",
+      "features": [
+        "action"
+      ],
+      "body": "方绫爬进维修井时，闸门只剩一道手掌宽的缝。她把工具包推给上面的搭档，自己留下堵住漏水口。井壁上的水位线一寸寸抬高，通讯器却响起丈夫的声音。丈夫三年前就死在这座泵站，她仍旧先关掉了会发出噪声的抽水机。",
+      "selection": {
+        "from": 99,
+        "to": 99
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "用具体动作形成两难，维持危急节奏",
+      "must_preserve": [
+        "方绫被困维修井",
+        "丈夫三年前死亡"
+      ],
+      "allowed_reversal": [
+        "声音来自录音或有人伪装",
+        "救援与查明声音产生冲突"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-004",
+      "split": "development",
+      "features": [
+        "action-mid"
+      ],
+      "body": "雨把泥路冲成一条沟，乔木牵着驮药的骡子过桥。桥板在他脚下折断，他抓住护绳，把药箱先抛上岸。岸上的弟弟打开药箱，里面装的却是婚书。乔木终于知道，出门前母亲为什么没敢看他。",
+      "selection": {
+        "from": 45,
+        "to": 45
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "只根据桥上遇险继续写动作，不泄露光标后的婚书",
+      "must_preserve": [
+        "药箱已被抛上岸",
+        "乔木仍抓着护绳"
+      ],
+      "allowed_reversal": [
+        "接药的人作出出乎意料的选择",
+        "药箱重量带来新危险"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-005",
+      "split": "development",
+      "features": [
+        "inner-thought"
+      ],
+      "body": "岑安把辞职信写了三遍，每一遍都在最后添一句感谢。她知道留下来不会更好，也知道弟弟会把这份工作当作全家的依靠。窗台上那盆薄荷已经枯了，她却每天都给它浇水。她忽然想，自己也许并不是舍不得办公室。",
+      "selection": {
+        "from": 95,
+        "to": 95
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "让内心矛盾落到可行动的发现，避免励志说教",
+      "must_preserve": [
+        "岑安正在考虑辞职",
+        "弟弟依赖她的收入"
+      ],
+      "allowed_reversal": [
+        "她发现自己担心的是另一件事",
+        "枯薄荷与某个人有关"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-006",
+      "split": "development",
+      "features": [
+        "inner-unfinished"
+      ],
+      "body": "季望在失物招领处看见自己的伞，伞柄上的裂缝也完全一样。他明明记得，昨天已经把伞借给那个没有脸的乘客。值班员问他要不要登记姓名，他握着笔，突然觉得如果写下真名就",
+      "selection": {
+        "from": 79,
+        "to": 79
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "顺着尚未写完的念头推进，不把前一句当完整结尾",
+      "must_preserve": [
+        "伞柄有裂缝",
+        "伞曾借给没有脸的乘客"
+      ],
+      "allowed_reversal": [
+        "登记规则与姓名有关",
+        "值班员有所隐瞒"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-007",
+      "split": "development",
+      "features": [
+        "suspense"
+      ],
+      "body": "巡夜的赵笙每晚都在三楼听到钢琴声，管理处却说三楼从来没有租给任何人。她查过电表，那一层的读数始终为零。今晚琴声停在同一个音上，楼下传来孩子哭声。赵笙拿着钥匙上楼，发现钥匙上的房号正是三楼。",
+      "selection": {
+        "from": 94,
+        "to": 94
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "增加可追查线索，保留悬念的多种解释",
+      "must_preserve": [
+        "三楼电表读数为零",
+        "赵笙是巡夜人"
+      ],
+      "allowed_reversal": [
+        "房号被人更换",
+        "钢琴声与哭声有实际关联"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-008",
+      "split": "development",
+      "features": [
+        "suspense-mid"
+      ],
+      "body": "母亲的遗物只有一部打不开的手机和一张空白车票。周弦把车票放在台灯下，纸面慢慢浮出一行地名。她在地图上找了很久，地图上没有那个镇。她把手机贴在耳边，听见里面有人在呼叫她的乳名。后来她才发现，车票背面标着明天的日期。",
+      "selection": {
+        "from": 80,
+        "to": 80
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "在光标处接续悬疑，不提前使用乳名和日期",
+      "must_preserve": [
+        "遗物是手机与车票",
+        "地图上没有那个镇"
+      ],
+      "allowed_reversal": [
+        "设备以异常方式传递线索",
+        "地名曾被更改"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-009",
+      "split": "development",
+      "features": [
+        "transition"
+      ],
+      "body": "最后一班船开走后，唐秋收起摆渡人的木牌。河对岸的灯一盏盏熄了，只有母亲旧宅的门廊仍亮着。她在码头坐到天明，没有等到约好见面的人。第二天，她走进旧宅，发现昨夜亮着的那盏灯没有灯泡。",
+      "selection": {
+        "from": 89,
+        "to": 89
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "让时间与场景转换自然保留情绪和线索",
+      "must_preserve": [
+        "唐秋等了一夜",
+        "旧宅灯没有灯泡"
+      ],
+      "allowed_reversal": [
+        "等的人用别的方式到来",
+        "灯光有现实来源"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-010",
+      "split": "development",
+      "features": [
+        "transition-selection"
+      ],
+      "body": "剧团散场时，任桥把假胡子塞进袖子，没像往常一样卸妆。他在空台上排练最后一句告别，台下只有打扫的老人。次日清晨，任桥沿着集市往南走。街口有人喊出他昨夜在戏里的名字，他下意识答了。",
+      "selection": {
+        "from": 50,
+        "to": 65
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "改写转场句，把舞台身份带进街头",
+      "must_preserve": [
+        "任桥演过告别戏",
+        "陌生人喊出角色名"
+      ],
+      "allowed_reversal": [
+        "角色与现实人物同名",
+        "老人看见了额外线索"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-011",
+      "split": "development",
+      "features": [
+        "unfinished-dialogue"
+      ],
+      "body": "“我没有偷那只钟。”郝青站在铺门口，把湿透的袖口拧成一股。老板让他等巡捕回来，自己先去柜台底下取账。郝青想解释刚才是谁把钟塞给他的，却看见柜台下面还有一只同样的钟。“你听我说，刚才那个人是",
+      "selection": {
+        "from": 94,
+        "to": 94
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "保持说话者与指代清晰，留下尚未说出的身份",
+      "must_preserve": [
+        "郝青否认偷钟",
+        "店里有两只相同的钟"
+      ],
+      "allowed_reversal": [
+        "来人身份颠覆店铺关系",
+        "老板与来人互相认识"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-012",
+      "split": "development",
+      "features": [
+        "short-opening"
+      ],
+      "body": "她推开门，灯灭了。",
+      "selection": {
+        "from": 9,
+        "to": 9
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "短开头需要具体可续写的变化",
+      "must_preserve": [
+        "她刚推开门"
+      ],
+      "allowed_reversal": [
+        "光源之外出现线索",
+        "门内有人提出条件"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-013",
+      "split": "development",
+      "features": [
+        "short-thought"
+      ],
+      "body": "他想回家，却忘了家在哪里。",
+      "selection": {
+        "from": 13,
+        "to": 13
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "用短篇寓言的方式续写，避免直接解释失忆",
+      "must_preserve": [
+        "他想回家",
+        "他忘记家的位置"
+      ],
+      "allowed_reversal": [
+        "物件记得路径",
+        "家的定义受到挑战"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-014",
+      "split": "development",
+      "features": [
+        "no-punctuation"
+      ],
+      "body": "沈舟把最后一粒种子放在指甲盖上听它是否还在呼吸",
+      "selection": {
+        "from": 23,
+        "to": 23
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "保留单句无标点的呼吸感，推动微小动作",
+      "must_preserve": [
+        "种子只剩一粒",
+        "沈舟正在倾听"
+      ],
+      "allowed_reversal": [
+        "种子以异样方式回应",
+        "照顾种子产生新的代价"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-015",
+      "split": "development",
+      "features": [
+        "lock-before-cursor"
+      ],
+      "body": "旧观测站的门向里敞着，杜宁先数清了地上的脚印。她在白板上留下一句规则：今晚任何人都不能独自离站。电台接到一段求救录音，求救者说自己已经在山下。杜宁认出录音里有自己的咳嗽声，决定重新核对门口的脚印。",
+      "selection": {
+        "from": 98,
+        "to": 98
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "在锁定规则内制造挑战，不能取消规则",
+      "must_preserve": [
+        "今晚任何人都不能独自离站。",
+        "杜宁认出自己的咳嗽声"
+      ],
+      "allowed_reversal": [
+        "录音来自未来或模仿者",
+        "站内人员对规则采取不同解释"
+      ],
+      "locks": [
+        {
+          "id": "lock_fixture_015",
+          "from": 35,
+          "to": 48,
+          "text": "今晚任何人都不能独自离站。"
+        }
+      ],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response",
+        "unaffected_locks_preserved_in_editor_acceptance"
+      ]
+    },
+    {
+      "id": "zh-story-016",
+      "split": "development",
+      "features": [
+        "lock-target-selection"
+      ],
+      "body": "秦珂拆开父亲留下的信，只看第一行便放回抽屉。信上写着：不要打开西屋的红箱子。妹妹在西屋里试穿婚鞋，脚步声始终只有一只。秦珂走到西屋门口，问妹妹是不是还少了一只鞋。",
+      "selection": {
+        "from": 27,
+        "to": 38
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "保留禁令带来的叙事压力，允许改写目标锁；目标之外的锁须保留",
+      "must_preserve": [
+        "不要打开西屋的红箱子。",
+        "妹妹正在试婚鞋"
+      ],
+      "allowed_reversal": [
+        "箱子与鞋的去向有关",
+        "妹妹已打开或移动其他物件"
+      ],
+      "locks": [
+        {
+          "id": "lock_fixture_016",
+          "from": 27,
+          "to": 38,
+          "text": "不要打开西屋的红箱子。"
+        }
+      ],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response",
+        "unaffected_locks_preserved_in_editor_acceptance"
+      ]
+    },
+    {
+      "id": "zh-story-017",
+      "split": "development",
+      "features": [
+        "lock-after-cursor"
+      ],
+      "body": "邵梨在候诊室替陌生女人看着孩子，女人说只去取一杯水。三次叫号以后，女人仍没回来。邵梨打开孩子攥着的纸条，纸条上只有一句锁定的叮嘱：在我回来之前，不要告诉他你的名字。孩子看了她一眼，像是在等她先开口。",
+      "selection": {
+        "from": 57,
+        "to": 57
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "只在光标前的纸条悬念处插入，保留后文与锁",
+      "must_preserve": [
+        "孩子仍在候诊室",
+        "在我回来之前，不要告诉他你的名字。"
+      ],
+      "allowed_reversal": [
+        "纸条来源有新线索",
+        "叫号与女人失踪有关"
+      ],
+      "locks": [
+        {
+          "id": "lock_fixture_017",
+          "from": 65,
+          "to": 82,
+          "text": "在我回来之前，不要告诉他你的名字。"
+        }
+      ],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response",
+        "unaffected_locks_preserved_in_editor_acceptance"
+      ]
+    },
+    {
+      "id": "zh-story-018",
+      "split": "development",
+      "features": [
+        "utf16-emoji"
+      ],
+      "body": "夏葵收到弟弟发来的“🌧️回家”以后，就没再接通他的电话。她把窗台上的相机装进包，去天桥下找那家搬走的照相馆。天桥还在，店门也在，玻璃上却倒贴着她昨天拍的照片。她举起相机，看见取景器里还有一位站在她身后的客人。",
+      "selection": {
+        "from": 92,
+        "to": 92
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "核对含emoji的光标映射，续写取景器发现",
+      "must_preserve": [
+        "弟弟消息含🌧️",
+        "玻璃倒贴夏葵的照片"
+      ],
+      "allowed_reversal": [
+        "相机看见另一时间或角度",
+        "照相馆没有真正搬走"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-019",
+      "split": "development",
+      "features": [
+        "selection-mid-action"
+      ],
+      "body": "葛锦把检票钳握在手里，沿车厢寻找那个没买票的人。每走一节，车厢里的旅客就少一个。她停在餐车门口，听见水壶烧开的声音。餐车里只有她丢失多年的行李箱，箱扣在不停地弹。乘务长随后告诉她，这列车从未挂过餐车。",
+      "selection": {
+        "from": 58,
+        "to": 81
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "局部选择只给锚点，不把选中句当全篇事实",
+      "must_preserve": [
+        "旅客逐节变少",
+        "葛锦丢失的箱子在餐车"
+      ],
+      "allowed_reversal": [
+        "行李箱牵动乘车身份",
+        "水壶声有异常来源"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-020",
+      "split": "development",
+      "features": [
+        "long-document"
+      ],
+      "body": "江瑶回青瓦镇时，第一场秋雨刚停，石桥上的卖菜人还认得她。她不是来祭祖，也不是来收回房子，她想找到失踪七年的老师。老师离开那天，把学校的钥匙挂在校门上，连一张说明都没有留下。镇上的人对老师的去向各有解释，裁缝说他去了省城，米店的老太太却说亲眼看他登上渡船。江瑶没有立刻反驳，她把每个人说话的时间记在旧练习本上，然后去问那天开船的船工。船工已经换了住处，他的新屋紧靠废弃的戏台。江瑶敲门时，一只灰狗先从门槛后伸出头来，船工让她坐下，拿出两只边沿缺口的碗。船工说自己那晚的确载过老师，只是船到河心时，老师要求返回。他说这话的时候总朝窗外看，江瑶便把碗放回桌上，顺着他的视线望向戏台。戏台的帷幕被雨浸得发黑，台口却放着一双干净的布鞋。她认得那种鞋，学校从前每年都会给值夜的人发一双。江瑶问船工鞋是谁放的，船工说不知道，灰狗却在这时候朝她的练习本叫了一声。她翻到记船期的那页，才发现纸边沾着一点朱砂。船工告诉她，老师以前也带过这样的练习本，专记别人忘掉的小事。她离开船工家，没有立刻去戏台，而是先沿街找那间还开着的文具店。店主认出她以前买铅笔时总嫌木屑扎手，便拿来一支削得很短的旧铅笔。店主说这是老师寄放的，叫他交给第一个回来的学生。江瑶在柜台前等了一会，店主才想起包铅笔的纸也应给她。纸是一张课表，上面的下午课程全被划掉，只剩星期四最后一栏还写着“河边”。她读完以后问店主，那一届学生有没有别人来过。店主说不清学生的名字，却记得去年冬天有人站在门外，没有进店，只问河上还有没有渡船。江瑶把短铅笔夹进练习本，绕过市场往学校走。学校已经借给合作社存粮，门卫仍是从前那个耳背的老人。老人指着门后的挂钩说，老师的钥匙一直挂在那里，谁都不曾动过。江瑶问他能否借来开旧办公室，老人摸了摸钥匙，忽然说钥匙比昨天轻。他没有笑，江瑶也没笑，她把钥匙搁在掌心数了一遍。钥匙上本来应该有三道齿，现在只有两道。办公室的门却真的被它打开了，屋里空着，一张倒扣的黑板挡在墙边。江瑶搬开黑板，看见墙上留着学生身高的刻线，她自己的名字比印象中高了一寸。墙边的柜子还放着半盒粉笔，最下面一格藏着一本签到簿。簿上最后一个到校的人就是老师，时间是他离开后的第二天。江瑶把簿放平，发现日期旁边还有一枚没有盖全的合作社印章。她去合作社问那枚印章，管仓库的小伙子说，旧印章早被当成废铁称走了。小伙子帮她找出一张过磅单，上面的重量被改过两次，签名栏里写着船工的姓。江瑶想起船工碗沿的缺口，觉得那只碗也许并不只是碗。市场快散时，江瑶在收旧货的棚子里找到一个铸铁的砝码。旧货商说东西从学校收来，却不肯卖，理由是里面还装着人家的话。江瑶把短铅笔给他看，他才把砝码翻过去，露出底面用蜡封住的小孔。蜡里裹着一片卷紧的纸，纸上记着七个名字，都是江瑶同学的名字。她的名字排在最后，前六个名字旁边有细小的圆圈，只有她没有。江瑶拿着纸去找班上住得最近的人，对方的家门却没有锁。同学的母亲仍住在那里，她以为江瑶是来借宿，先给她铺了一张竹席。江瑶问起同学，老妇人说孩子去年冬天回来过，当时问的也是渡船。老妇人拿出一张合照，照片上江瑶的脸被光照得看不清。江瑶记得这张照片，却不记得拍照的人。她把照片翻到背面，看到老师的字：“别把没有站到的人写成缺席。”屋外灰狗又叫了起来，她走出去，看见船工站在巷口，手里提着那双戏台上的布鞋。船工说现在可以去戏台了，江瑶问为什么，他回答，因为最后一个学生已经回来了。江瑶没有跟他走，先把纸上的七个名字重新抄了一遍。船工一直等着，没有催，她发现他的两只碗这回都装在布鞋里。戏台里比外面亮，一扇破瓦缝刚好把天光落在中央。江瑶以为会看到老师，台上却只摆着七张小凳子，每张凳背贴着一个学生的名字。她那张凳子上放着一本尚未装订的书，书页的顺序被人故意打乱。船工把碗放在台口，说老师要她决定这本书该从哪一页开始。江瑶问老师在哪，船工只指了指台下。台下没有人，七张凳子的影子却全都朝着同一个方向，江瑶于是低头看了一眼自己的影子。她的影子比凳子的影子短，手上还多出一本不在掌心的书。江瑶没有马上翻页，而是把合照放到台口，让天光穿过照片上被照白的部分。那块白里慢慢显出一个孩子，孩子站得比其他人都远。她想起那个孩子不是没来上课，他每天都坐在窗外听，因为家里欠着学校的柴钱。老师从来没在签到簿上写他缺席，只把他的名字留在余出来的一行。江瑶看向手里的名单，发现那里恰好也有一行空白。船工说老师失踪以后，没有人再去河边教那个孩子识字。江瑶问他现在多大，船工回答，岁数不是他们在等的事。台口的碗轻轻碰了一下，两道声音不同，江瑶终于认出其中一道是以前学校的铃。她把书页按签到的日期排好，最后只剩一张没有日期的页。页上画着石桥，却把桥下的水画成通往操场的路。青瓦镇并未废弃，台外仍有人叫卖，江瑶觉得自己不能只靠一个失踪故事解释这些年。她决定先回学校查那个孩子的名字，再去石桥下等下一班船。船工把布鞋留给她，说桥下的泥比外头深。江瑶翻到最后一张书页，发现纸上留下了一小块没有干的墨迹。她用铅笔轻触墨迹，墨迹开始沿着她画出的路移动。",
+      "selection": {
+        "from": 2077,
+        "to": 2077
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "长文在请求限长内仅取光标前近三句，保留前文于人工审阅",
+      "must_preserve": [
+        "江瑶找的是失踪的老师",
+        "青瓦镇并未废弃"
+      ],
+      "allowed_reversal": [
+        "镇民对老师有另一份记忆",
+        "书页带来具体搜寻方向"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-021",
+      "split": "holdout",
+      "features": [
+        "holdout-dialogue"
+      ],
+      "body": "“猫不是我的。”顾潮把食盆放回门外。邻居每晚都来问这句话，今晚却把一串钥匙交给了他。猫蹲在楼梯上，一动不动地看着两个人。“那你为什么知道它小时候的名字？”邻居问。顾潮低头数钥匙，发现少了自己家的那一把。",
+      "selection": {
+        "from": 101,
+        "to": 101
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "用人物关系推动城市短篇的对白",
+      "must_preserve": [
+        "顾潮否认养猫",
+        "钥匙缺了他家的一把"
+      ],
+      "allowed_reversal": [
+        "猫与旧住户的关系",
+        "邻居身份揭露一小部分"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-022",
+      "split": "holdout",
+      "features": [
+        "holdout-inner"
+      ],
+      "body": "苏宁把一整年没寄出的明信片摊在地板上，每张都写给同一个人。她一直说地址找不到了，其实每天都经过那栋楼。今天楼门口贴了拆迁通知，她才发现，自己记得楼层，却从来不知道那个人的姓。她想把第一张明信片撕掉，又停了手。",
+      "selection": {
+        "from": 104,
+        "to": 104
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "把自我欺瞒转为具体选择，保持克制口吻",
+      "must_preserve": [
+        "苏宁没有寄出明信片",
+        "她不知道收信人的姓"
+      ],
+      "allowed_reversal": [
+        "收信人曾经也在寻找她",
+        "楼里有另一种保存地址的方式"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-023",
+      "split": "holdout",
+      "features": [
+        "holdout-suspense"
+      ],
+      "body": "海边的修表人每逢涨潮就关门，镇上人都习惯了。只有柯晚注意到，闭店以后，屋内的钟声仍会比岸上的报时早三分钟。她在潮水退尽时敲门，老人把一块停走的表交给她。表背刻着她母亲的名字，玻璃内侧压着一小片新鲜的海草。",
+      "selection": {
+        "from": 102,
+        "to": 102
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "海边奇异故事保留现实解释空间",
+      "must_preserve": [
+        "钟声早三分钟",
+        "表背刻着母亲名字"
+      ],
+      "allowed_reversal": [
+        "潮汐与计时存在具体关联",
+        "母亲曾为修表人带来东西"
+      ],
+      "locks": [],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response"
+      ]
+    },
+    {
+      "id": "zh-story-024",
+      "split": "holdout",
+      "features": [
+        "holdout-lock-unfinished"
+      ],
+      "body": "驿站的马都被借走了，余澄只能替送信人修好一双旧靴。信封上有一句不能更改的命令：天亮前把信送到北桥。送信人却把北桥的位置画在南边。余澄量了量靴底上的泥，发现那人今天根本没出过站。他低声问：“你要我替你送的，其实是",
+      "selection": {
+        "from": 105,
+        "to": 105
+      },
+      "offset_encoding": "utf-16-code-units",
+      "editor_representation": "single-paragraph-plain-text",
+      "intent": "锁定时限与目的地，续写问句中的实际代价",
+      "must_preserve": [
+        "天亮前把信送到北桥。",
+        "送信人没离开驿站"
+      ],
+      "allowed_reversal": [
+        "地图方向有隐含规则",
+        "信件只是另一物件的伪装"
+      ],
+      "locks": [
+        {
+          "id": "lock_fixture_024",
+          "from": 39,
+          "to": 49,
+          "text": "天亮前把信送到北桥。"
+        }
+      ],
+      "safety_assertions": [
+        "muse_no_delete",
+        "loki_short_context_provoke",
+        "no_text_after_selection_end_in_context",
+        "prefix_free_text",
+        "valid_request_and_response",
+        "unaffected_locks_preserved_in_editor_acceptance"
+      ]
+    }
+  ]
+}
