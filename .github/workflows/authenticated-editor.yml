@@ -43,7 +43,7 @@ jobs:
         run: |
           pipx install poetry
           poetry -C server install
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24.x"
           cache: npm
