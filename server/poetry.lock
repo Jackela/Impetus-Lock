@@ -232,14 +232,14 @@ files = [
 
 [[package]]
 name = "anthropic"
-version = "1.12.1"
+version = "1.15.0"
 description = "The official Python library for the anthropic API"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "anthropic-1.12.1-py3-none-any.whl", hash = "sha256:1c1469bb3f4118291756816b7850cc839f17b2be5cdc99c8fde3890a61a49ca2"},
-    {file = "anthropic-1.12.1.tar.gz", hash = "sha256:10f720ab6ddf40ef12e0e5743412c3a6dfac1109c244e633c9a2dbd36778ad30"},
+    {file = "anthropic-1.15.0-py3-none-any.whl", hash = "sha256:10189a7993c5c71a0a2d4bb80020ca6a2fd27679f51e627405da37251d15ff49"},
+    {file = "anthropic-1.15.0.tar.gz", hash = "sha256:90caa9df83e2fc8bddb4ddeb83b7191bce255f635c03eae055deec521741df08"},
 ]
 
 [package.dependencies]
@@ -247,6 +247,7 @@ anyio = ">=4.1.0,<5"
 docstring-parser = ">=0.15,<1"
 httpx2 = ">=2.0.0,<3"
 jiter = ">=0.4.0,<1"
+opentelemetry-api = ">=1.1.0,<2"
 pydantic = ">=1.10.0,<3"
 sniffio = ">=1,<2"
 typing-extensions = ">=4.14,<5"
@@ -1360,14 +1361,14 @@ urllib3 = ["packaging (>=20.0)", "urllib3 (>=1.26.15,<3.0.0)"]
 
 [[package]]
 name = "google-genai"
-version = "2.29.0"
+version = "2.31.0"
 description = "GenAI Python SDK"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "google_genai-2.29.0-py3-none-any.whl", hash = "sha256:7adda55cb6746fb46d38ad3202c3372840b96eede964b5fb3df1469cd4998570"},
-    {file = "google_genai-2.29.0.tar.gz", hash = "sha256:124d3eef9ff6b9e4ea548f95ff5b7721683e7990c0a936b006d9e2ab61ea897d"},
+    {file = "google_genai-2.31.0-py3-none-any.whl", hash = "sha256:c87b9d495a24b09dedb29b852a201bea69ecd0b3f6c2561dc68f4055451b1b90"},
+    {file = "google_genai-2.31.0.tar.gz", hash = "sha256:71518537de2ba967a61960cba844691dca3dd4ff07726c01a6917d132213541e"},
 ]
 
 [package.dependencies]
