@@ -34,7 +34,7 @@
     "@milkdown/prose": "^7.22.3",
     "@milkdown/react": "^7.22.3",
     "@milkdown/theme-nord": "^7.22.3",
-    "@tanstack/react-query": "^5.103.1",
+    "@tanstack/react-query": "^5.104.5",
     "axios": "^1.20.0",
     "framer-motion": "^12.43.0",
     "html2canvas": "^1.4.1",
