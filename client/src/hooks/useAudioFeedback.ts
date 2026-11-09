@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AIActionType } from "../types/ai-actions";
-import { FEEDBACK_CONFIG } from "../config/sensory-feedback";
+import { FEEDBACK_CONFIG, UNIQUE_AUDIO_FILES } from "../config/sensory-feedback";
 import { createLogger } from "../utils/logger";
 
 const logger = createLogger("useAudioFeedback");
@@ -59,24 +59,35 @@ export function useAudioFeedback() {
         // Create AudioContext (use global AudioContext from vitest.setup.ts in tests)
         audioContextRef.current = new AudioContextConstructor();
 
-        // Fetch and decode all audio files
-        const audioPromises = Object.entries(FEEDBACK_CONFIG).map(async ([actionType, config]) => {
+        // Fetch and decode each *distinct* audio file exactly once.
+        // Six actions share four files (clank/whoosh back two actions each), so
+        // keying by URL avoids duplicate requests and duplicate decodes.
+        const buffersByUrl = new Map<string, AudioBuffer>();
+
+        const audioPromises = UNIQUE_AUDIO_FILES.map(async (audioFile) => {
           try {
-            const response = await fetch(config.audioFile);
+            const response = await fetch(audioFile);
             const arrayBuffer = await response.arrayBuffer();
             const audioBuffer = await audioContextRef.current!.decodeAudioData(arrayBuffer);
 
             if (isMounted) {
-              audioBuffersRef.current.set(actionType as AIActionType, audioBuffer);
+              buffersByUrl.set(audioFile, audioBuffer);
             }
           } catch (error) {
-            logger.error(`Failed to load audio: ${config.audioFile}`, error);
+            logger.error(`Failed to load audio: ${audioFile}`, error);
           }
         });
 
         await Promise.all(audioPromises);
 
         if (isMounted) {
+          // Fan the decoded buffers back out to every action that uses the file.
+          Object.entries(FEEDBACK_CONFIG).forEach(([actionType, config]) => {
+            const audioBuffer = buffersByUrl.get(config.audioFile);
+            if (audioBuffer) {
+              audioBuffersRef.current.set(actionType as AIActionType, audioBuffer);
+            }
+          });
           setIsReady(true);
         }
       } catch (error) {

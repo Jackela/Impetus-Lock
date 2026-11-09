@@ -503,6 +503,7 @@ function App() {
             mode={remoteEnabled && !recoveryError && !hasBlockedRecovery ? mode : "off"}
             session={auth ? auth.session : undefined}
             requestIdentity={draftIdentity}
+            taskId={currentTaskId}
             initialContent={taskContent}
             initialLocks={taskLocks}
             externalTrigger={manualTrigger}

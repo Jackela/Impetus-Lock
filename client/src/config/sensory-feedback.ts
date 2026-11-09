@@ -1,4 +1,8 @@
 import { AIActionType } from "../types/ai-actions";
+import bonkUrl from "../assets/audio/bonk.mp3";
+import buzzUrl from "../assets/audio/buzz.mp3";
+import clankUrl from "../assets/audio/clank.mp3";
+import whooshUrl from "../assets/audio/whoosh.mp3";
 
 /**
  * Configuration for sensory feedback (animations + audio) per AI action type.
@@ -10,12 +14,41 @@ export interface SensoryFeedbackConfig {
   /** Type of animation to play (glitch, fadeout, shake, error-flash) */
   animationType: "glitch" | "fadeout" | "shake" | "error-flash";
 
-  /** Path to audio file (relative to /assets/audio/) */
+  /** Bundled audio asset URL resolved by Vite (hashed and emitted at build time) */
   audioFile: string;
 
   /** Duration of the animation in milliseconds */
   duration: number;
 }
+
+/**
+ * Canonical audio assets.
+ *
+ * Audio files are imported as Vite static assets so the bundler emits them with
+ * content hashes under `assets/` and the URLs stay correct in dev, preview and
+ * production. Hard-coded `/src/assets/...` paths only resolved on the dev server
+ * and produced 404s in a built bundle.
+ *
+ * Exactly four files back six actions: `clank` and `whoosh` are shared by two
+ * actions each, so consumers must load `UNIQUE_AUDIO_FILES` once per file instead
+ * of once per action.
+ */
+export const AUDIO_ASSETS = {
+  bonk: bonkUrl,
+  buzz: buzzUrl,
+  clank: clankUrl,
+  whoosh: whooshUrl,
+} as const;
+
+/**
+ * The distinct audio files that need to be loaded, in stable order.
+ *
+ * Iterate this list when preloading so a shared sound is fetched once
+ * (`6 actions` -> `4 requests`).
+ */
+export const UNIQUE_AUDIO_FILES: readonly string[] = Object.freeze([
+  ...new Set(Object.values(AUDIO_ASSETS)),
+]);
 
 /**
  * Sensory feedback configuration map.
@@ -39,42 +72,42 @@ export interface SensoryFeedbackConfig {
  * ```typescript
  * const config = FEEDBACK_CONFIG[AIActionType.PROVOKE];
  * console.log(config.animationType); // 'glitch'
- * console.log(config.audioFile); // '/assets/audio/clank.mp3'
+ * console.log(config.audioFile); // '/assets/clank-D3f9a1.mp3'
  * console.log(config.duration); // 1500 (milliseconds)
  * ```
  */
 export const FEEDBACK_CONFIG: Record<AIActionType, SensoryFeedbackConfig> = {
   [AIActionType.PROVOKE]: {
     animationType: "glitch",
-    audioFile: "/src/assets/audio/clank.mp3",
+    audioFile: AUDIO_ASSETS.clank,
     duration: 1500, // 1.5 seconds (FR-007: complete within 1-2s)
   },
   [AIActionType.REWRITE]: {
     animationType: "glitch",
-    audioFile: "/src/assets/audio/clank.mp3",
+    audioFile: AUDIO_ASSETS.clank,
     duration: 1500,
   },
 
   [AIActionType.DELETE]: {
     animationType: "fadeout",
-    audioFile: "/src/assets/audio/whoosh.mp3",
+    audioFile: AUDIO_ASSETS.whoosh,
     duration: 750, // 0.75 seconds (FR-011: 0.5-1 second)
   },
 
   [AIActionType.REJECT]: {
     animationType: "shake",
-    audioFile: "/src/assets/audio/bonk.mp3",
+    audioFile: AUDIO_ASSETS.bonk,
     duration: 500, // 0.5 seconds (P1 implementation timing)
   },
 
   [AIActionType.ERROR]: {
     animationType: "error-flash",
-    audioFile: "/src/assets/audio/buzz.mp3",
+    audioFile: AUDIO_ASSETS.buzz,
     duration: 500, // 0.5 seconds (P3 US3: FR-005, FR-006)
   },
   [AIActionType.CHAOS]: {
     animationType: "glitch",
-    audioFile: "/src/assets/audio/whoosh.mp3",
+    audioFile: AUDIO_ASSETS.whoosh,
     duration: 1000,
   },
 };

@@ -26,6 +26,37 @@ type InterventionRequest = components["schemas"]["InterventionRequest"];
 type InterventionResponse = components["schemas"]["InterventionResponse"];
 
 /**
+ * Optional association between an intervention and a persisted task.
+ *
+ * The server records the generated action under `GET /tasks/{id}/actions` for the
+ * task named by `X-Task-Id`, and answers 404 when that task is missing, foreign,
+ * or deleted. An unknown task id must therefore be omitted rather than guessed:
+ * omitting it keeps the existing non-persistent behavior.
+ */
+export interface InterventionTaskOptions {
+  /** Task the action belongs to; `undefined`, `null`, or blank sends no `X-Task-Id` header. */
+  taskId?: string | null;
+}
+
+/**
+ * Build the task association header for an intervention request.
+ *
+ * @param taskId - Task id captured by the caller, when known
+ * @returns `{"X-Task-Id": id}` for a non-blank id, otherwise an empty object
+ *
+ * @example
+ * ```typescript
+ * buildTaskHeaders("0b1c...") // { "X-Task-Id": "0b1c..." }
+ * buildTaskHeaders(undefined) // {}
+ * ```
+ */
+function buildTaskHeaders(taskId?: string | null): Record<string, string> {
+  if (typeof taskId !== "string") return {};
+  const value = taskId.trim();
+  return value ? { "X-Task-Id": value } : {};
+}
+
+/**
  * API client configuration.
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -118,6 +149,7 @@ export class InterventionAPIError extends Error {
  * @param options.signal - AbortSignal for request cancellation
  * @param options.session - Captured account authorization, or null to pause remote work
  * @param options.retries - Number of retry attempts on failure (default: 2)
+ * @param options.taskId - Known task id sent as `X-Task-Id` so the action is recorded for that task
  * @returns Intervention response from backend
  *
  * @throws {InterventionAPIError} If API returns error (400, 422, 429, 500)
@@ -156,7 +188,7 @@ export async function generateIntervention(
     idempotencyKey?: string;
     signal?: AbortSignal;
     retries?: number;
-  }
+  } & InterventionTaskOptions
 ): Promise<InterventionResponse> {
   const idempotencyKey = options?.idempotencyKey || generateIdempotencyKey();
   const maxRetries = options?.retries ?? 2;
@@ -178,6 +210,8 @@ export async function generateIntervention(
             "Content-Type": "application/json",
             "Idempotency-Key": idempotencyKey,
             "X-Contract-Version": CONTRACT_VERSION,
+            // Only a known task id is announced; the server rejects unknown ones.
+            ...buildTaskHeaders(options?.taskId),
             ...buildLLMHeaders(),
           },
           body: JSON.stringify(request),
@@ -317,6 +351,7 @@ function currentProvider(): string | undefined {
  * @param docVersion - Document version (for optimistic locking)
  * @param options - Captured account authorization and cancellation
  * @param options.selectionFrom - Start of a noncollapsed selection (defaults to cursor)
+ * @param options.taskId - Known task id forwarded as `X-Task-Id`
  * @returns Intervention response with provoke action
  *
  * @example
@@ -341,7 +376,7 @@ export async function triggerMuseIntervention(
   context: string,
   cursorPosition: number,
   docVersion: number,
-  options?: RemoteRequestOptions & { selectionFrom?: number }
+  options?: RemoteRequestOptions & InterventionTaskOptions & { selectionFrom?: number }
 ): Promise<InterventionResponse> {
   return generateIntervention(
     {
@@ -368,6 +403,7 @@ export async function triggerMuseIntervention(
  * @param docVersion - Document version (for optimistic locking)
  * @param options - Captured account authorization and cancellation
  * @param options.selectionFrom - Start of a noncollapsed selection (defaults to cursor)
+ * @param options.taskId - Known task id forwarded as `X-Task-Id`
  * @returns Intervention response with provoke or delete action
  *
  * @example
@@ -396,7 +432,7 @@ export async function triggerLokiIntervention(
   context: string,
   cursorPosition: number,
   docVersion: number,
-  options?: RemoteRequestOptions & { selectionFrom?: number }
+  options?: RemoteRequestOptions & InterventionTaskOptions & { selectionFrom?: number }
 ): Promise<InterventionResponse> {
   return generateIntervention(
     {

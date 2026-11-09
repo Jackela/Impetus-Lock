@@ -3,6 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useAudioFeedback } from "./useAudioFeedback";
 import { TestAudioContext } from "../../tests/fixtures/audio";
 import { AIActionType } from "../types/ai-actions";
+import { FEEDBACK_CONFIG, UNIQUE_AUDIO_FILES } from "../config/sensory-feedback";
 
 /**
  * Tests for useAudioFeedback hook (User Story 2 - TDD Phase)
@@ -25,6 +26,41 @@ describe("useAudioFeedback", () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.unstubAllGlobals();
+  });
+
+  /**
+   * Test: preloading is deduplicated per unique audio file.
+   *
+   * Six action types share four files (`clank` and `whoosh` back two actions
+   * each), so the hook must fetch each URL once and then fan the decoded
+   * buffer back out to every action that references it.
+   */
+  it("fetches each unique audio file once and shares buffers across actions", async () => {
+    // A fresh Response per call: a single Response body can only be read once.
+    vi.mocked(fetch).mockImplementation(async () => new Response(new ArrayBuffer(1024)));
+    const createBufferSourceSpy = vi.spyOn(TestAudioContext.prototype, "createBufferSource");
+
+    const { result } = renderHook(() => useAudioFeedback());
+
+    await waitFor(() => {
+      expect(result.current.isReady).toBe(true);
+    });
+
+    const requestedUrls = vi.mocked(fetch).mock.calls.map((call) => call[0]);
+
+    expect(requestedUrls).toHaveLength(UNIQUE_AUDIO_FILES.length);
+    expect(new Set(requestedUrls).size).toBe(UNIQUE_AUDIO_FILES.length);
+    expect(new Set(requestedUrls)).toEqual(new Set(UNIQUE_AUDIO_FILES));
+    expect(UNIQUE_AUDIO_FILES.length).toBeLessThan(Object.keys(FEEDBACK_CONFIG).length);
+
+    // PROVOKE and REWRITE both map to clank; both must resolve to a buffer,
+    // otherwise playAudio bails out before creating a source node.
+    await result.current.playAudio(AIActionType.PROVOKE);
+    await result.current.playAudio(AIActionType.REWRITE);
+
+    expect(createBufferSourceSpy).toHaveBeenCalledTimes(2);
+
+    createBufferSourceSpy.mockRestore();
   });
 
   /**
