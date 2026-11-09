@@ -15,9 +15,7 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 from server.api.dependencies import get_task_service
 from server.api.routes.tasks import router
 from server.application.services.task_service import (
-    TaskDTO,
     TaskService,
-    UpdateTaskCommand,
     VersionMismatchError,
 )
 from server.auth.dependencies import get_current_user
@@ -198,27 +196,20 @@ async def test_postgres_same_version_writers_have_one_success_and_one_conflict(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-@pytest.mark.parametrize("legacy", [False, True], ids=["scoped", "legacy"])
 async def test_service_translates_atomic_postgres_conflict(
-    postgres_sessions: async_sessionmaker[AsyncSession], legacy: bool
+    postgres_sessions: async_sessionmaker[AsyncSession],
 ) -> None:
-    """Both service entry points preserve the existing typed conflict contract."""
+    """The user-scoped service entry point preserves the typed conflict contract."""
     owner, task = await create_owned_task(postgres_sessions)
     barrier = asyncio.Barrier(2)
 
-    async def write(content: str) -> Task | TaskDTO | ValueError | VersionMismatchError:
+    async def write(content: str) -> Task | ValueError | VersionMismatchError:
         """Exercise a real service/session, rolling back a rejected write."""
         async with postgres_sessions() as session:
             service = TaskService(
                 ConcurrentReadRepository(session, barrier), SqlAlchemyTransaction(session)
             )
             try:
-                if legacy:
-                    result = await service.update_task(
-                        UpdateTaskCommand(task.id, content, [content], 0)
-                    )
-                    await session.commit()
-                    return result
                 return await service.update_task_for_user(
                     owner.id, task.id, content=content, lock_ids=[content], version=0
                 )
@@ -228,7 +219,7 @@ async def test_service_translates_atomic_postgres_conflict(
 
     outcomes = await asyncio.gather(write("First candidate"), write("Second candidate"))
     conflicts = [outcome for outcome in outcomes if isinstance(outcome, VersionMismatchError)]
-    successes = [outcome for outcome in outcomes if isinstance(outcome, (Task, TaskDTO))]
+    successes = [outcome for outcome in outcomes if isinstance(outcome, Task)]
     assert len(successes) == len(conflicts) == 1, outcomes
     assert (conflicts[0].expected, conflicts[0].actual) == (0, 1)
     assert successes[0].version == 1

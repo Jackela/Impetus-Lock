@@ -11,7 +11,6 @@ Constitutional Compliance:
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from server.domain.entities.intervention_action import InterventionAction
@@ -87,56 +86,6 @@ class ValidationError(TaskServiceError):
 
 
 @dataclass
-class CreateTaskCommand:
-    """Command to create a new task.
-
-    Attributes:
-        content: Initial task content (Markdown).
-        lock_ids: Optional list of lock IDs for un-deletable blocks.
-        title: Optional task title.
-        category: Optional task category.
-        priority: Optional task priority.
-        due_date: Optional task due date.
-        word_count: Optional initial word count.
-    """
-
-    content: str
-    lock_ids: list[str] | None = None
-    title: str = ""
-    category: str = "WRITING"
-    priority: str = "MEDIUM"
-    due_date: datetime | None = None
-    word_count: int = 0
-
-
-@dataclass
-class UpdateTaskCommand:
-    """Command to update an existing task.
-
-    Attributes:
-        task_id: Task UUID to update.
-        content: New task content.
-        lock_ids: New list of lock IDs.
-        version: Expected current version (optimistic locking).
-        title: New task title.
-        category: New task category.
-        priority: New task priority.
-        due_date: New task due date.
-        word_count: New word count.
-    """
-
-    task_id: UUID
-    content: str
-    lock_ids: list[str]
-    version: int
-    title: str | None = None
-    category: str | None = None
-    priority: str | None = None
-    due_date: datetime | None = None
-    word_count: int | None = None
-
-
-@dataclass
 class TaskDTO:
     """Data transfer object for task responses.
 
@@ -200,21 +149,20 @@ class TaskService:
         ```python
         # Constructor injection (DIP)
         repository = PostgreSQLTaskRepository(session)
-        service = TaskService(repository)
+        service = TaskService(repository, SqlAlchemyTransaction(session))
 
-        # Create task
-        task = await service.create_task(
-            CreateTaskCommand(content="My content", lock_ids=["lock_1"])
+        # Create a task owned by the authenticated user
+        task = await service.create_task_for_user(
+            user_id, "My content", lock_ids=["lock_1"]
         )
 
         # Update with optimistic locking
-        updated = await service.update_task(
-            UpdateTaskCommand(
-                task_id=task.id,
-                content="Updated content",
-                lock_ids=["lock_1", "lock_2"],
-                version=task.version
-            )
+        updated = await service.update_task_for_user(
+            user_id,
+            task.id,
+            content="Updated content",
+            lock_ids=["lock_1", "lock_2"],
+            version=task.version,
         )
         ```
     """
@@ -235,210 +183,6 @@ class TaskService:
         self._repository = repository
         self._transaction: TransactionSupport = transaction or NullTransaction()
 
-    async def create_task(self, command: CreateTaskCommand) -> TaskDTO:
-        """Create a new task.
-
-        Validates input and delegates persistence to repository.
-
-        Args:
-            command: Create task command with content and optional lock IDs.
-
-        Returns:
-            TaskDTO representing the created task.
-
-        Raises:
-            ValidationError: If content is empty or invalid.
-
-        Example:
-            ```python
-            command = CreateTaskCommand(
-                content="他打开门，犹豫着要不要进去。",
-                lock_ids=["lock_01"]
-            )
-            task = await service.create_task(command)
-            assert task.version == 0
-            ```
-        """
-        # Business rule: content must not be empty
-        if not command.content or not command.content.strip():
-            raise ValidationError("content", "Content cannot be empty")
-
-        # Business rule: content max length
-        if len(command.content) > 100000:
-            raise ValidationError("content", "Content exceeds maximum length of 100000")
-
-        kwargs: dict[str, Any] = {
-            "content": command.content,
-            "lock_ids": command.lock_ids or [],
-        }
-        if command.title:
-            kwargs["title"] = command.title
-        if command.category != "WRITING":
-            kwargs["category"] = command.category
-        if command.priority != "MEDIUM":
-            kwargs["priority"] = command.priority
-        if command.due_date is not None:
-            kwargs["due_date"] = command.due_date
-        if command.word_count != 0:
-            kwargs["word_count"] = command.word_count
-
-        # Delegate to repository
-        entity = await self._repository.create_task(**kwargs)
-
-        return TaskDTO.from_entity(entity)
-
-    async def get_task(self, task_id: UUID) -> TaskDTO:
-        """Get task by ID.
-
-        Args:
-            task_id: Task UUID.
-
-        Returns:
-            TaskDTO representing the task.
-
-        Raises:
-            TaskNotFoundError: If task not found.
-
-        Example:
-            ```python
-            task = await service.get_task(task_id)
-            print(f"Found: {task.content}")
-            ```
-        """
-        entity = await self._repository.get_task(task_id)
-
-        if entity is None:
-            raise TaskNotFoundError(task_id)
-
-        return TaskDTO.from_entity(entity)
-
-    async def update_task(self, command: UpdateTaskCommand) -> TaskDTO:
-        """Update existing task with optimistic locking.
-
-        Validates version before updating to prevent concurrent modification conflicts.
-
-        Args:
-            command: Update command with new content, lock IDs, and expected version.
-
-        Returns:
-            TaskDTO representing the updated task.
-
-        Raises:
-            TaskNotFoundError: If task not found.
-            VersionMismatchError: If version doesn't match (optimistic locking).
-            ValidationError: If content is empty or invalid.
-
-        Example:
-            ```python
-            command = UpdateTaskCommand(
-                task_id=task.id,
-                content="Updated content",
-                lock_ids=["lock_1"],
-                version=task.version  # Must match current version
-            )
-            updated = await service.update_task(command)
-            assert updated.version == task.version + 1
-            ```
-        """
-        # Business rule: content validation
-        if not command.content or not command.content.strip():
-            raise ValidationError("content", "Content cannot be empty")
-
-        if len(command.content) > 100000:
-            raise ValidationError("content", "Content exceeds maximum length of 100000")
-
-        # Fetch current task
-        entity = await self._repository.get_task(command.task_id)
-
-        if entity is None:
-            raise TaskNotFoundError(command.task_id)
-
-        # Optimistic locking check
-        if entity.version != command.version:
-            raise VersionMismatchError(command.version, entity.version)
-
-        # Update entity
-        entity.update(
-            content=command.content,
-            lock_ids=command.lock_ids,
-            title=command.title,
-            category=command.category,
-            priority=command.priority,
-            due_date=command.due_date,
-            word_count=command.word_count,
-        )
-
-        # Persist changes
-        try:
-            updated = await self._repository.update_task(entity)
-        except TaskVersionConflictError as conflict:
-            raise VersionMismatchError(conflict.expected, conflict.actual) from conflict
-
-        return TaskDTO.from_entity(updated)
-
-    async def delete_task(self, task_id: UUID) -> None:
-        """Delete task by ID.
-
-        Args:
-            task_id: Task UUID to delete.
-
-        Raises:
-            TaskNotFoundError: If task not found.
-
-        Example:
-            ```python
-            await service.delete_task(task_id)
-            # Task is now deleted
-            ```
-        """
-        # Verify task exists first
-        entity = await self._repository.get_task(task_id)
-
-        if entity is None:
-            raise TaskNotFoundError(task_id)
-
-        await self._repository.delete_task(task_id)
-
-    async def list_tasks(
-        self,
-        limit: int = 100,
-        offset: int = 0,
-    ) -> tuple[list[TaskDTO], int]:
-        """List tasks with pagination.
-
-        Args:
-            limit: Maximum number of tasks to return (default 100, max 100).
-            offset: Number of tasks to skip.
-
-        Returns:
-            Tuple of (list of TaskDTO, total count).
-
-        Raises:
-            ValidationError: If pagination params are invalid.
-
-        Example:
-            ```python
-            tasks, total = await service.list_tasks(limit=10, offset=0)
-            print(f"Showing {len(tasks)} of {total} tasks")
-            ```
-        """
-        # Validate pagination
-        if limit < 1 or limit > 100:
-            raise ValidationError("limit", "Limit must be between 1 and 100")
-
-        if offset < 0:
-            raise ValidationError("offset", "Offset must be non-negative")
-
-        # Fetch tasks
-        entities = await self._repository.list_tasks(limit=limit, offset=offset)
-
-        # Get total count (fetch all and count)
-        all_tasks = await self._repository.list_tasks(limit=10000, offset=0)
-        total = len(all_tasks)
-
-        dtos = [TaskDTO.from_entity(e) for e in entities]
-        return dtos, total
-
     # ------------------------------------------------------------------
     # User-scoped, route-facing operations
     #
@@ -447,8 +191,8 @@ class TaskService:
     # authenticated user_id, apply route-compatible validation only (no
     # extra content rules), verify ownership before reads/mutations, and
     # finish each write with exactly one commit through the injected
-    # transaction support. The legacy unscoped methods above are kept
-    # untouched for their existing callers.
+    # transaction support. The legacy unscoped CRUD methods were removed
+    # once every route used the user-scoped variants.
     # ------------------------------------------------------------------
 
     async def list_tasks_for_user(

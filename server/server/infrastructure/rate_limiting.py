@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
@@ -18,10 +19,14 @@ except ImportError:
     RedisClient = None  # type: ignore[assignment,misc]
 
 
+logger = logging.getLogger(__name__)
+
+
 class RateLimiter:
     """Rate limiter with optional Redis backend.
 
-    Falls back to allowing all requests if Redis is not configured.
+    Falls back to allowing all requests (fail-open) if Redis is not
+    configured or unreachable, and says so once at construction time.
     Uses per-endpoint limits defined in ENDPOINT_LIMITS.
 
     Attributes:
@@ -29,7 +34,7 @@ class RateLimiter:
     """
 
     ENDPOINT_LIMITS = {
-        "/intervention": "10/minute",
+        "/impetus/generate-intervention": "10/minute",
         "/style/analyze": "5/minute",
         "/auth/login": "5/minute",
         "/auth/register": "3/minute",
@@ -46,15 +51,31 @@ class RateLimiter:
         self._redis: Any | None = None
 
         if not REDIS_AVAILABLE:
+            logger.warning(
+                "Rate limiting disabled / fail-open: redis client library is not "
+                "installed, every request is allowed"
+            )
             return
 
         url = redis_url or os.getenv("REDIS_URL")
-        if url and redis is not None:
+        if not url:
+            logger.warning(
+                "Rate limiting disabled / fail-open: REDIS_URL is not configured, "
+                "every request is allowed"
+            )
+            return
+
+        if redis is not None:
             try:
                 self._redis = redis.from_url(url)
-            except Exception:
+            except Exception as exc:
                 # Redis connection failed - fall back to allowing all
                 self._redis = None
+                logger.warning(
+                    "Rate limiting disabled / fail-open: cannot connect to Redis (%s), "
+                    "every request is allowed",
+                    exc,
+                )
 
     async def is_allowed(self, key: str, limit: str) -> bool:
         """Check if request is within rate limit.
