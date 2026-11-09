@@ -1,0 +1,119 @@
+/**
+ * Writing statistics panel.
+ *
+ * Surface cards at 12px radius, tabular figures for counters, and a unified
+ * loading/error treatment that matches the achievements panel.
+ * Single accent: green — labels stay neutral so numbers carry the hierarchy.
+ */
+
+.stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.stats-panel h3 {
+  margin: 0;
+  font-size: var(--text-lg, 17px);
+  font-weight: 600;
+  color: var(--color-text-primary, #fafafa);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3, 12px);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  padding: var(--space-4, 16px);
+  background-color: var(--color-surface-1, #0a0a0a);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-xl, 12px);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.stat-item:hover {
+  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.15));
+}
+
+.stat-value {
+  font-size: var(--text-2xl, 24px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text-primary, #fafafa);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: var(--text-xs, 11px);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #a1a1aa);
+}
+
+/* ─── Tri-state (loading / error) ─────────────────────────── */
+
+.stats-loading,
+.stats-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 8px);
+  padding: var(--space-3, 12px) var(--space-4, 16px);
+  font-size: var(--text-sm, 13px);
+  color: var(--color-text-secondary, #a1a1aa);
+  background-color: var(--color-surface-2, #111111);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-xl, 12px);
+}
+
+.stats-loading::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background-color: var(--color-accent, #22c55e);
+  animation: stats-pulse 1.2s ease-in-out infinite;
+}
+
+.stats-error {
+  color: var(--color-danger, #ef4444);
+  background-color: var(--color-danger-dim, rgba(239, 68, 68, 0.15));
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+@keyframes stats-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 640px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-loading::before {
+    animation: none;
+    opacity: 0.8;
+  }
+}

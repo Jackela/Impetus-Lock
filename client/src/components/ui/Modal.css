@@ -1,0 +1,86 @@
+/**
+ * Shared Modal primitive.
+ *
+ * Dark cinematic dialog: near-black surface, 12px radius (never larger),
+ * cold shadow, green focus ring. Overlay uses the `--z-modal` layer so it
+ * always sits under toasts but above toolbar/dropdown chrome.
+ */
+
+.ui-modal__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4, 16px);
+  background-color: var(--color-bg-overlay, rgba(0, 0, 0, 0.85));
+  backdrop-filter: blur(8px);
+  animation: ui-modal-overlay-in 0.15s ease-out;
+}
+
+.ui-modal {
+  position: relative;
+  width: 100%;
+  max-height: min(85vh, 720px);
+  overflow-y: auto;
+  padding: var(--space-6, 24px);
+  background-color: var(--color-surface-2, #111111);
+  color: var(--color-text-primary, #fafafa);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-xl, 12px);
+  box-shadow: var(--shadow-xl, 0 24px 64px rgba(0, 0, 0, 0.8));
+  animation: ui-modal-in 0.15s ease-out;
+}
+
+.ui-modal--sm {
+  max-width: 360px;
+}
+
+.ui-modal--md {
+  max-width: 520px;
+}
+
+.ui-modal--lg {
+  max-width: 760px;
+}
+
+.ui-modal:focus,
+.ui-modal:focus-visible {
+  outline: 2px solid var(--color-accent, #22c55e);
+  outline-offset: 2px;
+}
+
+@keyframes ui-modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ui-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .ui-modal {
+    padding: var(--space-5, 20px);
+    max-height: 90vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-modal__overlay,
+  .ui-modal {
+    animation: none;
+  }
+}

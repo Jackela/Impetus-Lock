@@ -1,4 +1,5 @@
 import type { TaskRecord } from "../../types/task";
+import { Button, LockIcon } from "../ui";
 import "./TaskList.css";
 
 /**
@@ -7,10 +8,14 @@ import "./TaskList.css";
  * Shows task title (truncated content), creation time, and lock status.
  * Each task can be clicked to navigate to the task detail view.
  *
+ * The list owns its empty state only: loading and error states belong to the
+ * sidebar so exactly one of "loading", "error", and "no tasks" is on screen.
+ *
  * @param props - Component props
  * @param props.tasks - Array of tasks to display
  * @param props.onTaskClick - Optional callback when a task is clicked
  * @param props.selectedTaskId - Optional ID of the currently selected task
+ * @param props.onCreateTask - Optional callback for the empty-state CTA
  * @returns The rendered task list, or an empty-state notice
  *
  * @example
@@ -26,15 +31,25 @@ export function TaskList({
   tasks,
   onTaskClick,
   selectedTaskId,
+  onCreateTask,
 }: {
   tasks: TaskRecord[];
   onTaskClick?: (task: TaskRecord) => void;
   selectedTaskId?: string;
+  onCreateTask?: () => void;
 }) {
   if (tasks.length === 0) {
     return (
       <div className="task-list-empty" data-testid="task-list-empty">
-        <p>No tasks yet. Create your first task to get started!</p>
+        <h3 className="task-list-empty__title">No tasks yet</h3>
+        <p className="task-list-empty__body">
+          Start a piece here and it will show up in this list.
+        </p>
+        {onCreateTask && (
+          <Button variant="primary" size="sm" onClick={onCreateTask}>
+            Create your first task
+          </Button>
+        )}
       </div>
     );
   }
@@ -86,18 +101,7 @@ export function TaskList({
                       aria-label={`${task.lock_ids.length} locked section${task.lock_ids.length > 1 ? "s" : ""}`}
                       title={`${task.lock_ids.length} locked section${task.lock_ids.length > 1 ? "s" : ""}`}
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        aria-hidden="true"
-                      >
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
+                      <LockIcon size={16} />
                       <span className="lock-count">{task.lock_ids.length}</span>
                     </span>
                   )}

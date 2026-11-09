@@ -1,15 +1,33 @@
 import { useAchievements } from "../../hooks/useAchievements";
+import { TrophyIcon } from "../ui/icons";
+import "./Achievements.css";
 
 /**
  * Displays all achievement definitions as earned or locked badges.
  *
- * @returns The rendered achievements panel with a loading state
+ * Loading and failure are announced to assistive technology: the loading state
+ * is a polite `role="status"` region and the failure is an assertive
+ * `role="alert"` region.
+ *
+ * @returns The rendered achievements panel with loading/error states
  */
 export function Achievements() {
   const { achievements, definitions } = useAchievements();
 
   if (achievements.isLoading || definitions.isLoading) {
-    return <div className="achievements-loading">Loading achievements...</div>;
+    return (
+      <div className="achievements-loading" role="status" aria-live="polite">
+        Loading achievements...
+      </div>
+    );
+  }
+
+  if (achievements.error || definitions.error) {
+    return (
+      <div className="achievements-error" role="alert">
+        Failed to load achievements
+      </div>
+    );
   }
 
   const earned = new Set((achievements.data?.achievements || []).map((a) => a.achievement_type));
@@ -24,7 +42,9 @@ export function Achievements() {
             key={def.achievement_type}
             className={`achievement-badge ${earned.has(def.achievement_type) ? "earned" : "locked"}`}
           >
-            <span className="achievement-icon">{def.icon || "🏆"}</span>
+            <span className="achievement-icon" aria-hidden="true">
+              {def.icon ? <span>{def.icon}</span> : <TrophyIcon size={24} />}
+            </span>
             <span className="achievement-name">{def.name}</span>
             <span className="achievement-desc">{def.description}</span>
           </div>

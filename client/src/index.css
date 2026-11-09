@@ -130,7 +130,7 @@ select:focus {
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-text-muted, #52525b);
+  color: var(--color-text-muted, #7c7c88);
 }
 
 kbd {

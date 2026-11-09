@@ -38,9 +38,16 @@ describe("TaskList", () => {
       render(<TaskList tasks={[]} />);
 
       expect(screen.getByTestId("task-list-empty")).toBeInTheDocument();
-      expect(
-        screen.getByText("No tasks yet. Create your first task to get started!")
-      ).toBeInTheDocument();
+      expect(screen.getByText("No tasks yet")).toBeInTheDocument();
+    });
+
+    it("should offer the create-task CTA in the empty state", async () => {
+      const onCreateTask = vi.fn();
+      render(<TaskList tasks={[]} onCreateTask={onCreateTask} />);
+
+      await userEvent.setup().click(screen.getByRole("button", { name: "Create your first task" }));
+
+      expect(onCreateTask).toHaveBeenCalledOnce();
     });
 
     it("should render list of tasks", () => {

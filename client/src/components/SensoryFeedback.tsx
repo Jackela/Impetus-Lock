@@ -84,6 +84,17 @@ export function SensoryFeedback({ actionType }: SensoryFeedbackProps) {
   };
   const animationName = animationNames[actionType];
 
+  // Destructive AI actions flash red; everything else flashes the single green
+  // accent. Tokens carry 0.4 alpha, so thin them to ~0.1 for a full-screen wash
+  // that matches the previous intensity without flooding the editor.
+  const flashToken =
+    actionType === AIActionType.DELETE ||
+    actionType === AIActionType.REJECT ||
+    actionType === AIActionType.ERROR
+      ? "var(--color-danger-glow)"
+      : "var(--color-accent-glow)";
+  const flashColor = `color-mix(in srgb, ${flashToken} 25%, transparent)`;
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -104,7 +115,7 @@ export function SensoryFeedback({ actionType }: SensoryFeedbackProps) {
           bottom: 0,
           pointerEvents: "none",
           zIndex: 9999,
-          backgroundColor: "rgba(139, 92, 246, 0.1)", // Subtle purple overlay
+          backgroundColor: flashColor,
         }}
       />
     </AnimatePresence>

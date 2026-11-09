@@ -65,7 +65,7 @@ export function Skeleton({
 
   if (variant === "text" && lines > 1) {
     return (
-      <div className="skeleton-lines" style={{ width }}>
+      <div className="skeleton-lines" style={{ width }} aria-hidden="true">
         {Array.from({ length: lines }).map((_, index) => (
           <div key={index} className={skeletonClass} style={{ height }} />
         ))}

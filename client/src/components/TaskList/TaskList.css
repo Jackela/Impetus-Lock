@@ -8,17 +8,27 @@
 
 .task-list-empty {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   justify-content: center;
-  padding: 3rem 1rem;
-  text-align: center;
+  gap: var(--space-3, 12px);
+  padding: var(--space-8, 32px) var(--space-4, 16px);
+  text-align: left;
   color: var(--color-text-secondary, #a1a1aa);
 }
 
-.task-list-empty p {
+.task-list-empty__title {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: var(--text-sm, 13px);
+  font-weight: 600;
+  color: var(--color-text-primary, #fafafa);
+}
+
+.task-list-empty__body {
+  margin: 0;
+  font-size: var(--text-sm, 13px);
   line-height: 1.5;
+  color: var(--color-text-secondary, #a1a1aa);
 }
 
 .task-list-items {

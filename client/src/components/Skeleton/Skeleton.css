@@ -1,6 +1,6 @@
 /* Base skeleton styles */
 .skeleton {
-  background-color: var(--skeleton-base, #e5e7eb);
+  background-color: var(--color-skeleton-base, #1f1f1f);
   border-radius: 0.25rem;
   display: inline-block;
 }
@@ -22,8 +22,8 @@
   background-image: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.5) 20%,
-    rgba(255, 255, 255, 0.8) 60%,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.08) 60%,
     rgba(255, 255, 255, 0)
   );
   animation: shimmer 1.5s infinite;
@@ -72,9 +72,9 @@
   .skeleton--animate {
     background-image: linear-gradient(
       90deg,
-      var(--skeleton-base, #e5e7eb) 0%,
-      var(--skeleton-highlight, #f3f4f6) 50%,
-      var(--skeleton-base, #e5e7eb) 100%
+      var(--color-skeleton-base, #1f1f1f) 0%,
+      var(--color-skeleton-highlight, #2a2a2a) 50%,
+      var(--color-skeleton-base, #1f1f1f) 100%
     );
   }
 }
