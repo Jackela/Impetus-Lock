@@ -10,7 +10,7 @@
  * Available hooks include:
  * - **Editor & Content**: useEditorInitialization, useWritingState, useManualDelete, useSensoryFeedback
  * - **Task Management**: useTasks, useCreateTask, useTaskSync
- * - **UI Components**: useToast, useFocusTrap, useToolbarActions
+ * - **UI Components**: useFocusTrap, useToolbarActions
  * - **Animation & Feedback**: useAnimationController, useAudioFeedback
  * - **Agent Modes**: useLokiTimer, useWritingState, useManualTrigger
  * - **Configuration**: useLLMConfig, useTelemetry
@@ -31,8 +31,6 @@ export { useTasks } from "./useTasks";
 export { useCreateTask } from "./useCreateTask";
 /** Re-export of the useErrorHandler hook. */
 export { useErrorHandler } from "./useErrorHandler";
-/** Re-export of the useToast hook. */
-export { useToast } from "./useToast";
 /** Re-export of the useFocusTrap hook. */
 export { useFocusTrap } from "./useFocusTrap";
 /** Re-export of the useEditorInitialization hook. */
