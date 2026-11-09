@@ -21,6 +21,7 @@
 ### 问题陈述
 
 在传统开发中：
+
 - ❌ 架构规则仅存在于文档中
 - ❌ 开发者可能无意中违反分层原则
 - ❌ Code review 难以捕获所有违规
@@ -29,6 +30,7 @@
 ### 解决方案
 
 在 CI 中：
+
 - ✅ 自动验证每次提交的架构合规性
 - ✅ 构建失败如果违反分层规则
 - ✅ 即时反馈，零成本强制执行
@@ -115,16 +117,17 @@ forbidden_modules = [
     "server.api",
 ]
 
-# Contract 4: 分层顺序验证
-[[tool.importlinter.contracts]]
-name = "Clean Architecture: API Layer (Outermost)"
-type = "layers"
-layers = [
-    "server.api",
-    "server.application",
-    "server.domain",
-]
-containers = ["server"]
+# Contract 4: 分层顺序验证 (temporarily disabled)
+# import-linter 的 layers 契约当前禁用；见 pyproject.toml 注释
+# [[tool.importlinter.contracts]]
+# name = "Clean Architecture: API Layer (Outermost)"
+# type = "layers"
+# layers = [
+#     "api",
+#     "application",
+#     "domain",
+# ]
+# containers = ["server"]
 ```
 
 ### 本地测试
@@ -135,6 +138,7 @@ poetry run lint-imports
 ```
 
 **输出示例 (成功):**
+
 ```
 =============
 Import Linter
@@ -147,12 +151,14 @@ Contracts
 ✓ Clean Architecture: Domain Layer Independence
 ✓ Clean Architecture: Application Layer Dependencies
 ✓ Clean Architecture: Infrastructure Layer Dependencies
-✓ Clean Architecture: API Layer (Outermost)
 
-Contracts: 4 kept, 0 broken.
+Contracts: 3 kept, 0 broken.
 ```
 
+> 第 4 个契约（`API Layer (Outermost)` layers）目前在 `pyproject.toml` 中被注释停用，因此不计入结果。
+
 **输出示例 (违规):**
+
 ```
 ✗ Clean Architecture: Domain Layer Independence
 
@@ -238,6 +244,7 @@ npm run lint
 ```
 
 **输出示例 (违规):**
+
 ```
 error: Components (presentational layer) must not import from features (business logic layer).
 Use props/callbacks for data and event handling instead.
@@ -268,23 +275,28 @@ lint:
 
 ### CI 行为
 
-| 场景 | 结果 |
-|------|------|
-| ✅ 所有架构规则遵守 | Build 通过 |
-| ❌ Backend 违反分层 | Build 失败 (import-linter) |
-| ❌ Frontend 违反分层 | Build 失败 (ESLint) |
+| 场景                 | 结果                             |
+| -------------------- | -------------------------------- |
+| ✅ 所有架构规则遵守  | Build 通过                       |
+| ❌ Backend 违反分层  | Build 失败 (import-linter)       |
+| ❌ Frontend 违反分层 | Build 失败 (ESLint)              |
 | ⚠️ 违规但添加 ignore | Build 通过 (需 code review 审核) |
 
 ### Current Status ✅
 
-**Backend Contracts (import-linter)**:
+**Backend Contracts (import-linter): 3 contracts enforced + 1 temporarily disabled**
+
 - ✅ Domain Layer Independence: KEPT
 - ✅ Application Layer Dependencies: KEPT
 - ✅ Infrastructure Layer Dependencies: KEPT
+- ⏸️ API Layer (Outermost, `layers`): **temporarily disabled** — commented out in `pyproject.toml` ("layers contract temporarily disabled due to import-linter behavior"). Do not enable or delete it without an approved change; the three `forbidden` contracts above remain the enforced set.
 
-The CI workflow runs all three contracts with `poetry run lint-imports`; the output of the current CI run is the validation record.
+The CI workflow runs the enforced contracts with `poetry run lint-imports`; the output of the current CI run is the validation record.
 
-**Documentation enforcement note:** Article V remains a constitutional requirement. The current CI workflow runs Ruff, mypy, ESLint, and Prettier. It does not enforce JSDoc or Python docstring presence, while the existing ESLint JSDoc validation rules for `check-types` and `valid-types` remain enabled.
+**Documentation enforcement note:** Article V remains a constitutional requirement and is now enforced by CI, not only by review:
+
+- Backend: `poetry run pydocstyle server/` runs in `.github/workflows/ci.yml`, so missing or malformed Python docstrings fail the build.
+- Frontend: the ESLint `jsdoc/*` rules are enforced under `--max-warnings=0` from `npm run lint` — `jsdoc/require-jsdoc`, `jsdoc/require-description`, `jsdoc/require-param`, `jsdoc/require-returns` are errors, while `jsdoc/check-types` and `jsdoc/valid-types` run as warnings that the zero-warning budget also turns into failures. `jsdoc/check-param-names` stays off for destructured props, and test files opt out of the presence rules.
 
 ---
 
@@ -339,11 +351,13 @@ poetry run lint-imports
 ### Backend: "Contract broken"
 
 **错误示例:**
+
 ```
 server.domain.entities.task imports server.infrastructure.database
 ```
 
 **修复步骤:**
+
 1. 在 `domain/repositories/` 定义接口
 2. 在 `infrastructure/persistence/` 实现接口
 3. 在 `api/dependencies.py` 注入实现
@@ -351,6 +365,7 @@ server.domain.entities.task imports server.infrastructure.database
 ### Frontend: ESLint "restricted import"
 
 **错误示例:**
+
 ```
 error: Components must not import from features
   src/components/ui/Button.tsx
@@ -358,6 +373,7 @@ error: Components must not import from features
 ```
 
 **修复步骤:**
+
 1. 将 `useTaskLock` 调用移到 `features/` 组件
 2. 通过 props 传递数据到 `components/ui/Button`
 3. 使用回调函数而非直接调用
@@ -368,12 +384,12 @@ error: Components must not import from features
 
 ### 度量指标
 
-| 指标 | 目标 | 当前 | 状态 |
-|------|------|------|------|
-| **Backend Contracts** | 4/4 ✅ | 4/4 | ✅ |
-| **Frontend Rules** | 2/2 ✅ | 2/2 | ✅ |
-| **CI 失败率 (架构)** | 0% | 0% | ✅ |
-| **违规 Ignore 行数** | <5 | 0 | ✅ |
+| 指标                  | 目标                       | 当前                               | 状态 |
+| --------------------- | -------------------------- | ---------------------------------- | ---- |
+| **Backend Contracts** | 3 enforced + 1 disabled ✅ | 3 enforced, 1 temporarily disabled | ✅   |
+| **Frontend Rules**    | 2/2 ✅                     | 2/2                                | ✅   |
+| **CI 失败率 (架构)**  | 0%                         | 0%                                 | ✅   |
+| **违规 Ignore 行数**  | <5                         | 0                                  | ✅   |
 
 ### 审计日志
 
@@ -410,11 +426,13 @@ npm run lint -- --format json > lint-report.json
 ## 🔄 迁移指南 (现有代码)
 
 ### 当前状态
-- ✅ `server/main.py` 已移动到 `server/api/main.py`
+
+- ✅ 应用入口位于 `server/server/api/main.py`（仓库相对路径，包内导入路径 `server.api.main`）
 - ✅ 测试导入已更新: `from server.api.main import app`
 - ✅ 目录结构已创建
 
 ### P1 实现时
+
 1. 创建 `server/domain/entities/task.py`
 2. 创建 `server/application/use_cases/lock_task.py`
 3. 创建 `server/api/routes/tasks.py`

@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Components**:
   - `ManualTriggerButton`: Mode-aware button with loading state
   - `SensoryFeedback`: Orchestrates visual + audio feedback
-  - `SensoryFeedbackDemo`: Interactive demo component for testing
+  - `SensoryFeedbackDemo`: 存在但未挂载（demo 组件仅作为手动验证入口保留，不在 App 布局/路由中渲染）
 - **Testing**:
   - 24 new unit tests for editor components (SimpleEditor, EditorCore)
   - 10 unit tests for `useManualTrigger` hook
@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **App Layout**: Added `SensoryFeedbackDemo` component to main app for testing
+- **App Layout**: 更正前一条历史记录——`SensoryFeedbackDemo` 存在但未挂载，从未加入主应用布局；测试请直接针对组件本身。
 
 ## [0.1.0] - P1 Core Features (2025-11-06)
 

@@ -28,7 +28,11 @@
       "Bash(cd client && npm run lint:*)",
       "Bash(cd client && npm run type-check:*)",
       "Bash(cd client && npm run test:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(poetry run lint-imports:*)",
+      "Bash(poetry run pydocstyle:*)",
+      "Bash(poetry run python check_critical_coverage.py:*)",
+      "Bash(npm run api:check:*)"
     ],
     "deny": [],
     "ask": []

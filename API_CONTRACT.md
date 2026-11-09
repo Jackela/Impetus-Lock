@@ -29,7 +29,7 @@
 ## 🌐 服务器配置 | Server Configuration
 
 ```yaml
-Production:  /  (相对路径，便于网关代理)
+Production: /  (相对路径，便于网关代理)
 Development: http://127.0.0.1:8000/
 ```
 
@@ -44,6 +44,7 @@ Development: http://127.0.0.1:8000/
 健康检查端点，用于监控和负载均衡。
 
 **Response: 200 OK**
+
 ```json
 {
   "status": "ok",
@@ -64,18 +65,19 @@ Development: http://127.0.0.1:8000/
 
 #### 📥 Request Headers
 
-| Header | Required | Type | Description |
-|--------|----------|------|-------------|
-| `Idempotency-Key` | ✅ | string (UUID) | 请求幂等键。相同 key 在冷却窗口内返回相同结果 |
-| `X-Contract-Version` | ✅ | string | 客户端契约版本（必须等于 "2.0.0"） |
-| `Content-Type` | ✅ | string | 必须为 `application/json` |
-| `X-Expected-User-ID` | ✅ | string | 发起请求时由服务器确认的账户 ID，防止其他标签页更换共享 cookie 后执行到另一账户 |
+| Header               | Required | Type          | Description                                                                     |
+| -------------------- | -------- | ------------- | ------------------------------------------------------------------------------- |
+| `Idempotency-Key`    | ✅       | string (UUID) | 请求幂等键。相同 key 在冷却窗口内返回相同结果                                   |
+| `X-Contract-Version` | ✅       | string        | 客户端契约版本（必须等于 "2.0.0"）                                              |
+| `Content-Type`       | ✅       | string        | 必须为 `application/json`                                                       |
+| `X-Expected-User-ID` | ✅       | string        | 发起请求时由服务器确认的账户 ID，防止其他标签页更换共享 cookie 后执行到另一账户 |
 
 所有受保护请求（包括任务、AI、导出所需读取及退出）必须携带 `X-Expected-User-ID`。缺少该头返回 428 `expected_account_required`；与 cookie 认证账户不符返回 409 `account_mismatch`，在 CSRF 和业务执行前停止，不返回另一账户身份或清除其 cookie。匹配账户的错误 CSRF 仍返回 403。首次 `/auth/me` 身份发现可省略该头；若提供则仍须匹配。任务版本冲突的 409 与账户错配分别处理。
 
 任务创建没有新增幂等合同。POST 已发送后，网络中断、5xx 或无法验证完整成功响应均视为结果未知；保留尝试并重新检查，禁止自动重复提交。上述 `Idempotency-Key` 仅适用于已有 AI 行动合同。
 
 **Idempotency-Key 规范:**
+
 - 格式：UUID v4 (例如 `550e8400-e29b-41d4-a716-446655440000`)
 - 长度：8-64 字符
 - 冷却窗口：15 秒（相同 key 在 15 秒内返回缓存结果）
@@ -101,17 +103,18 @@ Development: http://127.0.0.1:8000/
 
 **字段说明 | Field Descriptions:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `context` | string | ✅ | 光标前最后 N 句话。服务端不持久化原文 |
-| `mode` | enum | ✅ | `"muse"` 或 `"loki"` |
-| `mock` | boolean | ❌ | 是否使用模拟数据（用于测试），默认 `false` |
-| `client_meta` | object | ✅ | 客户端编辑器的当前状态，用于后端决策 |
-| `client_meta.doc_version` | integer | ✅ | ProseMirror 文档版本号 (≥0) |
-| `client_meta.selection_from` | integer | ✅ | 选区起始位置 (≥0) |
-| `client_meta.selection_to` | integer | ✅ | 选区结束位置 (≥0) |
+| Field                        | Type    | Required | Description                                |
+| ---------------------------- | ------- | -------- | ------------------------------------------ |
+| `context`                    | string  | ✅       | 光标前最后 N 句话。服务端不持久化原文      |
+| `mode`                       | enum    | ✅       | `"muse"` 或 `"loki"`                       |
+| `mock`                       | boolean | ❌       | 是否使用模拟数据（用于测试），默认 `false` |
+| `client_meta`                | object  | ✅       | 客户端编辑器的当前状态，用于后端决策       |
+| `client_meta.doc_version`    | integer | ✅       | ProseMirror 文档版本号 (≥0)                |
+| `client_meta.selection_from` | integer | ✅       | 选区起始位置 (≥0)                          |
+| `client_meta.selection_to`   | integer | ✅       | 选区结束位置 (≥0)                          |
 
 **Mode 说明:**
+
 - **`muse`**: Agent 在检测到 STUCK 状态时触发（例如 60 秒无输入）
 - **`loki`**: Agent 随机触发，无论用户是否在写作
 
@@ -138,20 +141,20 @@ Development: http://127.0.0.1:8000/
 
 **字段说明 | Field Descriptions:**
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `action` | enum | ✅ | `"provoke"` / `"delete"` / `"rewrite"` |
-| `content` | string | ⚠️ | 纯文本内容（`provoke`/`rewrite` 必填；`delete` 为空） |
-| `source` | enum | ✅ | `"muse"` 或 `"loki"` |
-| `action_id` | string | ✅ | 服务端生成的行动唯一 ID (UUID)，用于幂等和审计 |
-| `issued_at` | string (ISO 8601) | ✅ | 行动发出时间 |
-| `lock_id` | string | ⚠️ | 锁 ID (UUID)，用于前端事务拦截（仅 `provoke`/`rewrite` 时存在） |
-| `anchor` | object | ⚠️ | 目标锚点（`delete`/`rewrite` 必填，`provoke` 可选） |
+| Field       | Type              | Required | Description                                                     |
+| ----------- | ----------------- | -------- | --------------------------------------------------------------- |
+| `action`    | enum              | ✅       | `"provoke"` / `"delete"` / `"rewrite"`                          |
+| `content`   | string            | ⚠️       | 纯文本内容（`provoke`/`rewrite` 必填；`delete` 为空）           |
+| `source`    | enum              | ✅       | `"muse"` 或 `"loki"`                                            |
+| `action_id` | string            | ✅       | 服务端生成的行动唯一 ID (UUID)，用于幂等和审计                  |
+| `issued_at` | string (ISO 8601) | ✅       | 行动发出时间                                                    |
+| `lock_id`   | string            | ⚠️       | 锁 ID (UUID)，用于前端事务拦截（仅 `provoke`/`rewrite` 时存在） |
+| `anchor`    | object            | ⚠️       | 目标锚点（`delete`/`rewrite` 必填，`provoke` 可选）             |
 
 **Response Headers:**
 
-| Header | Type | Description |
-|--------|------|-------------|
+| Header               | Type    | Description                                |
+| -------------------- | ------- | ------------------------------------------ |
 | `X-Cooldown-Seconds` | integer | 建议在多少秒后再次触发 Loki（Muse 可忽略） |
 
 ---
@@ -174,6 +177,7 @@ Development: http://127.0.0.1:8000/
 ```
 
 **客户端处理流程:**
+
 1. 在光标位置插入 `content`（可包裹为 `> content` 以保持 Markdown 引用）
 2. 为插入的内容打上 `lock_id` 标记
 3. 在 ProseMirror `filterTransaction` 中拦截删除此 `lock_id` 的操作
@@ -201,15 +205,20 @@ Development: http://127.0.0.1:8000/
 
 **Anchor Types (锚点类型):**
 
-| Type | Fields | Description |
-|------|--------|-------------|
-| `pos` | `{ "type": "pos", "from": 1250 }` | 单点位置 |
-| `range` | `{ "type": "range", "from": 1245, "to": 1289 }` | 位置范围 |
+| Type      | Fields                                             | Description       |
+| --------- | -------------------------------------------------- | ----------------- |
+| `pos`     | `{ "type": "pos", "from": 1250 }`                  | 单点位置          |
+| `range`   | `{ "type": "range", "from": 1245, "to": 1289 }`    | 位置范围          |
 | `lock_id` | `{ "type": "lock_id", "ref_lock_id": "lock_xxx" }` | 引用已存在的锁 ID |
 
-> **Current implementation:** 服务端对 `delete`/`rewrite` 行动要求 `range` 锚点；`lock_id`/`pos` 锚点当前不会通过验证，需要先在服务端/客户端支持后再使用。
+> **Current implementation（锚点实际支持范围）:**
+>
+> - **服务端只接受 `range`。** `delete`/`rewrite` 行动的 `anchor.type` 必须是 `"range"` 且 `from < to`；`lock_id` 与 `pos` 锚点会被校验拒绝（返回 400/422），不能用。
+> - **客户端当前直接放行。** 前端尚未实现 `lock_id` 锚点定位，收到非 `range` 锚点不会自行解析或替换；因此 `lock_id` 在契约中仅为**保留/未启用**形态。
+> - 如需启用 `lock_id` 锚点，必须先有提案，同时补服务端校验与客户端定位，两侧同步上线。
 
 **客户端处理流程:**
+
 1. 根据 `anchor.type` 定位文档位置
 2. 删除指定范围的内容
 3. 操作**绕过** Undo 栈（用户无法撤销）
@@ -235,6 +244,7 @@ Development: http://127.0.0.1:8000/
 ```
 
 **客户端处理流程:**
+
 1. 使用 `anchor` 删除旧文本
 2. 插入 `content`，并附加 `lock_id`
 3. 触发与 Provoke 相同的锁定与视觉反馈逻辑
@@ -285,8 +295,8 @@ Development: http://127.0.0.1:8000/
 
 **Response Headers:**
 
-| Header | Type | Description |
-|--------|------|-------------|
+| Header        | Type    | Description                      |
+| ------------- | ------- | -------------------------------- |
 | `Retry-After` | integer | 客户端需要等待多少秒才能再次请求 |
 
 ---
@@ -307,7 +317,8 @@ Development: http://127.0.0.1:8000/
 
 ### 幂等键工作原理
 
-1. **客户端生成 UUID:**  
+1. **客户端生成 UUID:**
+
    ```javascript
    const idempotencyKey = crypto.randomUUID(); // 例如 "550e8400-e29b-41d4-a716-446655440000"
    ```
@@ -336,8 +347,9 @@ Development: http://127.0.0.1:8000/
 ProseMirror 文档是**可变的**（用户不断编辑），绝对位置（如 `pos: 1250`）会随着前面的内容变化而失效。
 
 **锚点系统解决方案:**
+
 - **PROVOKE 行动:** 使用 `lock_id` 标记注入的内容，即使文档变化，锁依然可追踪
-- **DELETE 行动:** 使用 `anchor.type="lock_id"` 引用之前注入的锁，精准定位删除目标
+- **DELETE 行动:** 当前使用 `anchor.type="range"`（服务端唯一接受的锚点）。`lock_id` 锚点定位**未启用**：服务端拒绝，客户端直接放行。
 
 ### 锚点类型详解
 
@@ -381,9 +393,9 @@ ProseMirror 文档是**可变的**（用户不断编辑），绝对位置（如 
 }
 ```
 
-**适用场景:** 删除之前 Muse/Loki 注入的**不可删除内容**（Loki 的"恶作剧"）  
-**优势:** `lock_id` 通过 ProseMirror Decoration 跟踪，不受文档变化影响  
-**推荐:** **首选**锚点类型，最稳定
+**适用场景:** 设计意图是删除之前 Muse/Loki 注入的**不可删除内容**（Loki 的"恶作剧"）  
+**优势:**（设计上）`lock_id` 通过 ProseMirror Decoration 跟踪，理论上不受文档变化影响  
+**现状:** **未启用。** 服务端只接受 `range` 锚点并会拒绝 `lock_id`；客户端收到非 `range` 锚点时直接放行，不做定位替换。不要在选择锚点类型时按此类型设计新流程。
 
 ---
 
@@ -392,6 +404,7 @@ ProseMirror 文档是**可变的**（用户不断编辑），绝对位置（如 
 ### 1. Muse Mode - PROVOKE
 
 **Request:**
+
 ```bash
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Content-Type: application/json" \
@@ -408,6 +421,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 ```
 
 **Expected Response (200 OK):**
+
 ```json
 {
   "action": "provoke",
@@ -416,7 +430,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
   "action_id": "act_01j4z3m8a6q3qz2x8j4z3m8a",
   "issued_at": "2025-01-15T10:30:45.123Z",
   "lock_id": "lock_01j4z3m8a6q3qz2x8j4z3m8b",
-  "anchor": {"type": "pos", "from": 1234}
+  "anchor": { "type": "pos", "from": 1234 }
 }
 ```
 
@@ -425,6 +439,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 ### 2. Loki Mode - DELETE
 
 **Request:**
+
 ```bash
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Content-Type: application/json" \
@@ -436,6 +451,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 ```
 
 **Expected Response (200 OK):**
+
 ```json
 {
   "action": "delete",
@@ -451,6 +467,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 ```
 
 **Response Headers:**
+
 ```
 X-Cooldown-Seconds: <30-120 derived from Idempotency-Key>
 ```
@@ -460,6 +477,7 @@ X-Cooldown-Seconds: <30-120 derived from Idempotency-Key>
 ### 3. Idempotency - 重复请求
 
 **Request 1:**
+
 ```bash
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 770e8400-e29b-41d4-a716-446655440002" \
@@ -468,6 +486,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 ```
 
 **Request 2 (15 秒内，相同 Idempotency-Key):**
+
 ```bash
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 770e8400-e29b-41d4-a716-446655440002" \
@@ -483,6 +502,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 ### 4. Validation Error - 422
 
 **Request (无效 mode):**
+
 ```bash
 curl -X POST http://localhost:8000/impetus/generate-intervention \
   -H "Idempotency-Key: 880e8400-e29b-41d4-a716-446655440003" \
@@ -491,6 +511,7 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 ```
 
 **Expected Response (422):**
+
 ```json
 {
   "detail": [
@@ -509,9 +530,9 @@ curl -X POST http://localhost:8000/impetus/generate-intervention \
 
 ### 契约版本历史
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 2.0.0 | 2025-12-04 | 严格契约验证（必填且精确匹配） |
+| Version | Date       | Changes                        |
+| ------- | ---------- | ------------------------------ |
+| 2.0.0   | 2025-12-04 | 严格契约验证（必填且精确匹配） |
 
 ### 客户端版本协商
 
@@ -522,6 +543,7 @@ curl -H "X-Contract-Version: 2.0.0" ...
 ```
 
 **服务端行为:**
+
 - 如果客户端版本 < 服务端最低支持版本 → 返回 `426 Upgrade Required`
 - 如果客户端版本 > 服务端版本 → 返回 `200` 并使用当前版本
 - 如果未提供版本 → 默认使用最新版本
@@ -532,34 +554,32 @@ curl -H "X-Contract-Version: 2.0.0" ...
 
 ### 关键指标
 
+> 指标仅在 `ENABLE_PROMETHEUS_METRICS=1` 时注册并暴露到 `/metrics`；默认关闭时 `/metrics` 返回 404，下列指标不存在。名称以 `server/server/infrastructure/observability/metrics.py` 为准。
+
 **请求指标:**
-- `impetus_intervention_requests_total` (Counter) - 按 mode 和 action 分组
-- `impetus_intervention_duration_seconds` (Histogram) - 响应时间分布
-- `impetus_idempotency_cache_hit_rate` (Gauge) - 幂等缓存命中率
 
-**错误指标:**
-- `impetus_errors_total` (Counter) - 按 HTTP 状态码分组
-- `impetus_llm_failures_total` (Counter) - LLM API 调用失败数
+- `llm_requests_total` (Counter) — LLM 调用总数，labels: `provider`, `model`, `success`
+- `llm_request_latency_seconds` (Histogram) — LLM 调用耗时（秒），labels: `provider`, `model`
+- `interventions_total` (Counter) — 干预行动总数，labels: `mode`, `action_type`
 
-**业务指标:**
-- `impetus_provoke_count` (Counter) - PROVOKE 行动计数
-- `impetus_delete_count` (Counter) - DELETE 行动计数
-- `impetus_average_cooldown_seconds` (Gauge) - 平均冷却时间
+**说明:** 本文档此前列出的 `impetus_*` 指标名（`impetus_intervention_requests_total`、`impetus_intervention_duration_seconds`、`impetus_idempotency_cache_hit_rate`、`impetus_errors_total`、`impetus_llm_failures_total`、`impetus_provoke_count`、`impetus_delete_count`、`impetus_average_cooldown_seconds`）**均未实现**，不作为契约；不要把告警或看板建在这些名字上。
 
 ---
 
 ## 🚨 紧急恢复 | Emergency Recovery
 
-### Revert Token 使用
+### Revert Token 使用 — ⛔ 未开放（NOT AVAILABLE）
 
-（撤销功能暂未开放，仅保留后台审计日志。）
+> **状态: 未开放 / 未实现。** 没有 Revert Token 端点、没有撤销 API、也没有 7 天保留的撤销存储。下方"使用场景"与"存储位置"是**未实现的设计草案**，不属于契约，不得据此实现客户端或运维流程。当前可用的恢复手段只有任务版本历史与干预行动审计记录（`GET /tasks/{task_id}/actions`）。
 
-**使用场景:**
+**（草案，未实现）使用场景:**
+
 - Agent 误删重要内容
 - 需要审计某次行动的原始数据
 - 紧急回滚"恶作剧"行动
 
-**存储位置:**
+**（草案，未实现）存储位置:**
+
 - 后端数据库（例如 Redis）
 - 保留 7 天，自动过期
 
@@ -570,28 +590,34 @@ curl -H "X-Contract-Version: 2.0.0" ...
 用于在前端会话之间保存文稿内容与锁信息，支持乐观锁更新与审计历史。
 
 ### 1) Create Task — `POST /tasks`
+
 - Body: `TaskCreateRequest`（`content`, 可选 `lock_ids`）
 - Response: `201 Created` → `TaskResponse`（包含 `id`, `version`）
 
 ### 2) Get Task — `GET /tasks/{task_id}`
+
 - Response: `200 OK` → `TaskResponse`
 - Errors: `404`（不存在）
 
 ### 3) Update Task — `PUT /tasks/{task_id}`
+
 - Body: `TaskUpdateRequest`（`content`, `lock_ids`, `version`）
 - Response: `200 OK` → `TaskResponse`
 - Errors: `404`（不存在）, `409`（版本冲突，需先 GET 最新）
 
 ### 4) Delete Task — `DELETE /tasks/{task_id}`
+
 - Response: `204 No Content`
 - Errors: `404`（不存在）
 
 ### 5) List Actions — `GET /tasks/{task_id}/actions?limit&offset`
+
 - Response: `200 OK` → `InterventionHistoryResponse`（`total`, `limit`, `offset`, `actions[]`）
 - `actions[].anchor` 复用 `Anchor` 枚举，数值字段保持整数类型
 - Errors: `404`（任务不存在）
 
 ### Schema 摘要
+
 - `TaskResponse`: `id` (uuid), `content` (string), `lock_ids` (string[]), `created_at`, `updated_at` (ISO 8601), `version` (int)
 - `InterventionActionResponse`: `action_type` (`provoke`/`delete`/`rewrite`), `lock_id?`, `content?`, `anchor` (Anchor), `mode` (`muse`/`loki`), `context`, `issued_at`, `created_at`
 - `InterventionHistoryResponse`: `total`, `limit`, `offset`, `actions[]`
@@ -603,12 +629,14 @@ curl -H "X-Contract-Version: 2.0.0" ...
 ### OpenAPI 3.0.3 完整规范
 
 完整的 OpenAPI YAML 规范存储在 `.specify/openapi.yaml`，可用于：
+
 - 自动生成 FastAPI Pydantic 模型
 - 生成客户端 SDK (TypeScript, Python)
 - Postman/Insomnia 导入
 - API 文档自动生成
 
 **导出命令:**
+
 ```bash
 # 从 FastAPI 自动生成 OpenAPI JSON
 curl http://localhost:8000/openapi.json > .specify/openapi.json
