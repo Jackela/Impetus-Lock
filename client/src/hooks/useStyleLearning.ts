@@ -9,7 +9,7 @@
 
 import { useState, useCallback } from "react";
 import { analyzeStyle, StyleAPIError } from "../services/api/styleClient";
-import type { StyleAnalysisResponse } from "../components/StyleLearning/types";
+import type { StyleAnalysisResponse } from "../types/style";
 import { useOptionalAuth } from "../contexts/AuthContext";
 import type { RemoteSession } from "../services/api/remoteSession";
 

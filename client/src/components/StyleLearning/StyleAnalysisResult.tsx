@@ -7,7 +7,7 @@
  * @module components/StyleLearning/StyleAnalysisResult
  */
 
-import type { StyleAnalysisResponse, StyleVector } from "./types";
+import type { StyleAnalysisResponse } from "../../types/style";
 import type { JSX } from "react";
 import "./StyleAnalysisResult.css";
 
@@ -64,8 +64,15 @@ function formatDate(isoString: string): string {
 /**
  * Metric item configuration.
  */
+type MetricKey =
+  | "avg_sentence_length"
+  | "vocab_richness"
+  | "punctuation_density"
+  | "paragraph_length_avg"
+  | "dialogue_ratio";
+
 interface MetricConfig {
-  key: keyof StyleVector;
+  key: MetricKey;
   label: string;
   format: (value: number) => string;
 }
