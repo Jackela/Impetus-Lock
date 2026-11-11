@@ -285,7 +285,10 @@ updates:
       include: "scope"
 
     ignore:
-      # Held majors tracked in #266
+      # Held majors tracked in #266. Python 3.12 -> 3.15 is a minor update,
+      # so the version range must be explicit; semver-major alone does not catch it.
+      - dependency-name: "python"
+        versions: ["3.15"]
       - dependency-name: "python"
         update-types: ["version-update:semver-major"]
 
