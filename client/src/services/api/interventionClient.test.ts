@@ -219,4 +219,49 @@ describe("generateIntervention", () => {
       message: "LLM unavailable",
     });
   });
+
+  it("announces the known task id so the server can record the action", async () => {
+    const fetchSpy = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValue(Response.json({ action: "provoke" }));
+
+    await generateIntervention(baseRequest, { idempotencyKey: "task-known", taskId: "task-123" });
+
+    const init = fetchSpy.mock.calls[0]?.[1];
+    const headers = init?.headers as Record<string, string>;
+    expect(headers["X-Task-Id"]).toBe("task-123");
+    // The rest of the request contract is unchanged.
+    expect(headers["Idempotency-Key"]).toBe("task-known");
+    expect(headers["X-Contract-Version"]).toBe("2.0.0");
+  });
+
+  it.each([undefined, null, "   "] as const)(
+    "sends no task header when the task id is %s",
+    async (taskId) => {
+      const fetchSpy = vi
+        .spyOn(global, "fetch")
+        .mockResolvedValue(Response.json({ action: "provoke" }));
+
+      await generateIntervention(baseRequest, { idempotencyKey: "task-unknown", taskId });
+
+      const init = fetchSpy.mock.calls[0]?.[1];
+      const headers = init?.headers as Record<string, string>;
+      expect(Object.keys(headers)).not.toContain("X-Task-Id");
+    }
+  );
+
+  it.each([triggerMuseIntervention, triggerLokiIntervention])(
+    "forwards the task id from the %s convenience wrapper",
+    async (trigger) => {
+      const fetchSpy = vi
+        .spyOn(global, "fetch")
+        .mockResolvedValue(Response.json({ action: "provoke" }));
+
+      await trigger("context", 4, 1, { taskId: "task-xyz" });
+
+      const init = fetchSpy.mock.calls[0]?.[1];
+      const headers = init?.headers as Record<string, string>;
+      expect(headers["X-Task-Id"]).toBe("task-xyz");
+    }
+  );
 });

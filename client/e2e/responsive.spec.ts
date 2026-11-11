@@ -1,5 +1,25 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
+
+/**
+ * Dismiss the ≤768px task sidebar sheet.
+ *
+ * The sheet marks the header and writing region `inert`, so pointer input on the
+ * editor does nothing until the sheet is closed. The sheet carries its own close
+ * control; the backdrop is the fallback when the sheet itself is hidden.
+ *
+ * @param page - Playwright page instance
+ */
+async function dismissMobileTaskSheet(page: Page) {
+  if ((await page.getByTestId("task-sidebar").count()) === 0) return;
+  const closeButton = page.getByRole("button", { name: "Close task list" });
+  if (await closeButton.isVisible().catch(() => false)) {
+    await closeButton.click();
+  } else {
+    await page.getByTestId("task-sidebar-backdrop").dispatchEvent("click");
+  }
+  await expect(page.getByTestId("task-sidebar")).toHaveCount(0);
+}
 
 /**
  * Responsive Design E2E Tests
@@ -75,13 +95,8 @@ test.describe("Responsive Design - User Story 1: Adaptive Layout", () => {
     // Wait for editor to be ready
     await waitForAppReady(page);
 
-    // Hide task sidebar that may interfere with editor clicks
-    await page.evaluate(() => {
-      const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
-      if (sidebar) {
-        sidebar.style.setProperty("display", "none", "important");
-      }
-    });
+    // Dismiss the mobile sidebar sheet, which makes the editor inert while open
+    await dismissMobileTaskSheet(page);
 
     // Type a very long URL
     const longUrl =
@@ -167,13 +182,8 @@ test.describe("Responsive Design - Device Orientation", () => {
     await page.goto("/");
     await waitForReactHydration(page);
 
-    // Hide task sidebar that may interfere with editor clicks
-    await page.evaluate(() => {
-      const sidebar = document.querySelector('[data-testid="task-sidebar"]') as HTMLElement;
-      if (sidebar) {
-        sidebar.style.setProperty("display", "none", "important");
-      }
-    });
+    // Dismiss the mobile sidebar sheet, which makes the editor inert while open
+    await dismissMobileTaskSheet(page);
 
     // Type some content
     const editor = page.locator('[contenteditable="true"]').first();

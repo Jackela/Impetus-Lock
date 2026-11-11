@@ -1,20 +1,21 @@
 /**
  * Responsive Design Styles for Impetus Lock
  *
- * Mobile-first responsive styles organized by breakpoint:
- * - Mobile: < 768px (default/base styles)
- * - Tablet: 768px - 1023px
- * - Desktop: ≥ 1024px (original desktop styles in App.css)
+ * Breakpoints match the tokens in `styles/variables.css` and the media queries
+ * in `App.css`, so a viewport is only ever described by one rule set:
+ * - Mobile: ≤ 768px
+ * - Tablet: 769px – 1023px
+ * - Desktop: ≥ 1024px (layout lives in App.css)
  *
  * Article I (Simplicity): CSS-only implementation, no JavaScript layout logic
  * Article V (Documentation): All breakpoints and magic numbers documented
  */
 
 /* ============================================================================
-   MOBILE STYLES (< 768px)
+   MOBILE STYLES (≤ 768px)
    ============================================================================ */
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   /* Root container - prevent overflow */
   #root {
     overflow-x: hidden; /* Prevent horizontal scroll */
@@ -27,33 +28,8 @@
     overflow-x: hidden;
   }
 
-  /* Header - responsive layout */
-  .app-header {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 0.75rem 1rem; /* Reduce padding on mobile */
-    gap: 0.75rem;
-  }
-
-  .app-header h1 {
-    font-size: 1.25rem; /* Slightly smaller on mobile */
-  }
-
-  /* Controls - stack vertically or wrap */
-  .controls {
-    width: 100%;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .controls select {
-    flex: 1;
-    min-width: 120px; /* Minimum usable width */
-  }
-
   /* Main content area */
   .app-main {
-    padding: 0.75rem 1rem; /* Reduce padding on mobile */
     overflow-x: hidden;
   }
 
@@ -94,37 +70,33 @@
     padding-left: 1.5rem; /* Reduce indent on mobile */
   }
 
-  /* Buttons - ensure touch target size (WCAG 2.1 AA) */
-  button {
-    min-width: 44px;
+  /* Mode selector - ensure touch target (WCAG 2.1) */
+  .header-mode-select {
     min-height: 44px;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
   }
 
-  /* Mode selector - ensure touch target */
-  .controls select {
+  /* Touch targets are granted per interactive row, never to every button:
+     a global `button { min-height: 44px }` inflated icon buttons, badges, and
+     close controls and pushed the header onto a second line. */
+  .task-list-item-button,
+  .header-menu__item,
+  .header-menu .ui-icon-button,
+  .task-sidebar-state .ui-button,
+  .task-list-empty .ui-button {
     min-height: 44px;
-    padding: 0.75rem 1rem;
   }
 }
 
 /* ============================================================================
-   TABLET STYLES (768px - 1023px)
+   TABLET STYLES (769px - 1023px)
    ============================================================================ */
 
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 769px) and (max-width: 1023px) {
   /* Intermediate typography scale */
   .milkdown {
     font-size: 17px !important; /* Between mobile 18px and desktop 16px */
     line-height: 1.7 !important; /* Between mobile 1.8 and desktop 1.6 */
-  }
-
-  .app-header {
-    padding: 1rem 1.5rem; /* Intermediate padding */
-  }
-
-  .app-main {
-    padding: 1rem 1.5rem;
   }
 }
 

@@ -10,7 +10,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StyleAnalysisResult } from "./StyleAnalysisResult";
-import type { StyleAnalysisResponse } from "./types";
+import type { StyleAnalysisResponse } from "../../types/style";
 
 /** Sample style vector for testing */
 const sampleStyleVector = {

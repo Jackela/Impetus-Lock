@@ -88,7 +88,7 @@ export const AGENT_MODE_META: Record<
   muse: {
     label: "Muse - 严格导师",
     description: "STUCK 检测（60秒）→ 施压注入",
-    color: "#8B5CF6", // Purple
+    color: "#22C55E", // Green — Muse is the "inspiration" agent
   },
   loki: {
     label: "Loki - 混沌恶作剧",

@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { TaskRecord } from "../src/services/api/taskClient";
 import type { DraftSnapshot } from "../src/services/draftStore";
+import { openHeaderMenu, openHeaderDevTools } from "./helpers/waitHelpers";
 
 const API = "http://127.0.0.1:8001";
 const ENDPOINT = "**/impetus/generate-intervention";
@@ -107,6 +108,8 @@ async function caret(text: string, offset: number): Promise<void> {
 
 async function trigger(mode: Mode, index = held.length): Promise<Held> {
   await page.getByTestId("mode-selector").selectOption(mode);
+  // Manual triggers live in the header menu (DEV builds nest them in "Dev tools").
+  await openHeaderDevTools(page);
   if (mode === "muse") await page.getByTestId("manual-trigger-button").click();
   else if (process.env.STORY_FRONTEND_MODE === "preview") {
     // Production has no manual Loki button. Advance its real timer at the browser
@@ -261,12 +264,15 @@ test.beforeEach(async ({ browser }) => {
   page = await context.newPage();
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await ready(page);
-  if (!(await page.getByTestId("task-sidebar").isVisible()))
+  if (!(await page.getByTestId("task-sidebar").isVisible())) {
+    await openHeaderMenu(page);
     await page.getByTestId("task-list-toggle").click();
+  }
   await page.getByTestId(`task-item-${task.id}`).click();
   await expect(page.locator(".ProseMirror h1")).toHaveText("雨夜车站");
   await expect(page.locator(".ProseMirror strong")).toHaveText("旧钥匙");
   await settled();
+  await openHeaderMenu(page);
   await page.getByTestId("llm-settings-trigger").click();
   await page.getByTestId("storage-mode-select").selectOption("session");
   await page.getByTestId("llm-key-input").fill("sk-local-story-http-stub-only");
@@ -409,6 +415,7 @@ test("new Muse response wins when older request completes last", async () => {
   const old = await trigger("muse");
   await page.getByTestId("mode-selector").selectOption("off");
   await page.getByTestId("mode-selector").selectOption("muse");
+  await openHeaderDevTools(page);
   await expect(page.getByTestId("manual-trigger-button")).toBeEnabled();
   const current = await trigger("muse");
   const currentLock = await release(current, "muse", "provoke");

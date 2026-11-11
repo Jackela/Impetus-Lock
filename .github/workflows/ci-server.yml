@@ -1,11 +1,19 @@
 name: CI Server
 
+# Manual-only pipeline. `ci.yml` is the single PR/push gate for this repository;
+# its `Backend Tests` job provisions both PostgreSQL 16 and Redis 7 and runs the
+# whole `tests/` tree, which already covers the unit/integration/service-contract
+# split below. Running this file on every PR duplicated queue time and failure
+# noise. It is kept for on-demand debugging of the backend pipeline in isolation
+# (`gh workflow run ci-server.yml`).
+#
+# Nothing in branch protection references these job names — the required checks
+# are `Lint (Backend + Frontend)`, `Type Check (Backend + Frontend)`,
+# `Backend Tests`, `Frontend Tests` (from ci.yml) and `Playwright E2E Tests`
+# (from e2e.yml). `poetry build` is also gated in ci.yml backend-tests.
+#
+# Do not re-add `push`/`pull_request` triggers.
 on:
-  push:
-    paths: ["server/**", ".github/workflows/ci-server.yml"]
-  pull_request:
-    branches: ["main"]
-    paths: ["server/**", ".github/workflows/ci-server.yml"]
   workflow_dispatch:
 
 env:

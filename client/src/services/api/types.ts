@@ -1,67 +1,14 @@
 /**
  * Style Learning API Types
  *
- * Shared type definitions for the Style Learning feature.
- * These types are used across the services layer and re-exported
- * from the components layer.
+ * The interfaces live in the neutral `types/style` module so components and
+ * services share one definition without a component→service import. This file
+ * remains the services-layer entry point for existing imports.
  *
  * @module services/api/types
  */
 
 /**
- * Style vector representing analyzed writing style characteristics.
- * All properties are optional to allow for partial analysis results
- * and future extensibility.
+ * Re-exports the neutral style interfaces for services-layer consumers.
  */
-export interface StyleVector {
-  /** Average sentence length in words */
-  avg_sentence_length?: number;
-  /** Vocabulary richness (unique words / total words) */
-  vocab_richness?: number;
-  /** Punctuation density (punctuation marks / total characters) */
-  punctuation_density?: number;
-  /** Average paragraph length in sentences */
-  paragraph_length_avg?: number;
-  /** Ratio of dialogue to narrative text */
-  dialogue_ratio?: number;
-  /** Text complexity level (0-1) */
-  complexity?: number;
-  /** Emotional intensity (0-1) */
-  emotion?: number;
-  /** Formality level (0-1) */
-  formality?: number;
-  /** Descriptiveness level (0-1) */
-  descriptiveness?: number;
-  /** Writing rhythm score (0-1) */
-  rhythm?: number;
-  /** Allow additional numeric properties for extensibility */
-  [key: string]: number | undefined;
-}
-
-/**
- * Response from style analysis endpoint.
- */
-export interface StyleAnalysisResponse {
-  /** User identifier for the analyzed style */
-  user_id: string;
-  /** Analyzed style vector */
-  style_vector: StyleVector;
-  /** Confidence score of the analysis (0-1) */
-  confidence: number;
-  /** ISO timestamp of analysis */
-  analyzed_at: string;
-}
-
-/**
- * Response from style application endpoint.
- */
-export interface StyleApplyResponse {
-  /** Text transformed with the user's style */
-  transformed_text: string;
-  /** User ID whose style was applied */
-  style_user_id: string;
-  /** Intensity of style application (0-1) */
-  intensity: number;
-  /** ISO timestamp of transformation */
-  applied_at: string;
-}
+export type { StyleApplyResponse, StyleAnalysisResponse, StyleVector } from "../../types/style";

@@ -4,15 +4,15 @@ This directory contains feature specifications following the Spec-Driven Develop
 
 ## Specification Index
 
-| ID | Feature | Status | Priority | Description |
-|----|---------|--------|----------|-------------|
-| 001 | [Impetus Core](001-impetus-core/) | ✅ Complete | P1 | Core un-deletable constraint system |
-| 002 | [Vibe Enhancements](002-vibe-enhancements/) | ✅ Complete | P2 | Manual trigger, sensory feedback |
-| 003 | [Vibe Completion](003-vibe-completion/) | ✅ Complete | P3 | API error feedback, animation queue |
-| 004 | [E2E Workflow Fix](004-fix-e2e-workflow/) | ✅ Complete | - | CI/CD pipeline fixes |
-| 005 | [Markdown Toolbar](005-markdown-toolbar/) | ✅ Complete | P4 | Floating formatting toolbar |
-| 006 | [Responsive Design](006-responsive-design/) | ✅ Complete | P4 | Mobile-friendly layout |
-| 007 | [Chrome DevTools Audit](007-chrome-devtools-audit/) | 🔄 In Progress | - | Performance audit |
+| ID  | Feature                                             | Status      | Priority | Description                             |
+| --- | --------------------------------------------------- | ----------- | -------- | --------------------------------------- |
+| 001 | [Impetus Core](001-impetus-core/)                   | ✅ Complete | P1       | Core un-deletable constraint system     |
+| 002 | [Vibe Enhancements](002-vibe-enhancements/)         | ✅ Complete | P2       | Manual trigger, sensory feedback        |
+| 003 | [Vibe Completion](003-vibe-completion/)             | ✅ Complete | P3       | API error feedback, animation queue     |
+| 004 | [E2E Workflow Fix](004-fix-e2e-workflow/)           | ✅ Complete | -        | CI/CD pipeline fixes                    |
+| 005 | [Markdown Toolbar](005-markdown-toolbar/)           | ✅ Complete | P4       | Floating formatting toolbar             |
+| 006 | [Responsive Design](006-responsive-design/)         | ✅ Complete | P4       | Mobile-friendly layout                  |
+| 007 | [Chrome DevTools Audit](007-chrome-devtools-audit/) | ✅ Complete | -        | Performance audit（见 `COMPLETION.md`） |
 
 ## Specification Structure
 

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForReactHydration, waitForAppReady } from "./helpers/waitHelpers";
+import { waitForReactHydration, waitForAppReady, openHeaderDevTools } from "./helpers/waitHelpers";
 import {
   insertLockedContent,
   attemptDeleteLocked,
@@ -71,10 +71,11 @@ test.describe("Sensory Feedback", () => {
 
     const feedbackElement = page.locator('[data-testid="sensory-feedback"]');
     const modeSelector = page.locator('[data-testid="mode-selector"]');
-    const manualTrigger = page.locator('[data-testid="manual-trigger-button"]');
 
-    // Set Muse mode and trigger Provoke action
+    // Set Muse mode, then open the header menu's DEV "Dev tools" region
     await modeSelector.selectOption("muse");
+    await openHeaderDevTools(page);
+    const manualTrigger = page.locator('[data-testid="manual-trigger-button"]');
     await manualTrigger.click();
 
     // Verify Glitch animation appears
@@ -157,11 +158,12 @@ test.describe("Sensory Feedback", () => {
     await waitForAppReady(page);
 
     const feedbackElement = page.locator('[data-testid="sensory-feedback"]');
-    const manualTrigger = page.locator('[data-testid="manual-trigger-button"]');
     const modeSelector = page.locator('[data-testid="mode-selector"]');
 
     // Set Muse mode for PROVOKE
     await modeSelector.selectOption("muse");
+    await openHeaderDevTools(page);
+    const manualTrigger = page.locator('[data-testid="manual-trigger-button"]');
 
     // Trigger first action (PROVOKE via manual button)
     await manualTrigger.click();

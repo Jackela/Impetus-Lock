@@ -1,8 +1,11 @@
 # achievements Specification
 
 ## Purpose
-TBD - created by archiving change sprint-3-gamification. Update Purpose after archive.
+
+Rewards writing milestones with an achievement system: definitions, per-user earned status and timestamps, and awarding when a milestone such as "100 tasks created" is reached.
+
 ## Requirements
+
 ### Requirement: Achievement System
 
 The system SHALL provide an achievement system to reward users for writing milestones.
@@ -30,4 +33,3 @@ The system SHALL support multiple achievement categories.
 
 - **WHEN** the system initializes achievement definitions
 - **THEN** it MUST include Task Milestones, Writing Streaks, Intervention Types, and Special categories
-

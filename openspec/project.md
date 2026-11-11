@@ -93,7 +93,7 @@ Components (UI) → Hooks (Logic) → Services (API)
 - **Main Branch**: `main` (protected, requires PR)
 - **Feature Branches**: `feature/<description>`
 - **Fix Branches**: `fix/<description>`
-- **PRD Branches**: Named in `prd.json` (e.g., `feat/muse-mode`)
+- **PRD Branches**: `prd.json` is retired; the last copy is archived at `docs/archive/2026-11/prd.json` and is history, not an active plan. New branch names come from the approved OpenSpec change id.
 
 #### Commit Convention
 

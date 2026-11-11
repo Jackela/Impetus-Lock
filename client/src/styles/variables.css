@@ -4,6 +4,12 @@
  * Inspired by ElevenLabs: Dark Cinematic UI, Audio-Waveform Aesthetics.
  * See DESIGN.md for the full design system specification.
  *
+ * Color policy — single accent: green; purple is forbidden.
+ * `--color-accent` (#22C55E) is the only accent hue in the product. The violet
+ * and indigo values this palette used to ship are not permitted in any
+ * stylesheet: use `--color-accent` for interactive/focus emphasis and the
+ * semantic tokens (danger / warning / info) for status.
+ *
  * Breakpoint Strategy:
  * - Mobile:  < 640px
  * - Tablet:  640px – 1023px
@@ -18,10 +24,19 @@
   --color-bg-sunken: #080808;
   --color-bg-overlay: rgba(0, 0, 0, 0.85);
 
+  /* Surface hierarchy aliases (raised → elevated) */
+  --color-surface-1: #0a0a0a;
+  --color-surface-2: #111111;
+  --color-surface-3: #1a1a1a;
+
   /* ─── Text ──────────────────────────────────────────────── */
   --color-text-primary: #fafafa;
   --color-text-secondary: #a1a1aa;
-  --color-text-muted: #52525b;
+  /* Tertiary sits between secondary and muted: icons, meta captions.
+     Must stay ≥4.5:1 on #0a0a0a (5.7:1 at #8a8a94). */
+  --color-text-tertiary: #8a8a94;
+  /* Muted must stay ≥4.5:1 on #0a0a0a for placeholders/disabled text */
+  --color-text-muted: #7c7c88;
   --color-text-inverted: #0a0a0a;
 
   /* ─── Borders ───────────────────────────────────────────── */
@@ -42,6 +57,10 @@
   --color-warning: #f59e0b;
   --color-warning-dim: rgba(245, 158, 11, 0.15);
   --color-info: #3b82f6;
+  --color-info-dim: rgba(59, 130, 246, 0.15);
+  /* Success stays in the green family — the accent is the only "good" hue */
+  --color-success: #22c55e;
+  --color-success-dim: rgba(34, 197, 94, 0.12);
 
   /* ─── Agent Palette ─────────────────────────────────────── */
   /* Muse — inspiration, creative pressure (green) */
@@ -51,6 +70,7 @@
   --color-muse-icon: #86efac;
 
   /* Loki — chaos, deletion (red) */
+  --color-loki: #ef4444;
   --color-loki-accent: #ef4444;
   --color-loki-border: rgba(239, 68, 68, 0.5);
   --color-loki-background: rgba(239, 68, 68, 0.08);
@@ -61,6 +81,10 @@
   --color-lock-border: rgba(245, 158, 11, 0.5);
   --color-lock-background: rgba(245, 158, 11, 0.06);
   --color-lock-icon: #fde68a;
+
+  /* ─── Loading / Skeleton ────────────────────────────────── */
+  --color-skeleton-base: #1f1f1f;
+  --color-skeleton-highlight: #2a2a2a;
 
   /* ─── Shadows ───────────────────────────────────────────── */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
@@ -83,8 +107,11 @@
   --space-16: 64px;
 
   /* ─── Typography ────────────────────────────────────────── */
-  --font-sans: "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+  /* System stack only: no webfont request on first paint (see index.css). */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --text-xs: 11px;
   --text-sm: 13px;
@@ -93,6 +120,8 @@
   --text-xl: 20px;
   --text-2xl: 24px;
   --text-3xl: 30px;
+  /* Hero/brand moments only — never for body copy */
+  --text-display: 38px;
 
   /* ─── Radius ────────────────────────────────────────────── */
   --radius-sm: 4px;

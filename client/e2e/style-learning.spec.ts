@@ -8,11 +8,15 @@
  * - Results display
  * - Error handling
  *
+ * The header `Style` command lives in the `⋯` overflow menu, which unmounts
+ * after every command — so it must be re-opened before each interaction or
+ * assertion that targets `style-learning-toggle`.
+ *
  * @module e2e/style-learning.spec
  */
 
 import { test, expect } from "@playwright/test";
-import { waitForAppReady } from "./helpers/waitHelpers";
+import { waitForAppReady, openHeaderMenu } from "./helpers/waitHelpers";
 
 test.describe("Style Learning", () => {
   test.beforeEach(async ({ page }) => {
@@ -21,19 +25,21 @@ test.describe("Style Learning", () => {
   });
 
   test("should display Style Learning toggle button", async ({ page }) => {
-    // Find the Style Learning toggle button in header
+    // The Style command lives inside the header overflow menu.
+    await openHeaderMenu(page);
+
     const styleToggle = page.getByTestId("style-learning-toggle");
     await expect(styleToggle).toBeVisible();
 
-    // Verify button text
+    // Verify menu item text
     await expect(styleToggle).toContainText("Style");
   });
 
   test("should open Style Learning panel when toggle is clicked", async ({ page }) => {
-    const styleToggle = page.getByTestId("style-learning-toggle");
+    await openHeaderMenu(page);
 
     // Click the toggle
-    await styleToggle.click();
+    await page.getByTestId("style-learning-toggle").click();
 
     // Verify overlay appears
     const overlay = page.getByTestId("style-learning-overlay");
@@ -47,8 +53,8 @@ test.describe("Style Learning", () => {
 
   test("should close Style Learning panel when close button is clicked", async ({ page }) => {
     // Open the panel
-    const styleToggle = page.getByTestId("style-learning-toggle");
-    await styleToggle.click();
+    await openHeaderMenu(page);
+    await page.getByTestId("style-learning-toggle").click();
 
     const overlay = page.getByTestId("style-learning-overlay");
     await expect(overlay).toBeVisible();
@@ -63,8 +69,8 @@ test.describe("Style Learning", () => {
 
   test("should display input form with word count validation", async ({ page }) => {
     // Open the panel
-    const styleToggle = page.getByTestId("style-learning-toggle");
-    await styleToggle.click();
+    await openHeaderMenu(page);
+    await page.getByTestId("style-learning-toggle").click();
 
     const form = page.getByTestId("style-input-form");
     await expect(form).toBeVisible();
@@ -90,8 +96,8 @@ test.describe("Style Learning", () => {
 
   test("should enable submit button with sufficient words", async ({ page }) => {
     // Open the panel
-    const styleToggle = page.getByTestId("style-learning-toggle");
-    await styleToggle.click();
+    await openHeaderMenu(page);
+    await page.getByTestId("style-learning-toggle").click();
 
     const form = page.getByTestId("style-input-form");
     const textarea = form.locator("textarea");
@@ -111,8 +117,8 @@ test.describe("Style Learning", () => {
 
   test("should close panel when clicking outside modal", async ({ page }) => {
     // Open the panel
-    const styleToggle = page.getByTestId("style-learning-toggle");
-    await styleToggle.click();
+    await openHeaderMenu(page);
+    await page.getByTestId("style-learning-toggle").click();
 
     const overlay = page.getByTestId("style-learning-overlay");
     await expect(overlay).toBeVisible();
@@ -126,8 +132,8 @@ test.describe("Style Learning", () => {
 
   test("should display minimum word requirement hint", async ({ page }) => {
     // Open the panel
-    const styleToggle = page.getByTestId("style-learning-toggle");
-    await styleToggle.click();
+    await openHeaderMenu(page);
+    await page.getByTestId("style-learning-toggle").click();
 
     const form = page.getByTestId("style-input-form");
     await expect(form).toContainText("500 words");
@@ -141,6 +147,8 @@ test.describe("Style Learning - Toggle State", () => {
   });
 
   test("should toggle button active state when clicked", async ({ page }) => {
+    // The menu item only exists while the menu is open.
+    await openHeaderMenu(page);
     const styleToggle = page.getByTestId("style-learning-toggle");
 
     // Initially not active
@@ -148,33 +156,36 @@ test.describe("Style Learning - Toggle State", () => {
 
     // Click to activate
     await styleToggle.click();
-    await expect(styleToggle).toHaveClass(/active/);
 
     // Verify panel is open
     const overlay = page.getByTestId("style-learning-overlay");
     await expect(overlay).toBeVisible();
 
-    // Close via close button (since overlay blocks toggle)
+    // Close via the panel's close button (the menu closed on click, and the
+    // panel marks the app root inert, so re-open the menu afterwards).
     const closeButton = overlay.locator(".close-button");
     await closeButton.click();
+    await expect(overlay).not.toBeVisible({ timeout: 3000 });
 
-    // Verify toggle is no longer active
-    await expect(styleToggle).not.toHaveClass(/active/);
+    await openHeaderMenu(page);
+    await expect(page.getByTestId("style-learning-toggle")).not.toHaveClass(/active/);
   });
 
   test("should deactivate toggle when panel is closed", async ({ page }) => {
-    const styleToggle = page.getByTestId("style-learning-toggle");
-
     // Open panel
-    await styleToggle.click();
-    await expect(styleToggle).toHaveClass(/active/);
+    await openHeaderMenu(page);
+    await page.getByTestId("style-learning-toggle").click();
+
+    const overlay = page.getByTestId("style-learning-overlay");
+    await expect(overlay).toBeVisible();
 
     // Close via close button
-    const overlay = page.getByTestId("style-learning-overlay");
     const closeButton = overlay.locator(".close-button");
     await closeButton.click();
+    await expect(overlay).not.toBeVisible({ timeout: 3000 });
 
     // Verify toggle is no longer active
-    await expect(styleToggle).not.toHaveClass(/active/);
+    await openHeaderMenu(page);
+    await expect(page.getByTestId("style-learning-toggle")).not.toHaveClass(/active/);
   });
 });

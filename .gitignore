@@ -27,6 +27,9 @@ Thumbs.db
 
 # AI tooling
 .claude/commands/
+.dsh-code-index/
+.commandcode/
+.zcode/
 .specify/
 .tools/
 
@@ -91,6 +94,9 @@ server/server/infrastructure/llm/prompts/generated_templates.py
 # Generated local browser authentication (never commit session cookies)
 client/e2e/storage-state.generated.json
 
-# Private authenticated-editor safety evidence and runtime credentials
-/.scratch/authenticated-editor-safety-2026-10-11/
-/.scratch/authenticated-editor-integration-2026-10-12/
+# Private safety evidence, scratch notes and runtime credentials
+.scratch/
+
+# Client-side audit/verification artifacts
+client/audit-screenshots/
+client/e2e-results/

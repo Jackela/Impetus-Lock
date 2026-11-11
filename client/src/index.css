@@ -1,7 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
-
 :root {
-  font-family: var(--font-sans, "Inter", system-ui, sans-serif);
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   line-height: 1.5;
   font-weight: 400;
   color-scheme: dark;
@@ -130,7 +128,7 @@ select:focus {
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--color-text-muted, #52525b);
+  color: var(--color-text-muted, #7c7c88);
 }
 
 kbd {

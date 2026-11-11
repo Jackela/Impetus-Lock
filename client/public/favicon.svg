@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Impetus Lock">
+  <rect width="32" height="32" rx="8" fill="#0a0a0a" />
+  <path
+    d="M11 14.5v-3.2a5 5 0 0 1 10 0v3.2"
+    fill="none"
+    stroke="#22c55e"
+    stroke-width="2.4"
+    stroke-linecap="round"
+  />
+  <rect x="7.5" y="14.5" width="17" height="12" rx="3" fill="#22c55e" />
+  <g fill="#0a0a0a">
+    <rect x="11.6" y="18.6" width="1.9" height="4" rx="0.95" />
+    <rect x="15.05" y="17" width="1.9" height="7.2" rx="0.95" />
+    <rect x="18.5" y="18.6" width="1.9" height="4" rx="0.95" />
+  </g>
+</svg>

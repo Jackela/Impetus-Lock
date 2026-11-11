@@ -3,16 +3,64 @@ Security tests for Impetus Lock.
 
 This module tests input validation, authorization, and other security-critical features.
 
-Note: Many tests are placeholders pending implementation of auth and API endpoints.
-Add pytest-asyncio to dev dependencies when implementing async tests:
-    poetry add --group dev pytest-asyncio
+The authorization tests run against the real authentication middleware: no
+TESTING bypass, real registration cookies, real per-user task ownership.
 """
 
+from collections.abc import AsyncIterator
 from datetime import UTC
 from typing import Any
 from uuid import uuid4
 
 import pytest
+from httpx import AsyncClient
+
+JWT_SECRET = "security-suite-test-secret-only-32bytes"
+
+
+@pytest.fixture
+async def anonymous_client(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[AsyncClient]:
+    """Client without an access_token cookie while auth is enforced."""
+    from httpx import ASGITransport
+
+    from server.api.main import app
+
+    monkeypatch.delenv("TESTING", raising=False)
+    monkeypatch.setenv("JWT_SECRET", JWT_SECRET)
+    transport = ASGITransport(app=app, client=(f"security-anon-{uuid4()}", 1234))
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        yield client
+
+
+@pytest.fixture
+async def authenticated_lock_clients(
+    monkeypatch: pytest.MonkeyPatch,
+) -> AsyncIterator[tuple[AsyncClient, AsyncClient]]:
+    """Two cookie-authenticated clients: a task owner and an unrelated account."""
+    from httpx import ASGITransport
+
+    from server.api.main import app
+
+    monkeypatch.delenv("TESTING", raising=False)
+    monkeypatch.setenv("JWT_SECRET", JWT_SECRET)
+    transport = ASGITransport(app=app, client=(f"security-auth-{uuid4()}", 1234))
+    async with (
+        AsyncClient(transport=transport, base_url="http://test") as owner,
+        AsyncClient(transport=transport, base_url="http://test") as stranger,
+    ):
+        for client in (owner, stranger):
+            registered = await client.post(
+                "/auth/register",
+                json={
+                    "email": f"security-{uuid4()}@example.com",
+                    "password": "securePassword123",
+                },
+            )
+            assert registered.status_code == 201
+            client.headers["X-CSRF-Token"] = client.cookies["csrf_token"]
+            client.headers["X-Expected-User-ID"] = registered.json()["user"]["id"]
+            assert (await client.get("/auth/me")).status_code == 200
+        yield owner, stranger
 
 
 class TestTaskInputValidation:
@@ -295,17 +343,25 @@ class TestLockSecurity:
         assert "outer" in lock_ids
         assert "inner" in lock_ids
 
-    @pytest.mark.skip(reason="Authentication system not yet implemented - tracked as Issue #XXX")
-    @pytest.mark.asyncio
-    async def test_cannot_delete_lock_without_permission(self) -> None:
-        """Placeholder: Lock deletion should require proper authorization.
+    async def test_cannot_delete_lock_without_permission(
+        self, authenticated_lock_clients: tuple[AsyncClient, AsyncClient]
+    ) -> None:
+        """A foreign account cannot delete a lock-bearing task; the owner can."""
+        owner, stranger = authenticated_lock_clients
+        created = await owner.post(
+            "/tasks/",
+            json={"content": '<div data-lock-id="lock_abc">Locked</div>', "lock_ids": ["lock_abc"]},
+        )
+        assert created.status_code == 201
+        task_id = created.json()["id"]
 
-        This test validates that users cannot delete locks belonging to others.
-        Requires: Authentication system implementation.
-        Tracked as Issue #XXX: Authorization for lock management.
-        """
-        # Implementation pending authentication system
-        pass
+        rejected = await stranger.delete(f"/tasks/{task_id}")
+        assert rejected.status_code == 404
+        assert (await owner.get(f"/tasks/{task_id}")).status_code == 200
+
+        removed = await owner.delete(f"/tasks/{task_id}")
+        assert removed.status_code == 204
+        assert (await owner.get(f"/tasks/{task_id}")).status_code == 404
 
 
 class TestContentSanitization:
@@ -372,20 +428,66 @@ class TestContentSanitization:
                 validate_lock_id(invalid_id)
 
 
-class TestAuthorizationPlaceholders:
-    """Placeholders for authorization tests when auth is implemented."""
+class TestAuthorization:
+    """Authorization behaviour of the lock/task routes under real authentication."""
 
-    @pytest.mark.skip(reason="Authentication not implemented")
-    def test_authenticated_user_can_create_lock(self) -> None:
-        """Authenticated user should be able to create locks."""
-        pass
+    async def test_authenticated_user_can_create_lock(
+        self, authenticated_lock_clients: tuple[AsyncClient, AsyncClient]
+    ) -> None:
+        """An authenticated account can create and read back its locked blocks."""
+        owner, _ = authenticated_lock_clients
+        created = await owner.post(
+            "/tasks/",
+            json={"content": '<div data-lock-id="lock_own">Owned</div>', "lock_ids": ["lock_own"]},
+        )
+        assert created.status_code == 201
+        body = created.json()
+        assert body["lock_ids"] == ["lock_own"]
 
-    @pytest.mark.skip(reason="Authentication not implemented")
-    def test_unauthenticated_user_cannot_create_lock(self) -> None:
-        """Unauthenticated user should not be able to create locks."""
-        pass
+        fetched = await owner.get(f"/tasks/{body['id']}")
+        assert fetched.status_code == 200
+        assert fetched.json()["lock_ids"] == ["lock_own"]
 
-    @pytest.mark.skip(reason="Authentication not implemented")
-    def test_user_can_only_delete_own_locks(self) -> None:
-        """User should only be able to delete locks they created."""
-        pass
+    async def test_unauthenticated_user_cannot_create_lock(
+        self, anonymous_client: AsyncClient
+    ) -> None:
+        """Without an access_token cookie the create route answers 401."""
+        response = await anonymous_client.post(
+            "/tasks/",
+            json={"content": "anonymous", "lock_ids": ["lock_anon"]},
+        )
+        assert response.status_code == 401
+
+    async def test_user_can_only_delete_own_locks(
+        self, authenticated_lock_clients: tuple[AsyncClient, AsyncClient]
+    ) -> None:
+        """Foreign deletion is refused with the ownership contract status."""
+        owner, stranger = authenticated_lock_clients
+        created = await owner.post(
+            "/tasks/",
+            json={"content": '<div data-lock-id="lock_mine">Mine</div>', "lock_ids": ["lock_mine"]},
+        )
+        assert created.status_code == 201
+        task_id = created.json()["id"]
+
+        forbidden = await stranger.delete(f"/tasks/{task_id}")
+        assert forbidden.status_code == 404
+        assert (await stranger.get(f"/tasks/{task_id}")).status_code == 404
+        assert (await owner.get(f"/tasks/{task_id}")).status_code == 200
+
+    async def test_unauthenticated_requests_are_rejected(
+        self, anonymous_client: AsyncClient
+    ) -> None:
+        """Every authenticated route answers 401 without a session cookie."""
+        task_id = uuid4()
+        requests = [
+            ("GET", "/tasks/", None),
+            ("POST", "/tasks/", {"content": "anonymous", "lock_ids": []}),
+            ("GET", f"/tasks/{task_id}", None),
+            ("PUT", f"/tasks/{task_id}", {"content": "x", "lock_ids": [], "version": 0}),
+            ("DELETE", f"/tasks/{task_id}", None),
+            ("GET", f"/tasks/{task_id}/actions", None),
+        ]
+        for method, path, payload in requests:
+            response = await anonymous_client.request(method, path, json=payload)
+            assert response.status_code == 401, (method, path, response.status_code)

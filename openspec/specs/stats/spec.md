@@ -1,8 +1,11 @@
 # stats Specification
 
 ## Purpose
-TBD - created by archiving change sprint-3-gamification. Update Purpose after archive.
+
+Gives each authenticated writer aggregated writing statistics — tasks, interventions, writing minutes and locks created — overall and per day/week/month, including the intervention breakdown.
+
 ## Requirements
+
 ### Requirement: User Statistics
 
 The system SHALL provide user statistics for writing analytics.
@@ -30,4 +33,3 @@ The system SHALL track user writing statistics.
 
 - **WHEN** user performs writing activities
 - **THEN** the system MUST record total tasks, interventions, writing time, locks created, and average tasks per day
-

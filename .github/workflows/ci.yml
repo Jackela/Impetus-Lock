@@ -1,5 +1,16 @@
 name: CI
 
+# Single PR/push gate for the repository.
+#
+# `ci-client.yml` and `ci-server.yml` used to run the same suites again on every
+# PR (duplicated queue time and duplicated failure noise). They are now
+# `workflow_dispatch`-only debug entry points; their unique steps (client build,
+# `poetry build`) were folded in here. Branch protection requires the job names
+# below, so do not rename them.
+#
+# Python: 3.12 everywhere (matches server/Dockerfile.prod). The declared
+# support floor is still ^3.11 in server/pyproject.toml; that floor is covered
+# by test-matrix.yml, not by this gate.
 permissions:
   contents: read
 
@@ -46,10 +57,10 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.sha }}
 
       # Backend lint
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install Poetry
         run: |
@@ -124,10 +135,10 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.sha }}
 
       # Backend type check
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install Poetry
         run: |
@@ -249,6 +260,12 @@ jobs:
         working-directory: ./server
         run: poetry run python check_critical_coverage.py
 
+      # Carried over from ci-server.yml (now dispatch-only): packaging must not
+      # regress silently.
+      - name: Build backend package
+        working-directory: ./server
+        run: poetry build
+
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
@@ -282,3 +299,62 @@ jobs:
       - name: Run Vitest unit tests
         working-directory: ./client
         run: npm run test -- --coverage
+
+      # Carried over from ci-client.yml (now dispatch-only): keep the production
+      # build gate on PRs.
+      - name: Build production bundle
+        working-directory: ./client
+        run: npm run build
+
+  # Non-executable contracts: generated API types must match the server schema,
+  # and the OpenSpec corpus must stay strictly valid.
+  validate:
+    name: Validate (API Types + OpenSpec)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+          cache: "npm"
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./client
+        run: npm ci
+
+      # `npm run api:check` imports the FastAPI app offline, so the Python
+      # dependency graph must be present even though this job does not run the
+      # backend test suite.
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: |
+          python -m pip install poetry
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: poetry install --no-interaction
+
+      - name: Check generated API types are up to date
+        working-directory: ./client
+        run: npm run api:check
+
+      # Pinned to the CLI version used by the repository docs
+      # (docs/maintenance/muse-loki-stories.md); `latest` would make the gate
+      # non-deterministic.
+      - name: Validate OpenSpec corpus (strict)
+        run: >-
+          npm exec --yes --package=@fission-ai/openspec@1.16.1 --
+          openspec validate --all --strict --no-interactive
+

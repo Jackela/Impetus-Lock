@@ -151,6 +151,14 @@ interface EditorCoreProps {
    * When this changes, the editor will update its content but keep state.
    */
   contentVersion?: number;
+  /**
+   * Server task the editor content belongs to, when one is known.
+   *
+   * Forwarded as `X-Task-Id` on Muse/Loki interventions so the generated action is
+   * recorded under `GET /tasks/{id}/actions`. Local drafts without a server task
+   * pass `null`, which keeps the request header-free (unchanged behavior).
+   */
+  taskId?: string | null;
 }
 
 // Create logger instance for EditorCore namespace
@@ -171,6 +179,7 @@ const logger = createLogger("EditorCore");
  * @param root0.onTimerUpdate - Callback with remaining seconds in Muse mode
  * @param root0.onInterventionError - Callback surfacing intervention errors to parent UI
  * @param root0.contentVersion - Counter triggering content updates without remounting
+ * @param root0.taskId - Server task id forwarded as `X-Task-Id`, or null when unknown
  * @param root0.session - Current remote authorization or null for local writing
  * @param root0.requestIdentity - Stable identity of the current account draft
  * @param root0.onRecoveryError - Callback reporting unsafe draft recovery
@@ -190,6 +199,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   session,
   requestIdentity,
   onRecoveryError,
+  taskId,
 }) => {
   // Get LockManager from context (DIP - Article IV)
   const lockManager = useLockManager();
@@ -201,17 +211,18 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
   );
   const onRecoveryErrorRef = useRef(onRecoveryError);
   const mountedRef = useRef(true);
-  const requestContextRef = useRef({ session, requestIdentity, mode, modeGeneration: 0 });
+  const requestContextRef = useRef({ session, requestIdentity, mode, taskId, modeGeneration: 0 });
   useLayoutEffect(() => {
     const previous = requestContextRef.current;
     requestContextRef.current = {
       session,
       requestIdentity,
       mode,
+      taskId,
       modeGeneration: previous.modeGeneration + (previous.mode === mode ? 0 : 1),
     };
     onRecoveryErrorRef.current = onRecoveryError;
-  }, [session, requestIdentity, mode, onRecoveryError]);
+  }, [session, requestIdentity, mode, taskId, onRecoveryError]);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -458,6 +469,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         {
           session: captured.session,
           selectionFrom: requestState.selection.from,
+          taskId: captured.taskId,
         }
       );
       if (!isCurrentResponse()) return;
@@ -562,6 +574,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         {
           session: captured.session,
           selectionFrom: requestState.selection.from,
+          taskId: captured.taskId,
         }
       );
       if (!isCurrentResponse()) return;
@@ -853,8 +866,10 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       // T014: Expose editor instance for FloatingToolbar
       setEditorInstance(editor);
 
-      // TESTING: Expose lockManager, editor, and helpers to window for E2E tests
-      if (typeof window !== "undefined") {
+      // TESTING: Expose lockManager, editor, and helpers to window for E2E tests.
+      // `import.meta.env.DEV` is statically false in a production build, so this
+      // whole test surface is compiled out instead of shipping to real users.
+      if (import.meta.env.DEV && typeof window !== "undefined") {
         const testWindow = window as Window & typeof globalThis;
         testWindow.lockManager = lockManager;
         testWindow.editorInstance = editor;

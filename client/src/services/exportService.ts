@@ -3,11 +3,27 @@
  *
  * Handles Markdown and PDF export of document content.
  *
+ * The PDF stack (jsPDF + html2canvas, several hundred kB) is imported on the
+ * first PDF export so it never lands in the initial bundle.
+ *
  * @module services/exportService
  */
 
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+/**
+ * Loads the PDF rendering dependencies on demand.
+ *
+ * @returns The html2canvas function and jsPDF constructor
+ */
+async function loadPdfDependencies(): Promise<{
+  html2canvas: typeof import("html2canvas").default;
+  jsPDF: typeof import("jspdf").default;
+}> {
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
+  return { html2canvas, jsPDF };
+}
 
 /**
  * Export content as a Markdown file download.
@@ -61,6 +77,8 @@ export async function exportPdf(options: {
   if (!target) {
     throw new Error("Either element or html must be provided");
   }
+
+  const { html2canvas, jsPDF } = await loadPdfDependencies();
 
   const canvas = await html2canvas(target, {
     scale: 2,

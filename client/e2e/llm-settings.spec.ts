@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
-import { dismissWelcomeModal } from "./helpers/waitHelpers";
+import { dismissWelcomeModal, openHeaderMenu } from "./helpers/waitHelpers";
 
 async function openLLMSettings(page: Page) {
   await dismissWelcomeModal(page);
@@ -9,6 +9,8 @@ async function openLLMSettings(page: Page) {
   if (await modal.isVisible().catch(() => false)) {
     await page.getByTestId("config-error-open-settings").click();
   } else {
+    // LLM Settings is a header menu item; the menu closes after each command.
+    await openHeaderMenu(page);
     const trigger = page.getByTestId("llm-settings-trigger");
     await trigger.waitFor({ state: "visible", timeout: 60000 });
     await trigger.click();
@@ -30,10 +32,13 @@ test.describe("LLM Settings", () => {
     await saveButton.scrollIntoViewIfNeeded();
     await saveButton.evaluate((button) => (button as HTMLButtonElement).click());
 
+    // Re-open the menu: the trigger only exists while the menu is open.
+    await openHeaderMenu(page);
     const llmButton = page.getByTestId("llm-settings-trigger");
     await expect(llmButton).toContainText("Anthropic Claude");
 
     await page.getByTestId("forget-llm-key-button").click();
+    await openHeaderMenu(page);
     await expect(llmButton).toHaveText("LLM Settings");
     const stored = await page.evaluate(() => window.localStorage.getItem("impetus.llmConfig"));
     expect(stored).toBeNull();
@@ -52,6 +57,7 @@ test.describe("LLM Settings", () => {
     await saveEncrypted.scrollIntoViewIfNeeded();
     await saveEncrypted.evaluate((button) => (button as HTMLButtonElement).click());
 
+    await openHeaderMenu(page);
     await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI");
 
     await page.reload();
@@ -84,9 +90,11 @@ test.describe("LLM Settings", () => {
     await saveSession.scrollIntoViewIfNeeded();
     await saveSession.evaluate((button) => (button as HTMLButtonElement).click());
 
+    await openHeaderMenu(page);
     await expect(page.getByTestId("llm-settings-trigger")).toContainText("LLM: OpenAI");
 
     await page.getByTestId("lock-session-button").click();
+    await openHeaderMenu(page);
     await expect(page.getByTestId("llm-settings-trigger")).toHaveText("LLM Settings");
 
     await openLLMSettings(page);

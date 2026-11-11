@@ -3,7 +3,8 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.schemas.achievement import (
@@ -71,8 +72,6 @@ async def list_achievements(
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> AchievementListResponse:
     """List all achievements for current user."""
-    from sqlalchemy import func, select
-
     if not session:
         return AchievementListResponse(total=0, limit=limit, offset=offset, achievements=[])
 
@@ -114,11 +113,7 @@ async def get_achievement(
     session: AsyncSession | None = Depends(get_session_optional),
 ) -> AchievementResponse:
     """Get achievement by ID."""
-    from sqlalchemy import select
-
     if not session:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=500, detail="Database not available")
 
     stmt = select(Achievement).where(
@@ -129,8 +124,6 @@ async def get_achievement(
     achievement = result.scalar_one_or_none()
 
     if not achievement:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Achievement not found")
 
     return AchievementResponse(

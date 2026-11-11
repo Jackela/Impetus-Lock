@@ -1,0 +1,79 @@
+/**
+ * Shared IconButton primitive.
+ *
+ * Square controls at 36px (sm) and 44px (md, WCAG touch target).
+ * Ghost is the default treatment; hover lifts to a subtle white wash.
+ * Focus ring is always the green accent — purple is forbidden.
+ */
+
+.ui-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: 0 0 auto;
+  font-family: inherit;
+  background-color: transparent;
+  color: var(--color-text-tertiary, #71717a);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.ui-icon-button--sm {
+  width: 36px;
+  height: 36px;
+}
+
+.ui-icon-button--md {
+  width: var(--touch-target-min, 44px);
+  height: var(--touch-target-min, 44px);
+}
+
+.ui-icon-button--ghost {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.ui-icon-button--ghost:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: transparent;
+  color: var(--color-text-primary, #fafafa);
+}
+
+.ui-icon-button--ghost:active:not(:disabled) {
+  background-color: var(--color-accent-dim, rgba(34, 197, 94, 0.15));
+  color: var(--color-accent, #22c55e);
+}
+
+.ui-icon-button--secondary {
+  background-color: transparent;
+  border-color: var(--color-border-strong, rgba(255, 255, 255, 0.15));
+  color: var(--color-text-secondary, #a1a1aa);
+}
+
+.ui-icon-button--secondary:hover:not(:disabled) {
+  background-color: var(--color-surface-3, #1a1a1a);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--color-text-primary, #fafafa);
+}
+
+.ui-icon-button:focus-visible {
+  outline: 2px solid var(--color-accent, #22c55e);
+  outline-offset: 2px;
+}
+
+.ui-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+  background-color: transparent;
+}
+
+.ui-icon-button svg {
+  display: block;
+  pointer-events: none;
+}

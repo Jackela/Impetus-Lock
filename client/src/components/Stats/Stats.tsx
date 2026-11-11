@@ -1,15 +1,33 @@
 import { useStats } from "../../hooks/useStats";
+import "./Stats.css";
 
 /**
  * Displays aggregate writing statistics fetched from the stats API.
+ *
+ * Loading and failure are announced to assistive technology: the loading state
+ * is a polite `role="status"` region and the failure is an assertive
+ * `role="alert"` region.
  *
  * @returns The stats grid, or loading/error states
  */
 export function Stats() {
   const { data: stats, isLoading, error } = useStats();
 
-  if (isLoading) return <div className="stats-loading">Loading stats...</div>;
-  if (error || !stats) return <div className="stats-error">Failed to load stats</div>;
+  if (isLoading) {
+    return (
+      <div className="stats-loading" role="status" aria-live="polite">
+        Loading stats...
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="stats-error" role="alert">
+        Failed to load stats
+      </div>
+    );
+  }
 
   return (
     <div className="stats-panel">

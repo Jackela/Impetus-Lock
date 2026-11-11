@@ -6,11 +6,9 @@ Business logic layer (use cases).
 from server.application.services.intervention_service import InterventionService
 from server.application.services.streak_service import StreakService
 from server.application.services.task_service import (
-    CreateTaskCommand,
     TaskDTO,
     TaskNotFoundError,
     TaskService,
-    UpdateTaskCommand,
     ValidationError,
     VersionMismatchError,
 )
@@ -22,8 +20,6 @@ from server.application.services.template_service import (
 __all__ = [
     "InterventionService",
     "TaskService",
-    "CreateTaskCommand",
-    "UpdateTaskCommand",
     "TaskDTO",
     "TaskNotFoundError",
     "VersionMismatchError",

@@ -191,7 +191,7 @@
 }
 
 .cancel-button:hover:not(:disabled) {
-  background-color: #374151;
+  background-color: var(--color-surface-3, #1a1a1a);
   color: var(--color-text-primary, #fafafa);
 }
 

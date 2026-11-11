@@ -163,3 +163,53 @@ export async function waitForEditorInteractive(page: Page) {
   // Ensure it's not in loading/disabled state
   await proseMirror.waitFor({ state: "visible", timeout: 5000 });
 }
+
+/**
+ * Open the header `⋯` overflow menu if it is not already open.
+ *
+ * Every header command (Tasks, Style, Stats, Achievements, Export, LLM Settings,
+ * Lock/Forget) lives inside this menu, so tests must open it before interacting
+ * with those controls. The menu unmounts when closed, so re-open it after any
+ * menu item click.
+ *
+ * @param page - Playwright page instance
+ */
+export async function openHeaderMenu(page: Page) {
+  const menu = page.getByRole("menu", { name: "Main menu" });
+  if (await menu.isVisible().catch(() => false)) return;
+  await page.getByTestId("header-menu-button").click();
+  await menu.waitFor({ state: "visible", timeout: 5000 });
+}
+
+/**
+ * Open the header menu and expand its DEV-only `Dev tools` disclosure so the
+ * manual AI trigger buttons are reachable.
+ *
+ * Production builds render the manual trigger inline instead (no disclosure),
+ * so the `header-dev-region` lookup is skipped when it is absent.
+ *
+ * @param page - Playwright page instance
+ */
+export async function openHeaderDevTools(page: Page) {
+  await openHeaderMenu(page);
+  const dev = page.getByTestId("header-dev-region");
+  if ((await dev.count()) === 0) return; // production renders the trigger inline
+  await dev.waitFor({ state: "visible", timeout: 5000 });
+  const open = await dev.evaluate((d) => (d as HTMLDetailsElement).open);
+  if (!open) await dev.locator("summary").click();
+}
+
+/**
+ * Run a header menu command by its `data-testid`.
+ *
+ * Opens the menu (if needed) and clicks the item. The menu closes afterwards,
+ * so call `openHeaderMenu` again before the next command or assertion that
+ * targets a menu item.
+ *
+ * @param page - Playwright page instance
+ * @param testId - `data-testid` of the menu item to click
+ */
+export async function clickHeaderMenuItem(page: Page, testId: string) {
+  await openHeaderMenu(page);
+  await page.getByTestId(testId).click();
+}

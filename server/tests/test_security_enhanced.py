@@ -436,7 +436,7 @@ class TestRateLimiter:
         limiter._redis = mock_redis
 
         mock_request = Mock()
-        mock_request.url.path = "/intervention"
+        mock_request.url.path = "/impetus/generate-intervention"
         mock_request.state = Mock()
         mock_request.state.user_id = None
         mock_request.headers = {}
@@ -457,7 +457,7 @@ class TestRateLimiter:
         limiter._redis = mock_redis
 
         mock_request = Mock()
-        mock_request.url.path = "/intervention"
+        mock_request.url.path = "/impetus/generate-intervention"
         mock_request.state = Mock()
         mock_request.state.user_id = None
         mock_request.headers = {}

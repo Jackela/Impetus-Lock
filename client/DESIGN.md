@@ -31,14 +31,26 @@ This file defines the visual design language for Impetus Lock. It follows the [D
 | `--color-bg-sunken`    | `#080808`             | Input backgrounds, code blocks   |
 | `--color-bg-overlay`   | `rgba(0, 0, 0, 0.85)` | Modal backdrops                  |
 
+Surface hierarchy aliases (same ramp, ordered 1 → 3):
+
+| Token               | Hex       | Role                   |
+| ------------------- | --------- | ---------------------- |
+| `--color-surface-1` | `#0A0A0A` | Base canvas            |
+| `--color-surface-2` | `#111111` | Raised chrome, dialogs |
+| `--color-surface-3` | `#1A1A1A` | Elevated cards, menus  |
+
 ### Text
 
-| Token                    | Hex       | Role                              |
-| ------------------------ | --------- | --------------------------------- |
-| `--color-text-primary`   | `#FAFAFA` | Body text, headings               |
-| `--color-text-secondary` | `#A1A1AA` | Metadata, labels, muted info      |
-| `--color-text-muted`     | `#52525B` | Placeholder text, disabled states |
-| `--color-text-inverted`  | `#0A0A0A` | Text on light/accent backgrounds  |
+| Token                    | Hex       | Role                                           |
+| ------------------------ | --------- | ---------------------------------------------- |
+| `--color-text-primary`   | `#FAFAFA` | Body text, headings                            |
+| `--color-text-secondary` | `#A1A1AA` | Metadata, labels, muted info                   |
+| `--color-text-tertiary`  | `#8A8A94` | Icons, captions, disabled copy — 5.7:1 on base |
+| `--color-text-muted`     | `#7C7C88` | Placeholder text, lowest emphasis — 4.6:1      |
+| `--color-text-inverted`  | `#0A0A0A` | Text on light/accent backgrounds               |
+
+Every text token must clear WCAG AA (4.5:1) against `--color-bg-primary`; tertiary and
+muted are the floor, so never introduce a lighter-on-darker fallback than these two.
 
 ### Borders & Dividers
 
@@ -59,6 +71,7 @@ This file defines the visual design language for Impetus Lock. It follows the [D
 | `--color-danger-dim`  | `rgba(239, 68, 68, 0.15)` | Loki background tint                                                        |
 | `--color-warning`     | `#F59E0B`                 | Warnings, intermediate states                                               |
 | `--color-info`        | `#3B82F6`                 | Informational states                                                        |
+| `--color-success`     | `#22C55E`                 | "Saved / done" confirmations — same hue as the accent, never a second green |
 
 ### Agent-Specific Palette
 
@@ -149,7 +162,7 @@ color: #fafafa;
 ```css
 background: transparent;
 border: none;
-color: #52525b;
+color: #8a8a94;
 border-radius: 6px;
 padding: 8px;
 /* Hover */
@@ -201,7 +214,7 @@ caret-color: #22c55e;
 border-color: rgba(34, 197, 94, 0.5);
 box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.15);
 /* Placeholder */
-color: #52525b;
+color: #8a8a94;
 ```
 
 ### Modal / Dialog
@@ -219,12 +232,47 @@ backdrop-filter: blur(8px);
 
 ### Header / Navigation Bar
 
+Three fixed zones on a single line — never a wrapping toolbar:
+
+- **Left** — brand wordmark + 7-bar waveform decoration
+- **Center** — the AI mode control (Off / Muse / Loki), nothing else
+- **Right** — save/connection status pill + a single `⋯` overflow menu
+
 ```css
 background: rgba(10, 10, 10, 0.95);
 border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 backdrop-filter: blur(12px);
-height: 56px;
+height: 56px; /* fixed; the header never grows a second row */
 padding: 0 24px;
+display: grid;
+grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+```
+
+- Status pill: 7px signal dot + one short word (`Saved`, `Saving…`, `Unsaved`,
+  `Save failed`, `Offline`). Never wraps, never a sentence.
+- Overflow menu (`role="menu"` with `menuitem` rows): Tasks, Style, Stats,
+  Achievements, Export, Theme, Telemetry, LLM Settings, Lock Session, Forget Key.
+- Developer-only triggers (`Summon Loki`, `Test Delete`) live in a collapsed
+  **Dev tools** region that only exists under `import.meta.env.DEV`; they must
+  never appear in a production header.
+- Header controls are 36px (`IconButton size="sm"`, `Button size="sm"`); the
+  ≤768px layout raises them to the 44px touch target.
+
+### Menu / Dropdown
+
+```css
+background: #1a1a1a;
+border: 1px solid rgba(255, 255, 255, 0.15);
+border-radius: 12px;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+padding: 8px;
+/* Row */
+min-height: 36px; /* 44px on touch */
+padding: 0 12px;
+color: #a1a1aa;
+/* Hover / focus */
+background: rgba(255, 255, 255, 0.06);
+color: #fafafa;
 ```
 
 ### Sidebar / Task List
@@ -234,6 +282,10 @@ background: #0f0f0f;
 border-right: 1px solid rgba(255, 255, 255, 0.06);
 width: 280px;
 ```
+
+The sidebar renders exactly one of three mutually exclusive states: loading
+(`Skeleton`), error (`Couldn't load your tasks` + `Retry`), or the list/empty
+state (`No tasks yet` + `Create your first task`).
 
 ### Editor Surface (Milkdown)
 
@@ -386,6 +438,8 @@ filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.5));
 - ✅ Animate purposefully: shake for rejection, fade for Loki delete, glitch for Muse injection
 - ✅ Maintain WCAG AA contrast (4.5:1 for body text on dark backgrounds)
 - ✅ Use monospace font for mode labels, lock IDs, technical status indicators
+- ✅ Use the `components/ui/icons` set for every glyph — no emoji in chrome
+- ✅ Use `Button` / `IconButton` / `Modal` primitives instead of bespoke controls
 
 ### Don't
 
@@ -413,11 +467,17 @@ filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.5));
 
 ### Rules
 
-- **Mobile (<640px)**: Sidebar hides completely (slide-in overlay), header collapses to icon-only, editor is full-width
-- **Tablet (640–1024px)**: Sidebar is toggleable with icon-only nav, editor has 16px horizontal margins
-- **Desktop (>1024px)**: Sidebar visible when toggled, editor centered with auto side margins
-- **Touch targets**: Minimum 44×44px for all interactive elements (WCAG 2.1)
-- **Header**: Adapts from 3-section desktop layout to stacked mobile layout at 768px
+- **Mobile (≤768px)**: The task sidebar becomes a full-width modal sheet — backdrop,
+  `role="dialog"`, `aria-modal="true"`, a `Close` icon button in its header, background
+  `inert` and body scroll locked while open. The header keeps its three zones on one line.
+- **Tablet (769–1023px)**: Sidebar is inline and toggleable, editor keeps 16px side margins.
+- **Desktop (≥1024px)**: Sidebar inline at 280px, editor centered with auto side margins.
+- **Touch targets**: 44×44px for interactive rows (task rows, menu rows, header icons on
+  mobile). Never apply a global `button { min-height: 44px }` — it inflates icon buttons
+  and forces the header to wrap.
+- **Header**: A fixed-height three-zone grid at every width; no wrap, no stacked layout.
+- **Breakpoints**: `App.css` and `styles/responsive.css` share the 768px boundary — one
+  rule set per viewport, never two competing ones at 767/768.
 
 ---
 
@@ -442,15 +502,15 @@ Subtle border:    rgba(255, 255, 255, 0.08)
 
 **"Build me a header"**
 
-> A sticky header on #111111 background with rgba(255,255,255,0.06) bottom border. Left: app name in white 600 weight + icon buttons for toggles. Center/Right: mode selector dropdown + primary CTA button in green (#22C55E). Height 56px. Includes mini waveform decoration (5 animated bars in green) near the app name.
+> A sticky 56px header on #111111 with a rgba(255,255,255,0.06) bottom border, laid out as a three-zone grid that never wraps. Left: app name in white 600 weight plus a 7-bar green waveform decoration. Center: only the AI mode dropdown (Off / Muse / Loki). Right: a save-status pill (signal dot + one short word: Saved / Saving… / Save failed / Offline) and a single ⋯ overflow menu button. The menu is a `role="menu"` panel with `menuitem` rows for Tasks, Style, Stats, Achievements, Export, Theme, Telemetry, LLM Settings, Lock Session, and Forget Key; developer triggers live in a collapsed Dev tools section that only exists in dev builds.
 
 **"Build me a task sidebar"**
 
-> Left panel, 280px wide, #0F0F0F background, rgba(255,255,255,0.06) right border. Task items as rows with hover state rgba(255,255,255,0.04), active item has left accent bar in #22C55E. Section header in 11px uppercase #52525B.
+> Left panel, 280px wide, #0F0F0F background, rgba(255,255,255,0.06) right border. Task items as rows with hover state rgba(255,255,255,0.04), active item has left accent bar in #22C55E. Section header in 11px uppercase #8A8A94. Exactly one state at a time: skeleton while loading, an error card (`Couldn't load your tasks` + Retry), or the list with a `No tasks yet` + `Create your first task` empty state. On ≤768px it becomes a full-width sheet with a backdrop and a Close icon button.
 
 **"Build me a modal"**
 
-> Centered dialog on rgba(0,0,0,0.85) backdrop with backdrop-filter: blur(8px). Modal surface #111111, 1px border rgba(255,255,255,0.1), 12px border-radius, 32px padding. Title in #FAFAFA 24px 700 weight. CTA button green, cancel ghost button.
+> Centered dialog on a rgba(0,0,0,0.85) backdrop with backdrop-filter: blur(8px). Built on the shared `Modal` primitive: portaled, `role="dialog"` + `aria-modal="true"`, focus trapped, Escape closes only the top-most dialog, the app root is `inert`/`aria-hidden`, and body scroll is locked. Surface #111111, 1px border rgba(255,255,255,0.1), 12px border-radius, 24–32px padding. Title in #FAFAFA 24px 700 weight. Close icon button with hover and `focus-visible` states; CTA green, cancel ghost.
 
 **"Build me the writing editor"**
 
