@@ -7,15 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Repository hygiene and test suite (2026-11-11)
+
+- **Test suite**: moved the coverage gate out of Vitest into a `node:test` process, removed duplicate/skipped tests, enabled branch coverage, added `pytest-timeout`, and restored the toolbar performance checks. See `docs/reports/20261111-test-suite-optimization.md` (PR #249).
+- **CI**: pinned Poetry 2.5.1 across workflows and the production Dockerfile; added JUnit/coverage artifacts, E2E permissions/concurrency/browser cache, and failure-evidence uploads.
+- **Repository hygiene**: archived stale root guides, removed tracked test state and dead scripts, added `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `.editorconfig`, and a current documentation index.
+- **Quality roadmap**: dead UI/services removal, CI consolidation, dependency cleanup, and bundle reduction are recorded in `docs/reports/20261109-quality-roadmap.md` (PR #246).
+
 ### Changed - Code Quality Improvements (2026-03-27)
 
 - **Documentation**: Enhanced public API documentation
   - Added module-level docstrings to collaboration endpoints (collaboration.py)
-  - Documented pending permission persistence as Issue #XXX with proper tracking
+  - Documented pending permission persistence with GitHub issue tracking
   - Improved test documentation for auth placeholders (test_security.py)
   - Fixed whitespace issues in intervention.py docstrings (W293)
 - **TODO Resolution**: Converted production code TODOs to tracked issues
-  - Collaboration permission storage (Issue #XXX)
+  - Collaboration permission storage (tracked in GitHub issues)
   - Auth test placeholders properly documented
 - **Import Optimization**: Verified clean import structure across server codebase
 - **Naming Consistency**: Verified snake_case for Python, camelCase for TypeScript
@@ -84,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - E2E tests for editor initialization (10 scenarios)
   - **Test Coverage**: 118/121 tests passing (97.5%)
 - **Documentation**:
-  - `AUDIO_FEEDBACK_GUIDE.md`: Complete audio system reference
+  - `docs/components/audio-feedback.md`: Complete audio system reference
   - `CREDITS.md`: Audio asset attribution
   - Comprehensive JSDoc comments for all components and hooks
 - **Accessibility**:

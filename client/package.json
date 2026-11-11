@@ -24,6 +24,9 @@
     "test:e2e:ci-like": "playwright test --workers=1 --retries=2 --reporter=list",
     "test:e2e:sequential": "playwright test --workers=1",
     "test:e2e:preview": "node ./scripts/run-preview-e2e.mjs",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:story": "playwright test -c playwright.story.config.ts",
+    "manual:flow": "node scripts/manual-user-flow.mjs",
     "preview": "vite preview",
     "prepare": "husky",
     "test:e2e:auth": "playwright test -c playwright.auth.config.ts"

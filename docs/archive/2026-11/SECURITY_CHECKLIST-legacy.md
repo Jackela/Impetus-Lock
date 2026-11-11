@@ -1,5 +1,7 @@
 # Security Checklist
 
+> **Historical (archived 2026-11-11).** Current security guidance lives in `SECURITY.md`, `docs/security/byok-storage.md`, and `docs/security/SECRETS_MANAGEMENT.md`.
+
 Use this checklist before deploying to production.
 
 ## Environment Variables

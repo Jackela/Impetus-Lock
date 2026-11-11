@@ -1,519 +1,182 @@
 # Development Guide
 
-**Impetus Lock** - Development workflow and testing guide for TDD with monorepo structure.
+**Impetus Lock** — local workflow for the React/Vite frontend and FastAPI backend.
 
-## Table of Contents
+`AGENTS.md` is the authority for precedence, protected files, task routing, and quality gates. This guide is the practical local path; `.github/workflows/ci.yml` is the gate implementation.
 
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Development Workflow](#development-workflow)
-- [Testing Strategy](#testing-strategy)
-- [CI/CD Validation](#cicd-validation)
-- [Troubleshooting](#troubleshooting)
+## Prerequisites
 
-## Quick Start
+- Python 3.11+ (CI uses 3.12; `.python-version` pins 3.12 for local tooling)
+- [Poetry](https://python-poetry.org/) 2.5.1 (matches `server/poetry.lock`)
+- Node.js 22.13+ or 24.x (`.nvmrc` pins 24)
+- Docker, only for the local PostgreSQL helper
+- Optional: [Act](https://github.com/nektos/act) for local CI simulation
 
-### Prerequisites
-
-- **Python 3.11+** with Poetry
-- **Node.js 24.x** (matches the CI toolchain)
-- **Git**
-- **Act CLI** (optional, for local CI testing)
-
-### Initial Setup
+## Quick start
 
 ```bash
-# Clone and navigate to project
 git clone <repo-url>
 cd Impetus-Lock
 
-# Backend setup
+cd server && poetry install && cd ..
+cd client && npm ci && cd ..
+
+./scripts/dev-start.sh        # PostgreSQL + backend :8000 + Vite :5173
+./scripts/dev-stop.sh         # stop what the helper started
+```
+
+Windows PowerShell: `./scripts/dev-start.ps1`.
+
+Manual startup:
+
+```bash
+export DATABASE_URL='postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/postgres'
 cd server
-poetry install
-cd ..
-
-# Frontend setup
-cd client
-npm ci
-cd ..
+cp .env.example .env          # edit LLM provider/keys; never commit .env
+poetry run alembic upgrade head
+poetry run uvicorn server.api.main:app --reload
+# another terminal
+cd client && npm run dev
 ```
 
-## Project Structure
+The backend reads `server/.env`; Alembic reads the process `DATABASE_URL`. An exported `DATABASE_URL` wins over `.env`.
 
-```
+## Repository layout
+
+```text
 Impetus-Lock/
-├── server/              # FastAPI backend
-│   ├── server/          # Application code
-│   │   ├── __init__.py
-│   │   └── main.py      # FastAPI app with health endpoint
-│   ├── tests/           # pytest test suite
-│   │   ├── __init__.py
-│   │   └── test_main.py # Health endpoint tests
-│   ├── pyproject.toml   # Poetry config + Ruff/mypy settings
-│   └── .gitignore
-│
-├── client/              # React + Vite frontend
-│   ├── src/             # React application code
-│   ├── e2e/             # Playwright E2E tests
-│   │   └── smoke.spec.ts
-│   ├── package.json     # npm scripts + dependencies
-│   ├── vite.config.ts
-│   ├── vitest.config.ts
-│   ├── playwright.config.ts
-│   ├── .eslintrc.cjs
-│   ├── .prettierrc
-│   └── .gitignore
-│
-├── .github/
-│   └── workflows/
-│       └── ci.yml       # GitHub Actions CI (4 parallel jobs)
-│
-├── scripts/
-│   ├── validate-local.sh      # Bash validation (Linux/macOS)
-│   ├── validate-local.ps1     # PowerShell validation (Windows)
-│   └── quick-validate.bat     # Windows fast check (skips tests)
-│
-├── openspec/            # OpenSpec governance and change proposals
-├── specs/               # Legacy feature specifications (001-006)
-├── CLAUDE.md            # Claude Code operational guide
-└── README.md
+├── server/                 # FastAPI application + pytest suite
+│   ├── server/             # api → application → domain + infrastructure
+│   ├── tests/              # unit / integration / tooling suites
+│   └── pyproject.toml      # Poetry, Ruff, mypy, pytest, coverage
+├── client/                 # React 19 + Vite + Milkdown/ProseMirror
+│   ├── src/                # components → hooks → services
+│   ├── tests/              # shared unit/integration tests
+│   ├── e2e/                # Playwright suites and helpers
+│   ├── eslint.config.js    # flat ESLint config
+│   └── vitest.config.ts    # unit tests + coverage thresholds
+├── .github/                # CI, security, issue/PR templates, Dependabot
+├── docs/                   # current guides + archived evidence (see docs/INDEX.md)
+├── openspec/               # current specs and change proposals (authority)
+├── specs/                  # frozen legacy feature specs 001–007
+├── scripts/                # dev-start/stop, deployment, E2E runners, evaluation
+└── AGENTS.md               # working agreement and quality gates
 ```
 
-## Development Workflow
-
-### Backend Development (TDD with FastAPI)
-
-**Article III (TDD) - Red-Green-Refactor Cycle**:
-
-```bash
-cd server
-
-# 1. RED: Write failing test first
-# Edit tests/test_task_service.py
-poetry run pytest tests/test_task_service.py -v
-# Expected: FAILED (test should fail)
-
-# 2. GREEN: Write minimal implementation
-# Edit server/services/task_service.py
-poetry run pytest tests/test_task_service.py -v
-# Expected: PASSED
-
-# 3. REFACTOR: Improve while keeping tests green
-poetry run pytest tests/test_task_service.py -v
-# Expected: PASSED
-```
-
-**Quality Gates (run before committing)**:
-
-```bash
-cd server
-
-# Linting (auto-fix available)
-poetry run ruff check .              # Check for issues
-poetry run ruff check --fix .        # Auto-fix issues
-poetry run ruff format .             # Format code
-
-# Type checking (strict mode)
-poetry run mypy .
-
-# Tests (with coverage)
-poetry run pytest -v
-poetry run pytest --cov=server --cov-report=term-missing
-```
-
-**Development Server**:
+## Backend development
 
 ```bash
 cd server
 poetry run uvicorn server.api.main:app --reload
-# Server: http://localhost:8000
-# Docs: http://localhost:8000/docs
+poetry run pytest tests/ -n auto
+poetry run pytest tests/unit -q -n auto
 ```
 
-### Frontend Development (TDD with React + Vitest)
+Write a failing test first for behavior changes. P1 lock-core files are listed in `AGENTS.md`; changing them requires a failing test and extra review. Backend dependency direction is `api → application → domain`, enforced by `poetry run lint-imports`.
 
-**Article III (TDD) - Red-Green-Refactor Cycle**:
-
-```bash
-cd client
-
-# 1. RED: Write failing test first
-# Create src/components/TaskCard.test.tsx
-npm run test:watch  # Vitest watch mode
-# Expected: FAILED
-
-# 2. GREEN: Write minimal implementation
-# Create src/components/TaskCard.tsx
-# Watch mode auto-reruns
-# Expected: PASSED
-
-# 3. REFACTOR: Improve while keeping tests green
-# Watch mode continues to validate
-# Expected: PASSED
-```
-
-**Quality Gates (run before committing)**:
-
-```bash
-cd client
-
-# Linting (auto-fix available)
-npm run lint                  # ESLint check
-npx eslint --fix "src/**/*.{ts,tsx}"  # Auto-fix
-
-# Formatting
-npm run format                # Prettier check
-npx prettier --write .        # Auto-format
-
-# Type checking
-npm run type-check            # tsc --noEmit (strict mode)
-
-# Unit tests (Vitest)
-npm run test                  # Run once
-npm run test:watch            # Watch mode for TDD
-
-# E2E tests (Playwright) - Run locally before pushing
-npm run test:e2e              # Headless mode (CI-style)
-npx playwright test --ui      # Interactive UI mode (recommended for development)
-```
-
-**Development Server**:
+## Frontend development
 
 ```bash
 cd client
 npm run dev
-# Server: http://localhost:5173
+npm run test:watch
 ```
 
-## Testing Strategy
+Respect the import boundaries: `components` must not import `features` or `services`; use hooks/contexts at the boundary. `npm run lint` enforces this.
 
-### Backend Testing (pytest + FastAPI TestClient)
+## Quality gates
 
-**Test Structure**:
-
-```python
-# tests/test_main.py
-from fastapi.testclient import TestClient
-from server.api.main import app
-
-client = TestClient(app)
-
-def test_health_endpoint_returns_200() -> None:
-    """Test that health endpoint returns successful status code."""
-    response = client.get("/health")
-    assert response.status_code == 200
-```
-
-**Running Tests**:
+Run the full gate before opening a PR. From `server/`:
 
 ```bash
-cd server
-
-# Run all tests
-poetry run pytest
-
-# Run specific test file
-poetry run pytest tests/test_main.py
-
-# Run specific test
-poetry run pytest tests/test_main.py::test_health_endpoint_returns_200
-
-# Verbose output
-poetry run pytest -v
-
-# With coverage
-poetry run pytest --cov=server --cov-report=html
-# Open: htmlcov/index.html
-```
-
-### Frontend Testing (Vitest + Playwright)
-
-**Unit Tests (Vitest + Testing Library)**:
-
-```typescript
-// src/components/TaskCard.test.tsx
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
-import { TaskCard } from "./TaskCard";
-
-describe("TaskCard", () => {
-  it("renders task title", () => {
-    render(<TaskCard title="Test Task" />);
-    expect(screen.getByText("Test Task")).toBeInTheDocument();
-  });
-});
-```
-
-**E2E Tests (Playwright)**:
-
-```typescript
-// e2e/task-flow.spec.ts
-import { test, expect } from "@playwright/test";
-
-test("user can create and lock task", async ({ page }) => {
-  await page.goto("/");
-  
-  // Create task
-  await page.fill('[data-testid="task-input"]', "Important Task");
-  await page.click('[data-testid="create-button"]');
-  
-  // Lock task (P1 feature - un-deletable constraint)
-  await page.click('[data-testid="lock-button"]');
-  
-  // Verify delete button is disabled
-  await expect(page.locator('[data-testid="delete-button"]')).toBeDisabled();
-});
-```
-
-**Running Frontend Tests**:
-
-```bash
-cd client
-
-# Unit tests (Vitest)
-npm run test              # Run once
-npm run test:watch        # Watch mode for TDD
-npm run test -- --ui      # UI mode
-npm run test -- --coverage # With coverage
-
-# E2E tests (Playwright)
-npm run test:e2e          # Headless mode
-npx playwright test --ui  # Interactive mode
-npx playwright test --headed  # Show browser
-npx playwright test --debug   # Debug mode
-
-# Specific test file
-npx playwright test e2e/smoke.spec.ts
-```
-
-## CI/CD Validation
-
-### GitHub Actions Workflow
-
-**Workflow Structure** (`.github/workflows/ci.yml`):
-
-```yaml
-jobs:
-  lint:              # Ruff (backend) + ESLint/Prettier (frontend)
-  type-check:        # mypy (backend) + tsc (frontend)
-  backend-tests:     # pytest
-  frontend-tests:    # Vitest + Playwright
-```
-
-**Triggers**:
-- Push to `main`
-- Pull requests to `main`
-
-### Local CI Testing with Act
-
-**Install Act CLI**:
-
-```bash
-# Windows (via Chocolatey)
-choco install act-cli
-
-# macOS (via Homebrew)
-brew install act
-
-# Linux
-curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
-```
-
-**Run Full CI Pipeline Locally**:
-
-```bash
-# Run all jobs (simulates GitHub Actions)
-act
-
-# Run specific job
-act -j lint
-act -j type-check
-act -j backend-tests
-act -j frontend-tests
-
-# List available workflows
-act -l
-
-# Dry run (show what would run)
-act -n
-
-# Use specific Docker image (Ubuntu 22.04)
-act -P ubuntu-latest=catthehacker/ubuntu:act-latest
-```
-
-**Act Configuration** (`.actrc`):
-
-```ini
--P ubuntu-latest=catthehacker/ubuntu:act-latest
---container-architecture linux/amd64
-```
-
-**Expected Output**:
-
-```
-[CI/lint] 🚀  Start image=catthehacker/ubuntu:act-latest
-[CI/lint]   🐳  docker pull image=catthehacker/ubuntu:act-latest
-[CI/lint]   🐳  docker create image=catthehacker/ubuntu:act-latest
-[CI/lint]   🐳  docker run image=catthehacker/ubuntu:act-latest
-[CI/lint] ⭐ Run actions/checkout@v4
-[CI/lint] ⭐ Run Set up Python 3.11
-[CI/lint] ⭐ Run Install Poetry
-[CI/lint] ⭐ Run Install backend dependencies
-[CI/lint] ⭐ Run Ruff check
-[CI/lint]   ✅ Success - All files passed linting!
-```
-
-### Pre-Commit Validation
-
-**Recommended: Use Act CLI for full CI validation**
-
-```bash
-# Full validation (all 4 jobs)
-act
-
-# Or test specific areas
-act -j backend-tests
-act -j frontend-tests
-```
-
-**Quick Quality Check (fast, no tests)**
-
-```bash
-# Backend
-cd server
 poetry run ruff check .
+poetry run pydocstyle server/
 poetry run ruff format --check
+poetry run lint-imports
 poetry run mypy .
+poetry run pytest tests/ -n auto --cov=server --cov-report=term-missing
+poetry run python check_critical_coverage.py
+```
 
-# Frontend
-cd client
+From `client/`:
+
+```bash
 npm run lint
 npm run format
 npm run type-check
+npm run api:check
+npm run test -- --coverage
+npm run test:coverage-gate
+npm run build
 ```
 
-**Manual Test Run (if Act not available)**
+E2E when the flow changes:
 
 ```bash
-# Backend
-cd server && poetry run pytest -v
-
-# Frontend
-cd client && npm run test -- --run
+npm run test:e2e:ci-like      # main suite, one worker
+npm run test:e2e:ci           # CI-shaped suite
+npm run test:e2e:auth         # real cookies/CSRF, isolated data
+npm run test:e2e:story        # Muse/Loki story flow
 ```
 
-- ### Local CI via Act
+Do not add ignore directives, lower thresholds, skip tests, or use `--no-verify` to get a green result. If a gate fails outside your scope, write `.scratch/<date>-<topic>/handoff.md` with the evidence and stop.
 
-  1. Install [Act](https://github.com/nektos/act) and Docker.
-  2. Sync and run:
+## CI and local CI
 
-     ```bash
-     ./scripts/act-sync.sh act -j e2e -W .github/workflows/e2e.yml --artifact-server-path /tmp/act-artifacts
-     ```
+PR gates are defined in `.github/workflows/ci.yml` plus `e2e.yml` and `authenticated-editor.yml`:
 
-     Windows users can run `pwsh ./scripts/act-sync.ps1 -Command "act -j e2e ..."` (forwards to WSL).
-  3. The helper mirrors the repo to `$HOME/impetus-lock-act`, exports `ACT_WORKSPACE_BASE` / `ACT_CACHE_DIR`, and stops any local `impetus-lock-postgres` container to prevent port conflicts.
-  4. Logs land in `/tmp/act-e2e.log` by default; the latest run is also copied to `test-results/act-e2e.log` (ignored in git) so tail output can be shared when needed.
+- `Lint (Backend + Frontend)`
+- `Type Check (Backend + Frontend)`
+- `Backend Tests`
+- `Frontend Tests`
+- `Validate (API Types + OpenSpec)`
+- `Playwright E2E Tests`, `Muse/Loki Story E2E`, `browser-authentication`
+
+`Backend Tests` uses PostgreSQL/Redis services and branch coverage (floor 78%). `Frontend Tests` runs Vitest with coverage, the `node:test` coverage gate, and uploads JUnit/coverage artifacts. E2E uploads failure evidence; teardown only prunes artifacts older than seven days.
+
+Act CLI:
+
+```bash
+./scripts/act-sync.sh act -j e2e -W .github/workflows/e2e.yml --artifact-server-path /tmp/act-artifacts
+```
+
+The helper mirrors the repo to `$HOME/impetus-lock-act`, exports `ACT_WORKSPACE_BASE` / `ACT_CACHE_DIR`, and avoids port conflicts with the local PostgreSQL container.
+
+## Testing
+
+See [`TESTING.md`](TESTING.md) for the test pyramid, marker layout, coverage gates, and E2E configuration. Test counts and the latest measured coverage are recorded in `docs/reports/20261111-test-suite-optimization.md`.
+
+## OpenSpec
+
+New behavior, public API, schema, architecture, or dependency changes require an approved OpenSpec change. For bugs that restore intended behavior, write the failing test first and fix directly. Read `openspec/AGENTS.md` before creating or applying a proposal.
 
 ## Troubleshooting
 
-### Common Issues
-
-**Issue**: `poetry: command not found`
+**`poetry: command not found`**
 
 ```bash
-# Install Poetry via pipx
-python -m pip install --user pipx
-python -m pipx ensurepath
-pipx install poetry
+python -m pip install --user pipx && python -m pipx ensurepath
+pipx install "poetry==2.5.1"
 ```
 
-**Issue**: `npm ERR! EPERM: operation not permitted`
+**Port already in use** — `./scripts/dev-stop.sh`, or stop the process shown by `lsof -i :8000` / `lsof -i :5173`.
+
+**Playwright browsers missing**
 
 ```bash
-# Kill any running Node/Vite processes
-# Windows:
-taskkill /F /IM node.exe
-# Linux/macOS:
-killall node
-
-# Clear npm cache
-npm cache clean --force
-
-# Reinstall
-cd client
-rm -rf node_modules package-lock.json
-npm install
+cd client && npx playwright install --with-deps chromium
 ```
 
-**Issue**: Vitest hangs on first run
+**Vitest hangs** — run once with `npm run test -- --run` (the default script already runs once).
 
-```bash
-# Force run mode (not watch)
-npm run test -- --run
-
-# Or manually:
-npx vitest run
-```
-
-**Issue**: Playwright browsers not installed
-
-```bash
-cd client
-npx playwright install --with-deps
-```
-
-**Issue**: TypeScript errors in tests
-
-```typescript
-// Add to vitest.setup.ts or individual test files
-import '@testing-library/jest-dom'
-
-// Ensure tsconfig includes test files
-// tsconfig.app.json: "include": ["src", "**/*.test.ts", "**/*.test.tsx"]
-```
-
-**Issue**: Need to validate before pushing
-
-Use Act CLI for complete CI simulation:
-
-```bash
-# Test everything
-act
-
-# Or test specific job
-act -j backend-tests
-```
-
-**Issue**: Act fails with Docker errors
-
-```bash
-# Ensure Docker Desktop is running
-# Use smaller image for faster iteration:
-act -P ubuntu-latest=catthehacker/ubuntu:act-22.04
-```
-
-### Constitutional Compliance Checklist
-
-Before committing, verify:
-
-- ✅ **Article I**: No unnecessary abstractions (keep it simple)
-- ✅ **Article II**: P1 features are only un-deletable constraint related
-- ✅ **Article III**: Tests written before implementation (TDD)
-- ✅ **Article IV**: Backend follows SOLID (SRP, DIP with constructor injection)
-- ✅ **Article V**: All public functions have JSDoc/Docstrings
+**Alembic cannot connect** — export `DATABASE_URL` in the shell that runs `alembic upgrade head`; `.env` alone is not enough for migrations.
 
 ## Resources
 
-- **Constitution**: [CLAUDE.md](CLAUDE.md#constitutional-requirements-️) - Project governance (5 articles)
-- **Claude Guide**: `CLAUDE.md` - AI assistant operational guide
-- **Feature Specs**: `specs/` and `openspec/` - Specification-driven development
-- **CI Workflow**: `.github/workflows/ci.yml` - GitHub Actions config
-
-## Next Steps
-
-1. **Start TDD Loop**: Write failing test → Implement → Refactor
-2. **Run Quality Gates**: Lint, type-check, test before commit
-3. **Validate with Act**: Run `act` to simulate CI before pushing
-4. **Constitutional Review**: Verify compliance with 5 articles
-5. **Commit**: Use conventional commits format
+- [`AGENTS.md`](AGENTS.md) — precedence, gates, protected files
+- [`CONTEXT.md`](CONTEXT.md) — product/architecture context
+- [`docs/INDEX.md`](docs/INDEX.md) — documentation map
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — PR workflow
+- [`SECURITY.md`](SECURITY.md) — vulnerability reporting
+- [`openspec/AGENTS.md`](openspec/AGENTS.md) — change proposal workflow
+- [`API_CONTRACT.md`](API_CONTRACT.md), [`ARCHITECTURE_GUARDS.md`](ARCHITECTURE_GUARDS.md) — contracts and guardrails

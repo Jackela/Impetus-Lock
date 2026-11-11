@@ -1,5 +1,7 @@
 # Repository Organization Summary
 
+> **Historical (archived 2026-11-11).** This records a 2025-11 cleanup. The current repository layout is defined by `AGENTS.md` and `docs/INDEX.md`.
+
 **Date**: 2025-11-07 13:32
 **Action**: Root directory cleanup and documentation archival
 

@@ -5,7 +5,6 @@
 .env.local
 .env.*.local
 .envrc
-.python-version
 .tool-versions
 .direnv/
 .secrets
@@ -27,6 +26,8 @@ Thumbs.db
 
 # AI tooling
 .claude/commands/
+.claude/settings.local.json
+server/.claude/
 .dsh-code-index/
 .commandcode/
 .zcode/
@@ -68,6 +69,8 @@ venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.import_linter_cache/
+server/.import_linter_cache/
 server/.hypothesis/
 server/.venv.windows/
 /server/.venv.windows.*/
@@ -75,6 +78,9 @@ server/.venv.windows/
 .coverage
 .coverage.*
 htmlcov/
+*.orig
+*.rej
+.eslintcache
 
 # Test results
 test-results/
@@ -96,6 +102,7 @@ server/server/infrastructure/llm/prompts/generated_templates.py
 
 # Generated local browser authentication (never commit session cookies)
 client/e2e/storage-state.generated.json
+client/e2e/storage-state.json
 
 # Private safety evidence, scratch notes and runtime credentials
 .scratch/

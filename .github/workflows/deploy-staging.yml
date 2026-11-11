@@ -15,6 +15,9 @@ env:
   DOCKER_REGISTRY: ghcr.io
   DOCKER_NAMESPACE: ${{ github.repository_owner }}
 
+permissions:
+  contents: read
+
 concurrency:
   group: staging-deployment
   cancel-in-progress: false
@@ -23,6 +26,7 @@ jobs:
   build-and-push:
     name: Build and Push Images
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -91,6 +95,7 @@ jobs:
     name: Deploy to Staging
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
       deployed: ${{ steps.deploy.outputs.deployed }}
     env:
@@ -132,9 +137,9 @@ jobs:
             exit 1
           fi
           # Use the existing deployment implementation with the server's compose/env files.
-          scp -o StrictHostKeyChecking=no scripts/deploy-staging.sh "$STAGING_USER@$STAGING_HOST:/tmp/impetus-deploy-staging.sh"
+          scp -o StrictHostKeyChecking=accept-new scripts/deploy-staging.sh "$STAGING_USER@$STAGING_HOST:/tmp/impetus-deploy-staging.sh"
           printf -v remote_command 'DEPLOY_DIR=%q API_IMAGE=%q CLIENT_IMAGE=%q bash /tmp/impetus-deploy-staging.sh --deploy-only' "$DEPLOY_DIR" "$API_IMAGE" "$CLIENT_IMAGE"
-          ssh -o StrictHostKeyChecking=no "$STAGING_USER@$STAGING_HOST" "$remote_command"
+          ssh -o StrictHostKeyChecking=accept-new "$STAGING_USER@$STAGING_HOST" "$remote_command"
           {
             echo "deployed=true"
             echo "url=http://$STAGING_HOST"
@@ -144,6 +149,7 @@ jobs:
     name: Health Checks
     needs: deploy-staging
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: needs.deploy-staging.result == 'success' && needs.deploy-staging.outputs.deployed == 'true'
     steps:
       - name: Wait for services
@@ -180,6 +186,7 @@ jobs:
     name: Notify
     needs: [build-and-push, deploy-staging, health-check]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
     steps:
       - name: Deployment Summary

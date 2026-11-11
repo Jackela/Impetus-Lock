@@ -180,5 +180,5 @@ echo ""
 success "All services stopped!"
 
 if [[ $CLEAN -eq 1 ]]; then
-  info "Use './scripts/dev-setup.sh' to recreate the environment"
+  info "Use './scripts/dev-start.sh' to recreate the environment"
 fi

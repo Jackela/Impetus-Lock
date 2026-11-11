@@ -1,5 +1,7 @@
 # AI PR Workflow - GitHub Actions 自动化指南
 
+> **Retired (archived 2026-11-11).** The "merge automatically once CI is green" rule and the associated helper scripts are retired. Use normal `gh` commands and human approval; see `AGENTS.md`.
+
 ## 问题说明
 
 **根本原因**: GitHub Actions 的 `pull_request` 触发器只在以下情况触发：

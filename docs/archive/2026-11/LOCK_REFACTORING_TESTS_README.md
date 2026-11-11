@@ -1,5 +1,7 @@
 # Lock Storage Refactoring - Test Suite Package
 
+> **Historical (archived 2026-11-11).** This task package predates the completed lock refactor and is kept as evidence only. Current architecture and gates live in `AGENTS.md`, `openspec/specs/`, and the test suites.
+
 ## Overview
 
 This package contains **comprehensive unit test suites** for the lock storage system refactoring in Impetus Lock. The migration moves from HTML comment-based lock storage to ProseMirror node attribute-based storage for improved performance and maintainability.

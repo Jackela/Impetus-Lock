@@ -1,5 +1,7 @@
 # Feature Specifications
 
+> **Frozen legacy specs.** These 001–007 specifications document completed features and are kept for history. Do not update them as current requirements. Current specifications and change proposals live in [`openspec/`](../openspec/).
+
 This directory contains feature specifications following the Spec-Driven Development (SDD) workflow.
 
 ## Specification Index

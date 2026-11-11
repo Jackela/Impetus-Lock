@@ -156,12 +156,12 @@
 - [X] T068 [P] Create useAIActionListener hook in client/src/hooks/useAIActionListener.ts (listens for Provoke/Delete/Reject events from P1 API, provides currentAction state; include JSDoc comments) - ✅ NOT NEEDED: Direct integration in EditorCore.tsx (lines 88, 113, 152, 163, 214, 275) follows Article I (Simplicity)
 - [X] T069 Wire useAIActionListener to SensoryFeedback component (pass currentAction as actionType prop) - ✅ COMPLETE: EditorCore manages currentAction state and passes to SensoryFeedback (line 275)
 - [X] T070 Add CSS for reduced-motion media query in client/src/styles/animations.css (@media (prefers-reduced-motion: reduce) { ... })
-- [ ] T071 [P] Test audio playback in Chrome browser (verify Clank, Whoosh, Bonk sounds play without errors; check browser console for AudioContext warnings) - ⏳ MANUAL TESTING REQUIRED (see MANUAL_TESTING_GUIDE.md)
-- [ ] T072 [P] Test animations in Chrome browser (verify Glitch, Fade-out, Shake animations render correctly; verify timing: Glitch ~1.5s, Fade-out ~0.75s) - ⏳ MANUAL TESTING REQUIRED (see MANUAL_TESTING_GUIDE.md)
-- [ ] T073 [P] Test accessibility: Enable prefers-reduced-motion in Chrome DevTools → verify animations simplified (opacity change only, no glitch/fade-out) - ⏳ MANUAL TESTING REQUIRED (see MANUAL_TESTING_GUIDE.md)
-- [ ] T074 [P] Test accessibility: Mute browser → verify visual feedback still works, no audio errors - ⏳ MANUAL TESTING REQUIRED (see MANUAL_TESTING_GUIDE.md)
-- [ ] T075 Test cancel-and-replace: Trigger Provoke, immediately trigger Delete → verify Glitch cancelled, Fade-out starts, Clank stopped, Whoosh plays - ⏳ MANUAL TESTING REQUIRED (see MANUAL_TESTING_GUIDE.md)
-- [ ] T076 Test debouncing: Rapid-click manual trigger button (5 times within 2 seconds) → verify only 1 API call made - ⏳ MANUAL TESTING REQUIRED (see MANUAL_TESTING_GUIDE.md)
+- [ ] T071 [P] Test audio playback in Chrome browser (verify Clank, Whoosh, Bonk sounds play without errors; check browser console for AudioContext warnings) - ⏳ MANUAL TESTING REQUIRED (see docs/archive/2026-11/MANUAL_TESTING_GUIDE.md)
+- [ ] T072 [P] Test animations in Chrome browser (verify Glitch, Fade-out, Shake animations render correctly; verify timing: Glitch ~1.5s, Fade-out ~0.75s) - ⏳ MANUAL TESTING REQUIRED (see docs/archive/2026-11/MANUAL_TESTING_GUIDE.md)
+- [ ] T073 [P] Test accessibility: Enable prefers-reduced-motion in Chrome DevTools → verify animations simplified (opacity change only, no glitch/fade-out) - ⏳ MANUAL TESTING REQUIRED (see docs/archive/2026-11/MANUAL_TESTING_GUIDE.md)
+- [ ] T074 [P] Test accessibility: Mute browser → verify visual feedback still works, no audio errors - ⏳ MANUAL TESTING REQUIRED (see docs/archive/2026-11/MANUAL_TESTING_GUIDE.md)
+- [ ] T075 Test cancel-and-replace: Trigger Provoke, immediately trigger Delete → verify Glitch cancelled, Fade-out starts, Clank stopped, Whoosh plays - ⏳ MANUAL TESTING REQUIRED (see docs/archive/2026-11/MANUAL_TESTING_GUIDE.md)
+- [ ] T076 Test debouncing: Rapid-click manual trigger button (5 times within 2 seconds) → verify only 1 API call made - ⏳ MANUAL TESTING REQUIRED (see docs/archive/2026-11/MANUAL_TESTING_GUIDE.md)
 - [X] T077 Verify all Vitest unit tests pass (npm run test in client/)
 - [X] T078 Verify all Playwright E2E tests pass (npm run test:e2e in client/) - ✅ 11 passed, 7 skipped (backend-dependent gracefully skipped), 3.9s duration
 - [X] T079 Run TypeScript type check (npm run type-check in client/) → verify no errors

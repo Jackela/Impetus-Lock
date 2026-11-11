@@ -4,13 +4,14 @@ Impetus Lock lets you bring your own LLM credentials without ever sending them t
 
 ## Storage modes at a glance
 
-| Mode      | Where data lives                                 | What persists across reloads | Best for |
-|-----------|--------------------------------------------------|------------------------------|----------|
-| `local`   | `localStorage` key `impetus.llmConfig`           | Provider, model, API key     | Solo devs that trust their workstation |
-| `encrypted` | `impetus.llmVault.encrypted` (AES-GCM blob) + `impetus.llmVault.salt` | Encrypted payload + salt (never the passphrase) | Shared machines where BYOK must rest at encrypt-at-rest | 
-| `session` | In-memory cache only (`cache` in `llmKeyVault`)   | Nothing – data is wiped on reload/lock/visibility loss | Demos, QA runs, or highly sensitive credentials |
+| Mode        | Where data lives                                                      | What persists across reloads                           | Best for                                                |
+| ----------- | --------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------- |
+| `local`     | `localStorage` key `impetus.llmConfig`                                | Provider, model, API key                               | Solo devs that trust their workstation                  |
+| `encrypted` | `impetus.llmVault.encrypted` (AES-GCM blob) + `impetus.llmVault.salt` | Encrypted payload + salt (never the passphrase)        | Shared machines where BYOK must rest at encrypt-at-rest |
+| `session`   | In-memory cache only (`cache` in `llmKeyVault`)                       | Nothing – data is wiped on reload/lock/visibility loss | Demos, QA runs, or highly sensitive credentials         |
 
 Additional UX controls surface the modes:
+
 - **Storage selector** inside the LLM Settings modal (default `local`).
 - **Passphrase inputs** for encrypted mode with inline validation and unlock errors.
 - **Header actions** (`Lock Session`, `Forget Key`) to clear sensitive state without re-opening the modal.
@@ -43,10 +44,12 @@ Additional UX controls surface the modes:
 ## Testing guidance
 
 Automated coverage:
+
 - `client/e2e/llm-settings.spec.ts` exercises local persistence, encrypted unlock failures, and session-mode clearing.
 - Vitest coverage lives in `client/src/services/__tests__/telemetry.test.ts` and `client/src/services/api/interventionClient.test.ts`, ensuring no headers leak when the vault is empty.
 
-Manual checks (also mirrored in `MANUAL_TESTING_GUIDE.md`):
+Manual checks:
+
 1. Save a key in each mode and verify the header pill shows `LLM: <provider>`.
 2. Trigger `Lock Session` and `Forget Key` and confirm the UI reverts to "LLM 设置".
 3. For encrypted mode, reload the page, enter a wrong passphrase (expect error), then the correct one (config loads).

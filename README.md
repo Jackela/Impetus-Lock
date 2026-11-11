@@ -3,11 +3,14 @@
 Impetus Lock 是一个 React + Vite 前端与 FastAPI 后端组成的创作工具。用户在编辑器中写作，选择普通编辑、Muse 或 Loki 模式；AI 可以注入带锁定标记的创作内容，编辑器会阻止删除已锁定内容。项目同时提供任务保存、版本回载、风格学习、统计与成就等配套界面。
 
 [![CI](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![Node 24](https://img.shields.io/badge/node-24.x-brightgreen.svg)](https://nodejs.org/)
 
-演示产物：[Muse/Loki 流程录像](demo-artifacts/impetus-lock-demo.webm)。
+> **Status**: pre-1.0. CI green means the checked gates passed; it is not a deployment or user acceptance. Current working rules and gates live in [`AGENTS.md`](AGENTS.md).
 
-![主界面](client/audit-screenshots/03-main-ui.png)
+演示产物：[Muse/Loki 流程录像](demo-artifacts/impetus-lock-demo.webm)（本地录制，约 1.2 MB）。
 
 ## 实际功能
 
@@ -22,7 +25,7 @@ Impetus Lock 是一个 React + Vite 前端与 FastAPI 后端组成的创作工�
 ### 环境要求
 
 - Python 3.11+ 与 [Poetry](https://python-poetry.org/)。本机已用 Python 3.12 验证。
-- Node.js 24.x（与 CI 工具链一致）；`client/package.json` 声明 `engines.node ">=22.12 <25"`。
+- Node.js 22.13+ 或 24.x（`.nvmrc` 为 24，与 CI 一致）；`client/package.json` 声明 `engines.node "^22.13.0 || ^24.0.0"`。
 - Docker（使用便捷启动脚本时提供 PostgreSQL）。
 
 ### 便捷启动（Linux / WSL）
@@ -90,7 +93,7 @@ curl http://localhost:8000/health
 
 旧全局草稿会显示为“Unassigned draft”。选择“Import as a new draft”才会导入当前账户的新草稿，原副本保留；也可导出或明确丢弃。锁或浏览器存储无法可靠恢复时，先导出原始备份并重试，勿清空浏览器数据。账户草稿仅在原账户重新登录后显示。
 
-本次本地验证与尚未验证项见[认证入口验证记录](openspec/changes/complete-authenticated-editor-entry/validation.md)。
+本次本地验证与尚未验证项见[认证入口验证记录](openspec/changes/archive/2026-11-09-complete-authenticated-editor-entry/validation.md)。
 隔离 PostgreSQL、Redis、真实认证及生产浏览器的复现步骤见[验证环境说明](scripts/authenticated-editor-validation/README.md)。
 
 ## 开发与门禁
@@ -100,47 +103,58 @@ curl http://localhost:8000/health
 ```bash
 cd server
 poetry run ruff check .
-poetry run ruff format --check .
+poetry run pydocstyle server/
+poetry run ruff format --check
 poetry run lint-imports
 poetry run mypy .
-poetry run pytest tests/ -n auto --cov=server --cov-report=term
-poetry run coverage report --rcfile=coverage-critical.ini
+poetry run pytest tests/ -n auto --cov=server --cov-report=term-missing
+poetry run python check_critical_coverage.py
 
 cd ../client
 npm ci
 npm run lint
 npm run format
 npm run type-check
+npm run api:check
 npm run test -- --coverage
+npm run test:coverage-gate
+npm run build
 ```
 
-提交前保持测试与实现同步，并通过 GitHub Actions 的 lint、类型检查和测试任务。`act` 本地 CI 流程见[开发指南](DEVELOPMENT.md)。
+提交前保持测试与实现同步，并通过 GitHub Actions 的 lint、类型检查、测试和 Validate 任务。完整门禁与文件边界以 [`AGENTS.md`](AGENTS.md) 为准；`act` 本地 CI 流程见[开发指南](DEVELOPMENT.md)。
 
-2026-09-14 的本地审计结果如下；该记录未运行 Playwright E2E，也不代表远端 CI 或发布状态。
+2026-11-11 的本地验证结果如下；远端 CI 是权威门禁，本地结果不代表部署或用户验收。
 
-| 范围                                                    | 结果                                                         |
-| ------------------------------------------------------- | ------------------------------------------------------------ |
-| 后端测试                                                | 479 passed, 4 skipped；固定关键路径集合的聚合行覆盖率 82.19% |
-| 前端测试                                                | 545 passed, 4 skipped；固定关键路径集合的聚合行覆盖率 81.73% |
-| Ruff、import-linter、mypy、ESLint、Prettier、TypeScript | PASS                                                         |
-| OpenSpec 严格校验                                       | 19 passed, 0 failed；3 份 Tier 3 草稿待审批                  |
+| 范围                                                                       | 结果                                                                         |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 后端测试                                                                   | 910 passed, 0 skipped；branch coverage 79.98%，关键路径 94.40%               |
+| 前端测试                                                                   | 986 tests；lines 81.72 / statements 80.40 / branches 78.59 / functions 75.31 |
+| E2E                                                                        | 主套件 111 passed / 4 fixme；Story E2E 与 browser authentication 通过        |
+| Ruff、pydocstyle、import-linter、mypy、ESLint、Prettier、TypeScript、build | PASS                                                                         |
+| OpenSpec 严格校验 / actionlint                                             | 21/21 / PASS                                                                 |
 
-完整证据见 [2026-09-14 本地审计报告](.scratch/audit-2026-09/report.md)。
+证据见 [测试套件优化报告](docs/reports/20261111-test-suite-optimization.md) 与 [质量路线图报告](docs/reports/20261109-quality-roadmap.md)。
 
 ## 文档导航
 
 - [开发指南](DEVELOPMENT.md)：开发流程、测试策略和 CI 说明。
+- [测试指南](TESTING.md)：测试分层、命令和调试方式。
 - [文档索引](docs/INDEX.md)：当前指南、报告、组件文档和历史归档。
+- [贡献指南](CONTRIBUTING.md) 与 [安全策略](SECURITY.md)：提交前要求与漏洞披露。
 - [部署指南](docs/guides/deployment.md)：部署配置与运行方式。
 - [故障排查](docs/guides/troubleshooting.md)：常见开发问题。
+- [OpenSpec 指南](openspec/AGENTS.md)：新能力、架构或 API 变更的提案流程。
 - [客户端说明](client/README.md) 与 [服务端说明](server/README.md)：分层实现和组件细节。
-- [功能规格](specs/README.md)：遗留功能规格；OpenSpec 规格与变更以 `openspec/` 为准。
+- [功能规格](specs/README.md)：已冻结的遗留功能规格；OpenSpec 规格与变更以 `openspec/` 为准。
 - [历史 E2E 快照（2026-03-17）](docs/archive/2026-09/README_E2E_SNAPSHOT_2026-03-17.md)：仅供历史追踪。
 
 ## 贡献
 
+完整流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。简要要求：
+
 1. 从 `main` 创建分支，保持改动聚焦，并为行为改动补充有区分度的测试。
 2. 在对应目录安装依赖并运行本页门禁；提交前检查 `git diff --check`。
 3. Pull request 应说明用户可见变化、验证命令和未解决事项。涉及新能力、破坏性变化或架构调整时，先按 [OpenSpec 指南](openspec/AGENTS.md) 创建并获批变更提案。
+4. 不要提交 `.env`、API key、cookie 或本地测试产物；安全披露见 [SECURITY.md](SECURITY.md)。
 
 项目采用 MIT License，详见 [LICENSE](LICENSE)。

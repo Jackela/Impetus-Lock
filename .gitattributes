@@ -1,2 +1,13 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+*.webm binary
+*.mp4 binary
+*.mp3 binary
+*.png binary
+*.jpg binary
+*.woff2 binary
+
+package-lock.json linguist-generated=true
+client/package-lock.json linguist-generated=true
+server/poetry.lock linguist-generated=true

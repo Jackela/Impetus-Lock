@@ -126,7 +126,7 @@
 **Documentation (4):**
 - `CHANGELOG.md` - Full feature changelog
 - `client/CREDITS.md` - Audio asset attribution
-- `docs/AUDIO_FEEDBACK_GUIDE.md` - Complete audio system reference
+- `docs/components/audio-feedback.md` - Complete audio system reference
 - [E2E_TEST_STATUS.md](../../docs/archive/2026-09/E2E_TEST_STATUS.md) - E2E testing guide
 
 ### Modified Files (9)
@@ -235,7 +235,7 @@
 ### Article V: Clear Comments & Documentation ✅
 
 - ✅ JSDoc comments on all exported functions/components
-- ✅ Comprehensive documentation: CHANGELOG.md, AUDIO_FEEDBACK_GUIDE.md, CREDITS.md
+- ✅ Comprehensive documentation: CHANGELOG.md, docs/components/audio-feedback.md, CREDITS.md
 - ✅ Inline comments for complex logic
 - ✅ ESLint enforcement of JSDoc presence
 
@@ -319,7 +319,7 @@ These require human verification and cannot be automated:
    - E2E tests: Caught real browser issues
    - 97.5% coverage provides safety net
 
-4. **Documentation-First**: Writing AUDIO_FEEDBACK_GUIDE.md clarified design
+4. **Documentation-First**: Writing docs/components/audio-feedback.md clarified design
    - Forced thinking about edge cases
    - Easier onboarding for future developers
 
@@ -356,7 +356,7 @@ These require human verification and cannot be automated:
 - [X] All unit tests passing (118/121)
 - [X] All lint checks passing (ESLint max-warnings=0)
 - [X] All type checks passing (TypeScript strict mode)
-- [X] Documentation complete (CHANGELOG.md, AUDIO_FEEDBACK_GUIDE.md, CREDITS.md)
+- [X] Documentation complete (CHANGELOG.md, docs/components/audio-feedback.md, CREDITS.md)
 - [X] Constitutional compliance verified (Articles I-V)
 - [ ] Manual browser testing completed (T071-T076)
 - [ ] E2E tests passing (T078 - requires backend)
@@ -432,7 +432,7 @@ export const FEATURE_FLAGS = {
 ## 📞 Support & Contact
 
 **Feature Owner**: AI Development Team  
-**Documentation**: `docs/AUDIO_FEEDBACK_GUIDE.md`  
+**Documentation**: `docs/components/audio-feedback.md`
 **Issues**: GitHub Issues (`002-vibe-enhancements` label)  
 **Questions**: See `CLAUDE.md` for project conventions
 

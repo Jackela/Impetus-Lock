@@ -1,49 +1,36 @@
-# Branch Protection配置指南
+# Branch Protection
 
-## GitHub设置步骤
+Current configuration for `main` on `Jackela/Impetus-Lock`. Update this file when the rules change; do not treat it as a second gate definition.
 
-### 1. Main Branch保护
-```
-Settings → Branches → Add Rule
-```
+## Required checks
 
-配置:
-- Branch name pattern: `main`
-- ✅ Require a pull request before merging
-  - Required approvals: 1
-- ✅ Require status checks to pass before merging
-  - Status checks: `E2E Tests`
-- ✅ Require branches to be up to date before merging
-- ✅ Include administrators
+- `Lint (Backend + Frontend)`
+- `Type Check (Backend + Frontend)`
+- `Backend Tests`
+- `Frontend Tests`
+- `Validate (API Types + OpenSpec)`
+- `Playwright E2E Tests`
 
-### 2. 强制性检查
-必须通过的CI测试:
-- Backend unit tests (80/80)
-- E2E Playwright tests (82/82)
-- Type checking
-- Linting
+`Muse/Loki Story E2E` and `browser-authentication` are high-value suites but are not required until their flake rate is observed. Do **not** require `Test Matrix (Python 3.11/3.12)`: it is path-filtered and will leave non-backend PRs waiting forever.
 
-### 3. Code Owners设置
-创建 `.github/CODEOWNERS`:
-```
-* @Jackela
-/server/ @Jackela
-/client/ @Jackela
-/docs/ @Jackela
-```
+## Repository rules
 
-## 本项目规则 (AI Agent约束)
+- Require a pull request before merging.
+- Required approvals: **0** for the single-maintainer workflow; human review is still required by `AGENTS.md` for significant product decisions and release.
+- Require status checks to pass and branches to be up to date.
+- Require conversation resolution before merging.
+- Block force pushes and branch deletion.
+- Do not include administrators in bypass rules for normal feature work; direct pushes to `main` remain prohibited.
 
-### 自动化检查
-- 每个PR自动触发GitHub Actions
-- AI不得跳过CI检查
-- 失败的PR不得合并
+## CODEOWNERS
 
-### 代码审查
-- 所有AI生成的代码必须有commit message说明
-- 重大架构变更需要额外文档
-- 测试覆盖率不得降低
+`.github/CODEOWNERS` assigns `* @Jackela` and the same owner for `server/`, `client/`, `docs/`, and `.github/`. Because the repository requires zero approving reviews, CODEOWNERS is informational rather than a hard gate.
 
----
+## AI agents
 
-_参考: 2026-02-26 Sprint最佳实践_
+- Every change goes through a branch and PR; do not push directly to `main`.
+- Do not bypass a failing check with `--no-verify`, ignore directives, skipped tests, or lowered thresholds.
+- Merge only after the required checks are green and review threads are resolved.
+- A local pass or merged PR is not deployment or user acceptance; state unverified environments explicitly.
+
+See `AGENTS.md` for the authoritative rules and `.github/workflows/ci.yml` for the gate implementation.

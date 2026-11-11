@@ -1,118 +1,98 @@
 # Documentation Index
 
-**Last Updated**: 2025-11-07
+**Last updated**: 2026-11-11
 
-This directory contains active guides and archived process documents, reports, and session summaries for the Impetus Lock project.
+`AGENTS.md` is the authority for working rules and quality gates. This index is a map, not a second source of truth. Material under `docs/archive/`, `docs/sessions/`, and dated `docs/process/` phase notes is **historical evidence**, never current status.
 
-## Directory Structure
+## Start here
 
-```
-docs/
-├── INDEX.md (this file)
-├── archive/2026-09/ # Root historical reports and session records
-├── process/          # Feature implementation process documents
-├── reports/          # Validation, review, and analysis reports
-└── sessions/         # Session summaries and status updates
-```
+- [`README.md`](../README.md) — product overview and quick start
+- [`CONTEXT.md`](../CONTEXT.md) — current product and architecture context
+- [`AGENTS.md`](../AGENTS.md) — precedence, protected files, quality gates, task routing
+- [`DEVELOPMENT.md`](../DEVELOPMENT.md) — local development workflow
+- [`TESTING.md`](../TESTING.md) — test suite layout and commands
+- [`CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution workflow
+- [`SECURITY.md`](../SECURITY.md) — vulnerability reporting and security scope
 
-## Process Documents (process/)
+## Current reference
 
-Implementation tracking and phase completion documents:
+| Document                                                      | Purpose                                                         |
+| ------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`API_CONTRACT.md`](../API_CONTRACT.md)                       | HTTP API contract                                               |
+| [`ARCHITECTURE_GUARDS.md`](../ARCHITECTURE_GUARDS.md)         | Layering and architecture constraints                           |
+| [`DEPENDENCY_MANAGEMENT.md`](../DEPENDENCY_MANAGEMENT.md)     | Dependency and upgrade policy                                   |
+| [`openspec/`](../openspec/)                                   | Current specifications and change proposals                     |
+| [`specs/README.md`](../specs/README.md)                       | Frozen legacy feature specs (001–007); OpenSpec supersedes them |
+| [`docs/architecture-deep-dive.md`](architecture-deep-dive.md) | Architecture walkthrough                                        |
+| [`docs/observability.md`](observability.md)                   | Logging, metrics, health checks                                 |
+| [`docs/prompts.md`](prompts.md)                               | Prompt templates and evaluation entry points                    |
+| [`docs/MIGRATION_v1_to_v2.md`](MIGRATION_v1_to_v2.md)         | Data migration notes                                            |
+| [`docs/investigation-report.md`](investigation-report.md)     | Dated investigation record                                      |
 
-- **checkpoint.md** - Latest implementation checkpoint (Phase 5)
-- **PHASE_4_COMPLETE.md** - Phase 4 (Sensory Feedback) completion summary
-- **PHASE_5_INTEGRATION_COMPLETE.md** - Phase 5 (Integration & Polish) completion summary
-- **US2_IMPLEMENTATION_COMPLETE.md** - User Story 2 implementation complete
-- **US2_PROGRESS_SUMMARY.md** - User Story 2 progress tracking
+## Guides
 
-## Validation Reports (reports/)
+- [`docs/guides/deployment.md`](guides/deployment.md) — current deployment guide
+- [`docs/guides/troubleshooting.md`](guides/troubleshooting.md) — common development/deployment issues
+- [`client/e2e/README.md`](../client/e2e/README.md) — E2E suites and failure evidence
 
-CI/CD validation and code quality reports:
+## Components
 
-- **ACT_CLI_VALIDATION_REPORT.md** - Act CLI local CI validation results
-- **ACT_VS_GITHUB_ACTIONS_COMPARISON.md** - Comparison between Act and GitHub Actions
-- **GITHUB_ACTIONS_ANALYSIS.md** - GitHub Actions workflow analysis
-- **COMPREHENSIVE_REVIEW_REPORT.md** - Comprehensive code review and quality analysis
-- **P0_CRITICAL_FIXES_SUMMARY.md** - Critical fixes summary (P0 priority)
+- [`docs/components/catalog.md`](components/catalog.md) — component catalog, props, accessibility
+- [`docs/components/audio-feedback.md`](components/audio-feedback.md) — audio feedback reference
 
-## Session Summaries (sessions/)
+## Security
 
-Historical session progress and completion summaries:
+- [`docs/security/byok-storage.md`](security/byok-storage.md) — BYOK storage and threat model
+- [`docs/security/SECRETS_MANAGEMENT.md`](security/SECRETS_MANAGEMENT.md) — secret handling and rotation
+- [`docs/process/qa-privacy-checklist.md`](process/qa-privacy-checklist.md) — privacy review checklist
 
-- **COMPLETION_SUMMARY.md** - Overall feature completion summary
-- **FINAL_SESSION_SUMMARY.md** - Final implementation session summary
-- **IMPLEMENTATION_COMPLETE_SUMMARY.md** - Implementation completion details
-- **IMPLEMENTATION_STATUS.md** - Implementation status tracking
-- **SESSION_CONTINUATION_SUMMARY.md** - Session continuation context
-- **PROJECT_STATUS_REPORT.md** - Project-wide status report
+## Maintenance
 
-## Root Documentation (../)
+- [`docs/maintenance/authenticated-editor.md`](maintenance/authenticated-editor.md) — authenticated editor runbook
+- [`docs/maintenance/muse-loki-stories.md`](maintenance/muse-loki-stories.md) — Muse/Loki story evaluation
 
-Core project documentation remains in the root directory:
+## Agent notes
 
-- **README.md** - Project overview and quickstart
-- **CLAUDE.md** - Claude Code configuration and guidelines
-- **DEVELOPMENT.md** - Development workflow and guidelines
-- **TESTING.md** - Testing strategy and commands
-- **API_CONTRACT.md** - API endpoint specifications
-- **ARCHITECTURE_GUARDS.md** - Architecture enforcement rules
-- **DEPENDENCY_MANAGEMENT.md** - Dependency security and management
+- [`docs/agents/domain.md`](agents/domain.md) — domain vocabulary
+- [`docs/agents/issue-tracker.md`](agents/issue-tracker.md) — issue routing and local evidence rules
+- [`docs/agents/triage-labels.md`](agents/triage-labels.md) — label conventions
 
-Historical root reports are in [archive/2026-09/](archive/2026-09/).
+## Technical designs
 
-## Historical Root Reports (archive/2026-09/)
+- [`docs/technical-designs/P1_FIX_DESIGN_01_provider_registry.md`](technical-designs/P1_FIX_DESIGN_01_provider_registry.md)
+- [`docs/technical-designs/P1_FIX_DESIGN_02_transaction_filter.md`](technical-designs/P1_FIX_DESIGN_02_transaction_filter.md)
 
-The following reports retain their original facts and status as dated process records:
+## Reports
 
-- [AI_INTEGRATION_STATUS.md](archive/2026-09/AI_INTEGRATION_STATUS.md) - AI integration status
-- [ARCHITECTURE_SAFETY_NET_STATUS.md](archive/2026-09/ARCHITECTURE_SAFETY_NET_STATUS.md) - Architecture safety net status
-- [E2E_FIX_SUMMARY.md](archive/2026-09/E2E_FIX_SUMMARY.md) - E2E debugging and fix summary
-- [E2E_STABILITY_FIX.md](archive/2026-09/E2E_STABILITY_FIX.md) - E2E stability fix plan
-- [E2E_TEST_STATUS.md](archive/2026-09/E2E_TEST_STATUS.md) - E2E execution status
-- [FIX_PLAN.md](archive/2026-09/FIX_PLAN.md) - CI fix plan
-- [READY_FOR_TESTING.md](archive/2026-09/READY_FOR_TESTING.md) - Historical testing readiness record
-- [RESEARCH_FINDINGS.md](archive/2026-09/RESEARCH_FINDINGS.md) - CI and Poetry research findings
-- [SESSION_SUMMARY.md](archive/2026-09/SESSION_SUMMARY.md) - Historical session summary
-- [TEST_SUITE_EXAMPLES.md](archive/2026-09/TEST_SUITE_EXAMPLES.md) - Lock storage test examples
-- [TEST_SUITE_SUMMARY.md](archive/2026-09/TEST_SUITE_SUMMARY.md) - Lock storage test suite summary
+Current and recent delivery evidence:
 
-## Component Documentation (components/)
+- [`docs/reports/20261111-test-suite-optimization.md`](reports/20261111-test-suite-optimization.md) — PR #249
+- [`docs/reports/20261109-quality-roadmap.md`](reports/20261109-quality-roadmap.md) — PR #246
+- [`docs/reports/COMPREHENSIVE_REVIEW_REPORT.md`](reports/COMPREHENSIVE_REVIEW_REPORT.md)
+- [`docs/reports/P0_CRITICAL_FIXES_SUMMARY.md`](reports/P0_CRITICAL_FIXES_SUMMARY.md)
+- [`docs/reports/ACT_CLI_VALIDATION_REPORT.md`](reports/ACT_CLI_VALIDATION_REPORT.md)
+- [`docs/reports/ACT_VS_GITHUB_ACTIONS_COMPARISON.md`](reports/ACT_VS_GITHUB_ACTIONS_COMPARISON.md)
+- [`docs/reports/GITHUB_ACTIONS_ANALYSIS.md`](reports/GITHUB_ACTIONS_ANALYSIS.md)
 
-UI component reference and usage documentation:
+## Historical (not current status)
 
-- **catalog.md** - Complete component catalog with props, examples, and accessibility notes
+### 2026-11 archive
 
-## Developer Guides (guides/)
+- [`docs/archive/2026-11/README.md`](archive/2026-11/README.md) — manifest of root docs retired in 2026-11
+- `prd.json`, `CLAUDE-2025.md`, and the retired guides listed there
 
-Developer-facing guides for common workflows:
+### 2026-09 archive
 
-- **troubleshooting.md** - Common issues and solutions for development and deployment
-- **deployment.md** - Production deployment instructions with Docker and environment setup
+- [`docs/archive/2026-09/`](archive/2026-09/) — root reports, E2E snapshots, CI research, test summaries
 
-## Feature Specifications (../specs/)
+### Dated process and session notes
 
-Feature planning and task breakdown:
+- [`docs/process/`](process/) — phase completion and checkpoint notes
+- [`docs/sessions/`](sessions/) — historical session summaries and status reports
 
-- **specs/001-impetus-core/** - Core un-deletable lock system (P1)
-- **specs/002-vibe-enhancements/** - Vibe enhancements (manual trigger + sensory feedback)
+## Navigation rules
 
-## Asset Organization
-
-Audio assets have been moved to their correct location:
-
-- **client/src/assets/audio/** - Audio files for sensory feedback
-  - ✅ clank.mp3 (28.8 KB) - Provoke action sound
-  - ✅ whoosh.mp3 (18.4 KB) - Delete action sound
-  - ✅ bonk.mp3 - REJECT/lock block action sound
-
-## Archive Purpose
-
-These documents have been archived to keep the root directory clean and focused on active development documentation. They provide historical context and detailed tracking of the implementation process.
-
-## Navigation Tips
-
-- **For current status**: See root-level README.md, DEVELOPMENT.md, and TESTING.md
-- **For implementation details**: Check process/ subdirectory
-- **For validation results**: Check reports/ subdirectory
-- **For historical context**: Check sessions/ subdirectory
-- **For feature specs**: See ../specs/ directory
+1. Current status: `README.md`, `CONTEXT.md`, `AGENTS.md`, `docs/reports/2026*`.
+2. Current behavior: code and tests, then `openspec/specs/`.
+3. Historical context: `docs/archive/`, `docs/sessions/`, dated `docs/process/` notes.
+4. Do not cite archived material as a current requirement.

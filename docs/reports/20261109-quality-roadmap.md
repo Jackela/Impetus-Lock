@@ -2,7 +2,7 @@
 
 > Branch: `codex/quality-roadmap-20261109`
 > Base: `b9df4c6` · Head: `79f8d76` · 13 commits (this report adds one more)
-> Local work only. Not pushed, not merged, not deployed.
+> **Merged as PR #246** (`16aa905`). This report records the local branch at the time of delivery; remote CI and the merge are the acceptance evidence.
 
 ## Scope delivered
 

@@ -1,5 +1,7 @@
 # Impetus Lock - Deployment Guide
 
+> **Historical (archived 2026-11-11).** Use `docs/guides/deployment.md` for the current deployment guide. This file is retained for dated deployment context only.
+
 ## Overview
 
 This guide covers deploying the Impetus Lock application to staging and production environments using Docker and Docker Compose.
