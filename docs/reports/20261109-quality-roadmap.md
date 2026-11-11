@@ -78,10 +78,18 @@
 
 - PostgreSQL 16 and Redis 7 were provisioned as ephemeral containers on non-default ports. Migrations ran cleanly, the Postgres-only tests and critical coverage passed, and both containers were removed after the run.
 - Playwright Chromium was installed for the run. The main suite, real-auth suite, and Muse/Loki story suite all passed; the 6 skips are pre-existing `test.skip` cases.
-- **Visual review**: no manual side-by-side screenshot review was performed. Screenshot evidence exists under `client/test-results/` and `client/playwright-report/`, but it is regenerable and not committed.
+- **Visual review**: no manual side-by-side screenshot review was performed. Screenshots and traces were produced during the run under `client/test-results/` and `client/playwright-report/` and removed afterward as regenerable artifacts.
 - **GitHub Actions was not run**; `actionlint`, YAML parsing, and the local equivalents passed, but remote CI behavior is unverified.
 - **TaskList snapshot locale**: snapshots assume `en_US`; run tests with `LC_ALL=en_US.UTF-8` on this machine.
 - The branch is local-only: not pushed, not merged, not deployed. A local pass is not release evidence.
+
+## Environment cleanup
+
+- PostgreSQL 16 (`127.0.0.1:55432`) and Redis 7 (`127.0.0.1:56379`) ran as ephemeral containers; both were stopped and removed.
+- The Colima VM created for this run was stopped and deleted, including its 20 GiB sparse data disk.
+- The temporary `server/.venv` symlink used by the story/auth runners was removed; Poetry's cached environment and `node_modules` were kept for normal development.
+- `client/test-results/`, `client/playwright-report/`, `client/dist/`, and temporary logs were removed.
+- Playwright's Chromium cache was kept so future E2E runs do not re-download the browser.
 
 ## Commit list
 
