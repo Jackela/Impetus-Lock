@@ -10,7 +10,7 @@ if [ -d "client" ] && [ -f "client/package.json" ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # Check Node.js version
-    if ! command -v node &> /dev/null; then
+    if ! command -v node > /dev/null 2>&1; then
         echo "❌ Node.js not found. Skipping client checks."
     else
         cd client || exit 1
@@ -46,7 +46,7 @@ if [ -d "server" ] && [ -f "server/pyproject.toml" ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # Check Python version
-    if ! command -v python3 &> /dev/null; then
+    if ! command -v python3 > /dev/null 2>&1; then
         echo "❌ Python not found. Skipping server checks."
     else
         cd server || exit 1
@@ -77,4 +77,4 @@ fi
 
 echo ""
 echo "✅ Pre-push checks passed! Ready to push."
-ENDOFFILE; __hermes_rc=$?; printf '__HERMES_FENCE_a9f7b3__'; exit $__hermes_rc
+exit 0
