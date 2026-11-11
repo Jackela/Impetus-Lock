@@ -35,7 +35,7 @@ FROM nginx:1.31-alpine as production
 # Labels
 LABEL maintainer="Impetus Team <team@impetus-lock.dev>"
 LABEL description="Production image for Impetus Lock frontend with Nginx"
-LABEL version="1.0.0"
+LABEL version="0.5.0"
 
 # Install security updates
 RUN apk upgrade --no-cache
