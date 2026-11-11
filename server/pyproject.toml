@@ -31,7 +31,7 @@ itsdangerous = "^2.1.2"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 email-validator = "^2.2.0"
 redis = "^7.4"
-websockets = ">=13.0,<17.0"
+websockets = ">=13.0,<18.0"
 python-socketio = {extras = ["asyncio"], version = "^5.11.0"}
 
 [tool.poetry.group.dev.dependencies]
