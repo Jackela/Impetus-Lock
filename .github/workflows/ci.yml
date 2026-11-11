@@ -329,6 +329,23 @@ jobs:
         working-directory: ./client
         run: npm ci
 
+      # `npm run api:check` imports the FastAPI app offline, so the Python
+      # dependency graph must be present even though this job does not run the
+      # backend test suite.
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: |
+          python -m pip install poetry
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install backend dependencies
+        working-directory: ./server
+        run: poetry install --no-interaction
+
       - name: Check generated API types are up to date
         working-directory: ./client
         run: npm run api:check
