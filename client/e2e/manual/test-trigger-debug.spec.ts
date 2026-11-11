@@ -39,7 +39,7 @@ test.describe("Manual Trigger Debug", () => {
     });
 
     // Navigate
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
     await waitForReactHydration(page);
     await dismissWelcomeModal(page);
     console.log("✅ App loaded");

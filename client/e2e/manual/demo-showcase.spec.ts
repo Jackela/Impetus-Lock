@@ -76,7 +76,7 @@ test.describe("Impetus Lock demo showcase", () => {
       });
     });
 
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
     await waitForAppReady(page);
 
     const welcomeDismiss = page.locator(".welcome-button");
