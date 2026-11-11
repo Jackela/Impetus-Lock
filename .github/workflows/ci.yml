@@ -52,7 +52,7 @@ jobs:
           python3 --version || true
           node --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.event.inputs.ref || github.sha }}
@@ -130,7 +130,7 @@ jobs:
           python3 --version || true
           node --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.event.inputs.ref || github.sha }}
@@ -215,7 +215,7 @@ jobs:
           python3 --version || true
           poetry --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.event.inputs.ref || github.sha }}
@@ -302,7 +302,7 @@ jobs:
           node --version || true
           npm --version || true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.event.inputs.ref || github.sha }}
@@ -360,7 +360,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           ref: ${{ github.event.inputs.ref || github.sha }}

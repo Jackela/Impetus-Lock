@@ -53,7 +53,7 @@ jobs:
           - 5432:5432
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: ${{ env.ACT != 'true' }}
 
       - name: Set up Python 3.12
@@ -235,7 +235,7 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/impetus_lock_test
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: ${{ env.ACT != 'true' }}
 
       - name: Set up Python 3.12
