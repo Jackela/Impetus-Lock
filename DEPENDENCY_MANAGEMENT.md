@@ -32,7 +32,7 @@ If a Dependabot label is missing, the PR is created without it. Labels used by t
 - **Patch/minor**: normal Dependabot PR, full gate.
 - **Major**: open or link a tracking issue, read the migration guide, and run the full gate plus the affected E2E suites. Do not merge a major runtime bump just because CI is green if the supported runtime range has not been updated deliberately.
 - **Runtime floors**: Python 3.11+ (CI 3.12), Node 22.13+/24.x. A dependency that requires a newer runtime needs an explicit decision and a CI matrix update.
-- **Held majors** (as of 2026-11): Node 26 types, Python 3.15, Vite 8, ESLint 10. These are tracked in Dependabot PRs/branches; do not merge them piecemeal. Evaluate them as a coordinated upgrade.
+- **Held majors** (as of 2026-11): Python 3.15, Node 26 / `@types/node` 26, Vite 8 + `@vitejs/plugin-react` 6, ESLint 10 + `eslint-plugin-react-hooks` 7, `lint-staged` 17, `pytest` 9, `redis` 8, `google-genai` 3, and the `actions/setup-node` / `docker/*` action majors. These are tracked in [#266](https://github.com/Jackela/Impetus-Lock/issues/266) and held in `.github/dependabot.yml`; do not merge them piecemeal. Remove the hold as part of the coordinated upgrade PR.
 
 ## Adding a dependency
 
