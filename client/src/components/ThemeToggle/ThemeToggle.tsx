@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
 import type { AriaRole } from "react";
 import { IconButton, MoonIcon, SparkleIcon, SunIcon } from "../ui";
-
-/** Supported application color theme names. */
-export type Theme = "light" | "dark" | "elevenlabs";
+import { useTheme } from "../../contexts/ThemeContext";
+import type { Theme } from "../../contexts/ThemeContext";
 
 /** Human-readable label for each theme, shown next to the icon in menus. */
 const THEME_LABEL: Record<Theme, string> = {
@@ -11,8 +9,6 @@ const THEME_LABEL: Record<Theme, string> = {
   light: "Light",
   elevenlabs: "Studio",
 };
-
-const THEME_KEY = "impetus-theme";
 
 interface ThemeToggleProps {
   /** Optional role forwarded to the native button (e.g. `menuitem` in a menu). */
@@ -26,9 +22,8 @@ interface ThemeToggleProps {
 /**
  * Button cycling through light, dark, and elevenlabs themes.
  *
- * Persists the choice to localStorage and applies it to the document root.
- * Rendered with the shared `IconButton` primitive so focus, hover, and touch
- * sizing come from the design system.
+ * The selected theme is owned by `ThemeProvider`, which applies it at startup
+ * even before the overflow menu mounts. This control only renders and cycles it.
  *
  * @param props - Component props
  * @param props.role - Optional role for the native button
@@ -37,22 +32,7 @@ interface ThemeToggleProps {
  * @returns The rendered theme toggle button
  */
 export function ThemeToggle({ role, className = "", showLabel = false }: ThemeToggleProps = {}) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem(THEME_KEY) as Theme) || "dark";
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
-
-  const cycleTheme = () => {
-    setTheme((prev) => {
-      if (prev === "dark") return "light";
-      if (prev === "light") return "elevenlabs";
-      return "dark";
-    });
-  };
+  const { theme, cycleTheme } = useTheme();
 
   return (
     <IconButton

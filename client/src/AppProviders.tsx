@@ -1,5 +1,6 @@
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthenticatedEntry } from "./AuthenticatedEntry";
 
 interface AppProvidersProps {
@@ -16,9 +17,11 @@ interface AppProvidersProps {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AuthenticatedEntry>{children}</AuthenticatedEntry>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthenticatedEntry>{children}</AuthenticatedEntry>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

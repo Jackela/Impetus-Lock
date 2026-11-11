@@ -2,6 +2,7 @@ import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { AppLayout } from "./AppLayout";
 
 /**
@@ -51,32 +52,34 @@ function renderLayout(initial: Partial<HostState> = {}) {
     const toggle = (name: string) => () =>
       setOverlay((current) => (current === name ? null : name));
     return (
-      <AppLayout
-        mode="off"
-        sidebarOpen={sidebarOpen}
-        onToggleSidebar={() => setSidebarOpen((current) => !current)}
-        onModeChange={vi.fn()}
-        onManualTrigger={vi.fn()}
-        onTaskClick={vi.fn()}
-        taskStatus="local"
-        isSaving={false}
-        taskError={null}
-        onCreateTask={vi.fn()}
-        onShowSettings={vi.fn()}
-        onLockSession={vi.fn()}
-        onForgetKey={vi.fn()}
-        onShowStyleLearning={toggle("Style Learning")}
-        showStyleLearning={overlay === "Style Learning"}
-        llmFeedback={null}
-        isConfigured={false}
-        showStats={overlay === "Writing Statistics"}
-        onToggleStats={toggle("Writing Statistics")}
-        showAchievements={overlay === "Achievements"}
-        onToggleAchievements={toggle("Achievements")}
-        content="Retained writing"
-      >
-        <textarea aria-label="Writing" defaultValue="Retained writing" />
-      </AppLayout>
+      <ThemeProvider>
+        <AppLayout
+          mode="off"
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen((current) => !current)}
+          onModeChange={vi.fn()}
+          onManualTrigger={vi.fn()}
+          onTaskClick={vi.fn()}
+          taskStatus="local"
+          isSaving={false}
+          taskError={null}
+          onCreateTask={vi.fn()}
+          onShowSettings={vi.fn()}
+          onLockSession={vi.fn()}
+          onForgetKey={vi.fn()}
+          onShowStyleLearning={toggle("Style Learning")}
+          showStyleLearning={overlay === "Style Learning"}
+          llmFeedback={null}
+          isConfigured={false}
+          showStats={overlay === "Writing Statistics"}
+          onToggleStats={toggle("Writing Statistics")}
+          showAchievements={overlay === "Achievements"}
+          onToggleAchievements={toggle("Achievements")}
+          content="Retained writing"
+        >
+          <textarea aria-label="Writing" defaultValue="Retained writing" />
+        </AppLayout>
+      </ThemeProvider>
     );
   }
 
@@ -142,32 +145,34 @@ it("Escape closes only the top-most overlay", async () => {
     const [stats, setStats] = useState(false);
     const [achievements, setAchievements] = useState(false);
     return (
-      <AppLayout
-        mode="off"
-        sidebarOpen={false}
-        onToggleSidebar={vi.fn()}
-        onModeChange={vi.fn()}
-        onManualTrigger={vi.fn()}
-        onTaskClick={vi.fn()}
-        taskStatus="synced"
-        isSaving={false}
-        taskError={null}
-        onCreateTask={vi.fn()}
-        onShowSettings={vi.fn()}
-        onLockSession={vi.fn()}
-        onForgetKey={vi.fn()}
-        onShowStyleLearning={vi.fn()}
-        showStyleLearning={false}
-        llmFeedback={null}
-        isConfigured={false}
-        showStats={stats}
-        onToggleStats={() => setStats((current) => !current)}
-        showAchievements={achievements}
-        onToggleAchievements={() => setAchievements((current) => !current)}
-        content="Stacked"
-      >
-        <textarea aria-label="Writing" defaultValue="Stacked" />
-      </AppLayout>
+      <ThemeProvider>
+        <AppLayout
+          mode="off"
+          sidebarOpen={false}
+          onToggleSidebar={vi.fn()}
+          onModeChange={vi.fn()}
+          onManualTrigger={vi.fn()}
+          onTaskClick={vi.fn()}
+          taskStatus="synced"
+          isSaving={false}
+          taskError={null}
+          onCreateTask={vi.fn()}
+          onShowSettings={vi.fn()}
+          onLockSession={vi.fn()}
+          onForgetKey={vi.fn()}
+          onShowStyleLearning={vi.fn()}
+          showStyleLearning={false}
+          llmFeedback={null}
+          isConfigured={false}
+          showStats={stats}
+          onToggleStats={() => setStats((current) => !current)}
+          showAchievements={achievements}
+          onToggleAchievements={() => setAchievements((current) => !current)}
+          content="Stacked"
+        >
+          <textarea aria-label="Writing" defaultValue="Stacked" />
+        </AppLayout>
+      </ThemeProvider>
     );
   }
 
