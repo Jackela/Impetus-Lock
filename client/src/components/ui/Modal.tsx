@@ -94,7 +94,6 @@ export function Modal({
   testId,
   children,
 }: ModalProps) {
-  const { ref } = useFocusTrap<HTMLDivElement>({ active: open });
   const dialogId = useRef<symbol>(Symbol("ui-modal"));
 
   // Register this dialog in the open stack so Escape and the background
@@ -157,6 +156,11 @@ export function Modal({
       body.style.overflow = previousOverflow;
     };
   }, [open]);
+
+  // Register the focus trap last so its cleanup (focus restoration) runs after
+  // the stack, inert, and scroll cleanups have released the background. A real
+  // browser refuses to focus a trigger while `#root` is still inert.
+  const { ref } = useFocusTrap<HTMLDivElement>({ active: open });
 
   if (!open) return null;
 
