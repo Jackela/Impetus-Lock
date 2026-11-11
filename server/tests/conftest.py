@@ -13,9 +13,46 @@ Constitutional Compliance:
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
+
+TESTS_ROOT = Path(__file__).resolve().parent
+
+# Root-level test modules that exercise pure logic or mocked collaborators, so
+# they belong in the fast `unit` lane even though they live outside tests/unit/.
+ROOT_UNIT_FILES: frozenset[str] = frozenset(
+    {
+        "test_domain_models.py",
+        "test_user_model.py",
+        "test_jwt.py",
+        "test_prompt_templates.py",
+        "test_prompt_parser.py",
+        "test_loki_logic.py",
+        "test_base_provider.py",
+        "test_provider_registry.py",
+        "test_debug_provider_identity.py",
+        "test_tracing_helper.py",
+        "test_error_handling.py",
+        "test_database_fallback.py",
+        "test_idempotency_cache.py",
+        "test_task_repository.py",
+        "test_task_version_atomicity.py",
+        "test_intervention_service.py",
+        "test_intervention_sentence_coordinates.py",
+        "test_intervention_openapi_schema.py",
+    }
+)
+
+# Root-level test modules that validate repository tooling rather than the backend.
+ROOT_TOOLING_FILES: frozenset[str] = frozenset(
+    {
+        "test_story_eval.py",
+        "test_dependency_contract.py",
+        "test_critical_coverage_gate.py",
+    }
+)
 
 # Force TESTING mode BEFORE any server imports
 os.environ["TESTING"] = "1"
@@ -47,6 +84,10 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "requires_anthropic: Tests requiring anthropic SDK")
     config.addinivalue_line("markers", "requires_gemini: Tests requiring google-genai SDK")
     config.addinivalue_line("markers", "requires_openai: Tests requiring openai SDK")
+    config.addinivalue_line(
+        "markers", "tooling: Exercises repository tooling/scripts, not the backend"
+    )
+    config.addinivalue_line("markers", "requires_postgres: Needs a live PostgreSQL")
 
 
 def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
@@ -241,15 +282,50 @@ def verify_environment():
     assert os.getenv("TESTING") == "1", "TESTING environment variable must be set"
 
 
+def _layer_marker(item: pytest.Item) -> pytest.MarkDecorator | None:
+    """Resolve the explicit test-layer marker for a collected item.
+
+    Directory layout is authoritative: anything under ``tests/unit``,
+    ``tests/integration`` or ``tests/e2e`` keeps its directory marker. Modules
+    sitting directly in ``tests/`` are classified by name via
+    ``ROOT_UNIT_FILES``; everything else at the root is treated as
+    ``integration`` because it touches real services, databases or the app.
+
+    Args:
+        item: Collected pytest item.
+
+    Returns:
+        The marker decorator to apply, or ``None`` when the item lives outside
+        the recognised layout (e.g. helper packages without test modules).
+    """
+    test_file = Path(str(item.path)).resolve()
+
+    try:
+        parts = test_file.relative_to(TESTS_ROOT).parts
+    except ValueError:
+        parts = (test_file.name,)
+
+    for layer in ("unit", "integration", "e2e"):
+        if layer in parts[:-1]:
+            return getattr(pytest.mark, layer)
+
+    if len(parts) != 1:
+        return None
+
+    if test_file.name in ROOT_UNIT_FILES:
+        return pytest.mark.unit
+    return pytest.mark.integration
+
+
 def pytest_collection_modifyitems(session, config, items):
     """Modify test items after collection."""
     for item in items:
-        if "unit" in str(item.fspath):
-            item.add_marker(pytest.mark.unit)
-        elif "integration" in str(item.fspath):
-            item.add_marker(pytest.mark.integration)
-        elif "e2e" in str(item.fspath):
-            item.add_marker(pytest.mark.e2e)
+        layer = _layer_marker(item)
+        if layer is not None:
+            item.add_marker(layer)
+
+        if Path(str(item.path)).name in ROOT_TOOLING_FILES:
+            item.add_marker(pytest.mark.tooling)
 
         if any(word in item.name.lower() for word in ["slow", "performance", "benchmark"]):
             item.add_marker(pytest.mark.slow)

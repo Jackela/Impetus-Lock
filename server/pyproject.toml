@@ -46,6 +46,7 @@ import-linter = "^2.11"
 hypothesis = "^6.147.0"
 pydocstyle = "^6.3.0"
 pytest-asyncio = "^1.3.0"
+pytest-timeout = "^2.3.1"
 aiosqlite = "^0.22.1"
 
 [tool.ruff]
@@ -137,23 +138,36 @@ warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-v --tb=short --strict-markers"
+addopts = "--tb=short --strict-markers --strict-config --durations=25 -ra"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+asyncio_default_test_loop_scope = "function"
+timeout = 120
+timeout_method = "thread"
+xfail_strict = true
 markers = [
     "unit: fast isolated tests",
     "integration: tests with real services",
     "e2e: end-to-end tests",
     "slow: tests taking >1s",
     "llm_live: tests requiring live LLM APIs",
+    "tooling: exercises repository tooling/scripts, not the backend",
+    "requires_postgres: needs a live PostgreSQL",
 ]
 
 [tool.coverage.run]
 source = ["server"]
+branch = true
 omit = ["tests/*", "*/conftest.py"]
 
 [tool.coverage.report]
-fail_under = 60
+fail_under = 78
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
 
 [tool.pydocstyle]
 # Google-style docstrings per Article V (Documentation)
