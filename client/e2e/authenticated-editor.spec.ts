@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { TaskRecord } from "../src/services/api/taskClient";
+import { openHeaderMenu, openHeaderDevTools } from "./helpers/waitHelpers";
 
 const API = "http://127.0.0.1:8001";
 const UI = "http://127.0.0.1:3000";
@@ -165,7 +166,26 @@ async function prefixWriting(page: Page, text: string): Promise<void> {
   await page.keyboard.insertText(text);
 }
 
+/**
+ * Close the task sidebar with whichever control is reachable: the mobile sheet's
+ * own close button (the header is inert while the sheet is open) or the header
+ * menu's `Tasks` command on tablet/desktop.
+ *
+ * @param page - Playwright page instance
+ */
+async function closeTaskSidebar(page: Page): Promise<void> {
+  const sheetClose = page.getByRole("button", { name: "Close task list" });
+  if (await sheetClose.isVisible().catch(() => false)) {
+    await sheetClose.click();
+    return;
+  }
+  await openHeaderMenu(page);
+  await page.getByTestId("task-list-toggle").click();
+}
+
 async function configureAI(page: Page): Promise<void> {
+  // LLM Settings is a header overflow-menu command.
+  await openHeaderMenu(page);
   await page.getByTestId("llm-settings-trigger").click();
   await page.getByTestId("storage-mode-select").selectOption("session");
   await page.getByTestId("llm-key-input").fill("sk-local-auth-contract-key-only");
@@ -188,6 +208,8 @@ async function addLock(page: Page, text: string, lockId: string): Promise<void> 
     })
   );
   await configureAI(page);
+  // The dev-only Loki trigger sits in the menu's "Dev tools" disclosure.
+  await openHeaderDevTools(page);
   await page.getByTestId("manual-loki-trigger").click();
   await expect(page.locator(".ProseMirror")).toContainText(text);
   await savedText(page, text);
@@ -196,6 +218,7 @@ async function addLock(page: Page, text: string, lockId: string): Promise<void> 
 
 async function expire(page: Page): Promise<void> {
   await page.context().clearCookies({ name: "access_token" });
+  await openHeaderMenu(page);
   await page.getByTestId("stats-toggle").click();
   await expect(page.getByRole("region", { name: "Session status" })).toContainText(
     "Session expired"
@@ -421,7 +444,7 @@ test("narrow authenticated editor keeps long account identity controls and norma
     page.locator(".export-panel").getByRole("button", { name: "Export", exact: true }).click(),
   ]);
   expect(openDrawerDownload.suggestedFilename()).toMatch(/^impetus-export-.*\.md$/);
-  await page.getByTestId("task-list-toggle").click();
+  await closeTaskSidebar(page);
   await expect(page.getByTestId("task-sidebar")).toHaveCount(0);
   await write(page, `Narrow real writing ${randomUUID()}`);
   const [download] = await Promise.all([
@@ -729,6 +752,7 @@ for (const action of ["delete", "rewrite"] as const) {
     });
     await page.getByTestId("mode-selector").selectOption("loki");
     await page.waitForTimeout(4_100);
+    await openHeaderDevTools(page);
     await page.getByTestId("manual-loki-trigger").click();
     await expect.poll(() => interventionRequests).toBe(1);
     await expect(page.locator(".ProseMirror")).not.toContainText(oldText);
@@ -1031,14 +1055,17 @@ test("locked local/server conflict keeps both versions and explicit server choic
   await prefixWriting(page, "Local unsaved conflict ");
   await page.getByRole("button", { name: "Sign in again", exact: true }).click();
   await login(page, alice);
-  const conflict = page.getByRole("region", { name: "Version conflict" });
-  await expect(conflict).toBeVisible();
-  // The expiry probe opens Statistics; close its restored public dialog normally.
+  // The expiry probe opens Statistics; close its restored public dialog first,
+  // because the shared Modal primitive makes the background inert.
   const statistics = page.getByRole("dialog", { name: "Writing Statistics", exact: true });
+  // The restored dialog can mount a beat after login; wait briefly before deciding.
+  await statistics.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
   if (await statistics.isVisible()) {
     await statistics.getByRole("button", { name: "Close Stats", exact: true }).click();
     await expect(statistics).toBeHidden();
   }
+  const conflict = page.getByRole("region", { name: "Version conflict" });
+  await expect(conflict).toBeVisible();
   await expect(conflict).toContainText("Local protected conflict");
   await expect(conflict).toContainText("Server protected");
   await conflict.getByRole("button", { name: "Use server version" }).click();
@@ -1162,6 +1189,7 @@ for (const delayed of ["query", "save", "AI", "export"] as const) {
         held = route;
       });
       await configureAI(page);
+      await openHeaderDevTools(page);
       await page.getByTestId("manual-loki-trigger").click();
     }
     await expect.poll(() => Boolean(held) && Boolean(body)).toBe(true);

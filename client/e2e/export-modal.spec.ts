@@ -1,10 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { waitForReactHydration } from "./helpers/waitHelpers";
+import { waitForReactHydration, openHeaderMenu } from "./helpers/waitHelpers";
 
 test("export modal opens from header and shows markdown and pdf buttons", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/");
   await waitForReactHydration(page);
+
+  // Export lives in the header's ⋯ overflow menu.
+  await openHeaderMenu(page);
 
   const exportButton = page.getByTestId("export-button");
   await expect(exportButton).toBeVisible({ timeout: 5000 });
@@ -32,6 +35,8 @@ test("export modal closes with Escape key", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/");
   await waitForReactHydration(page);
+
+  await openHeaderMenu(page);
 
   const exportButton = page.getByTestId("export-button");
   await expect(exportButton).toBeVisible({ timeout: 5000 });

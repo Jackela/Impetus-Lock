@@ -1,10 +1,14 @@
 import { test, expect } from "@playwright/test";
-import { dismissWelcomeModal } from "./helpers/waitHelpers";
+import { dismissWelcomeModal, openHeaderMenu } from "./helpers/waitHelpers";
 
 /** Verify the current in-app BYOK guidance and configuration contract. */
 test("BYOK onboarding guides provider setup and key removal", async ({ page }) => {
   await page.goto("/");
   await dismissWelcomeModal(page);
+
+  // LLM Settings and Forget Key are header menu items; the menu closes after
+  // each command, so it has to be re-opened before every check or click.
+  await openHeaderMenu(page);
   await page.getByTestId("llm-settings-trigger").click();
 
   const dialog = page
@@ -25,7 +29,9 @@ test("BYOK onboarding guides provider setup and key removal", async ({ page }) =
   await expect(save).toBeEnabled();
   await save.click();
   await expect(dialog).not.toBeVisible();
+  await openHeaderMenu(page);
   await expect(page.getByTestId("llm-settings-trigger")).toContainText("Google Gemini");
   await page.getByTestId("forget-llm-key-button").click();
+  await openHeaderMenu(page);
   await expect(page.getByTestId("llm-settings-trigger")).toHaveText("LLM Settings");
 });

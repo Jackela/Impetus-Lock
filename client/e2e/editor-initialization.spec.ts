@@ -16,6 +16,7 @@ import {
   waitForEditorReady,
   waitForEditorInteractive,
   waitForAppHeader,
+  openHeaderDevTools,
 } from "./helpers/waitHelpers";
 
 test.describe("Editor Initialization", () => {
@@ -203,6 +204,9 @@ test.describe("Editor Initialization", () => {
 
     const modeSelector = page.locator("#mode-selector");
     await expect(modeSelector).toBeVisible({ timeout: 5000 });
+
+    // The manual trigger lives in the header menu's DEV-only "Dev tools" region.
+    await openHeaderDevTools(page);
 
     const button = page.getByTestId("manual-trigger-button");
     await expect(button).toBeVisible({ timeout: 5000 });

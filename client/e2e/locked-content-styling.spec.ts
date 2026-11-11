@@ -12,6 +12,7 @@
  */
 
 import { test, expect } from "@playwright/test";
+import { dismissWelcomeModal } from "./helpers/waitHelpers";
 
 test.describe("Locked Content Styling", () => {
   test("Locked content has visual styling with CSS classes", async ({ page }) => {
@@ -49,10 +50,7 @@ test.describe("Locked Content Styling", () => {
   test("Lock icon appears on hover (CSS pseudo-element)", async ({ page }) => {
     await page.goto("/");
 
-    const welcomeButton = page.locator(".welcome-button");
-    if (await welcomeButton.isVisible()) {
-      await welcomeButton.click();
-    }
+    await dismissWelcomeModal(page);
 
     await page.waitForSelector('[data-testid="editor-ready"]', { timeout: 10000 });
 
@@ -119,10 +117,7 @@ test.describe("Locked Content Styling", () => {
   test("Locked content styling does not break editor layout", async ({ page }) => {
     await page.goto("/");
 
-    const welcomeButton = page.locator(".welcome-button");
-    if (await welcomeButton.isVisible()) {
-      await welcomeButton.click();
-    }
+    await dismissWelcomeModal(page);
 
     await page.waitForSelector('[data-testid="editor-ready"]', { timeout: 10000 });
 

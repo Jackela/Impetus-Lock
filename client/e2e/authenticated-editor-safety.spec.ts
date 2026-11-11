@@ -15,6 +15,7 @@ import { execFileSync } from "node:child_process";
 import type { TaskRecord } from "../src/services/api/taskClient";
 import type { EditorView } from "@milkdown/prose/view";
 import type { Editor } from "@milkdown/core";
+import { openHeaderMenu, openHeaderDevTools } from "./helpers/waitHelpers";
 
 const API = "http://127.0.0.1:8101";
 const UI = "http://127.0.0.1:3101";
@@ -563,7 +564,26 @@ async function auditTask(browser: Browser, account: Account, taskId: string): Pr
   return response.json() as Promise<TaskRecord>;
 }
 
+/**
+ * Close the task sidebar with whichever control is reachable: the mobile sheet's
+ * own close button (the header is inert while the sheet is open) or the header
+ * menu's `Tasks` command on tablet/desktop.
+ *
+ * @param page - Playwright page instance
+ */
+async function closeTaskSidebar(page: Page): Promise<void> {
+  const sheetClose = page.getByRole("button", { name: "Close task list" });
+  if (await sheetClose.isVisible().catch(() => false)) {
+    await sheetClose.click();
+    return;
+  }
+  await openHeaderMenu(page);
+  await page.getByTestId("task-list-toggle").click();
+}
+
 async function configureAI(page: Page, mode: "muse" | "loki" = "muse"): Promise<void> {
+  // LLM Settings is a header overflow-menu command.
+  await openHeaderMenu(page);
   await page.getByTestId("llm-settings-trigger").click();
   await page.getByTestId("storage-mode-select").selectOption("session");
   await enterText(page, page.getByTestId("llm-key-input"), "sk-local-auth-contract-key-only");
@@ -638,6 +658,8 @@ async function addLock(page: Page, text: string, lockId: string): Promise<void> 
     });
   });
   await configureAI(page);
+  // The manual trigger lives in the menu's DEV-only "Dev tools" disclosure.
+  await openHeaderDevTools(page);
   await page.getByRole("button", { name: "I'm stuck! Trigger AI assistance", exact: true }).click();
   await expect.poll(() => requests).toBe(1);
   await expect(page.locator(".ProseMirror")).toContainText(text);
@@ -696,6 +718,7 @@ async function addLock(page: Page, text: string, lockId: string): Promise<void> 
 
 async function expire(page: Page): Promise<void> {
   await page.context().clearCookies({ name: "access_token" });
+  await openHeaderMenu(page);
   await page.getByTestId("stats-toggle").click();
   await expect(page.getByRole("region", { name: "Session status" })).toContainText(
     "Session expired"
@@ -1014,7 +1037,7 @@ test("narrow authenticated editor keeps long account identity controls and norma
     page.locator(".export-panel").getByRole("button", { name: "Export", exact: true }).click(),
   ]);
   expect(openDrawerDownload.suggestedFilename()).toMatch(/^impetus-export-.*\.md$/);
-  await page.getByTestId("task-list-toggle").click();
+  await closeTaskSidebar(page);
   await expect(page.getByTestId("task-sidebar")).toHaveCount(0);
   await write(page, `Narrow real writing ${randomUUID()}`);
   const [download] = await Promise.all([
@@ -1028,6 +1051,7 @@ test("narrow authenticated editor keeps long account identity controls and norma
       protectedPosts.push(new URL(request.url()).pathname);
   };
   page.on("request", observePost);
+  await openHeaderMenu(page);
   await page.getByTestId("style-learning-toggle").click();
   const style = page.getByRole("dialog", { name: "Style Learning", exact: true });
   await expect(style).toBeVisible();
@@ -1071,8 +1095,7 @@ test("short viewport 320 by 256 keeps a visible writing area for normal pointer 
   await login(page, alice);
   await ready(page);
   await page.setViewportSize({ width: 320, height: 256 });
-  if (await page.getByTestId("task-sidebar").count())
-    await page.getByTestId("task-list-toggle").click();
+  if (await page.getByTestId("task-sidebar").count()) await closeTaskSidebar(page);
   await expect(page.getByTestId("task-sidebar")).toHaveCount(0);
   const area = page.locator(".editor-area");
   const editor = page.getByRole("textbox", { name: "Writing editor" });
@@ -2268,6 +2291,7 @@ for (const delayed of ["query", "save", "AI", "export"] as const) {
         held = route;
       });
       await configureAI(page);
+      await openHeaderDevTools(page);
       await page
         .getByRole("button", { name: "I'm stuck! Trigger AI assistance", exact: true })
         .click();

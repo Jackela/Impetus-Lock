@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForReactHydration, openHeaderDevTools } from "./helpers/waitHelpers";
 
 /**
  * Production Build Tests - T002
@@ -20,7 +21,10 @@ test.describe("Production Build", () => {
     // This test runs against dev server (npm run dev)
     // Test Delete button should be visible when import.meta.env.DEV = true
     await page.goto("/");
-    await page.waitForLoadState("domcontentloaded");
+    await waitForReactHydration(page);
+
+    // Dev-only triggers are nested in the header menu's "Dev tools" disclosure.
+    await openHeaderDevTools(page);
 
     const testDeleteButton = page.locator('[data-testid="manual-delete-trigger"]');
 

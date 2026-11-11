@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForReactHydration } from "./helpers/waitHelpers";
+import { waitForReactHydration, openHeaderDevTools } from "./helpers/waitHelpers";
 
 test("homepage renders successfully", async ({ page }) => {
   await page.goto("/");
@@ -36,6 +36,9 @@ test("app has mode selector and manual trigger", async ({ page }) => {
 
   // Verify default mode is "off"
   await expect(modeSelector).toHaveValue("off");
+
+  // The manual trigger lives in the header menu's DEV-only "Dev tools" region.
+  await openHeaderDevTools(page);
 
   // Manual trigger button is visible but disabled until Muse mode
   const manualTrigger = page.getByTestId("manual-trigger-button");

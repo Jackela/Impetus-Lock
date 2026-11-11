@@ -1,11 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
-import { waitForReactHydration } from "./helpers/waitHelpers";
+import { waitForReactHydration, openHeaderDevTools } from "./helpers/waitHelpers";
 import { mockInterventionSuccess, mockInterventionFailure } from "./helpers/interventionMocks";
 
 async function enableMuseMode(page: Page) {
   const modeSelector = page.getByTestId("mode-selector");
   await expect(modeSelector).toBeVisible({ timeout: 5000 });
   await modeSelector.selectOption("muse");
+
+  // The manual trigger is a DEV-only header menu command inside "Dev tools".
+  await openHeaderDevTools(page);
 
   const button = page.getByTestId("manual-trigger-button");
   await expect(button).toBeVisible({ timeout: 5000 });
@@ -169,6 +172,10 @@ test.describe("Manual Trigger Button", () => {
 
     // Dismiss modal so subsequent assertions can continue
     await page.getByTestId("config-error-dismiss").click();
+
+    // The outside press that dismissed the modal also closed the header menu,
+    // so re-open the DEV region before inspecting the trigger again.
+    await openHeaderDevTools(page);
 
     // Verify 2: Button returns to ready state after error feedback
     await expect(button).toHaveText("I'm stuck!", { timeout: 5000 });
