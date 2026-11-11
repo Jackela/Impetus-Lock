@@ -5,7 +5,7 @@
 
 # Build stage
 # -----------
-FROM node:24-alpine as builder
+FROM node:24-alpine AS builder
 
 # Labels
 LABEL maintainer="Impetus Team <team@impetus-lock.dev>"
@@ -30,7 +30,7 @@ RUN npm run build
 
 # Production stage (Nginx)
 # ------------------------
-FROM nginx:1.31-alpine as production
+FROM nginx:1.31-alpine AS production
 
 # Labels
 LABEL maintainer="Impetus Team <team@impetus-lock.dev>"
@@ -52,7 +52,7 @@ server {
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_proxied expired no-cache no-store private must-revalidate;
+    gzip_proxied expired no-cache no-store private auth;
     gzip_types
         text/plain
         text/css
