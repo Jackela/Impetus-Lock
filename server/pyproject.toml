@@ -8,7 +8,7 @@ packages = [{include = "server"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-fastapi = ">=0.131,<0.142"
+fastapi = ">=0.131,<0.163"
 uvicorn = {extras = ["standard"], version = ">=0.40,<0.55"}
 pydantic = "^2.9.0"
 instructor = "^1.4.0"
