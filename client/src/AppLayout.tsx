@@ -99,7 +99,7 @@ const STATUS_LABEL: Record<StatusState, string> = {
   synced: "Saved",
   unsaved: "Unsaved",
   error: "Save failed",
-  offline: "Offline",
+  offline: "Writing locally",
 };
 
 /**
