@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
 ### Changed - Repository hygiene and test suite (2026-11-11)
 
 - **Test suite**: moved the coverage gate out of Vitest into a `node:test` process, removed duplicate/skipped tests, enabled branch coverage, added `pytest-timeout`, and restored the toolbar performance checks. See `docs/reports/20261111-test-suite-optimization.md` (PR #249).
