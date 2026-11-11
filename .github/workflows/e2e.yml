@@ -41,15 +41,11 @@ jobs:
         ports:
           - 5432:5432
 
-    container:
-      image: mcr.microsoft.com/playwright:v1.64.1-noble
-      options: --user 1001
-
     steps:
       - uses: actions/checkout@v6
         if: ${{ env.ACT != 'true' }}
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -149,7 +145,7 @@ jobs:
 
       - name: Install the browser matching the locked Playwright package
         working-directory: ${{ github.workspace }}/client
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright E2E tests
         working-directory: ${{ github.workspace }}/client
@@ -221,7 +217,7 @@ jobs:
 
       - name: Install Chromium for the locked Playwright package
         working-directory: ${{ github.workspace }}/client
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run Muse/Loki story with real cookie auth
         working-directory: ${{ github.workspace }}
