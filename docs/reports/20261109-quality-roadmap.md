@@ -1,7 +1,7 @@
 # 2026-11-09 Quality Roadmap Delivery Report
 
 > Branch: `codex/quality-roadmap-20261109`
-> Base: `b9df4c6` · Head: `5a4c2ca` · 10 commits
+> Base: `b9df4c6` · Head: `79f8d76` · 13 commits (this report adds one more)
 > Local work only. Not pushed, not merged, not deployed.
 
 ## Scope delivered
@@ -59,25 +59,27 @@
 | `poetry run ruff format --check`                          | PASS (220 files)                                                                  |
 | `poetry run lint-imports`                                 | PASS (3 contracts kept)                                                           |
 | `poetry run mypy .`                                       | PASS (107 source files)                                                           |
-| `poetry run pytest tests/ -n auto --cov=server`           | 880 passed, 2 skipped, **28 errors**                                              |
-| `poetry run python check_critical_coverage.py`            | total **93.18%**, but `postgresql_task_repository.py` **68.49% < 80%**            |
+| `poetry run pytest tests/ -n auto --cov=server`           | **910 passed, 0 skipped**; total coverage **82.03%**                              |
+| `poetry run python check_critical_coverage.py`            | **96.00% total**; `postgresql_task_repository.py` **100%**                        |
 | `npm run lint`                                            | PASS, 0 warnings                                                                  |
 | `npm run format`                                          | PASS                                                                              |
 | `npm run type-check`                                      | PASS (3 tsconfigs)                                                                |
 | `npm run api:check`                                       | PASS after regeneration                                                           |
 | `npm run test -- --coverage`                              | **997 passed, 4 skipped**; 97.83% stmts / 94.24% branch / 96% funcs / 97.7% lines |
 | `npm run build`                                           | PASS, multi-chunk                                                                 |
+| `npm run test:e2e:ci-like`                                | **111 passed, 6 skipped** (default Chromium suite)                                |
+| `scripts/run-auth-e2e.py`                                 | **29 passed** (real cookies/CSRF, isolated PostgreSQL)                            |
+| `scripts/run-story-e2e.py`                                | **11 passed** (Muse/Loki real-cookie story)                                       |
 | `npx @fission-ai/openspec@1.16.1 validate --all --strict` | **21 passed, 0 failed**                                                           |
 | `actionlint .github/workflows/*.yml`                      | PASS                                                                              |
 | `git diff --check`                                        | PASS                                                                              |
 
 ## Failures and unverified environments
 
-- **PostgreSQL is unavailable on this machine** (no Docker daemon, no `psql`/`pg_ctl`). All 28 pytest errors are `ConnectionRefusedError ... 5432` fixture setup failures. The only critical-coverage failure, `postgresql_task_repository.py` at 68.49%, has the same cause. It is not caused by this branch's code changes.
-- **Redis is unavailable**; the two skips in `tests/integration/test_redis_real.py` are the existing environment skips.
-- **Playwright E2E was not run**: no browser install and no PostgreSQL. The story job is configured but unverified locally.
-- **Visual screenshot comparison was not performed**: no browser. The UI changes are verified by lint/type-check/unit tests/build only.
-- **GitHub Actions was not run**; `actionlint` and YAML parsing passed, but remote CI behavior is unverified.
+- PostgreSQL 16 and Redis 7 were provisioned as ephemeral containers on non-default ports. Migrations ran cleanly, the Postgres-only tests and critical coverage passed, and both containers were removed after the run.
+- Playwright Chromium was installed for the run. The main suite, real-auth suite, and Muse/Loki story suite all passed; the 6 skips are pre-existing `test.skip` cases.
+- **Visual review**: no manual side-by-side screenshot review was performed. Screenshot evidence exists under `client/test-results/` and `client/playwright-report/`, but it is regenerable and not committed.
+- **GitHub Actions was not run**; `actionlint`, YAML parsing, and the local equivalents passed, but remote CI behavior is unverified.
 - **TaskList snapshot locale**: snapshots assume `en_US`; run tests with `LC_ALL=en_US.UTF-8` on this machine.
 - The branch is local-only: not pushed, not merged, not deployed. A local pass is not release evidence.
 
@@ -94,4 +96,7 @@ f45ce1d perf(client): split deferred panels and reduce render fan-out
 4864ff5 ci: make ci.yml the single gate and add story e2e
 22c8d38 docs(openspec): add quality roadmap proposals
 5a4c2ca chore(client): regenerate API types after removing stats-period route
+c252ea5 docs: record the quality roadmap delivery evidence
+d967357 fix(ui): keep expired-session status copy as Writing locally
+79f8d76 test(e2e): drive header actions through the overflow menu
 ```
