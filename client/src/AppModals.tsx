@@ -1,9 +1,19 @@
+import { Suspense, lazy } from "react";
 import { WelcomeModal } from "./components/WelcomeModal";
 import { ConfigErrorModal } from "./components/ConfigErrorModal";
-import { LLMSettingsModal } from "./components/LLMSettingsModal";
 import { CreateTaskModal } from "./components/CreateTaskModal";
 import type { LLMConfig, VaultMetadata, VaultMode } from "./hooks/useLLMConfig";
 import type { InterventionAPIError } from "./hooks/useInterventionApiError";
+
+/**
+ * Provider/key configuration is an occasional visit, not part of the writing
+ * surface, so its chunk (and CSS) is fetched the first time settings open.
+ */
+const LLMSettingsModal = lazy(() =>
+  import("./components/LLMSettingsModal").then((module) => ({
+    default: module.LLMSettingsModal,
+  }))
+);
 
 interface AppModalsProps {
   showWelcome: boolean;
@@ -104,19 +114,24 @@ export function AppModals({
         provider={provider}
       />
 
-      <LLMSettingsModal
-        open={showSettings}
-        onClose={onCloseSettings}
-        config={llmConfig}
-        onSave={onSaveConfig}
-        onClear={onClearConfig}
-        storageMode={storageMode}
-        onModeChange={onStorageModeChange}
-        locked={vaultLocked}
-        onUnlock={onUnlock}
-        onLock={onLock}
-        metadata={metadata ?? undefined}
-      />
+      {/* Rendered only while open so the settings chunk loads on demand. */}
+      {showSettings && (
+        <Suspense fallback={null}>
+          <LLMSettingsModal
+            open
+            onClose={onCloseSettings}
+            config={llmConfig}
+            onSave={onSaveConfig}
+            onClear={onClearConfig}
+            storageMode={storageMode}
+            onModeChange={onStorageModeChange}
+            locked={vaultLocked}
+            onUnlock={onUnlock}
+            onLock={onLock}
+            metadata={metadata ?? undefined}
+          />
+        </Suspense>
+      )}
 
       <CreateTaskModal
         open={showCreateTaskModal}

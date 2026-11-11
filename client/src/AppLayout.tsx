@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 import { ManualTriggerButton } from "./components/ManualTriggerButton";
 import { TelemetryToggle } from "./components/TelemetryToggle";
 import { TaskList } from "./components/TaskList/TaskList";
 import { Skeleton } from "./components/Skeleton";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { NewTaskButton } from "./components/NewTaskButton";
-import { StyleLearningPanel } from "./components/StyleLearning/StyleLearningPanel";
 import { ThemeToggle } from "./components/ThemeToggle/ThemeToggle";
-import { Stats } from "./components/Stats/Stats";
-import { Achievements } from "./components/Achievements/Achievements";
 import { Export } from "./components/Export/Export";
-import { ExportModal } from "./components/Export/ExportModal";
 import {
   Button,
   ChartIcon,
@@ -33,6 +29,37 @@ import type { TaskRecord } from "./types/task";
 import type { AgentMode } from "./hooks/useWritingState";
 import { AIActionType } from "./types/ai-actions";
 import { useOptionalAuth } from "./contexts/AuthContext";
+
+/**
+ * Overlay panels are user-triggered only, so they are split out of the first
+ * paint and fetched the first time their overlay opens. `EditorCore` stays a
+ * static import: it is the product surface and must never wait on a chunk.
+ */
+const Stats = lazy(() =>
+  import("./components/Stats/Stats").then((module) => ({ default: module.Stats }))
+);
+const Achievements = lazy(() =>
+  import("./components/Achievements/Achievements").then((module) => ({
+    default: module.Achievements,
+  }))
+);
+const StyleLearningPanel = lazy(() =>
+  import("./components/StyleLearning/StyleLearningPanel").then((module) => ({
+    default: module.StyleLearningPanel,
+  }))
+);
+const ExportModal = lazy(() =>
+  import("./components/Export/ExportModal").then((module) => ({ default: module.ExportModal }))
+);
+
+/**
+ * Quiet placeholder for a deferred overlay — announces nothing on first paint.
+ *
+ * @returns A small skeleton block sized like the panel it stands in for
+ */
+function DeferredPanelFallback() {
+  return <Skeleton lines={3} height="32px" />;
+}
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -567,7 +594,9 @@ export function AppLayout({
         className="stats-modal"
         testId="stats-overlay"
       >
-        <Stats />
+        <Suspense fallback={<DeferredPanelFallback />}>
+          <Stats />
+        </Suspense>
         <IconButton
           ariaLabel="Close Stats"
           className="close-button ui-modal-close"
@@ -586,7 +615,9 @@ export function AppLayout({
         className="achievements-modal"
         testId="achievements-overlay"
       >
-        <Achievements />
+        <Suspense fallback={<DeferredPanelFallback />}>
+          <Achievements />
+        </Suspense>
         <IconButton
           ariaLabel="Close Achievements"
           className="close-button ui-modal-close"
@@ -605,7 +636,9 @@ export function AppLayout({
         className="style-learning-modal"
         testId="style-learning-overlay"
       >
-        <StyleLearningPanel userId={auth?.user?.id ?? "default-user"} />
+        <Suspense fallback={<DeferredPanelFallback />}>
+          <StyleLearningPanel userId={auth?.user?.id ?? "default-user"} />
+        </Suspense>
         <IconButton
           ariaLabel="Close Style Learning"
           className="close-button ui-modal-close"
@@ -618,11 +651,12 @@ export function AppLayout({
 
       <NewTaskButton disabled={!remoteEnabled} onClick={onCreateTask} ariaLabel="Create new task" />
 
-      <ExportModal
-        open={showExportModal}
-        content={content}
-        onClose={() => setShowExportModal(false)}
-      />
+      {/* Mounted only while open: the chunk is fetched on the first Export. */}
+      {showExportModal && (
+        <Suspense fallback={null}>
+          <ExportModal open content={content} onClose={() => setShowExportModal(false)} />
+        </Suspense>
+      )}
     </div>
   );
 }

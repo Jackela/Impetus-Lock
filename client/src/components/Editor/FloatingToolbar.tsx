@@ -7,7 +7,7 @@
  * @module FloatingToolbar
  */
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import type { FC } from "react";
 import type { Editor } from "@milkdown/core";
 import { editorViewCtx } from "@milkdown/core";
@@ -55,7 +55,7 @@ export interface FloatingToolbarProps {
  * @param props.zIndex - Optional z-index override for stacking context
  * @returns Toolbar element or null if hidden
  */
-export const FloatingToolbar: FC<FloatingToolbarProps> = ({
+const FloatingToolbarImpl: FC<FloatingToolbarProps> = ({
   editor,
   className = "",
   zIndex = FLOATING_UI_Z_INDEX,
@@ -423,3 +423,12 @@ export const FloatingToolbar: FC<FloatingToolbarProps> = ({
     </div>
   );
 };
+
+/**
+ * Memoized floating toolbar.
+ *
+ * The toolbar is rendered by `EditorCore`, which re-renders on every sensory
+ * feedback state change and timer tick. Its only prop is the editor instance,
+ * so `memo` skips those renders without changing behaviour.
+ */
+export const FloatingToolbar = memo(FloatingToolbarImpl);
