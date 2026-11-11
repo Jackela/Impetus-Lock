@@ -461,26 +461,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/stats/period/{period}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get Stats By Period
-     * @description Get stats by period (day, week, month).
-     */
-    get: operations["get_stats_by_period_stats_period__period__get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/streaks/": {
     parameters: {
       query?: never;
@@ -1568,22 +1548,6 @@ export interface components {
       email: string;
       /** Password */
       password: string;
-    };
-    /**
-     * StatsPeriodResponse
-     * @description Response schema for stats by period.
-     */
-    StatsPeriodResponse: {
-      /** Interventions */
-      interventions: number;
-      /** Locks Created */
-      locks_created: number;
-      /** Period */
-      period: string;
-      /** Tasks Created */
-      tasks_created: number;
-      /** Writing Minutes */
-      writing_minutes: number;
     };
     /**
      * StatsResponse
@@ -2683,39 +2647,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["InterventionBreakdownResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  get_stats_by_period_stats_period__period__get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        period: string;
-      };
-      cookie?: {
-        access_token?: string | null;
-      };
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["StatsPeriodResponse"];
         };
       };
       /** @description Validation Error */
