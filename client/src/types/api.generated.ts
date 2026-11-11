@@ -339,7 +339,7 @@ export interface paths {
      *     Example:
      *         >>> response = client.get("/health")
      *         >>> response.json()
-     *         {"status": "ok", "service": "impetus-lock", "version": "0.1.0"}
+     *         {"status": "ok", "service": "impetus-lock", "version": "0.5.0"}
      */
     get: operations["health_health_get"];
     put?: never;

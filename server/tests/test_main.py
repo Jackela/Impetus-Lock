@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import pytest
 
+from server import __version__
+
 
 @pytest.fixture(scope="module")
 def client():
@@ -42,4 +44,4 @@ def test_health_endpoint_returns_correct_values(client) -> None:
 
     assert body["status"] == "ok"
     assert body["service"] == "impetus-lock"
-    assert body["version"] == "0.1.0"
+    assert body["version"] == __version__

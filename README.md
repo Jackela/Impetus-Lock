@@ -4,11 +4,12 @@ Impetus Lock 是一个 React + Vite 前端与 FastAPI 后端组成的创作工�
 
 [![CI](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/Jackela/Impetus-Lock/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 [![Node 24](https://img.shields.io/badge/node-24.x-brightgreen.svg)](https://nodejs.org/)
 
-> **Status**: pre-1.0. CI green means the checked gates passed; it is not a deployment or user acceptance. Current working rules and gates live in [`AGENTS.md`](AGENTS.md).
+> **Status**: v0.5.0 (pre-1.0). CI green means the checked gates passed; it is not a deployment or user acceptance. Current working rules and gates live in [`AGENTS.md`](AGENTS.md).
 
 演示产物：[Muse/Loki 流程录像](demo-artifacts/impetus-lock-demo.webm)（本地录制，约 1.2 MB）。
 

@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: '[BUG] '
+title: "[BUG] "
 labels: bug
-assignees: ''
+assignees: ""
 ---
 
 ## Bug Description
@@ -34,7 +34,7 @@ If applicable, add screenshots to help explain your problem.
 - **OS**: [e.g. Windows, macOS, Linux]
 - **Browser**: [e.g. Chrome, Firefox, Safari]
 - **Node Version**: [e.g. 18.0.0]
-- **Project Version**: [e.g. main branch, v0.1.0]
+- **Project Version**: [e.g. main branch, v0.5.0]
 
 ## Additional Context
 

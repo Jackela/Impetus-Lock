@@ -15,6 +15,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from server import __version__
 from server.api.auth.middleware import AuthenticationMiddleware
 from server.api.errors import (
     app_error_handler,
@@ -100,7 +101,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(
     title="Impetus Lock API",
-    version="0.1.0",
+    version=__version__,
     description="Un-deletable task pressure system API",
     lifespan=lifespan,
 )
@@ -196,12 +197,12 @@ def health() -> HealthResponse:
     Example:
         >>> response = client.get("/health")
         >>> response.json()
-        {"status": "ok", "service": "impetus-lock", "version": "0.1.0"}
+        {"status": "ok", "service": "impetus-lock", "version": "0.5.0"}
     """
     return HealthResponse(
         status="ok",
         service="impetus-lock",
-        version="0.1.0",
+        version=__version__,
     )
 
 

@@ -375,7 +375,7 @@ curl http://localhost:8000/health
 {
   "status": "ok",
   "service": "impetus-lock",
-  "version": "0.1.0"
+  "version": "0.5.0"
 }
 ```
 

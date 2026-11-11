@@ -23,6 +23,8 @@ from typing import Any
 import uvicorn
 from dotenv import load_dotenv
 
+from server import __version__
+
 # Load environment variables before any other imports
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
@@ -76,7 +78,7 @@ def print_startup_banner(config: AppConfig) -> None:
     banner = f"""
 ╔════════════════════════════════════════════════════════════════╗
 ║                    Impetus Lock Server                         ║
-║                     Backend Service v0.1.0                     ║
+║                     Backend Service v{__version__:<10}                 ║
 ╠════════════════════════════════════════════════════════════════╣
 ║  Host:      {config.server.host:<48} ║
 ║  Port:      {config.server.port:<48} ║
