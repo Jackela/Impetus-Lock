@@ -1,5 +1,7 @@
 # Lock Rejection Feedback - Debug Report
 
+> **Historical (archived 2026-11-11).** Kept as debugging evidence; current behavior is covered by `client/e2e/lock-rejection-feedback.spec.ts`.
+
 **Date**: 2025-11-10
 **Issue**: E2E tests failing for lock rejection feedback (3/4 tests)
 **Status**: Root cause identified, fixes implemented, timing issue remains

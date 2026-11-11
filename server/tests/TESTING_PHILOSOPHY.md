@@ -528,10 +528,10 @@ poetry run pytest -x
 
 ## Related Documentation
 
-- [Tests README](./tests/README.md) - Test suite overview
-- [Style Guide](./tests/STYLE_GUIDE.md) - Naming and organization
-- [CLAUDE.md](./CLAUDE.md) - AI development guide
-- [TESTING.md](./TESTING.md) - TDD workflow guide
+- [Tests README](./README.md) - Test suite overview
+- [Style Guide](./STYLE_GUIDE.md) - Naming and organization
+- [CLAUDE.md](../../CLAUDE.md) - AI development guide
+- [TESTING.md](../../TESTING.md) - TDD workflow guide
 
 ## Quick Command Reference
 

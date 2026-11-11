@@ -7,7 +7,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLIENT_DIR="${ROOT_DIR}/client"
 OUTPUT_DIR="${ROOT_DIR}/demo-artifacts"
-TEST_PATTERN="e2e/demo-showcase.spec.ts"
+TEST_PATTERN="e2e/manual/demo-showcase.spec.ts"
 PROJECT="chromium"
 
 info() { printf '\033[1;34m[demo]\033[0m %s\n' "$*"; }

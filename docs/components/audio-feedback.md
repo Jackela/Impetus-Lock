@@ -8,20 +8,20 @@ Impetus Lock 的音效系统通过 Web Audio API 为 AI 干预动作提供沉浸
 
 音效文件位于 `client/src/assets/audio/`：
 
-| 文件 | 动作类型 | 描述 |
-|------|---------|------|
-| `clank.mp3` | PROVOKE | 金属撞击声 - AI 施压时触发 |
-| `whoosh.mp3` | DELETE | 风声/消散声 - 内容删除时触发 |
-| `bonk.mp3` | REJECT | 碰撞/反弹声 - 操作被拒绝时触发 |
+| 文件         | 动作类型 | 描述                           |
+| ------------ | -------- | ------------------------------ |
+| `clank.mp3`  | PROVOKE  | 金属撞击声 - AI 施压时触发     |
+| `whoosh.mp3` | DELETE   | 风声/消散声 - 内容删除时触发   |
+| `bonk.mp3`   | REJECT   | 碰撞/反弹声 - 操作被拒绝时触发 |
 
 ## 🎯 触发机制
 
 ### 1. 通过 `SensoryFeedback` 组件
 
 ```tsx
-import { SensoryFeedback } from './components/SensoryFeedback';
-import { AIActionType } from './types/ai-actions';
-import { useState } from 'react';
+import { SensoryFeedback } from "./components/SensoryFeedback";
+import { AIActionType } from "./types/ai-actions";
+import { useState } from "react";
 
 function MyComponent() {
   const [actionType, setActionType] = useState<AIActionType | null>(null);
@@ -43,8 +43,8 @@ function MyComponent() {
 ### 2. 通过 `useAudioFeedback` Hook
 
 ```tsx
-import { useAudioFeedback } from './hooks/useAudioFeedback';
-import { AIActionType } from './types/ai-actions';
+import { useAudioFeedback } from "./hooks/useAudioFeedback";
+import { AIActionType } from "./types/ai-actions";
 
 function MyComponent() {
   const { playAudio, isReady } = useAudioFeedback();
@@ -101,11 +101,11 @@ poetry run uvicorn server.api.main:app --reload --host 127.0.0.1 --port 8000
 
 ## 🎨 AI 动作类型
 
-| AIActionType | 动画 | 音效 | 触发场景 |
-|-------------|------|------|---------|
-| `PROVOKE` | Glitch (故障闪烁) | Clank (金属撞击) | AI 施压/插入锁定内容 |
-| `DELETE` | Fade-out (淡出) | Whoosh (风声) | Loki 模式删除内容 |
-| `REJECT` | Shake (抖动) | Bonk (碰撞) | 用户尝试删除锁定内容 |
+| AIActionType | 动画              | 音效             | 触发场景             |
+| ------------ | ----------------- | ---------------- | -------------------- |
+| `PROVOKE`    | Glitch (故障闪烁) | Clank (金属撞击) | AI 施压/插入锁定内容 |
+| `DELETE`     | Fade-out (淡出)   | Whoosh (风声)    | Loki 模式删除内容    |
+| `REJECT`     | Shake (抖动)      | Bonk (碰撞)      | 用户尝试删除锁定内容 |
 
 ## 🔧 配置
 
@@ -153,7 +153,8 @@ npm run test:e2e          # E2E 测试
 
 **原因**: 浏览器阻止自动播放音频
 
-**解决**: 
+**解决**:
+
 - 用户必须先与页面交互（点击按钮）
 - 使用 Demo 组件测试 - 按钮点击会触发用户交互
 
@@ -161,7 +162,8 @@ npm run test:e2e          # E2E 测试
 
 **原因**: 浏览器不支持 Web Audio API（罕见）
 
-**解决**: 
+**解决**:
+
 - 系统会自动降级（graceful degradation）
 - 检查控制台警告: `Web Audio API not supported`
 
@@ -169,7 +171,8 @@ npm run test:e2e          # E2E 测试
 
 **原因**: 后端服务器未启动
 
-**解决**: 
+**解决**:
+
 ```bash
 cd server
 poetry run uvicorn server.api.main:app --reload --host 127.0.0.1 --port 8000
@@ -191,7 +194,7 @@ if (isAttemptingToDeleteLock) {
 ```typescript
 // API 返回 PROVOKE 动作
 const response = await triggerMuseIntervention(context, cursor, version);
-if (response.action.type === 'PROVOKE') {
+if (response.action.type === "PROVOKE") {
   setCurrentAction(AIActionType.PROVOKE); // 触发 Glitch + Clank
 }
 ```
@@ -201,7 +204,7 @@ if (response.action.type === 'PROVOKE') {
 ```typescript
 // API 返回 DELETE 动作
 const response = await triggerLokiIntervention(context, cursor, version);
-if (response.action.type === 'DELETE') {
+if (response.action.type === "DELETE") {
   setCurrentAction(AIActionType.DELETE); // 触发 Fade + Whoosh
 }
 ```
@@ -214,10 +217,10 @@ if (response.action.type === 'DELETE') {
 2. 更新 `useAudioFeedback.ts`:
    ```typescript
    const audioFiles = {
-     [AIActionType.PROVOKE]: '/src/assets/audio/clank.mp3',
-     [AIActionType.DELETE]: '/src/assets/audio/whoosh.mp3',
-     [AIActionType.REJECT]: '/src/assets/audio/bonk.mp3',
-     [AIActionType.NEW_TYPE]: '/src/assets/audio/new-sound.mp3', // 新增
+     [AIActionType.PROVOKE]: "/src/assets/audio/clank.mp3",
+     [AIActionType.DELETE]: "/src/assets/audio/whoosh.mp3",
+     [AIActionType.REJECT]: "/src/assets/audio/bonk.mp3",
+     [AIActionType.NEW_TYPE]: "/src/assets/audio/new-sound.mp3", // 新增
    };
    ```
 
@@ -229,17 +232,17 @@ if (response.action.type === 'DELETE') {
 const variants = {
   glitch: {
     initial: { opacity: 1 },
-    animate: { 
+    animate: {
       opacity: [1, 0, 1, 0, 1],
-      transition: { duration: 0.5 } // 调整时长
-    }
-  }
+      transition: { duration: 0.5 }, // 调整时长
+    },
+  },
 };
 ```
 
 ## 🔗 相关文档
 
-- [SensoryFeedback 组件](./client/src/components/SensoryFeedback.tsx)
-- [useAudioFeedback Hook](./client/src/hooks/useAudioFeedback.ts)
-- [useAnimationController Hook](./client/src/hooks/useAnimationController.ts)
-- [AI Actions Types](./client/src/types/ai-actions.ts)
+- [SensoryFeedback 组件](../../client/src/components/SensoryFeedback.tsx)
+- [useAudioFeedback Hook](../../client/src/hooks/useAudioFeedback.ts)
+- [useAnimationController Hook](../../client/src/hooks/useAnimationController.ts)
+- [AI Actions Types](../../client/src/types/ai-actions.ts)

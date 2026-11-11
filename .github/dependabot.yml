@@ -31,7 +31,6 @@ updates:
         patterns:
           - "cryptography"
           - "passlib"
-          - "python-jose"
           - "bcrypt"
           - "argon2-c*"
         update-types:
@@ -42,7 +41,6 @@ updates:
       llm-providers:
         patterns:
           - "anthropic"
-          - "openai"
           - "google-genai"
           - "instructor"
         update-types:
@@ -75,8 +73,6 @@ updates:
           - "ruff"
           - "mypy"
           - "pytest*"
-          - "black"
-          - "pre-commit"
         update-types:
           - "patch"
           - "minor"
@@ -93,7 +89,6 @@ updates:
           - "pydantic"
           - "sqlalchemy"
           - "anthropic"
-          - "openai"
 
     labels:
       - "dependencies"

@@ -9,15 +9,20 @@ name: CI Server
 #
 # Nothing in branch protection references these job names — the required checks
 # are `Lint (Backend + Frontend)`, `Type Check (Backend + Frontend)`,
-# `Backend Tests`, `Frontend Tests` (from ci.yml) and `Playwright E2E Tests`
-# (from e2e.yml). `poetry build` is also gated in ci.yml backend-tests.
+# `Backend Tests`, `Frontend Tests`, `Validate (API Types + OpenSpec)` (from
+# ci.yml) and `Playwright E2E Tests` (from e2e.yml). `poetry build` is also
+# gated in ci.yml backend-tests.
 #
 # Do not re-add `push`/`pull_request` triggers.
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  POETRY_VERSION: "2.5.1"
 
 # Cancel previous runs for the same PR or branch
 concurrency:
@@ -29,6 +34,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: server
@@ -42,7 +48,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -74,6 +80,7 @@ jobs:
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: server
@@ -87,7 +94,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -125,7 +132,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -193,7 +200,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -268,7 +275,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -315,6 +322,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [lint, type-check, unit-tests, integration-tests, e2e-tests]
     defaults:
       run:
@@ -329,7 +337,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies

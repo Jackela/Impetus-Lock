@@ -3,7 +3,7 @@
 Use this list whenever BYOK changes ship or when running privacy-sensitive demos. Capture evidence (screenshots/logs) for each item and attach it to the release ticket.
 
 1. **Telemetry defaults**
-   - [ ] Confirm the Telemetry toggle is *off* for new browser profiles (`localStorage['impetus.telemetry.enabled']` is `null`).
+   - [ ] Confirm the Telemetry toggle is _off_ for new browser profiles (`localStorage['impetus.telemetry.enabled']` is `null`).
    - [ ] Enable telemetry, trigger Muse/Loki twice, and verify console logs contain provider/model only—no API keys or prompt text.
 
 2. **Persistence hygiene**
@@ -23,7 +23,7 @@ Use this list whenever BYOK changes ship or when running privacy-sensitive demos
 
 5. **Documentation & hand-off**
    - [ ] Review `docs/security/byok-storage.md` for accuracy.
-   - [ ] Update `MANUAL_TESTING_GUIDE.md` with any newly discovered manual steps.
+   - [ ] Update `docs/security/byok-storage.md` or the archived manual guide (`docs/archive/2026-11/MANUAL_TESTING_GUIDE.md`) with any newly discovered manual steps.
    - [ ] Record test artifacts in `/demo-artifacts` if marketing/QA needs refreshed footage.
 
 Sign off with initials + date once all boxes are checked.

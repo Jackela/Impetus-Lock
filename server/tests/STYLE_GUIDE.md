@@ -776,4 +776,4 @@ Before submitting new tests, verify:
 
 - [Tests README](./README.md) - Test suite overview
 - [Testing Philosophy](./TESTING_PHILOSOPHY.md) - Testing approach
-- [Constitutional Compliance](../CLAUDE.md) - Project principles
+- [Constitutional Compliance](../../CLAUDE.md) - Project principles

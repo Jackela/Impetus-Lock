@@ -1,5 +1,7 @@
 # AI操作规范指南
 
+> **RETIRED (2026-11-09).** This document is kept for history. The "merge automatically once CI is green" rule, one-reviewer requirement, and branch-protection steps are no longer current. Use [`AGENTS.md`](../AGENTS.md) and [`docs/BRANCH-PROTECTION-SETUP.md`](BRANCH-PROTECTION-SETUP.md).
+
 ## 1. Branch保护规则
 
 ### Main Branch (主分支)

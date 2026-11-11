@@ -1,204 +1,85 @@
-# Dependency Management Strategy
+# Dependency Management
 
-**Project:** Impetus Lock (5-Day MVP Sprint)  
-**Philosophy:** Automated updates with CI validation
+Impetus Lock uses two lockfiles and Dependabot. Reproducibility comes from the lockfiles; updates come from reviewed PRs.
 
----
+## Reproducible installs
 
-## 📦 Version Management Strategy
+| Ecosystem    | Manifest                | Lockfile                   | Install                       |
+| ------------ | ----------------------- | -------------------------- | ----------------------------- |
+| Backend      | `server/pyproject.toml` | `server/poetry.lock`       | `cd server && poetry install` |
+| Frontend     | `client/package.json`   | `client/package-lock.json` | `cd client && npm ci`         |
+| Repo tooling | `package.json`          | `package-lock.json`        | `npm ci`                      |
 
-### Dependencies Use Semver Ranges (`^`)
+Poetry **2.5.1** is pinned in CI and in `server/Dockerfile.prod` because the lockfile uses the Poetry 2.x format. Do not install a different Poetry major version and regenerate the lock casually.
 
-**Rationale:**
-- ✅ **Security patches auto-apply** (e.g., `^1.56.1` → `1.56.2`)
-- ✅ **Bug fixes auto-apply** (patch versions)
-- ✅ **package-lock.json ensures reproducibility** (exact versions locked)
-- ✅ **Less manual maintenance** for MVP sprint
-- ✅ **Dependabot manages updates via PR** (not automatic merges)
+Commit lockfile changes with the manifest change that caused them. Never hand-edit a lockfile.
 
-**Example:**
-```json
-{
-  "@playwright/test": "^1.56.1"  // Allows 1.56.x, blocks 1.57.0
-}
-```
+## Dependabot
 
-**When NOT to use `^`:**
-- Libraries published to npm (use exact versions for peer deps)
-- Known breaking changes in patch versions
-- Regulatory compliance requiring change control
+`.github/dependabot.yml` covers:
 
----
+- pip/Poetry in `/server`
+- npm in `/client`
+- GitHub Actions at `/`
+- Docker in `/server` and `/client`
 
-## 🤖 Dependabot Configuration
+Updates are grouped (minor/patch where practical), labelled, and scheduled weekly/monthly. Dependabot PRs still need a human review/merge decision; a green check is not approval. Security advisories should be handled ahead of the normal schedule.
 
-**File:** `.github/dependabot.yml`
+If a Dependabot label is missing, the PR is created without it. Labels used by the config must exist in the repository.
 
-### Update Schedule
-- **Frequency:** Weekly (Mondays at 9:00 AM)
-- **Max PRs:** 5 (backend), 5 (frontend), 3 (actions), 2 (docker)
+## Upgrade policy
 
-### Ecosystems Monitored
-1. **Python/Poetry** (`/server`) - Backend dependencies
-2. **npm** (`/client`) - Frontend dependencies
-3. **GitHub Actions** (`/`) - CI/CD workflows
-4. **Docker** (`/.github/workflows`) - Playwright container images
+- **Patch/minor**: normal Dependabot PR, full gate.
+- **Major**: open or link a tracking issue, read the migration guide, and run the full gate plus the affected E2E suites. Do not merge a major runtime bump just because CI is green if the supported runtime range has not been updated deliberately.
+- **Runtime floors**: Python 3.11+ (CI 3.12), Node 22.13+/24.x. A dependency that requires a newer runtime needs an explicit decision and a CI matrix update.
+- **Held majors** (as of 2026-11): Node 26 types, Python 3.15, Vite 8, ESLint 10. These are tracked in Dependabot PRs/branches; do not merge them piecemeal. Evaluate them as a coordinated upgrade.
 
-### PR Behavior
-- **Auto-created:** Yes (weekly batch)
-- **Auto-merged:** No (requires CI pass + manual review)
-- **Labels:** `dependencies`, `backend`/`frontend`/`ci`/`docker`
+## Adding a dependency
 
----
+1. Check whether the standard library or an existing dependency already covers the need.
+2. If it is a new runtime dependency, follow the OpenSpec rule in `AGENTS.md` (new dependency = proposal before implementation).
+3. Add it with the ecosystem tool, update the lockfile, and run the full gate.
+4. Remove unused dependencies in the same change when safe; do not keep a package only for a dead script.
 
-## 🔒 Critical Dependencies
-
-### Playwright Version Lock
-
-**Problem:** Docker image must match package.json version.
-
-**Solution:**
-```yaml
-# .github/workflows/e2e.yml
-container:
-  image: mcr.microsoft.com/playwright:v1.56.1-noble  # Must match package.json
-
-# Automatic version verification step added (fails early on mismatch)
-```
-
-**Dependabot handles:**
-- Creates PR to update `package.json` → `@playwright/test: ^1.56.2`
-- Creates separate PR to update `e2e.yml` → `v1.56.2-noble`
-- CI validates both changes before merge
-
----
-
-## 🚦 Update Workflow
-
-### 1. Dependabot Creates PR
-```
-chore(deps): bump @playwright/test from 1.56.1 to 1.56.2
-```
-
-### 2. GitHub Actions Validates
-- ✅ Lint (Ruff, ESLint)
-- ✅ Type-check (mypy, tsc)
-- ✅ Unit tests (pytest, Vitest)
-- ✅ E2E tests (Playwright)
-
-### 3. Manual Review (Quick Check)
-- Review changelog (auto-linked by Dependabot)
-- Check for breaking changes
-- Merge if green ✅
-
----
-
-## 🛡️ Security Updates
-
-### Automatic Alerts
-Dependabot creates **high-priority PRs** for:
-- Known CVEs in dependencies
-- Security advisories from GitHub
-
-### Response Protocol
-1. **Critical vulnerabilities:** Review + merge within 24h
-2. **Medium vulnerabilities:** Review + merge within 1 week
-3. **Low vulnerabilities:** Batch with weekly updates
-
----
-
-## 📊 Ignored Updates (During MVP)
-
-### Major Version Bumps (Temporary)
-```yaml
-ignore:
-  - dependency-name: "react"
-    update-types: ["version-update:semver-major"]
-  - dependency-name: "react-dom"
-    update-types: ["version-update:semver-major"]
-```
-
-**Reason:** Focus on MVP delivery, defer major upgrades to post-launch.
-
-**After MVP:** Remove ignore rules, evaluate major updates quarterly.
-
----
-
-## 🔍 Local Dependency Audits
-
-### Security Scanning
 ```bash
 # Backend
 cd server
-poetry audit
+poetry add <package>
+poetry add --group dev <package>
+poetry lock
 
 # Frontend
 cd client
-npm audit
-npm audit fix  # Apply non-breaking fixes
+npm install <package>
+npm install -D <package>
 ```
 
-### Outdated Dependencies
+## Audits
+
 ```bash
 # Backend
+cd server
+poetry check
 poetry show --outdated
 
 # Frontend
-npm outdated
-```
-
----
-
-## 🏗️ Adding New Dependencies
-
-### Backend (Poetry)
-```bash
-cd server
-poetry add <package>          # Production dependency
-poetry add --group dev <pkg>  # Dev dependency
-poetry lock --no-update       # Update lock file only
-```
-
-### Frontend (npm)
-```bash
 cd client
-npm install <package>         # Production dependency
-npm install -D <package>      # Dev dependency
+npm outdated
+npm audit
 ```
 
-### Constitutional Check (Article I: Simplicity)
-Before adding a new dependency, ask:
-1. ✅ Is it essential for P1 feature (un-deletable constraint)?
-2. ✅ Can we implement it ourselves in <50 LOC?
-3. ✅ Does it have active maintenance + good security track record?
+Do not run `npm audit fix --force` or downgrade/remove a package to silence an advisory without reviewing the change. If an advisory cannot be fixed in scope, record it in the PR and, when needed, `.scratch/<date>-<topic>/handoff.md`.
 
-**If any answer is "No" → Reject the dependency.**
+## CI behaviour
 
----
+- `Backend Tests` installs from `poetry.lock` with Poetry 2.5.1 and enforces branch coverage ≥78%.
+- `Frontend Tests` uses `npm ci` and enforces the Vitest coverage thresholds plus the `node:test` coverage gate.
+- `Validate (API Types + OpenSpec)` checks generated API types and strict OpenSpec validation.
+- Playwright browsers are cached by `client/package-lock.json`; a Playwright bump invalidates the cache.
 
-## 🎯 Post-MVP Enhancements
+## References
 
-### After 5-Day Sprint
-1. ✅ Review all `^` ranges → Consider stricter `~` for stability
-2. ✅ Remove React major version ignore rule
-3. ✅ Enable Dependabot auto-merge for patch updates
-4. ✅ Add Snyk or Dependabot security scanning dashboard
-
-### Quarterly Reviews
-- Evaluate major version updates (React, FastAPI, etc.)
-- Remove unused dependencies
-- Consolidate duplicate functionality
-
----
-
-## 📚 References
-
-- [Dependabot Docs](https://docs.github.com/en/code-security/dependabot)
-- [Semver Specification](https://semver.org/)
-- [npm Dependency Hell Guide](https://npm.github.io/how-npm-works-docs/)
-- [Poetry Dependency Management](https://python-poetry.org/docs/dependency-specification/)
-
----
-
-**Last Updated:** 2025-11-06  
-**Status:** ✅ Dependabot active, version verification enabled
+- [Dependabot documentation](https://docs.github.com/en/code-security/dependabot)
+- [Semantic Versioning](https://semver.org/)
+- [Poetry dependency specification](https://python-poetry.org/docs/dependency-specification/)
+- `AGENTS.md` — current gates and proposal rules

@@ -1,76 +1,51 @@
-## Description
+## Summary
 
-Briefly describe the changes made in this pull request.
+Describe the user-visible change and why it is needed.
 
-## Type of Change
+## Type of change
 
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Refactoring (no functional changes)
-- [ ] Tests (adding or updating tests)
+- [ ] Bug fix (restores intended behavior; test written first)
+- [ ] New behavior / API / schema / architecture (approved OpenSpec change linked)
+- [ ] Documentation, formatting, or comments only
+- [ ] Tests or CI infrastructure
+- [ ] Dependency update
 
-## Related Issues
+## Related work
 
 Fixes #
-Related to #
+OpenSpec change:
+Related PR/issue:
 
-## Motivation and Context
+## Verification
 
-Why is this change necessary? What problem does it solve?
+List the exact commands you ran and their result. Do not claim CI, deployment, or user acceptance from a local run.
 
-Include a summary of the motivation and context for this change.
+```bash
+# backend
+cd server && poetry run ruff check . && poetry run mypy . && poetry run pytest tests/ -n auto
+# frontend
+cd client && npm run lint && npm run type-check && npm run test -- --coverage
+```
 
-## Screenshots (if applicable)
+- [ ] Backend gates pass
+- [ ] Frontend gates pass
+- [ ] E2E run (if a user flow changed)
+- [ ] OpenSpec validation passes (if specs changed)
+- [ ] `git diff --check` passes
 
-Before:
-[Before screenshot]
+### Not run / not verified
 
-After:
-[After screenshot]
+State checks you could not run and why (real browser, real provider, isolated database, CI runner, deployment).
 
-## How Has This Been Tested?
+## Risk and rollback
 
-- [ ] Unit tests pass locally
-- [ ] Integration tests pass locally
-- [ ] E2E tests pass locally
-- [ ] Manual testing completed
-
-Please describe the tests that you ran to verify your changes.
-
-## Test Plan
-
-Provide instructions for how to test the changes:
-
-1.
-2.
-3.
+What could break, and how would we roll it back?
 
 ## Checklist
 
-- [ ] My code follows the [style guidelines](../CLAUDE.md) of this project
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-- [ ] Any dependent changes have been merged and published in downstream modules
-
-## Constitutional Requirements Check
-
-This project follows strict constitutional principles. Please confirm:
-
-- [ ] **Article I (Simplicity)**: This is a simple, framework-native implementation
-- [ ] **Article II (Vibe-First)**: P1 priority only for un-deletable constraints
-- [ ] **Article III (TDD)**: Tests written first (P1 features)
-- [ ] **Article IV (SOLID)**: Service layer handles business logic
-- [ ] **Article V (Documentation)**: JSDoc/docstrings on public interfaces
-
-## Quality Checks
-
-Before submitting, please ensure:
-
-- [ ] `cd server && poetry install && poetry run ruff check . && poetry run mypy . && poetry run pytest`
-- [ ] `cd client && npm ci && npm run lint && npm run type-check && npm run test`
+- [ ] I read `AGENTS.md` and followed its precedence and file boundaries.
+- [ ] New behavior has an approved OpenSpec proposal (or this is a bug fix/docs/test-only change).
+- [ ] I added or updated tests for the changed behavior.
+- [ ] I did not disable, skip, or weaken a gate to get a green result.
+- [ ] No `.env`, secrets, cookies, or local test artifacts are committed.
+- [ ] Documentation links remain valid (`docs/INDEX.md` is updated when needed).

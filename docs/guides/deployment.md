@@ -1,5 +1,7 @@
 # Deployment Guide
 
+> **Reference only (2026-11-11).** The authoritative runtime is `server/Dockerfile.prod` (Python 3.12, Poetry 2.5.1), `client/Dockerfile.prod` (Node 24), and `.github/workflows/deploy-staging.yml`. Verify every command against those files before deploying; some examples below predate the current provider registry.
+
 **Last Updated**: 2026-02-05
 
 Production deployment instructions for Impetus Lock.
@@ -142,6 +144,7 @@ ls -lh dist/
 ### Build Optimization
 
 The Vite build already includes:
+
 - Code splitting
 - Tree shaking
 - Minification
@@ -163,7 +166,7 @@ npm run build -- --mode analyze
 Create `server/Dockerfile`:
 
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -173,8 +176,9 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN pip install poetry
+# Install Poetry (matches server/poetry.lock)
+ARG POETRY_VERSION=2.5.1
+RUN pip install "poetry==${POETRY_VERSION}"
 
 # Copy dependency files
 COPY pyproject.toml poetry.lock ./
@@ -192,7 +196,7 @@ RUN poetry install --only main
 EXPOSE 8000
 
 # Run application
-CMD ["poetry", "run", "uvicorn", "server.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["poetry", "run", "uvicorn", "server.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ### Frontend Dockerfile
@@ -265,7 +269,7 @@ server {
 Create `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -335,20 +339,20 @@ docker-compose down
 
 ### Required Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
-| `ANTHROPIC_API_KEY` or `GOOGLE_API_KEY` | LLM provider key | `sk-ant-xxx...` |
-| `LLM_PROVIDER` | LLM provider to use | `anthropic` |
+| Variable                                | Description                  | Example                               |
+| --------------------------------------- | ---------------------------- | ------------------------------------- |
+| `DATABASE_URL`                          | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `ANTHROPIC_API_KEY` or `GOOGLE_API_KEY` | LLM provider key             | `sk-ant-xxx...`                       |
+| `LLM_PROVIDER`                          | LLM provider to use          | `anthropic`                           |
 
 ### Optional Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_API_URL` | Backend API URL | `/api` |
-| `ENABLE_METRICS` | Enable OpenTelemetry metrics | `false` |
-| `ENABLE_TRACING` | Enable OpenTelemetry tracing | `false` |
-| `IDEMPOTENCY_CACHE_TTL` | Cache duration (seconds) | `15` |
+| Variable                | Description                  | Default |
+| ----------------------- | ---------------------------- | ------- |
+| `VITE_API_URL`          | Backend API URL              | `/api`  |
+| `ENABLE_METRICS`        | Enable OpenTelemetry metrics | `false` |
+| `ENABLE_TRACING`        | Enable OpenTelemetry tracing | `false` |
+| `IDEMPOTENCY_CACHE_TTL` | Cache duration (seconds)     | `15`    |
 
 ### Security Best Practices
 

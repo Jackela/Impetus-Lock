@@ -7,12 +7,16 @@ name: CI Client
 #
 # Nothing in branch protection references these job names — the required checks
 # are `Lint (Backend + Frontend)`, `Type Check (Backend + Frontend)`,
-# `Backend Tests`, `Frontend Tests` (from ci.yml) and `Playwright E2E Tests`
-# (from e2e.yml). `npm run build` is also gated in ci.yml frontend-tests.
+# `Backend Tests`, `Frontend Tests`, `Validate (API Types + OpenSpec)` (from
+# ci.yml) and `Playwright E2E Tests` (from e2e.yml). `npm run build` is also
+# gated in ci.yml frontend-tests.
 #
 # Do not re-add `push`/`pull_request` triggers.
 on:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

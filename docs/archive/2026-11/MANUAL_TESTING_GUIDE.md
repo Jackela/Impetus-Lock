@@ -1,5 +1,7 @@
 # Manual Testing Guide: Vibe Enhancements (P2)
 
+> **Historical (archived 2026-11-11).** Current manual checks are documented in `docs/security/byok-storage.md` and `client/e2e/README.md`. This guide records the 2025-11 P2 verification pass and is not a current test plan.
+
 **Date**: 2025-11-07  
 **Feature**: Manual Trigger Button + Sensory Feedback  
 **Branch**: 002-vibe-enhancements  

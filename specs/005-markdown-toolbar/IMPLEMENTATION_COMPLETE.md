@@ -90,7 +90,7 @@ The Markdown Toolbar feature has been **successfully implemented and validated**
 1. `COMPLETION.md` - Comprehensive feature completion summary
 2. `INTEGRATION_VALIDATION.md` - Integration checklist validation (29/29 items)
 3. `ACCESSIBILITY_AUDIT.md` - WCAG 2.1 AA compliance audit (16/16 criteria)
-4. `MANUAL_TESTING_GUIDE.md` - Cross-browser testing checklist
+4. `docs/archive/2026-11/MANUAL_TESTING_GUIDE.md` - Cross-browser testing checklist
 5. `IMPLEMENTATION_COMPLETE.md` - This document
 
 ---
@@ -257,7 +257,7 @@ All 4 GitHub Actions jobs passed successfully:
 ### T088: Manual Testing on Chrome, Firefox, Safari
 **Status**: ⏳ PENDING (manual human verification required)
 
-**Deliverable**: `MANUAL_TESTING_GUIDE.md` created with comprehensive checklist
+**Deliverable**: `docs/archive/2026-11/MANUAL_TESTING_GUIDE.md` created with comprehensive checklist
 
 **Instructions**:
 1. Follow testing guide in `specs/005-markdown-toolbar/MANUAL_TESTING_GUIDE.md`
@@ -310,7 +310,7 @@ Implements P4 Markdown Toolbar feature with 5 formatting buttons (Bold, Italic, 
 - ✅ Article I-V verified
 
 ## Testing
-- Manual testing: [Link to MANUAL_TESTING_GUIDE.md results]
+- Manual testing: [Link to docs/archive/2026-11/MANUAL_TESTING_GUIDE.md results]
 - Integration validation: 29/29 items passed
 - Accessibility audit: 16/16 WCAG criteria passed
 

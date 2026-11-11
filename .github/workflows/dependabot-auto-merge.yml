@@ -25,10 +25,15 @@ permissions:
   pull-requests: write
   checks: read
 
+concurrency:
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   auto-merge:
     name: Auto-merge Dependabot PRs
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     if: github.actor == 'dependabot[bot]'
 
     steps:
@@ -43,12 +48,12 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           # v1.9.1 matches check_name against ONE exact name (no comma-splitting);
-          # use a regexp to wait on all four required contexts together.
-          check-regexp: '^(Backend Tests|Frontend Tests|(Lint|Type Check) \(Backend \+ Frontend\))$'
+          # use a regexp to wait on all required contexts together.
+          check-regexp: '^(Backend Tests|Frontend Tests|(Lint|Type Check) \(Backend \+ Frontend\)|Validate \(API Types \+ OpenSpec\)|Playwright E2E Tests)$'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 20
-          checks-discovery-timeout: 600
-          allowed-conclusions: success,skipped
+          checks-discovery-timeout: 1800
+          allowed-conclusions: success
 
       - name: Enable auto-merge for patch/minor updates
         if: |
@@ -81,21 +86,3 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-
-  # Separate job for E2E tests (they take longer)
-  auto-merge-e2e:
-    name: Auto-merge after E2E tests
-    runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
-    needs: auto-merge
-
-    steps:
-      - name: Wait for E2E tests
-        uses: lewagon/wait-on-check-action@v1.9.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-name: "Playwright E2E Tests"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-          checks-discovery-timeout: 600
-          allowed-conclusions: success,skipped

@@ -481,7 +481,7 @@ All integrate via Foundational layer (T008-T018).
 - [tasks.md](tasks.md) - Task breakdown
 
 ### Constitutional Documents
-- [constitution.md](../../.specify/memory/constitution.md) - Project governance
+- [AGENTS.md](../../AGENTS.md) - Current project governance
 
 ### Agent Context
 - [CLAUDE.md](../../CLAUDE.md) - Claude Code context
