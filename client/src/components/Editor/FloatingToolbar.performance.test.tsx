@@ -4,15 +4,18 @@
  * T084: Verify <100ms delay from button click to formatting applied (SC-005)
  * T085: Verify no editor degradation with large documents (>1000 lines)
  *
- * Timing assertions are wall-clock sensitive, so they only run when explicitly
- * requested with `PERF=1`; the default suite skips them entirely instead of
- * measuring noise on shared CI runners.
+ * Timing assertions are wall-clock sensitive, so shared CI runners use a wider
+ * budget than the local contract. The tests always run; they are not skipped.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "@testing-library/react";
 import { FloatingToolbar } from "./FloatingToolbar";
 import { createToolbarEditor } from "../../../tests/fixtures/editor";
+
+/** SC-005 local budget; CI runners are noisier, so allow a wider guard there. */
+const timingBudgetMs = process.env.CI ? 500 : 100;
+const renderBudgetMs = process.env.CI ? 1000 : 500;
 
 /**
  * V8-specific Performance interface extension.
@@ -26,9 +29,7 @@ interface V8Performance extends Performance {
   };
 }
 
-const describePerf = process.env.PERF ? describe : describe.skip;
-
-describePerf("FloatingToolbar - Performance Tests", () => {
+describe("FloatingToolbar - Performance Tests", () => {
   let fixture: ReturnType<typeof createToolbarEditor>;
   let mockEditor: typeof fixture.editor;
 
@@ -38,8 +39,8 @@ describePerf("FloatingToolbar - Performance Tests", () => {
   });
   afterEach(() => fixture.view.destroy());
 
-  // T084: Verify <100ms delay from button click to formatting applied (SC-005)
-  it("should execute command within 100ms of button click (SC-005)", async () => {
+  // T084: Verify the SC-005 timing budget from button click to formatting applied
+  it("should execute command within the timing budget (SC-005)", async () => {
     const startTime = performance.now();
 
     // Simulate command execution
@@ -48,11 +49,10 @@ describePerf("FloatingToolbar - Performance Tests", () => {
     const endTime = performance.now();
     const executionTime = endTime - startTime;
 
-    // Verify execution time is under 100ms
-    expect(executionTime).toBeLessThan(100);
+    expect(executionTime).toBeLessThan(timingBudgetMs);
   });
 
-  it("should update position within 100ms (SC-005)", async () => {
+  it("should update position within the timing budget (SC-005)", async () => {
     render(<FloatingToolbar editor={mockEditor} />);
 
     const startTime = performance.now();
@@ -63,8 +63,7 @@ describePerf("FloatingToolbar - Performance Tests", () => {
     const endTime = performance.now();
     const updateTime = endTime - startTime;
 
-    // Verify position update is under 100ms
-    expect(updateTime).toBeLessThan(100);
+    expect(updateTime).toBeLessThan(timingBudgetMs);
   });
 
   // T085: Verify no editor degradation with large documents (>1000 lines)
@@ -80,9 +79,9 @@ describePerf("FloatingToolbar - Performance Tests", () => {
     const endTime = performance.now();
     const renderTime = endTime - startTime;
 
-    // Verify render time is reasonable (<500ms for large docs)
-    expect(renderTime).toBeLessThan(500);
-    // Keep the measurement in the assertion message so PERF runs stay diagnosable.
+    // Verify render time is within the large-document budget
+    expect(renderTime).toBeLessThan(renderBudgetMs);
+    // Keep the measurement in the assertion message so failures stay diagnosable.
     expect(renderTime, `${largeDocumentLines} lines`).toBeGreaterThanOrEqual(0);
   });
 
@@ -108,7 +107,7 @@ describePerf("FloatingToolbar - Performance Tests", () => {
     }
   });
 
-  it("should maintain <100ms response time across multiple button clicks", () => {
+  it("should maintain the response-time budget across multiple button clicks", () => {
     const clickCount = 50;
     const executionTimes: number[] = [];
 
@@ -123,8 +122,8 @@ describePerf("FloatingToolbar - Performance Tests", () => {
     const averageTime = executionTimes.reduce((a, b) => a + b, 0) / executionTimes.length;
     const maxTime = Math.max(...executionTimes);
 
-    // Verify average and max times are under 100ms
-    expect(averageTime).toBeLessThan(100);
-    expect(maxTime).toBeLessThan(100);
+    // Verify average and max times stay within the timing budget
+    expect(averageTime).toBeLessThan(timingBudgetMs);
+    expect(maxTime).toBeLessThan(timingBudgetMs);
   });
 });

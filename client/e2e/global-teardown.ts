@@ -30,11 +30,10 @@ const REPORT_DIR = resolve(__dirname, "../playwright-report");
 const ARTIFACT_ROOT_DIRS = ["test-results", "playwright-results"];
 
 // Only artifact directories whose mtime is older than this are pruned.
-// Override with PLAYWRIGHT_ARTIFACT_MAX_AGE_DAYS (e.g. 0 to prune everything
-// from previous runs, or 30 to keep a month of history).
+// Override with PLAYWRIGHT_ARTIFACT_MAX_AGE_DAYS (default 7). Values below 1
+// are clamped so current-run evidence can never be eligible for pruning.
 const parsedMaxAgeDays = Number(process.env.PLAYWRIGHT_ARTIFACT_MAX_AGE_DAYS ?? "7");
-const ARTIFACT_MAX_AGE_DAYS =
-  Number.isFinite(parsedMaxAgeDays) && parsedMaxAgeDays >= 0 ? parsedMaxAgeDays : 7;
+const ARTIFACT_MAX_AGE_DAYS = Number.isFinite(parsedMaxAgeDays) ? Math.max(1, parsedMaxAgeDays) : 7;
 const ARTIFACT_MAX_AGE_MS = ARTIFACT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 
 interface TestSummary {
