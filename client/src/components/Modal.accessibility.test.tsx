@@ -77,6 +77,6 @@ it.each([
         screen.queryByRole(kind === "config" ? "alertdialog" : "dialog", { name })
       ).not.toBeInTheDocument()
     );
-    expect(opener).toHaveFocus();
+    await waitFor(() => expect(opener).toHaveFocus());
   }
 );
