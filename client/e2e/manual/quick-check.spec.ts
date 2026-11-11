@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Phase 5 Quick Check", () => {
   test("verify current app state", async ({ page }, testInfo) => {
     // Navigate to app
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
 
     // Wait for app to load
     await page.waitForSelector(".app", { timeout: 10000 });
