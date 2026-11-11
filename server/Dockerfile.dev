@@ -3,7 +3,7 @@
 # This Dockerfile is optimized for development with hot reload support.
 # For production builds, see Dockerfile.prod
 
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Labels
 LABEL maintainer="Impetus Team <team@impetus-lock.dev>"
