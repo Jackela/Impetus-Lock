@@ -9,10 +9,10 @@ const captures = {
     "ux-003-task-list-integration.png",
     "ux-003-task-list-hidden.png",
   ],
-  "test-trigger-debug.spec.ts": ["trigger-debug.png"],
-  "test-manual-trigger-click.spec.ts": ["manual-trigger-clicked.png"],
-  "quick-check.spec.ts": ["phase5-quick-check.png"],
-  "new-user-audit.spec.ts": [
+  "manual/test-trigger-debug.spec.ts": ["trigger-debug.png"],
+  "manual/test-manual-trigger-click.spec.ts": ["manual-trigger-clicked.png"],
+  "manual/quick-check.spec.ts": ["phase5-quick-check.png"],
+  "manual/new-user-audit.spec.ts": [
     "01-first-load.png",
     "02-welcome-modal.png",
     "03-main-ui.png",

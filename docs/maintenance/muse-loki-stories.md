@@ -49,7 +49,7 @@ server/.venv/bin/python scripts/story_eval.py check --records eval/chinese_stori
 
 正常浏览器检查使用可销毁 PostgreSQL 数据库的 `DATABASE_URL`，从仓库根目录执行 `server/.venv/bin/python scripts/run-story-e2e.py`；加 `STORY_FRONTEND_MODE=preview` 可验证生产构建预览。运行器拒绝借用其他进程的 8001 端口，关闭测试认证绕过和模型凭据，正常处理 Cookie/CSRF，并清理自己的服务。所有模型请求在浏览器 HTTP 边界受控；实际账户、任务保存及恢复仍使用后端。生产 Loki 测试通过 Playwright 时钟触发既有计时器。
 
-严格规范检查为 `npm exec --yes --package=@fission-ai/openspec@0.23.0 -- openspec validate --all --strict --no-interactive`。本轮未修改工作流。
+严格规范检查为 `npm exec --yes --package=@fission-ai/openspec@1.16.1 -- openspec validate --all --strict --no-interactive`。本轮未修改工作流。
 
 本轮在 Node 24、Python 3.12、隔离 PostgreSQL 16/Redis 7 环境执行的结果如下。最终提交 SHA 与独立复核结论见本轮交付报告；这些检查不等于部署或作者验收。
 

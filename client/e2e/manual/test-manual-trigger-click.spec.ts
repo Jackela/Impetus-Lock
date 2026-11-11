@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { waitForReactHydration } from "./helpers/waitHelpers";
-import { mockInterventionSuccess } from "./helpers/interventionMocks";
+import { waitForReactHydration } from "../helpers/waitHelpers";
+import { mockInterventionSuccess } from "../helpers/interventionMocks";
 
 /**
  * Test manual trigger button click and sensory feedback

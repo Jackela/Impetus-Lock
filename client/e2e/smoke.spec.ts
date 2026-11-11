@@ -5,7 +5,7 @@ test("homepage renders successfully", async ({ page }) => {
   await page.goto("/");
 
   // Verify the page loads (actual title from index.html)
-  await expect(page).toHaveTitle("Impetus Lock - AI-Powered Writing Pressure System");
+  await expect(page).toHaveTitle("Impetus Lock");
 
   // Wait for React to hydrate
   await waitForReactHydration(page);

@@ -13,7 +13,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Production Build", () => {
   test("Page title is branded", async ({ page }) => {
     await page.goto("/");
-    expect(await page.title()).toBe("Impetus Lock - AI-Powered Writing Pressure System");
+    expect(await page.title()).toBe("Impetus Lock");
   });
 
   test("Test Delete button visible in development", async ({ page }) => {

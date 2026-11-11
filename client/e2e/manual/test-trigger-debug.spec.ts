@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForReactHydration, dismissWelcomeModal } from "./helpers/waitHelpers";
+import { waitForReactHydration, dismissWelcomeModal } from "../helpers/waitHelpers";
 
 /**
  * Debug test for manual trigger behavior

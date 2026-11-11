@@ -29,11 +29,16 @@ const shouldStartWebServer = process.env.PLAYWRIGHT_SKIP_WEBSERVER !== "1";
 
 export default defineConfig({
   testDir: "./e2e",
-  // Real-auth suites own their backend and configurations outside this TESTING entry.
+  // Suites that own their own backend/ports/configs are excluded from this
+  // default (Vite dev server + localhost:8000) entry:
+  // - authenticated-editor*.spec.ts -> scripts/run-auth-e2e.py / playwright.auth.config.ts
+  // - muse-loki-story.spec.ts       -> scripts/run-story-e2e.py / playwright.story.config.ts (CI: e2e.yml `story-e2e`)
+  // - manual/**                     -> exploratory/debug specs, run explicitly (see e2e/manual/README.md)
   testIgnore: [
     "authenticated-editor.spec.ts",
     "authenticated-editor-safety.spec.ts",
     "muse-loki-story.spec.ts",
+    "manual/**",
   ],
 
   // Parallel execution settings - single worker in CI for stability

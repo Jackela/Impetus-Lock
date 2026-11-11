@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { waitForAppReady } from "./helpers/waitHelpers";
-import type { components } from "../src/types/api.generated";
+import { waitForAppReady } from "../helpers/waitHelpers";
+import type { components } from "../../src/types/api.generated";
 
 type InterventionResponse = components["schemas"]["InterventionResponse"];
 
