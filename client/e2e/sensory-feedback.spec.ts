@@ -33,7 +33,7 @@ import {
 
 test.describe("Sensory Feedback", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
 
     // Wait for React to hydrate
     await waitForReactHydration(page);

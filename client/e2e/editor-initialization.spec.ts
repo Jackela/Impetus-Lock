@@ -22,7 +22,7 @@ import {
 test.describe("Editor Initialization", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to app
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
 
     // Wait for React to hydrate
     await waitForReactHydration(page);
