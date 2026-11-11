@@ -110,6 +110,13 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "cryptography"
         update-types: ["version-update:semver-major"]
+      # Held majors tracked in #266
+      - dependency-name: "google-genai"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "pytest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "redis"
+        update-types: ["version-update:semver-major"]
 
   # ==========================================
   # Frontend (npm) - User-facing
@@ -198,6 +205,19 @@ updates:
       # TypeScript: Careful updates
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # Held majors tracked in #266
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-plugin-react-hooks"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "lint-staged"
+        update-types: ["version-update:semver-major"]
 
   # ==========================================
   # GitHub Actions - CI/CD Infrastructure
@@ -228,6 +248,15 @@ updates:
       prefix: "chore(ci)"
       include: "scope"
 
+    ignore:
+      # Held majors tracked in #266
+      - dependency-name: "actions/setup-node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "docker/build-push-action"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "docker/login-action"
+        update-types: ["version-update:semver-major"]
+
   # ==========================================
   # Docker - Infrastructure
   # ==========================================
@@ -255,6 +284,14 @@ updates:
       prefix: "chore(docker)"
       include: "scope"
 
+    ignore:
+      # Held majors tracked in #266. Python 3.12 -> 3.15 is a minor update,
+      # so the version range must be explicit; semver-major alone does not catch it.
+      - dependency-name: "python"
+        versions: ["3.15"]
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "docker"
     directory: "/client"
     schedule:
@@ -274,3 +311,8 @@ updates:
     commit-message:
       prefix: "chore(docker)"
       include: "scope"
+
+    ignore:
+      # Held majors tracked in #266
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
