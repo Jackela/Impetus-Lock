@@ -63,7 +63,20 @@ jobs:
           # No approval step: this repository requires zero approving reviews,
           # and "GitHub Actions is not permitted to approve pull requests" is
           # intentionally left enabled (anti-self-approval default).
-          gh pr merge "$PR_URL" --auto --squash --delete-branch
+          state=$(gh pr view "$PR_URL" --json state --jq .state)
+          if [ "$state" != "OPEN" ]; then
+            echo "PR is $state; nothing to auto-merge."
+            exit 0
+          fi
+          if ! gh pr merge "$PR_URL" --auto --squash --delete-branch; then
+            # A close can race the wait/merge window; treat that as a no-op.
+            state=$(gh pr view "$PR_URL" --json state --jq .state)
+            if [ "$state" != "OPEN" ]; then
+              echo "PR became $state; nothing to auto-merge."
+              exit 0
+            fi
+            exit 1
+          fi
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
