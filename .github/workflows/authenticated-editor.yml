@@ -14,6 +14,10 @@ concurrency:
   group: auth-editor-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pinned to the interpreter that generated server/poetry.lock (Poetry 2.5.x).
+  POETRY_VERSION: "2.5.1"
+
 jobs:
   browser-authentication:
     runs-on: ubuntu-latest
@@ -41,7 +45,8 @@ jobs:
           python-version: "3.12"
       - name: Install backend dependencies
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           poetry -C server install
       - uses: actions/setup-node@v4
         with:

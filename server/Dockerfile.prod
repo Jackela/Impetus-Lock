@@ -16,7 +16,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
-ENV POETRY_VERSION=1.8.5 \
+# Must match the Poetry release that generated poetry.lock (2.5.1); older
+# Poetry cannot read the newer lock metadata and fails the build.
+ENV POETRY_VERSION=2.5.1 \
     POETRY_HOME=/opt/poetry \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1

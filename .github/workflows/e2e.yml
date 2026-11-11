@@ -1,5 +1,8 @@
 name: E2E Tests
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: ["main"]
@@ -14,6 +17,14 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  POETRY_VERSION: "2.5.1"
+
+# PRs supersede their own earlier runs (Playwright is the slowest gate and its
+# results are stale as soon as the branch moves). `main` never cancels: every
+# merged commit must get its own verdict.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   e2e:
@@ -52,7 +63,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          python -m pip install poetry
+          python -m pip install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -143,9 +154,28 @@ jobs:
         working-directory: ${{ github.workspace }}/client
         run: npm ci
 
+      # Browser binaries are keyed on the locked Playwright package. No
+      # `restore-keys` fallback on purpose: a stale browser build would be
+      # restored for a bumped Playwright and every test would fail on a
+      # protocol mismatch.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('client/package-lock.json') }}
+
       - name: Install the browser matching the locked Playwright package
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}/client
         run: npx playwright install --with-deps chromium
+
+      # Cached browsers still need the OS libraries (apt packages are not part
+      # of the cache), so the deps step runs on every hit.
+      - name: Install OS dependencies for the cached browser
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: ${{ github.workspace }}/client
+        run: npx playwright install-deps chromium
 
       - name: Run Playwright E2E tests
         working-directory: ${{ github.workspace }}/client
@@ -154,13 +184,31 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/impetus_lock_test
         run: npm run test:e2e:ci
 
+      # The HTML/JSON report directory also carries the JUnit XML emitted by the
+      # CI reporter configuration; keeping the explicit glob makes sure the
+      # machine-readable result survives even if the reporter output path moves.
       - name: Upload Playwright report
         if: ${{ env.ACT != 'true' && always() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: client/playwright-report/
+          path: |
+            client/playwright-report/
+            client/junit.xml
+            client/test-results/junit*.xml
           retention-days: 30
+          if-no-files-found: warn
+
+      # Traces/screenshots/videos only exist for failing tests, so this artifact
+      # is failure-scoped to keep successful runs lean.
+      - name: Upload Playwright failure evidence
+        if: ${{ env.ACT != 'true' && failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: client/test-results/
+          retention-days: 7
+          if-no-files-found: warn
 
   story-e2e:
     name: Muse/Loki Story E2E
@@ -197,7 +245,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          python -m pip install poetry
+          python -m pip install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install backend dependencies
@@ -215,9 +263,22 @@ jobs:
         working-directory: ${{ github.workspace }}/client
         run: npm ci
 
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('client/package-lock.json') }}
+
       - name: Install Chromium for the locked Playwright package
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: ${{ github.workspace }}/client
         run: npx playwright install --with-deps chromium
+
+      - name: Install OS dependencies for the cached browser
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: ${{ github.workspace }}/client
+        run: npx playwright install-deps chromium
 
       - name: Run Muse/Loki story with real cookie auth
         working-directory: ${{ github.workspace }}

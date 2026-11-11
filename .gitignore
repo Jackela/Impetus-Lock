@@ -80,6 +80,9 @@ htmlcov/
 test-results/
 playwright-report/
 .playwright/
+client/reports/
+server/junit.xml
+server/coverage.xml
 test-results/act-e2e.log
 demo-artifacts/*.webm
 demo-artifacts/*.mp4

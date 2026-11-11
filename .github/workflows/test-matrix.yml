@@ -11,6 +11,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  POETRY_VERSION: "2.5.1"
 
 # Cancel previous runs for the same PR or branch
 concurrency:
@@ -28,10 +29,18 @@ jobs:
   # declares `python = "^3.11"` as the support floor, and the 3.12-only entry
   # point (ci.yml, Dockerfile.prod) cannot prove that floor. 3.12 is the
   # production runtime and is covered here plus in ci.yml.
+  #
+  # Overlap with ci.yml is intentional, not duplication to prune:
+  # - 3.12 here re-runs the backend suite that ci.yml gates on, so a break
+  #   confined to the interpreter used in production is attributed to this
+  #   workflow too (and `paths` keeps it off frontend-only PRs).
+  # - 3.11 is the support floor: nothing else in CI runs on it, so removing
+  #   this leg would silently drop the pyproject `^3.11` guarantee.
+  # Keep both legs.
   test-matrix:
     name: Test Matrix (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -73,7 +82,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies

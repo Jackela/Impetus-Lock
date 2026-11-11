@@ -70,7 +70,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            POETRY_VERSION=1.8.5
+            POETRY_VERSION=2.5.1
 
       - name: Build and push Client image
         uses: docker/build-push-action@v5
