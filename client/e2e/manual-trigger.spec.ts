@@ -41,7 +41,7 @@ async function enableMuseMode(page: Page) {
 test.describe("Manual Trigger Button", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to application
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
 
     // Wait for React to hydrate
     await waitForReactHydration(page);

@@ -7,7 +7,7 @@ import { mockInterventionSuccess } from "../helpers/interventionMocks";
  */
 test.describe("Manual Trigger Click Test", () => {
   test("clicking manual trigger shows sensory feedback", async ({ page }, testInfo) => {
-    await page.goto("http://localhost:5173");
+    await page.goto("/");
     await waitForReactHydration(page);
     await mockInterventionSuccess(page);
 
