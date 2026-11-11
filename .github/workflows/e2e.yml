@@ -71,7 +71,7 @@ jobs:
         if: ${{ env.ACT != 'true' }}
         working-directory: ${{ github.workspace }}/server
         env:
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/impetus_lock_test
         run: |
           echo "Running Alembic migrations..."
           poetry run alembic upgrade head
@@ -80,7 +80,7 @@ jobs:
       - name: Start backend server
         env:
           TESTING: "1"
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/impetus_lock_test
           LLM_ALLOW_DEBUG_PROVIDER: "1"
           LLM_DEFAULT_PROVIDER: debug
         run: |
@@ -151,7 +151,7 @@ jobs:
         working-directory: ${{ github.workspace }}/client
         env:
           VITE_API_URL: http://localhost:8000
-          DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/impetus_lock_test
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/impetus_lock_test
         run: npm run test:e2e:ci
 
       - name: Upload Playwright report
