@@ -34,6 +34,11 @@ describe("useAudioFeedback", () => {
    * Six action types share four files (`clank` and `whoosh` back two actions
    * each), so the hook must fetch each URL once and then fan the decoded
    * buffer back out to every action that references it.
+   *
+   * This case subsumes the former per-action `it.skip` checks (mount
+   * preloading, PROVOKE/ERROR playback and cancel-and-replace): it asserts the
+   * same fetch inventory, buffer reuse and per-`playAudio` source-node
+   * creation without the skipped duplicates.
    */
   it("fetches each unique audio file once and shares buffers across actions", async () => {
     // A fresh Response per call: a single Response body can only be read once.
@@ -64,102 +69,6 @@ describe("useAudioFeedback", () => {
   });
 
   /**
-   * Test: T035 - Preloads audio buffers on mount
-   *
-   * Verifies that the hook:
-   * - Fetches all 3 audio files on mount (clank.mp3, whoosh.mp3, bonk.mp3)
-   * - Decodes audio data using AudioContext
-   * - Stores buffers in memory for playback
-   */
-  it.skip("preloads audio buffers on mount", async () => {
-    const { result } = renderHook(() => useAudioFeedback());
-
-    // Wait for async preloading to complete
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(3);
-    });
-
-    // Verify all 3 audio files were fetched
-    expect(fetch).toHaveBeenCalledWith("/assets/audio/clank.mp3");
-    expect(fetch).toHaveBeenCalledWith("/assets/audio/whoosh.mp3");
-    expect(fetch).toHaveBeenCalledWith("/assets/audio/bonk.mp3");
-
-    // Hook should be in ready state (no errors)
-    expect(result.current.isReady).toBe(true);
-  });
-
-  /**
-   * Test: T036 - Plays Clank audio for PROVOKE action
-   *
-   * Verifies that calling playAudio with PROVOKE:
-   * - Uses the clank.mp3 buffer
-   * - Creates AudioBufferSourceNode
-   * - Connects to audio destination
-   * - Starts playback
-   */
-  it.skip("plays Clank audio for PROVOKE action", async () => {
-    const { result } = renderHook(() => useAudioFeedback());
-
-    // Wait for preloading
-    await waitFor(() => {
-      expect(result.current.isReady).toBe(true);
-    });
-
-    // Create spy on AudioContext methods
-    const mockSource = new TestAudioContext().createBufferSource();
-
-    const audioContext = new AudioContext();
-    vi.spyOn(audioContext, "createBufferSource").mockReturnValue(mockSource);
-
-    // Trigger PROVOKE audio
-    await result.current.playAudio(AIActionType.PROVOKE);
-
-    // Verify source was created and started
-    expect(mockSource.connect).toHaveBeenCalled();
-    expect(mockSource.start).toHaveBeenCalled();
-  });
-
-  /**
-   * Test: T037 - Stops previous audio before playing new sound (FR-019)
-   *
-   * Verifies cancel-and-replace behavior:
-   * - Play PROVOKE audio (Clank)
-   * - Immediately play DELETE audio (Whoosh)
-   * - Previous audio source should be stopped and disconnected
-   * - New audio should start playing
-   */
-  it.skip("stops previous audio before playing new sound (FR-019)", async () => {
-    const { result } = renderHook(() => useAudioFeedback());
-
-    await waitFor(() => {
-      expect(result.current.isReady).toBe(true);
-    });
-
-    const mockSource1 = new TestAudioContext().createBufferSource();
-
-    const mockSource2 = new TestAudioContext().createBufferSource();
-
-    const audioContext = new AudioContext();
-    vi.spyOn(audioContext, "createBufferSource")
-      .mockReturnValueOnce(mockSource1)
-      .mockReturnValueOnce(mockSource2);
-
-    // Play first audio (PROVOKE)
-    await result.current.playAudio(AIActionType.PROVOKE);
-    expect(mockSource1.start).toHaveBeenCalled();
-
-    // Play second audio (DELETE) - should stop first
-    await result.current.playAudio(AIActionType.DELETE);
-
-    // Verify first audio was stopped
-    expect(mockSource1.stop).toHaveBeenCalled();
-    expect(mockSource1.disconnect).toHaveBeenCalled();
-
-    // Verify second audio started
-    expect(mockSource2.start).toHaveBeenCalled();
-  });
-
-  /**
    * Test: T038 - Handles AudioContext creation failure gracefully (FR-015)
    *
    * Verifies error handling when AudioContext is unavailable:
@@ -183,42 +92,5 @@ describe("useAudioFeedback", () => {
 
     // Restore AudioContext
     vi.unstubAllGlobals();
-  });
-
-  /**
-   * Test: T003 - Plays buzz audio for ERROR action (P3 US3)
-   *
-   * Verifies that calling playAudio with ERROR:
-   * - Uses the buzz.mp3 buffer
-   * - Creates AudioBufferSourceNode
-   * - Connects to audio destination
-   * - Starts playback
-   *
-   * **Coverage**: FR-006 (API error audio feedback)
-   * **User Story**: US3 (API Failure Error Feedback - P1)
-   */
-  it.skip("plays buzz audio for ERROR action", async () => {
-    const { result } = renderHook(() => useAudioFeedback());
-
-    // Wait for preloading (includes buzz.mp3)
-    await waitFor(() => {
-      expect(result.current.isReady).toBe(true);
-    });
-
-    // Verify buzz.mp3 was fetched
-    expect(fetch).toHaveBeenCalledWith("/assets/audio/buzz.mp3");
-
-    // Create spy on AudioContext methods
-    const mockSource = new TestAudioContext().createBufferSource();
-
-    const audioContext = new AudioContext();
-    vi.spyOn(audioContext, "createBufferSource").mockReturnValue(mockSource);
-
-    // Trigger ERROR audio
-    await result.current.playAudio(AIActionType.ERROR);
-
-    // Verify source was created and started
-    expect(mockSource.connect).toHaveBeenCalled();
-    expect(mockSource.start).toHaveBeenCalled();
   });
 });

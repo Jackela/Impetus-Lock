@@ -210,24 +210,79 @@ describe("TaskList", () => {
     });
   });
 
-  describe("snapshot", () => {
-    it("should match snapshot for empty state", () => {
+  /**
+   * Explicit structure assertions that replaced the former DOM snapshots.
+   * Snapshots embedded `toLocaleString()`/`toLocaleDateString()` output, so
+   * they only passed under an en-US host locale; these checks pin the
+   * machine-readable `<time datetime>` contract instead and stay green under
+   * any locale (verified with LC_ALL=zh_CN.UTF-8).
+   */
+  describe("structure", () => {
+    it("renders only the empty state when no tasks are provided", () => {
       const { container } = render(<TaskList tasks={[]} />);
 
-      expect(container.firstChild).toMatchSnapshot();
+      expect(container.querySelector('[data-testid="task-list"]')).toBeNull();
+      const empty = screen.getByTestId("task-list-empty");
+      expect(empty).toHaveTextContent("No tasks yet");
+      expect(container.querySelectorAll("time")).toHaveLength(0);
     });
 
-    it("should match snapshot with tasks", () => {
-      const tasks = [mockTask, mockTaskWithLocks];
-      const { container } = render(<TaskList tasks={tasks} />);
+    it("renders one task row per task with stable data attributes", () => {
+      render(<TaskList tasks={[mockTask, mockTaskWithLocks]} />);
 
-      expect(container.firstChild).toMatchSnapshot();
+      const [firstRow, secondRow] = screen.getAllByRole("button");
+      expect(screen.getAllByRole("button")).toHaveLength(2);
+      expect(firstRow).toHaveAttribute("data-task-id", mockTask.id);
+      expect(secondRow).toHaveAttribute("data-task-id", mockTaskWithLocks.id);
+      const rows = screen.getAllByTestId(/^task-item-/);
+      expect(rows.map((row) => row.getAttribute("data-testid"))).toEqual([
+        `task-item-${mockTask.id}`,
+        `task-item-${mockTaskWithLocks.id}`,
+      ]);
     });
 
-    it("should match snapshot with selected task", () => {
-      const { container } = render(<TaskList tasks={[mockTask]} selectedTaskId={mockTask.id} />);
+    it("keeps task titles, lock badges and version badges in the right row", () => {
+      render(<TaskList tasks={[mockTask, mockTaskWithLocks]} />);
 
-      expect(container.firstChild).toMatchSnapshot();
+      expect(screen.getByText("Test task content")).toBeInTheDocument();
+      expect(screen.getByText("Task with locks")).toBeInTheDocument();
+      expect(screen.getByTitle("2 locked sections").closest("[data-task-id]")).toHaveAttribute(
+        "data-task-id",
+        mockTaskWithLocks.id
+      );
+      expect(screen.getByText("v2").closest("[data-task-id]")).toHaveAttribute(
+        "data-task-id",
+        mockTaskWithLocks.id
+      );
+    });
+
+    it("exposes each creation timestamp through the datetime attribute", () => {
+      const { container } = render(<TaskList tasks={[mockTask, mockTaskWithLocks]} />);
+
+      const times = [...container.querySelectorAll("time.task-item-time")];
+      expect(times.map((time) => time.getAttribute("datetime"))).toEqual([
+        mockTask.created_at,
+        mockTaskWithLocks.created_at,
+      ]);
+      // The visible label and title are host-locale formatted; only assert that
+      // they are present and non-empty so the test stays locale independent.
+      for (const time of times) {
+        expect(time.textContent?.trim()).not.toBe("");
+        expect(time.getAttribute("title")).toBeTruthy();
+      }
+    });
+
+    it("marks only the selected row as current", () => {
+      const { container } = render(
+        <TaskList tasks={[mockTask, mockTaskWithLocks]} selectedTaskId={mockTaskWithLocks.id} />
+      );
+
+      const [firstRow, secondRow] = screen.getAllByRole("button");
+      expect(firstRow).not.toHaveAttribute("aria-current");
+      expect(firstRow).not.toHaveClass("selected");
+      expect(secondRow).toHaveAttribute("aria-current", "true");
+      expect(secondRow).toHaveClass("selected");
+      expect(container.querySelectorAll("li.task-list-item")).toHaveLength(2);
     });
   });
 });

@@ -18,8 +18,17 @@ Object.defineProperty(navigator, "locks", {
   configurable: true,
   get: () => browserLocks,
 });
+// Browser boundary fixtures are installed with plain property definitions, not
+// `vi.stubGlobal`: 20+ suites call `vi.unstubAllGlobals()` in `afterEach`, which
+// would otherwise tear the fixture down after the first test in the file and
+// leave later tests without the Web APIs the runtime assumes.
+//
 // Node's channel spans Vitest workers; separate browser contexts do not.
-vi.stubGlobal("BroadcastChannel", BrowserBroadcastChannel);
+Object.defineProperty(globalThis, "BroadcastChannel", {
+  configurable: true,
+  writable: true,
+  value: BrowserBroadcastChannel,
+});
 
 /**
  * Mock matchMedia (for prefers-reduced-motion and responsive design support)
@@ -33,9 +42,12 @@ interface MediaQueryListListener {
   (event: MediaQueryListEvent): void;
 }
 
+// The implementation is passed to `vi.fn` rather than applied with
+// `mockImplementation`, so `restoreMocks` restores it instead of leaving
+// `window.matchMedia` returning `undefined` for later tests in the file.
 Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: vi.fn().mockImplementation((query: string) => {
+  value: vi.fn((query: string) => {
     let matches = false;
 
     if (query.includes("prefers-reduced-motion: reduce")) {
@@ -82,7 +94,13 @@ Object.defineProperty(window, "matchMedia", {
  */
 import { TestAudioContext } from "./tests/fixtures/audio";
 
-vi.stubGlobal("AudioContext", TestAudioContext);
+// Direct definition (not `vi.stubGlobal`) so `vi.unstubAllGlobals()` cannot
+// uninstall the Web Audio fixture part-way through a suite.
+Object.defineProperty(globalThis, "AudioContext", {
+  configurable: true,
+  writable: true,
+  value: TestAudioContext,
+});
 
 /**
  * Mock fetch for static audio assets so Vitest doesn't try to resolve real files.
@@ -105,5 +123,12 @@ const mockFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Pr
   return new Response(null, { status: 200 });
 });
 
-global.fetch = mockFetch;
-(window as Window).fetch = mockFetch;
+// Direct definition (not `vi.stubGlobal`) so `vi.unstubAllGlobals()` cannot
+// remove the static-asset guard part-way through a suite.
+for (const target of [globalThis, window]) {
+  Object.defineProperty(target, "fetch", {
+    configurable: true,
+    writable: true,
+    value: mockFetch,
+  });
+}
