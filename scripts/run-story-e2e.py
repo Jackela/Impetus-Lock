@@ -7,6 +7,7 @@ held or fulfilled at the browser HTTP boundary; no model credentials are loaded.
 import os
 import socket
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -36,7 +37,8 @@ def run() -> None:
         if probe.connect_ex(("127.0.0.1", 8001)) == 0:
             raise RuntimeError("Port 8001 is occupied; stop its owner before running this suite")
     EVIDENCE.mkdir(parents=True, exist_ok=True)
-    python = str(ROOT / "server/.venv/bin/python")
+    project_python = ROOT / "server/.venv/bin/python"
+    python = str(project_python) if project_python.exists() else sys.executable
     subprocess.run(
         [python, "-m", "alembic", "upgrade", "head"],
         cwd=ROOT / "server",

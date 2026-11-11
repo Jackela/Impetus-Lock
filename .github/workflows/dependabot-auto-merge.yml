@@ -26,7 +26,7 @@ permissions:
   checks: read
 
 concurrency:
-  group: dependabot-auto-merge-${{ github.ref }}
+  group: dependabot-auto-merge-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:

@@ -15,7 +15,7 @@ npm run test:e2e:story    # Muse/Loki story flow
 npm run test:e2e:ui       # Playwright UI mode
 ```
 
-Prerequisites for the main suite: backend on `:8000` with `TESTING=1` and the debug provider, Vite on `:5173`, and PostgreSQL migrated. `./scripts/dev-start.sh` starts all three. Authenticated and story suites start their own isolated backend/DB; see `scripts/run-auth-e2e.py` and `scripts/run-story-e2e.py`.
+Prerequisites for the main suite: backend on `:8000` with `TESTING=1` and the debug provider, Vite on `:5173`, and PostgreSQL migrated. `./scripts/dev-start.sh` starts all three. Authenticated and story suites start their own isolated backend/DB; see `scripts/run-auth-e2e.py` and `scripts/run-story-e2e.py`. `npm run test:e2e:story` invokes the story runner through Poetry and requires `DATABASE_URL` pointing at a disposable PostgreSQL database; it refuses to use an occupied `:8001`.
 
 ## Config boundaries
 

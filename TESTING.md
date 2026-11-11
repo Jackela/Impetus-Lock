@@ -72,13 +72,13 @@ The performance tests in `FloatingToolbar.performance.test.tsx` always run; CI u
 
 ## E2E
 
-| Command                    | Config                       | Use                                |
-| -------------------------- | ---------------------------- | ---------------------------------- |
-| `npm run test:e2e`         | `playwright.config.ts`       | local main suite                   |
-| `npm run test:e2e:ci`      | `playwright.config.ts`       | CI-shaped main suite               |
-| `npm run test:e2e:ci-like` | `playwright.config.ts`       | one worker + retries, closer to CI |
-| `npm run test:e2e:auth`    | `playwright.auth.config.ts`  | real auth/CSRF, isolated data      |
-| `npm run test:e2e:story`   | `playwright.story.config.ts` | Muse/Loki story flow               |
+| Command                    | Config                      | Use                                                               |
+| -------------------------- | --------------------------- | ----------------------------------------------------------------- |
+| `npm run test:e2e`         | `playwright.config.ts`      | local main suite                                                  |
+| `npm run test:e2e:ci`      | `playwright.config.ts`      | CI-shaped main suite                                              |
+| `npm run test:e2e:ci-like` | `playwright.config.ts`      | one worker + retries, closer to CI                                |
+| `npm run test:e2e:auth`    | `playwright.auth.config.ts` | real auth/CSRF, isolated data                                     |
+| `npm run test:e2e:story`   | `scripts/run-story-e2e.py`  | Muse/Loki story; needs disposable `DATABASE_URL` and free `:8001` |
 
 Key rules:
 
