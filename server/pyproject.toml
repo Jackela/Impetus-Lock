@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "impetus-lock-server"
-version = "0.5.0"
+version = "0.5.1"
 description = "FastAPI backend for Impetus Lock"
 authors = ["Impetus Team <team@impetus-lock.dev>"]
 readme = "README.md"

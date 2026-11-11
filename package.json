@@ -1,7 +1,7 @@
 {
   "name": "impetus-lock",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Adversarial AI writing tool - turns lonely writing into an adversarial rogue-like game",
   "scripts": {
     "prepare": "husky"

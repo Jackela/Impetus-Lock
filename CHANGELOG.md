@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-11
+
+### Security
+
+- Upgrade `dompurify` to 3.4.17, fixing the `SAFE_FOR_TEMPLATES` / attached-shadow-root bypass advisory.
+
+### Fixed
+
+- The production client image starts again: nginx rejects `must-revalidate` in `gzip_proxied`.
+- Preview E2E uses the configured base URL and development CORS accepts the `4173` preview origin.
+- Production image labels report `0.5.1`.
+
+### Changed
+
+- `mako` 1.4.3 and `urllib3` 2.8.0.
+
 ## [0.5.0] - 2026-11-11
 
 ### Changed - Repository hygiene and test suite (2026-11-11)
