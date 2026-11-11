@@ -236,8 +236,12 @@ updates:
   # ==========================================
   # Docker - Infrastructure
   # ==========================================
+  # Dependabot only resolves Dockerfiles under the configured `directory`, so
+  # the former `/.github/workflows` entry (no Dockerfile there) could never
+  # open a base-image PR. The Dockerfiles are `server/Dockerfile.prod` and
+  # `client/Dockerfile.prod`, so both contexts are listed explicitly.
   - package-ecosystem: "docker"
-    directory: "/.github/workflows"
+    directory: "/server"
     schedule:
       interval: "monthly"
       day: "monday"
@@ -249,7 +253,27 @@ updates:
     labels:
       - "dependencies"
       - "docker"
-      - "e2e"
+      - "backend"
+      - "automated"
+
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/client"
+    schedule:
+      interval: "monthly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+
+    open-pull-requests-limit: 2
+
+    labels:
+      - "dependencies"
+      - "docker"
+      - "frontend"
       - "automated"
 
     commit-message:

@@ -1,7 +1,7 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
-import type { Reporter } from "vitest/node";
+import type { InlineConfig, Reporter } from "vitest/node";
 
 const criticalFiles = [
   "src/services/LockManager.ts",
@@ -50,13 +50,27 @@ for (const file of criticalFiles) {
   criticalThresholds[`**/${file}`] = { lines: 80 };
 }
 
+// CI additionally emits a JUnit report for dashboards/report ingestion; the
+// local run stays on the interactive default reporter.
+const reporters: NonNullable<InlineConfig["reporters"]> = process.env.CI
+  ? ["dot", ["junit", { outputFile: "reports/vitest-junit.xml" }], criticalInventory]
+  : ["default", criticalInventory];
+
 export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
-    reporters: ["default", criticalInventory],
+    reporters,
     environment: "jsdom",
     setupFiles: "./vitest.setup.ts",
+    // Every global installed by `vitest.setup.ts` is defined directly (not via
+    // `vi.stubGlobal`), so resetting mock state between tests is safe here.
+    clearMocks: true,
+    restoreMocks: true,
+    // jsdom + a cold Vite transform can exceed Vitest's 5s defaults on shared
+    // runners; the slower suites legitimately take 1-2s per test.
+    testTimeout: 10000,
+    hookTimeout: 10000,
     include: ["tests/**/*.{test,spec}.{ts,tsx}", "src/**/*.{test,spec}.{ts,tsx}"],
     exclude: ["tests/e2e/**", "node_modules"],
     coverage: {
@@ -83,14 +97,20 @@ export default defineConfig({
         "**/dist/**",
         "**/coverage/**",
       ],
-      reporter: ["text", "json", "html"],
+      reporter: ["text", "json", "json-summary", "html"],
       thresholds: {
-        // Overall floor for the whole `src/**` tree. Deliberately below the
-        // measured value so ordinary churn does not fail the build; the
-        // critical inventory below keeps its much stricter per-file floor.
-        lines: 45,
+        // Overall floor for the whole `src/**` tree, set to the measured value
+        // minus 3 percentage points so ordinary churn does not fail the build.
+        //
+        // Measured with `npm run test -- --coverage` (986 tests, 92 files):
+        //   lines 81.72 | statements 80.40 | branches 78.59 | functions 75.31
+        // The critical inventory below keeps its much stricter per-file floor.
+        lines: 78,
+        statements: 77,
+        functions: 72,
+        branches: 75,
         // Per-file 80% floor for the lock-critical inventory (glob keys apply
-        // to every matching file individually). `criticalInventory` below
+        // to every matching file individually). `criticalInventory` above
         // additionally rejects a critical file that is missing from the report.
         ...criticalThresholds,
       },

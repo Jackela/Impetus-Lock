@@ -16,6 +16,9 @@ const reporters: ReporterDescription[] = process.env.CI
       ["list"], // Console output
       ["html", { open: "never" }], // HTML report
       ["json", { outputFile: "playwright-report/results.json" }], // JSON for CI artifacts
+      // JUnit XML for CI dashboards / test-report ingestion. Kept alongside the
+      // HTML+JSON reporters so existing artifact consumers keep working.
+      ["junit", { outputFile: "playwright-report/junit.xml" }],
     ]
   : [["html", { open: "on-failure" }]];
 
@@ -39,6 +42,10 @@ export default defineConfig({
     "authenticated-editor-safety.spec.ts",
     "muse-loki-story.spec.ts",
     "manual/**",
+    // Node's built-in test runner guards (node:test) live next to the specs but
+    // are NOT Playwright tests. Without this they get imported as specs and their
+    // assertions execute during collection (e.g. screenshot-output-path.test.mjs).
+    "**/*.test.mjs",
   ],
 
   // Parallel execution settings - single worker in CI for stability
@@ -46,7 +53,10 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   // Retry configuration
-  retries: process.env.CI ? 2 : 1,
+  // CI retries are capped at 1 on purpose: a second retry hides genuinely flaky
+  // tests behind a third attempt. One retry still absorbs infra blips while
+  // keeping flaky specs visible in the report.
+  retries: 1,
 
   // Timeout configuration
   timeout: 60000, // Global test timeout: 60s
@@ -86,7 +96,10 @@ export default defineConfig({
   // Web server configuration - starts Vite dev server for frontend
   webServer: shouldStartWebServer
     ? {
-        command: `npm run dev -- --host --port ${Number(new URL(baseURL).port) || 5173}`,
+        // --strictPort: fail fast instead of silently moving to the next free
+        // port, which would leave every baseURL/API-origin assumption pointing
+        // at a server the tests never talk to.
+        command: `npm run dev -- --host --port ${Number(new URL(baseURL).port) || 5173} --strictPort`,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120000,

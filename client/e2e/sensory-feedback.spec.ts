@@ -25,8 +25,10 @@ import {
  * - Phase 4 (T060-T065): Sensory feedback components complete
  * - Phase 5 (T066-T082): Integration into EditorCore pending
  *
- * **Note**: These tests are currently SKIPPED pending Phase 5 integration.
- * They will be enabled once SensoryFeedback is wired into the Editor.
+ * **Note**: These tests are declared as explicit `test.fixme(true, "T066 ...")`
+ * guards pending Phase 5 integration (T066-T082). They are reported as known-
+ * broken rather than silently skipped, and must not be converted into passing
+ * tests until the SensoryFeedback component is actually wired into the Editor.
  */
 
 test.describe("Sensory Feedback", () => {
@@ -49,7 +51,12 @@ test.describe("Sensory Feedback", () => {
    * **Blocker**: SensoryFeedback not yet wired to AI action events
    * TODO: Enable this test once Phase 5 integration (T066-T082) is complete
    */
-  test.skip("plays Clank sound and shows Glitch animation on Provoke", async ({ page }) => {
+  test("plays Clank sound and shows Glitch animation on Provoke", async ({ page }) => {
+    // T066: SensoryFeedback is not wired into EditorCore yet, so this cannot pass.
+    // Declared as an explicit fixme instead of a silent skip so the gap is
+    // visible in the report; the body below does not execute while it is active.
+    test.fixme(true, "T066 - SensoryFeedback integration into EditorCore pending (Phase 5)");
+
     await page.route("**/impetus/generate-intervention", (route) => {
       route.fulfill({
         status: 200,
@@ -98,11 +105,12 @@ test.describe("Sensory Feedback", () => {
    * **Note**: Requires backend running with TESTING=true
    * TODO: Enable this test once DELETE action sensory feedback is implemented (Phase 6)
    */
-  test.skip("plays Whoosh sound and shows Fade-out animation on Delete", async ({
-    page,
-    request,
-  }) => {
+  test("plays Whoosh sound and shows Fade-out animation on Delete", async ({ page, request }) => {
     // ⏳ Phase 6 feature - DELETE action sensory feedback not yet implemented
+    // T066: explicit fixme (not a silent skip) so the missing implementation stays
+    // visible in the report; the body below does not execute while it is active.
+    test.fixme(true, "T066 - DELETE sensory feedback not implemented (Phase 6)");
+
     // Wait for app to be fully ready
     await waitForAppReady(page);
 
@@ -149,11 +157,15 @@ test.describe("Sensory Feedback", () => {
    * **Note**: Audio verification would require browser API mocking (future work)
    * TODO: Enable this test once rapid action cancellation is fully implemented (Phase 6)
    */
-  test.skip("cancels previous animation when new action triggers (rapid actions)", async ({
+  test("cancels previous animation when new action triggers (rapid actions)", async ({
     page,
     request,
   }) => {
     // ⏳ Phase 6 feature - Rapid action cancellation not yet fully implemented
+    // T066: explicit fixme (not a silent skip) so the missing implementation stays
+    // visible in the report; the body below does not execute while it is active.
+    test.fixme(true, "T066 - cancel-and-replace sensory feedback not implemented (Phase 6)");
+
     // Wait for app to be fully ready
     await waitForAppReady(page);
 
@@ -207,8 +219,12 @@ test.describe("Sensory Feedback", () => {
    * **Note**: This is Phase 6 (Optional UI Polish) - not blocking production readiness
    * TODO: Enable this test once rejection feedback visual enhancements are implemented (Phase 6)
    */
-  test.skip("rejection feedback matches P1 implementation", async ({ page }) => {
+  test("rejection feedback matches P1 implementation", async ({ page }) => {
     // ⏳ Phase 6 feature - Rejection feedback visual enhancements not yet implemented
+    // T066: explicit fixme (not a silent skip) so the missing implementation stays
+    // visible in the report; the body below does not execute while it is active.
+    test.fixme(true, "T066 - rejection feedback visual enhancements not implemented (Phase 6)");
+
     // Wait for app to be fully ready
     await waitForAppReady(page);
     await waitForEditorReady(page);

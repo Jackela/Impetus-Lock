@@ -28,6 +28,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  POETRY_VERSION: "2.5.1"
 
 # Concurrency: Cancel previous runs for the same PR or branch
 concurrency:
@@ -64,7 +65,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -142,7 +143,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -227,7 +228,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          pipx install poetry
+          pipx install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Cache Poetry dependencies
@@ -247,7 +248,7 @@ jobs:
 
       - name: Run pytest
         working-directory: ./server
-        run: poetry run pytest tests/ --cov=server --cov-report=term-missing -v -n auto --tb=short || (echo "::error::Tests failed" && exit 1)
+        run: poetry run pytest tests/ --cov=server --cov-branch --cov-report=term-missing --cov-report=xml --junitxml=junit.xml -v -n auto --tb=short --durations=25 || (echo "::error::Tests failed" && exit 1)
         env:
           REDIS_URL: redis://localhost:6379/0
           REQUIRE_REDIS_TESTS: "1"
@@ -259,6 +260,27 @@ jobs:
       - name: Enforce per-file lock-critical line coverage
         working-directory: ./server
         run: poetry run python check_critical_coverage.py
+
+      # Test-report artifacts for the main gate: uploaded even when the suite
+      # fails, so a red `Backend Tests` check still ships the failure inventory
+      # (JUnit) and coverage data instead of only console output.
+      - name: Upload backend test results (JUnit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-junit
+          path: server/junit.xml
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload backend coverage (XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: server/coverage.xml
+          retention-days: 14
+          if-no-files-found: warn
 
       # Carried over from ci-server.yml (now dispatch-only): packaging must not
       # regress silently.
@@ -300,6 +322,31 @@ jobs:
         working-directory: ./client
         run: npm run test -- --coverage
 
+      # Contract suite for the coverage gate itself (`node:test`, no Vitest
+      # run): it proves the per-file thresholds still fail on undercovered /
+      # missing critical files instead of silently passing.
+      - name: Run frontend coverage-gate contract tests
+        working-directory: ./client
+        run: npm run test:coverage-gate
+
+      - name: Upload frontend test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-reports
+          path: client/reports/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: client/coverage/
+          retention-days: 14
+          if-no-files-found: warn
+
       # Carried over from ci-client.yml (now dispatch-only): keep the production
       # build gate on PRs.
       - name: Build production bundle
@@ -339,7 +386,7 @@ jobs:
 
       - name: Install Poetry
         run: |
-          python -m pip install poetry
+          python -m pip install "poetry==${POETRY_VERSION}"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install backend dependencies

@@ -4,15 +4,20 @@
  * Runs once after all test suites to clean up:
  * - Clean up test data from database
  * - Generate test reports
- * - Clean up temporary files
+ * - Prune stale (older than 7 days) artifact directories
  * - Optional: Stop backend if we started it
+ *
+ * IMPORTANT: this teardown must never delete evidence produced by the current
+ * run. `test-results/<test>/` holds the trace.zip / error-context.md /
+ * screenshots that make a failure debuggable, and Playwright still needs them
+ * when the teardown's summary is printed (and when CI uploads artifacts).
  *
  * Constitutional Compliance:
  * - Article I (Simplicity): Clear cleanup steps
  * - Article V (Documentation): Comprehensive logging
  */
 
-import { existsSync, readdirSync, statSync, unlinkSync } from "fs";
+import { existsSync, readdirSync, readFileSync, statSync, rmSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -22,7 +27,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Configuration
 const BACKEND_HEALTH_URL = process.env.BACKEND_HEALTH_URL || "http://localhost:8000/health";
 const REPORT_DIR = resolve(__dirname, "../playwright-report");
-const TEMP_DIRS = ["test-results", "playwright-results"];
+const ARTIFACT_ROOT_DIRS = ["test-results", "playwright-results"];
+
+// Only artifact directories whose mtime is older than this are pruned.
+// Override with PLAYWRIGHT_ARTIFACT_MAX_AGE_DAYS (default 7). Values below 1
+// are clamped so current-run evidence can never be eligible for pruning.
+const parsedMaxAgeDays = Number(process.env.PLAYWRIGHT_ARTIFACT_MAX_AGE_DAYS ?? "7");
+const ARTIFACT_MAX_AGE_DAYS = Number.isFinite(parsedMaxAgeDays) ? Math.max(1, parsedMaxAgeDays) : 7;
+const ARTIFACT_MAX_AGE_MS = ARTIFACT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
 
 interface TestSummary {
   totalTests: number;
@@ -108,8 +120,13 @@ async function generateTestReport(): Promise<void> {
       return;
     }
 
-    // Read and parse results
-    const results = await import(resultsPath, { assert: { type: "json" } });
+    // Read and parse results.
+    // NOTE: a dynamic `import(resultsPath, { assert: { type: "json" } })` throws
+    // ERR_IMPORT_ATTRIBUTE_MISSING on current Node (>=23 removed `assert` in
+    // favour of `with`), which silently degraded this whole summary to a warning.
+    // Plain read+parse is version-proof and keeps the summary working.
+    const rawResults = readFileSync(resultsPath, "utf8");
+    const results = JSON.parse(rawResults);
     const summary = extractSummary(results.default || results);
 
     // Print summary to console
@@ -187,52 +204,90 @@ function extractSummary(results: any): TestSummary {
 }
 
 /**
- * Clean up old test artifacts
+ * Prune stale test artifact directories.
+ *
+ * Evidence policy (P0): the artifacts of the run that just finished are NEVER
+ * touched. Playwright writes `test-results/<test-slug>/{trace.zip,
+ * error-context.md,*.png,*.webm}` for failures; deleting them here destroyed
+ * the only failure evidence available in CI, so we only remove directories
+ * whose mtime is older than ARTIFACT_MAX_AGE_MS (default 7 days).
  */
 function cleanupArtifacts(): void {
-  console.log("\n🗑️  Cleaning up test artifacts...");
+  console.log(
+    `\n🗑️  Pruning artifact directories older than ${ARTIFACT_MAX_AGE_DAYS} day(s) ` +
+      "(current run's evidence is preserved)..."
+  );
 
   try {
-    let cleanedCount = 0;
+    const now = Date.now();
+    let prunedDirs = 0;
+    let keptDirs = 0;
 
-    // Clean up temporary directories
-    for (const dirName of TEMP_DIRS) {
+    for (const dirName of ARTIFACT_ROOT_DIRS) {
       const dirPath = resolve(__dirname, "../", dirName);
-      if (existsSync(dirPath)) {
-        const files = readdirSync(dirPath);
-        for (const file of files) {
-          const filePath = resolve(dirPath, file);
-          try {
-            const stats = statSync(filePath);
-            if (stats.isDirectory()) {
-              // Keep directory, just clean old files inside
-              const subFiles = readdirSync(filePath);
-              for (const subFile of subFiles) {
-                const subFilePath = resolve(filePath, subFile);
-                try {
-                  unlinkSync(subFilePath);
-                  cleanedCount++;
-                } catch {
-                  // Ignore errors for individual files
-                }
-              }
-            }
-          } catch {
-            // Ignore errors
+      if (!existsSync(dirPath)) continue;
+
+      for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
+        // `test-results/<slug>/` are the per-test directories that hold evidence.
+        // Loose files at the root are left alone: they are cheap and may belong
+        // to the run in progress.
+        if (!entry.isDirectory()) {
+          keptDirs++;
+          continue;
+        }
+
+        const entryPath = resolve(dirPath, entry.name);
+        try {
+          const stats = statSync(entryPath);
+          if (now - stats.mtimeMs > ARTIFACT_MAX_AGE_MS) {
+            rmSync(entryPath, { recursive: true, force: true });
+            prunedDirs++;
+          } else {
+            keptDirs++;
           }
+        } catch {
+          // Ignore errors for individual directories (permissions, races)
+          keptDirs++;
         }
       }
     }
 
-    if (cleanedCount > 0) {
-      console.log(`   Cleaned up ${cleanedCount} old artifact files`);
+    if (prunedDirs > 0) {
+      console.log(`   Pruned ${prunedDirs} stale artifact director(ies), kept ${keptDirs}`);
     } else {
-      console.log("   No artifacts to clean up");
+      console.log(`   No stale artifacts to prune (kept ${keptDirs} recent director(ies))`);
     }
   } catch (error) {
-    console.error("\n⚠️  Artifact cleanup failed (non-critical):");
+    console.error("\n⚠️  Artifact pruning failed (non-critical):");
     console.error(error instanceof Error ? error.message : String(error));
   }
+}
+
+/**
+ * Recursively collect files whose name matches one of `fileNames`.
+ *
+ * Playwright nests evidence one level down (`test-results/<slug>/trace.zip`),
+ * so the old flat `readdirSync` never found anything and the summary silently
+ * reported "no traces" for failing runs.
+ */
+function collectArtifactFiles(
+  dirPath: string,
+  fileNames: readonly string[],
+  depth = 2,
+  acc: string[] = []
+): string[] {
+  if (depth < 0 || !existsSync(dirPath)) return acc;
+
+  for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
+    const entryPath = resolve(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      collectArtifactFiles(entryPath, fileNames, depth - 1, acc);
+    } else if (fileNames.includes(entry.name)) {
+      acc.push(entryPath);
+    }
+  }
+
+  return acc;
 }
 
 /**
@@ -262,17 +317,20 @@ function printFinalSummary(): void {
     console.log(`   file://${htmlReportPath}`);
   }
 
-  // Check if trace files exist
+  // Check if trace / error-context files exist. Evidence lives one level down
+  // (`test-results/<test-slug>/trace.zip`) and is only removed once it is stale,
+  // so report it instead of deleting it.
   const traceDir = resolve(__dirname, "../test-results");
-  if (existsSync(traceDir)) {
-    const traces = readdirSync(traceDir).filter((f) => f.endsWith(".zip"));
-    if (traces.length > 0) {
-      console.log("\n🔍 Trace files available for failed tests:");
-      traces.forEach((trace) => {
-        console.log(`   - ${trace}`);
-      });
-      console.log("\n   View trace: npx playwright show-trace <trace-file>");
+  const traces = collectArtifactFiles(traceDir, ["trace.zip", "error-context.md"]);
+  if (traces.length > 0) {
+    console.log("\n🔍 Evidence retained for failing tests:");
+    traces.slice(0, 10).forEach((trace) => {
+      console.log(`   - ${trace.replace(resolve(__dirname, "../") + "/", "")}`);
+    });
+    if (traces.length > 10) {
+      console.log(`   ... and ${traces.length - 10} more`);
     }
+    console.log("\n   View trace: npx playwright show-trace <trace-file>");
   }
 
   console.log("\n💡 Tips:");
@@ -298,13 +356,14 @@ async function globalTeardown(): Promise<void> {
     // Step 2: Generate test report
     await generateTestReport();
 
-    // Step 3: Clean up artifacts
+    // Step 3: Prune ONLY stale artifacts (this run's traces/screenshots/
+    // error-context files must survive so failures stay debuggable)
     cleanupArtifacts();
 
     // Step 4: Stop backend if needed
     await stopBackendIfNeeded();
 
-    // Step 5: Print final summary
+    // Step 5: Print final summary (after pruning, so it reports surviving evidence)
     printFinalSummary();
 
     console.log("\n✅ Global teardown completed successfully!\n");
