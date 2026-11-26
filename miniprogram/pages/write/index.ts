@@ -91,6 +91,45 @@ function receiptFor(runId: string, requestId: string): Promise<Receipt> {
   return api<Receipt>("/runs/" + encodeURIComponent(runId) + "/receipts/" + encodeURIComponent(requestId));
 }
 
+function finalReceipt(status: ReceiptStatus): status is FinalReceipt {
+  return status === "committed" || status === "canceled";
+}
+
+async function resolvePending(runId: string, pending: Pending, known: Run | undefined, isCurrent: () => boolean) {
+  const read = async () => {
+    const original = await receiptFor(runId, pending.action.request_id);
+    if (!isCurrent()) return;
+    const replacement = pending.verbatimRequestId ? await receiptFor(runId, pending.verbatimRequestId) : undefined;
+    if (!isCurrent()) return;
+    return {
+      status: replacement?.status === "committed" ? replacement.status : original.status,
+      version: replacement?.run_version ?? original.run_version,
+      replacementStatus: replacement?.status,
+      originalNeedsRecheck: Boolean(replacement && original.run_version !== replacement.run_version &&
+        !finalReceipt(original.status) && replacement.status !== "committed"),
+    };
+  };
+  let receipt = await read();
+  if (!receipt) return;
+  const run = !known || receipt.version > known.version ? await api<Run>("/runs/" + encodeURIComponent(runId)) : known;
+  if (!isCurrent()) return;
+  if (run.id !== runId) throw new Error("返回的稿件与当前故事不一致。请核对后重试。");
+  if (receipt.originalNeedsRecheck || (receipt.version !== run.version &&
+    (pending.verbatimRequestId || pending.fromVoiceSwitch || (run.status === "finished" && !finalReceipt(receipt.status))))) {
+    // The run can advance between reads. A stale unknown receipt cannot authorize showing the original.
+    receipt = await read();
+    if (!receipt) return;
+    if (receipt.version !== run.version || receipt.originalNeedsRecheck) {
+      throw new Error("正文已有更新。请重新核对这段口述的结果。");
+    }
+  }
+  if (run.status === "finished" && receipt.status !== "committed" &&
+    (receipt.status === "pending" || receipt.replacementStatus === "pending")) {
+    throw new Error("这段输入的结果仍待确认。请稍后重新核对。");
+  }
+  return { receipt, run };
+}
+
 function readLocal<T>(key: string): T | null | undefined {
   try {
     return getPrivate<T>(key) ?? null;
@@ -301,14 +340,12 @@ Page({
       if (runtime.draft === undefined) runtime.draft = readLocal<string>("draft:" + runtime.id);
       const { pending } = runtime;
       if (pending) {
-        const receipt = await receiptFor(runtime.id, pending.action.request_id);
-        if (!this.valid(runtime, sequence, subject)) return;
-        if (receipt.run_version > run.version) {
-          run = await api<Run>(path);
-          if (!this.valid(runtime, sequence, subject)) return;
-        }
+        const resolved = await resolvePending(runtime.id, pending, run, () => this.valid(runtime, sequence, subject));
+        if (!resolved) return;
+        const { receipt } = resolved;
+        run = resolved.run;
         if (receipt.status === "committed" || receipt.status === "canceled") {
-          this.applyPendingOutcome(pending, receipt.status, run);
+          this.applyPendingOutcome(pending, receipt.status, run, true, receipt.replacementStatus);
         }
       }
       const first = runtime.firstConsumed || (run.status === "active" && runtime.pending)
@@ -321,6 +358,16 @@ Page({
           run = await api<Run>(path);
           if (!this.valid(runtime, sequence, subject)) return;
         }
+        if (run.status === "finished" && !finalReceipt(firstReceipt.status)) {
+          if (firstReceipt.run_version !== run.version) {
+            firstReceipt = await receiptFor(runtime.id, first.request_id);
+            if (!this.valid(runtime, sequence, subject)) return;
+          }
+          if (firstReceipt.run_version !== run.version || firstReceipt.status === "pending") {
+            throw new Error("首页这段文字的结果仍待确认。请稍后重新核对。");
+          }
+        }
+        if (firstReceipt.status === "committed" && runtime.draft?.trim() === first.text) this.updateDraft("");
       }
       if (run.status === "finished") {
         const pendingInput = pendingFinishedInput(runtime.pending);
@@ -329,7 +376,6 @@ Page({
         if (firstInput && firstReceipt) {
           if (firstReceipt.status === "committed" || firstReceipt.status === "canceled") {
             this.consumeFirst();
-            if (firstReceipt.status === "committed" && runtime.draft?.trim() === firstInput.text) this.updateDraft("");
           } else {
             inputs.push(firstInput);
           }
@@ -462,10 +508,11 @@ Page({
     this.presentPending();
   },
 
-  applyPendingOutcome(pending: Pending, outcome: FinalReceipt, run: Run, keepOriginal = true) {
+  applyPendingOutcome(pending: Pending, outcome: FinalReceipt, run: Run, keepOriginal = true, replacementStatus?: ReceiptStatus) {
     if (keepOriginal && outcome === "canceled" && run.status === "finished" &&
       (pending.verbatimRequestId || pending.fromVoiceSwitch)) return;
-    if (keepOriginal && outcome === "canceled" && pending.verbatimRequestId && run.status === "active") {
+    if (keepOriginal && outcome === "canceled" && pending.verbatimRequestId && run.status === "active" &&
+      replacementStatus !== "canceled") {
       this.retainPending({
         action: { ...pending.action, request_id: pending.verbatimRequestId, version: run.version, style: "verbatim",
           retain: Boolean(run.finishing) },
@@ -506,13 +553,10 @@ Page({
       if (!isCurrent()) return;
       let outcome: ReceiptStatus = "committed";
       if (action.kind === "turn") {
-        const receipt = await receiptFor(runtime.id, action.request_id);
-        if (!isCurrent()) return;
-        outcome = receipt.status;
-        if (receipt.run_version > result.version) {
-          result = await api<Run>(url);
-          if (!isCurrent()) return;
-        }
+        const resolved = await resolvePending(runtime.id, pending, result, isCurrent);
+        if (!resolved) return;
+        outcome = resolved.receipt.status;
+        result = resolved.run;
       }
       if (result.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。请核对后重试。");
       if (outcome === "committed" && action.kind === "turn" && this.data.run?.turns === 0) markCommitted();
@@ -536,6 +580,10 @@ Page({
       const status = statusOf(reason);
       if (status === 401) {
         this.hidePrivateContents("微信会话已过期。重新确认当前身份后可接着写。");
+        return;
+      }
+      if (pending.fromVoiceSwitch) {
+        this.hidePrivateContents("尚未确认这段口述是否已入稿。" + errorText(reason));
         return;
       }
       this.setData({ busy: false });
@@ -604,21 +652,24 @@ Page({
     this.setData({ busy: true });
     this.notice("正在核对这次操作是否已写入…");
     try {
-      const receipt = await receiptFor(runtime.id, pending.action.request_id);
-      if (!this.valid(runtime, sequence, subject)) return;
-      if (receipt.status === "committed" || receipt.status === "canceled" || receipt.run_version !== this.data.run?.version) {
-        const latest = await api<Run>("/runs/" + encodeURIComponent(runtime.id));
-        if (!this.valid(runtime, sequence, subject)) return;
+      const resolved = await resolvePending(runtime.id, pending, this.data.run ?? undefined,
+        () => this.valid(runtime, sequence, subject));
+      if (!resolved) return;
+      const { receipt, run: latest } = resolved;
+      if (receipt.status === "committed" || receipt.status === "canceled" || latest.version !== this.data.run?.version) {
         this.setRun(latest);
         if (receipt.status === "committed" || receipt.status === "canceled") {
-          this.applyPendingOutcome(pending, receipt.status, latest);
+          this.applyPendingOutcome(pending, receipt.status, latest, true, receipt.replacementStatus);
           this.notice(receipt.status === "committed" ? "这次操作已生效。正文已更新。" : "这次操作已取消。");
         }
         if (latest.status === "finished") this.openCompleted(latest);
       }
       return receipt.status;
     } catch (reason) {
-      if (this.valid(runtime, sequence, subject)) this.notice(errorText(reason), "error");
+      if (this.valid(runtime, sequence, subject)) {
+        if (pending.verbatimRequestId || pending.fromVoiceSwitch) this.hidePrivateContents(errorText(reason));
+        else this.notice(errorText(reason), "error");
+      }
     } finally {
       if (runtime.sequence === sequence) this.setData({ busy: false });
     }
@@ -641,12 +692,26 @@ Page({
       const canceled = await this.cancelAction(runtime.id, version, pending.action.request_id, pending.cancelRequestId,
         () => this.valid(runtime, sequence, subject));
       if (!canceled) return;
-      const { run: result, outcome } = canceled;
-      this.applyPendingOutcome(pending, outcome, result, keepOriginal);
+      let { run: result, outcome } = canceled;
+      let replacementStatus: ReceiptStatus | undefined;
+      if (pending.verbatimRequestId) {
+        const resolved = await resolvePending(runtime.id, pending, result, () => this.valid(runtime, sequence, subject));
+        if (!resolved) return;
+        result = resolved.run;
+        const { receipt } = resolved;
+        replacementStatus = receipt.replacementStatus;
+        if (receipt.status !== "committed" && receipt.status !== "canceled") throw new Error("尚未确认这次操作的结果。");
+        outcome = receipt.status;
+      }
+      this.applyPendingOutcome(pending, outcome, result, keepOriginal || replacementStatus === "pending", replacementStatus);
       this.setRun(result);
       this.setData({ busy: false, editor: null, originalTarget: "" });
       if (result.status === "finished") {
         this.openCompleted(result);
+        return;
+      }
+      if (replacementStatus === "pending" && outcome !== "committed") {
+        this.notice("这段识别原文仍在处理中。稍后可以再次核对。");
         return;
       }
       this.notice(outcome === "committed" ? "这次操作在取消前已生效，正文已更新。"
@@ -654,8 +719,12 @@ Page({
       return outcome;
     } catch (reason) {
       if (this.valid(runtime, sequence, subject)) {
-        this.setData({ busy: false });
-        this.notice("尚未确认是否已入稿。" + errorText(reason), "error");
+        const message = "尚未确认是否已入稿。" + errorText(reason);
+        if (pending.verbatimRequestId || pending.fromVoiceSwitch) this.hidePrivateContents(message);
+        else {
+          this.setData({ busy: false });
+          this.notice(message, "error");
+        }
       }
       return;
     } finally {
