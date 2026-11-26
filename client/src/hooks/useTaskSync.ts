@@ -42,6 +42,8 @@ type Draft = { content: string; lockIds: string[] };
 type TaskDraft = Draft & {
   draftId: string;
   workingCopyOf?: string;
+  reusableSnapshot?: DraftSnapshot;
+  hasWrittenCopy?: boolean;
   creationUncertain: boolean;
   creationAttempt: Draft | null;
   updatedAt: number;
@@ -357,6 +359,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       // so a retained tab identifier cannot guarantee exclusive ownership.
       draftId: newDraftId(),
       ...(snapshot ? { workingCopyOf: snapshot.draftId } : {}),
+      ...(snapshot?.reusable ? { reusableSnapshot: snapshot } : {}),
       creationUncertain: snapshot?.creationUncertain ?? false,
       creationAttempt: snapshot?.creationAttempt ?? null,
       updatedAt: Date.now(),
@@ -449,8 +452,37 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     (draft: TaskDraft) => {
       if (!sameOwner(draft)) return;
       if (typeof draft.ownerId === "string") {
-        writeOwnedDraft(draft.ownerId, snapshotOf(draft));
-        if (visible(draft)) writeDraftSelection(draft.ownerId, draft.draftId, writingContextId);
+        let storedId = draft.draftId;
+        if (
+          !draft.hasWrittenCopy &&
+          draft.taskId !== null &&
+          draft.versionKnown &&
+          !draft.dirty &&
+          !draft.pending &&
+          !draft.conflict &&
+          !draft.recoveryIssue &&
+          !draft.creationUncertain &&
+          !draft.creationAttempt
+        ) {
+          const retained = draft.reusableSnapshot;
+          if (
+            !retained ||
+            retained.taskId !== draft.taskId ||
+            retained.version !== draft.version ||
+            retained.content !== draft.content ||
+            JSON.stringify(retained.lockIds) !== JSON.stringify(draft.lockIds)
+          ) {
+            const reusable = { ...snapshotOf(draft), draftId: newDraftId(), reusable: true };
+            writeOwnedDraft(draft.ownerId, reusable);
+            draft.reusableSnapshot = reusable;
+          }
+          storedId = draft.reusableSnapshot!.draftId;
+        } else {
+          writeOwnedDraft(draft.ownerId, { ...snapshotOf(draft), writingCopy: true });
+          draft.hasWrittenCopy = true;
+        }
+        if (visible(draft))
+          writeDraftSelection(draft.ownerId, storedId, writingContextId, draft.taskId);
       } else if (draft.ownerId === undefined) {
         localStorage.removeItem(LOCAL_META_KEY);
         localStorage.setItem(LOCAL_CACHE_KEY, draft.content);
@@ -730,7 +762,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       let selectedId: string | null;
       try {
         inspected = inspectOwnedDrafts(context.current.userId);
-        selectedId = readDraftSelection(context.current.userId, writingContextId);
+        selectedId = readDraftSelection(context.current.userId, writingContextId, id);
       } catch {
         throw new DraftStorageReadError(TaskSyncErrorMessages.STORAGE_FAILED);
       }
@@ -760,7 +792,10 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       );
       if (exactSelected) return exactSelected;
       const selected = inspected.drafts.find(
-        (draft) => !draft.recoveryOf && (id === undefined || draft.taskId === id)
+        (draft) =>
+          !draft.recoveryOf &&
+          (id === undefined || draft.taskId === id) &&
+          !(id !== undefined && draft.writingCopy && draft.dirty)
       );
       if (selected) return selected;
       const issues = inspected.issues.filter(

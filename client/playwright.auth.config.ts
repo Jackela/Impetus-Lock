@@ -4,7 +4,7 @@ const evidence = "./test-results/authenticated-editor/browser";
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: "authenticated-editor.spec.ts",
+  testMatch: ["authenticated-editor.spec.ts", "authenticated-editor-drafts.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,

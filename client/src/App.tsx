@@ -18,7 +18,6 @@ import { isInterventionAPIError } from "./hooks/useInterventionApiError";
 import { INITIAL_STORY } from "./constants/initialStory";
 import { useTaskSync } from "./hooks/useTaskSync";
 import type { TaskRecord } from "./types/task";
-import { useTasks } from "./hooks/useTasks";
 import { useAppState } from "./AppState";
 import { AppLayout } from "./AppLayout";
 import { AppModals } from "./AppModals";
@@ -192,8 +191,6 @@ function App() {
       );
     }
   };
-
-  const { refetch } = useTasks();
 
   // Keyboard shortcut: "?" to re-open welcome modal
   useEffect(() => {
@@ -569,10 +566,7 @@ function App() {
         onLock={lock}
         showCreateTaskModal={showCreateTaskModal && !recoveryError && !hasBlockedRecovery}
         onCloseCreateTaskModal={() => setShowCreateTaskModal(false)}
-        onTaskCreated={(task) => {
-          handleTaskClick(task);
-          void refetch();
-        }}
+        onTaskCreated={handleTaskClick}
         currentProvider={llmConfig?.provider ?? null}
       />
     </>
