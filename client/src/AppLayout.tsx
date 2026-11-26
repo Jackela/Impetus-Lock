@@ -22,7 +22,7 @@ import {
   SlidersIcon,
   TrophyIcon,
 } from "./components/ui";
-import { useTasks } from "./hooks/useTasks";
+import { useTaskPages } from "./hooks/useTasks";
 import { useMediaQuery } from "./hooks/useMediaQuery";
 import { useFocusTrap } from "./hooks/useFocusTrap";
 import type { TaskRecord } from "./types/task";
@@ -188,7 +188,7 @@ export function AppLayout({
 }: AppLayoutProps) {
   const auth = useOptionalAuth();
   const remoteEnabled = auth?.remoteEnabled ?? true;
-  const { data: tasks, isLoading: tasksLoading, error: tasksError, refetch } = useTasks();
+  const { query: taskPages, tasks } = useTaskPages();
   const [showExportModal, setShowExportModal] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -551,15 +551,15 @@ export function AppLayout({
                   <CloseIcon size={18} />
                 </IconButton>
               </div>
-              {tasksLoading ? (
+              {taskPages.isLoading ? (
                 <div className="task-sidebar-skeleton" role="status" aria-label="Loading tasks">
                   <Skeleton lines={5} height="48px" />
                 </div>
-              ) : tasksError ? (
+              ) : taskPages.isError && !taskPages.data ? (
                 <div className="task-sidebar-state" data-testid="task-sidebar-error">
                   <h3>Couldn’t load your tasks</h3>
                   <p role="alert">The task list could not be fetched. Your draft is still safe.</p>
-                  <Button variant="secondary" size="sm" onClick={() => void refetch()}>
+                  <Button variant="secondary" size="sm" onClick={() => void taskPages.refetch()}>
                     Retry
                   </Button>
                 </div>
@@ -570,6 +570,23 @@ export function AppLayout({
                   selectedTaskId={selectedTaskId ?? undefined}
                   onCreateTask={onCreateTask}
                 />
+              )}
+              {taskPages.hasNextPage && (
+                <div className="task-sidebar-state">
+                  {taskPages.isFetchNextPageError && <p role="alert">Couldn’t load older tasks.</p>}
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={taskPages.isFetching}
+                    onClick={() => void taskPages.fetchNextPage()}
+                  >
+                    {taskPages.isFetchingNextPage
+                      ? "Loading older tasks…"
+                      : taskPages.isFetchNextPageError
+                        ? "Retry loading older tasks"
+                        : "Load older tasks"}
+                  </Button>
+                </div>
               )}
             </aside>
           )}

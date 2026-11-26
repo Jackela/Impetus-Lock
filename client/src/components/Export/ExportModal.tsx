@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useDocumentExport } from "../../hooks/useDocumentExport";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
-// eslint-disable-next-line no-restricted-imports
-import { exportMarkdown, exportPdf } from "../../services/exportService";
 import "./ExportModal.css";
 
 /** Props controlling the export modal's visibility, content, and dismissal. */
@@ -12,25 +11,8 @@ export interface ExportModalProps {
   onClose: () => void;
 }
 
-function wrapInHtml(content: string): string {
-  const escaped = content.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-body { font-family: system-ui, -apple-system, sans-serif; padding: 2rem; line-height: 1.6; color: #1e1e1e; background: #fff; }
-pre { white-space: pre-wrap; word-wrap: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-</style>
-</head>
-<body>
-<pre>${escaped}</pre>
-</body>
-</html>`;
-}
-
 /**
- * Modal exporting the current document as Markdown, HTML, or PDF.
+ * Modal exporting the current document as Markdown or PDF.
  *
  * @param root0 - Component props
  * @param root0.open - Whether the modal is shown
@@ -46,7 +28,7 @@ export function ExportModal({ open, ...props }: ExportModalProps) {
 function ExportDialog({ content, htmlContent, onClose }: Omit<ExportModalProps, "open">) {
   const [filename, setFilename] = useState("impetus-export");
   const [isExiting, setIsExiting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const { download, isExporting, error } = useDocumentExport(content, htmlContent);
   const isExitingRef = useRef(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: true });
@@ -59,36 +41,26 @@ function ExportDialog({ content, htmlContent, onClose }: Omit<ExportModalProps, 
     };
   }, []);
 
-  const handleClose = useCallback(() => {
-    if (!isExporting && !isExitingRef.current) {
+  const close = useCallback(() => {
+    if (!isExitingRef.current) {
       isExitingRef.current = true;
       setIsExiting(true);
       closeTimer.current = setTimeout(() => {
         closeTimer.current = null;
-        setFilename("impetus-export");
-        setIsExporting(false);
         onClose();
       }, 150);
     }
-  }, [isExporting, onClose]);
+  }, [onClose]);
 
-  const handleExportMarkdown = useCallback(() => {
-    const trimmed = filename.trim() || "impetus-export";
-    exportMarkdown(content, trimmed);
-    handleClose();
-  }, [content, filename, handleClose]);
+  const handleClose = useCallback(() => {
+    if (!isExporting) close();
+  }, [close, isExporting]);
 
-  const handleExportPdf = useCallback(async () => {
+  const handleDownload = async (format: "Markdown" | "PDF") => {
+    if (isExitingRef.current) return;
     const trimmed = filename.trim() || "impetus-export";
-    const html = htmlContent || wrapInHtml(content);
-    setIsExporting(true);
-    try {
-      await exportPdf({ html, filename: trimmed });
-    } finally {
-      setIsExporting(false);
-      handleClose();
-    }
-  }, [content, htmlContent, filename, handleClose]);
+    if (await download(format, trimmed)) close();
+  };
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -106,7 +78,7 @@ function ExportDialog({ content, htmlContent, onClose }: Omit<ExportModalProps, 
       ref={dialogRef}
       className={`export-modal-overlay${isExiting ? " modal-exit" : ""}`}
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isExporting && !isExitingRef.current) {
+        if (e.target === e.currentTarget) {
           handleClose();
         }
       }}
@@ -134,6 +106,8 @@ function ExportDialog({ content, htmlContent, onClose }: Omit<ExportModalProps, 
           </div>
         </div>
 
+        {error && <p role="alert">{error}</p>}
+
         <div className="export-actions">
           <button
             type="button"
@@ -147,7 +121,7 @@ function ExportDialog({ content, htmlContent, onClose }: Omit<ExportModalProps, 
           <button
             type="button"
             className="export-button markdown"
-            onClick={handleExportMarkdown}
+            onClick={() => void handleDownload("Markdown")}
             disabled={isExporting}
             data-testid="export-markdown"
           >
@@ -156,7 +130,7 @@ function ExportDialog({ content, htmlContent, onClose }: Omit<ExportModalProps, 
           <button
             type="button"
             className="export-button pdf"
-            onClick={handleExportPdf}
+            onClick={() => void handleDownload("PDF")}
             disabled={isExporting}
             data-testid="export-pdf"
           >
