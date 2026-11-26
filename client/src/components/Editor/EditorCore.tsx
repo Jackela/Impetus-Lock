@@ -8,7 +8,14 @@
  * 4. Fixed hook dependency issues with useCallback and refs
  */
 
-import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useCallback,
+  useSyncExternalStore,
+} from "react";
 import {
   Editor,
   rootCtx,
@@ -161,6 +168,35 @@ interface EditorCoreProps {
   taskId?: string | null;
 }
 
+type EditorPresentation = {
+  recoveryFailure: { error: Error; markdown: string } | null;
+  currentAction: AIActionType | null;
+};
+
+// ProseMirror recovery and intervention feedback can change while React is
+// synchronizing the editor, during a transaction, or from a network response.
+function createEditorPresentation() {
+  let snapshot: EditorPresentation = { recoveryFailure: null, currentAction: null };
+  const listeners = new Set<() => void>();
+  return {
+    getSnapshot: () => snapshot,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    update(next: Partial<EditorPresentation>) {
+      const updated = { ...snapshot, ...next };
+      if (
+        updated.recoveryFailure === snapshot.recoveryFailure &&
+        updated.currentAction === snapshot.currentAction
+      )
+        return;
+      snapshot = updated;
+      listeners.forEach((listener) => listener());
+    },
+  };
+}
+
 // Create logger instance for EditorCore namespace
 const logger = createLogger("EditorCore");
 
@@ -206,8 +242,11 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
 
   const editorRef = useRef<Editor | null>(null);
   const recoveryBlockedRef = useRef(true);
-  const [recoveryFailure, setRecoveryFailure] = useState<{ error: Error; markdown: string } | null>(
-    null
+  const [presentation] = useState(createEditorPresentation);
+  const { recoveryFailure, currentAction } = useSyncExternalStore(
+    presentation.subscribe,
+    presentation.getSnapshot,
+    presentation.getSnapshot
   );
   const onRecoveryErrorRef = useRef(onRecoveryError);
   const mountedRef = useRef(true);
@@ -245,7 +284,6 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
     []
   );
   const docVersionRef = useRef(0);
-  const [currentAction, setCurrentAction] = useState<AIActionType | null>(null);
 
   // T014: Expose editor instance for FloatingToolbar
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
@@ -297,20 +335,20 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
             ctx.get(parserCtx)
           );
           recoveryBlockedRef.current = false;
-          setRecoveryFailure(null);
+          presentation.update({ recoveryFailure: null });
           view.setProps({ editable: () => !recoveryBlockedRef.current });
           return ids;
         } catch (error) {
           const failure = error instanceof Error ? error : new Error(String(error));
           recoveryBlockedRef.current = true;
           view.setProps({ editable: () => false });
-          setRecoveryFailure({ error: failure, markdown });
+          presentation.update({ recoveryFailure: { error: failure, markdown } });
           onRecoveryErrorRef.current?.(failure);
           return null;
         }
       });
     },
-    []
+    [presentation]
   );
 
   const reconcileContent = useCallback(
@@ -374,7 +412,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         );
         recoveryBlockedRef.current = true;
         editor.action((ctx) => ctx.get(editorViewCtx).setProps({ editable: () => false }));
-        setRecoveryFailure({ error: failure, markdown: initialContent });
+        presentation.update({ recoveryFailure: { error: failure, markdown: initialContent } });
         onRecoveryErrorRef.current?.(failure);
         return;
       }
@@ -385,7 +423,7 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
         locks: [...locks],
       };
     },
-    [contentVersion, initialContent, initialLocks, lockManager, recoverLocks]
+    [contentVersion, initialContent, initialLocks, lockManager, presentation, recoverLocks]
   );
 
   // The asynchronous initializer must reconcile the latest committed props.
@@ -407,17 +445,17 @@ const EditorCoreInner: React.FC<EditorCoreProps> = ({
       }
     ) => {
       const duration = options?.duration ?? DEFAULT_FEEDBACK_DURATION_MS;
-      setCurrentAction(action);
+      presentation.update({ currentAction: action });
       if (actionResetTimerRef.current) {
         clearTimeout(actionResetTimerRef.current);
       }
       actionResetTimerRef.current = setTimeout(() => {
-        setCurrentAction(null);
+        presentation.update({ currentAction: null });
         actionResetTimerRef.current = null;
         options?.onComplete?.();
       }, duration);
     },
-    []
+    [presentation]
   );
 
   useEffect(() => {

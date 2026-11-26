@@ -28,7 +28,7 @@ import {
   TaskCreationUnknownError,
 } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import {
   readModalCreateAttempts,
   retainModalCreateAttempt,
@@ -81,9 +81,7 @@ export interface CreateTaskVariables {
   allowDuplicate?: boolean;
 }
 
-interface CreationScope {
-  session?: RemoteSession | null;
-  ownerId?: string;
+interface CreationState {
   attempts: DraftSnapshot[];
   selected: DraftSnapshot | null;
   storageError: Error | null;
@@ -91,6 +89,58 @@ interface CreationScope {
   checking: boolean;
   candidates: TaskRecord[];
 }
+function createCreationScope(ownerId?: string, session?: RemoteSession | null) {
+  let snapshot: CreationState = {
+    attempts: [],
+    selected: null,
+    storageError: null,
+    busy: false,
+    checking: false,
+    candidates: [],
+  };
+  const listeners = new Set<() => void>();
+  const update = (patch: Partial<CreationState>) => {
+    snapshot = { ...snapshot, ...patch };
+    listeners.forEach((listener) => listener());
+  };
+  const retryRecovery = () => {
+    if (!ownerId) return;
+    try {
+      const attempts = readModalCreateAttempts(ownerId);
+      const selected =
+        attempts.find((item) => item.draftId === snapshot.selected?.draftId) ?? attempts[0] ?? null;
+      update({ attempts, selected, storageError: null });
+    } catch {
+      update({
+        storageError: new Error(
+          "Task creation records could not be read. Retry recovery before creating a task."
+        ),
+      });
+    }
+  };
+  const removeAttempt = (draftId: string) => {
+    const attempts = snapshot.attempts.filter((item) => item.draftId !== draftId);
+    update({ attempts, selected: attempts[0] ?? null });
+  };
+
+  retryRecovery();
+  return {
+    ownerId,
+    session,
+    getSnapshot: () => snapshot,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    update,
+    retryRecovery,
+    removeAttempt,
+  };
+}
+
+type CreationScope = ReturnType<typeof createCreationScope>;
 type ScopedCreateVariables = CreateTaskVariables & { scope: CreationScope };
 type CreateCallbacks = Parameters<UseCreateTaskResult["mutate"]>[1];
 
@@ -149,40 +199,16 @@ export function useCreateTask(): UseCreateTaskResult {
   const auth = useOptionalAuth();
   const session = auth?.session;
   const ownerId = auth?.user?.id;
-  const [, update] = useState(0);
-  const scope = useMemo<CreationScope>(() => {
-    let attempts: DraftSnapshot[] = [];
-    let storageError: Error | null = null;
-    try {
-      if (ownerId) attempts = readModalCreateAttempts(ownerId);
-    } catch {
-      storageError = new Error(
-        "Task creation records could not be read. Retry recovery before creating a task."
-      );
-    }
-    return {
-      session,
-      ownerId,
-      attempts,
-      selected: attempts[0] ?? null,
-      storageError,
-      busy: false,
-      checking: false,
-      candidates: [],
-    };
-  }, [ownerId, session]);
-  const active = useRef(scope);
-  active.current = scope;
-  const notify = useCallback((captured: CreationScope) => {
-    if (active.current === captured) update((revision) => revision + 1);
-  }, []);
+  const scope = useMemo(() => createCreationScope(ownerId, session), [ownerId, session]);
+  const state = useSyncExternalStore(scope.subscribe, scope.getSnapshot, scope.getSnapshot);
 
   const mutation = useMutation<TaskRecord, Error, ScopedCreateVariables>({
     mutationFn: async (variables) => {
       const captured = variables.scope;
       assertCurrentSession(captured.session);
-      if (captured.storageError) throw captured.storageError;
-      if (captured.selected && !variables.allowDuplicate) throw new TaskCreationUnknownError();
+      const { attempts, selected, storageError } = captured.getSnapshot();
+      if (storageError) throw storageError;
+      if (selected && !variables.allowDuplicate) throw new TaskCreationUnknownError();
       let attempt: DraftSnapshot;
       try {
         attempt = retainModalCreateAttempt(
@@ -190,9 +216,7 @@ export function useCreateTask(): UseCreateTaskResult {
           variables.content,
           variables.lockIds ?? []
         );
-        captured.attempts = [attempt, ...captured.attempts];
-        captured.selected = attempt;
-        notify(captured);
+        captured.update({ attempts: [attempt, ...attempts], selected: attempt });
       } catch {
         throw new Error(
           "The task draft could not be retained. Keep this form open and retry when browser storage is available. No creation request was sent."
@@ -212,9 +236,7 @@ export function useCreateTask(): UseCreateTaskResult {
             dirty: false,
             creationUncertain: false,
           });
-        captured.attempts = captured.attempts.filter((item) => item.draftId !== attempt.draftId);
-        captured.selected = captured.attempts[0] ?? null;
-        notify(captured);
+        captured.removeAttempt(attempt.draftId);
         return task;
       } catch (failure) {
         const rejected =
@@ -223,9 +245,7 @@ export function useCreateTask(): UseCreateTaskResult {
         if (rejected) {
           if (captured.ownerId)
             writeOwnedDraft(captured.ownerId, { ...attempt, creationUncertain: false });
-          captured.attempts = captured.attempts.filter((item) => item.draftId !== attempt.draftId);
-          captured.selected = captured.attempts[0] ?? null;
-          notify(captured);
+          captured.removeAttempt(attempt.draftId);
         }
         throw failure;
       }
@@ -238,16 +258,15 @@ export function useCreateTask(): UseCreateTaskResult {
       });
     },
     onSettled: (_data, _error, variables) => {
-      variables.scope.busy = false;
-      notify(variables.scope);
+      variables.scope.update({ busy: false });
     },
     retry: false,
   });
   const { mutate: execute, mutateAsync: executeAsync } = mutation;
   const mutate: UseCreateTaskResult["mutate"] = useCallback(
     (variables, options) => {
-      if (scope.busy) return;
-      scope.busy = true;
+      if (scope.getSnapshot().busy) return;
+      scope.update({ busy: true });
       execute(
         { ...variables, lockIds: [...(variables.lockIds ?? [])], scope },
         scopedCallbacks(variables, options, session)
@@ -257,8 +276,8 @@ export function useCreateTask(): UseCreateTaskResult {
   );
   const mutateAsync: UseCreateTaskResult["mutateAsync"] = useCallback(
     async (variables, options) => {
-      if (scope.busy) throw new Error("Task creation is already in progress.");
-      scope.busy = true;
+      if (scope.getSnapshot().busy) throw new Error("Task creation is already in progress.");
+      scope.update({ busy: true });
       const task = await executeAsync(
         { ...variables, lockIds: [...(variables.lockIds ?? [])], scope },
         scopedCallbacks(variables, options, session)
@@ -269,39 +288,23 @@ export function useCreateTask(): UseCreateTaskResult {
     [executeAsync, session, scope]
   );
 
-  const retryRecovery = useCallback(() => {
-    if (!scope.ownerId) return;
-    try {
-      scope.attempts = readModalCreateAttempts(scope.ownerId);
-      scope.selected =
-        scope.attempts.find((item) => item.draftId === scope.selected?.draftId) ??
-        scope.attempts[0] ??
-        null;
-      scope.storageError = null;
-    } catch {
-      scope.storageError = new Error(
-        "Task creation records could not be read. Retry recovery before creating a task."
-      );
-    }
-    notify(scope);
-  }, [scope, notify]);
   const selectAttempt = useCallback(
     (draftId: string) => {
-      if (scope.busy || scope.checking) return;
-      scope.selected = scope.attempts.find((item) => item.draftId === draftId) ?? scope.selected;
-      scope.candidates = [];
-      notify(scope);
+      const { busy, checking, attempts, selected } = scope.getSnapshot();
+      if (busy || checking) return;
+      scope.update({
+        selected: attempts.find((item) => item.draftId === draftId) ?? selected,
+        candidates: [],
+      });
     },
-    [scope, notify]
+    [scope]
   );
   const checkCreation = useCallback(async () => {
     assertCurrentSession(scope.session);
-    const attempt = scope.selected;
-    if (!attempt || scope.busy || scope.checking)
+    const { selected: attempt, busy, checking } = scope.getSnapshot();
+    if (!attempt || busy || checking)
       throw new Error("Select an unconfirmed task creation to recheck.");
-    scope.checking = true;
-    scope.candidates = [];
-    notify(scope);
+    scope.update({ checking: true, candidates: [] });
     try {
       const candidates: TaskRecord[] = [];
       const seen = new Set<string>();
@@ -335,26 +338,19 @@ export function useCreateTask(): UseCreateTaskResult {
         offset += page.tasks.length;
       } while (offset < total);
       assertCurrentSession(scope.session);
-      scope.candidates = candidates;
+      scope.update({ candidates });
       return candidates;
     } finally {
-      scope.checking = false;
-      notify(scope);
+      scope.update({ checking: false });
     }
-  }, [scope, notify]);
+  }, [scope]);
   const adoptCreation = useCallback(
     async (taskId: string) => {
       assertCurrentSession(scope.session);
-      const attempt = scope.selected;
-      if (
-        !attempt ||
-        scope.busy ||
-        scope.checking ||
-        !scope.candidates.some((task) => task.id === taskId)
-      )
+      const { selected: attempt, busy, checking, candidates } = scope.getSnapshot();
+      if (!attempt || busy || checking || !candidates.some((task) => task.id === taskId))
         throw new Error("Recheck creation and select a matching task first.");
-      scope.checking = true;
-      notify(scope);
+      scope.update({ checking: true });
       try {
         const task = await fetchTask(taskId, { session: scope.session });
         assertCurrentSession(scope.session);
@@ -372,38 +368,35 @@ export function useCreateTask(): UseCreateTaskResult {
             dirty: false,
             creationUncertain: false,
           });
-        scope.attempts = scope.attempts.filter((item) => item.draftId !== attempt.draftId);
-        scope.selected = scope.attempts[0] ?? null;
-        scope.candidates = [];
+        scope.removeAttempt(attempt.draftId);
+        scope.update({ candidates: [] });
         await queryClient.invalidateQueries({
           queryKey: scope.session ? ["tasks", scope.session.userId] : ["tasks"],
         });
         assertCurrentSession(scope.session);
         return task;
       } finally {
-        scope.checking = false;
-        notify(scope);
+        scope.update({ checking: false });
       }
     },
-    [scope, notify, queryClient]
+    [scope, queryClient]
   );
 
-  const ownsMutation =
-    mutation.variables?.scope === scope &&
-    (auth === undefined || !!mutation.variables.scope.session?.isCurrent());
+  const isActiveScope = auth === undefined || !!session?.isCurrent();
+  const ownsMutation = mutation.variables?.scope === scope && isActiveScope;
   return {
     mutate,
     mutateAsync,
-    isLoading: ownsMutation && mutation.isPending,
-    error: scope.storageError ?? (ownsMutation ? (mutation.error ?? null) : null),
-    creationUncertain: scope.selected !== null,
-    pendingAttempt: scope.selected,
-    pendingAttempts: scope.attempts,
+    isLoading: isActiveScope && state.busy,
+    error: state.storageError ?? (ownsMutation ? (mutation.error ?? null) : null),
+    creationUncertain: !state.busy && state.selected !== null,
+    pendingAttempt: state.selected,
+    pendingAttempts: state.attempts,
     checkCreation,
     adoptCreation,
     selectAttempt,
-    retryRecovery,
-    isCheckingCreation: scope.checking,
-    recoveryReadFailed: scope.storageError !== null,
+    retryRecovery: scope.retryRecovery,
+    isCheckingCreation: state.checking,
+    recoveryReadFailed: state.storageError !== null,
   };
 }

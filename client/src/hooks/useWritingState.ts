@@ -118,17 +118,33 @@ const STUCK_THRESHOLD = MUSE_STUCK_TIMEOUT_MS;
 export function useWritingState(options: UseWritingStateOptions): UseWritingStateReturn {
   const { mode, onStuck, onTimerUpdate } = options;
 
-  // Current writing state
-  const [state, setState] = useState<WritingState>("WRITING");
+  const [writing, setWriting] = useState<{ mode: AgentMode; state: WritingState }>({
+    mode,
+    state: "WRITING",
+  });
+  if (writing.mode !== mode) {
+    setWriting({ mode, state: "WRITING" });
+  }
 
-  // Track last input timestamp
-  const lastInputTime = useRef<number>(Date.now());
+  const lastInputTime = useRef<number | null>(null);
 
   // Track if onStuck was already called for current STUCK transition
   const stuckCallbackFired = useRef<boolean>(false);
 
+  // Timer and demo actions share the same STUCK transition.
+  const markStuck = useCallback(() => {
+    setWriting((previous) =>
+      previous.state === "STUCK" ? previous : { ...previous, state: "STUCK" }
+    );
+    if (onStuck && !stuckCallbackFired.current) {
+      stuckCallbackFired.current = true;
+      onStuck();
+    }
+  }, [onStuck]);
+
   // State machine tick function
   const stateMachineTick = useCallback(() => {
+    if (lastInputTime.current === null) return;
     const idleTime = Date.now() - lastInputTime.current;
 
     const remainingMs = Math.max(0, STUCK_THRESHOLD - idleTime);
@@ -138,25 +154,30 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
       onTimerUpdate(remainingSeconds);
     }
 
-    setState((prev) => {
-      if (idleTime >= STUCK_THRESHOLD && prev !== "STUCK") {
-        if (onStuck && !stuckCallbackFired.current) {
-          stuckCallbackFired.current = true;
-          onStuck();
-        }
-        return "STUCK";
-      } else if (idleTime >= IDLE_THRESHOLD && prev !== "IDLE") {
-        return "IDLE";
-      }
-      return prev;
-    });
-  }, [onStuck, onTimerUpdate]);
+    if (idleTime >= STUCK_THRESHOLD) {
+      markStuck();
+    } else if (idleTime >= IDLE_THRESHOLD) {
+      setWriting((previous) =>
+        previous.state === "WRITING" ? { ...previous, state: "IDLE" } : previous
+      );
+    }
+  }, [markStuck, onTimerUpdate]);
 
   // Use generic interval hook for state machine
-  const { restart: restartTimer } = useInterval({
+  const { restart: restartTimer, setDelay } = useInterval({
     callback: stateMachineTick,
-    delay: mode === "muse" ? 1000 : null,
+    delay: null,
+    immediate: false,
   });
+
+  useEffect(() => {
+    stuckCallbackFired.current = false;
+    if (mode !== "muse") return;
+
+    lastInputTime.current = Date.now();
+    setDelay(1000);
+    return () => setDelay(null);
+  }, [mode, setDelay]);
 
   /**
    * Handle user input event.
@@ -168,41 +189,17 @@ export function useWritingState(options: UseWritingStateOptions): UseWritingStat
     }
 
     lastInputTime.current = Date.now();
-
-    setState((prev) => {
-      if (prev !== "WRITING") {
-        stuckCallbackFired.current = false;
-        return "WRITING";
-      }
-      return prev;
-    });
+    stuckCallbackFired.current = false;
+    setWriting((previous) =>
+      previous.state === "WRITING" ? previous : { ...previous, state: "WRITING" }
+    );
 
     restartTimer();
   }, [mode, restartTimer]);
 
-  /**
-   * Manual trigger for Demo mode.
-   * Forces immediate STUCK transition.
-   */
-  const manualTrigger = useCallback(() => {
-    setState("STUCK");
-
-    if (onStuck && !stuckCallbackFired.current) {
-      stuckCallbackFired.current = true;
-      onStuck();
-    }
-  }, [onStuck]);
-
-  // Reset state when mode changes
-  useEffect(() => {
-    if (mode !== "muse") {
-      setState("WRITING");
-    }
-  }, [mode]);
-
   return {
-    state,
+    state: writing.state,
     onInput,
-    manualTrigger,
+    manualTrigger: markStuck,
   };
 }

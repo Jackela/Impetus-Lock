@@ -147,6 +147,23 @@ describe("ExportModal", () => {
       expect(defaultProps.onClose).toHaveBeenCalled();
     });
 
+    it("keeps a newly opened modal independent of a previous exit animation", () => {
+      const { rerender } = render(<ExportModal {...defaultProps} />);
+      fireEvent.click(screen.getByTestId("export-cancel"));
+      rerender(<ExportModal {...defaultProps} open={false} />);
+      rerender(<ExportModal {...defaultProps} />);
+      fireEvent.change(screen.getByTestId("export-filename-input"), {
+        target: { value: "new export" },
+      });
+
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+
+      expect(screen.getByTestId("export-filename-input")).toHaveValue("new export");
+      expect(defaultProps.onClose).not.toHaveBeenCalled();
+    });
+
     it("should not close when clicking modal content", () => {
       render(<ExportModal {...defaultProps} />);
 

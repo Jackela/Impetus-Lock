@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useId, useMemo, useState } from "react";
 import type { Easing } from "framer-motion";
 import { AIActionType } from "../types/ai-actions";
 
@@ -64,7 +64,11 @@ interface UseAnimationControllerReturn {
  * ```
  */
 export function useAnimationController(actionType: AIActionType): UseAnimationControllerReturn {
-  const counterRef = useRef(0);
+  const id = useId();
+  const [animation, setAnimation] = useState({ actionType, sequence: 0 });
+  if (animation.actionType !== actionType) {
+    setAnimation({ actionType, sequence: animation.sequence + 1 });
+  }
 
   // Detect prefers-reduced-motion (FR-018)
   const prefersReducedMotion = useMemo(() => {
@@ -75,10 +79,7 @@ export function useAnimationController(actionType: AIActionType): UseAnimationCo
   }, []);
 
   // Generate unique animation key for cancel-and-replace (FR-019)
-  const animationKey = useMemo(() => {
-    counterRef.current += 1;
-    return `${actionType}-${counterRef.current}-${Date.now()}`;
-  }, [actionType]);
+  const animationKey = `${actionType}-${id}-${animation.sequence}`;
 
   // Generate animation variants based on action type
   const variants = useMemo((): AnimationVariants => {

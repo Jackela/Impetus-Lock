@@ -7,13 +7,8 @@
  * @module hooks/useTaskStorage
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  StoredTask,
-  StorageStatus,
-  TaskStorageState,
-  TaskStorageActions,
-} from "../types/task";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import type { StoredTask, TaskStorageState, TaskStorageActions } from "../types/task";
 import { StorageError, TaskCategory, TaskPriority } from "../types/task";
 
 const STORAGE_KEY = "impetus_tasks_v1";
@@ -29,124 +24,165 @@ function extractTitle(content: string): string {
   return content.split("\n")[0]?.trim() || "Untitled";
 }
 
+type TaskStorageSnapshot = Omit<TaskStorageState, "actions">;
+
+function emptyStorage(): TaskStorageSnapshot {
+  return { tasks: [], currentTaskId: null, status: "loading", error: null };
+}
+
+function readStorage(): TaskStorageSnapshot {
+  const ready: TaskStorageSnapshot = { ...emptyStorage(), status: "ready" };
+  try {
+    if (typeof window === "undefined" || !window.localStorage) {
+      throw new StorageError("unavailable", "localStorage is not available");
+    }
+
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return ready;
+
+    let data: unknown;
+    try {
+      data = JSON.parse(raw) as unknown;
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      return ready;
+    }
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "version" in data &&
+      "tasks" in data &&
+      "currentTaskId" in data
+    ) {
+      if (data.version !== 1) {
+        localStorage.removeItem(STORAGE_KEY);
+        return ready;
+      }
+      return {
+        ...ready,
+        tasks: data.tasks as StoredTask[],
+        currentTaskId: data.currentTaskId as string | null,
+      };
+    }
+    return ready;
+  } catch (err) {
+    const error =
+      err instanceof StorageError
+        ? err
+        : new StorageError("unknown", err instanceof Error ? err.message : "Unknown error");
+    return { ...emptyStorage(), status: "error", error };
+  }
+}
+
+function createTaskStorage() {
+  const initial = emptyStorage();
+  let snapshot = initial;
+  const listeners = new Set<() => void>();
+  return {
+    getSnapshot: () => snapshot,
+    getServerSnapshot: () => initial,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    update(patch: Partial<TaskStorageSnapshot>) {
+      snapshot = { ...snapshot, ...patch };
+      listeners.forEach((listener) => listener());
+    },
+  };
+}
+
 /**
  * React hook for task localStorage persistence.
  *
  * @returns Task storage state and actions
  */
 export function useTaskStorage(): TaskStorageState {
-  const [tasks, setTasks] = useState<StoredTask[]>([]);
-  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
-  const [status, setStatus] = useState<StorageStatus>("loading");
-  const [error, setError] = useState<StorageError | null>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [storage] = useState(createTaskStorage);
+  const { tasks, currentTaskId, status, error } = useSyncExternalStore(
+    storage.subscribe,
+    storage.getSnapshot,
+    storage.getServerSnapshot
+  );
 
-  // Load from localStorage on mount
   useEffect(() => {
-    try {
-      if (typeof window === "undefined" || !window.localStorage) {
-        throw new StorageError("unavailable", "localStorage is not available");
-      }
-
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        setStatus("ready");
-        return;
-      }
-
-      let data: unknown;
-      try {
-        data = JSON.parse(raw) as unknown;
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-        setStatus("ready");
-        return;
-      }
-
-      if (
-        typeof data === "object" &&
-        data !== null &&
-        "version" in data &&
-        "tasks" in data &&
-        "currentTaskId" in data
-      ) {
-        const storage = data as { version: number; tasks: unknown[]; currentTaskId: unknown };
-        if (storage.version !== 1) {
-          localStorage.removeItem(STORAGE_KEY);
-          setStatus("ready");
-          return;
-        }
-        setTasks(storage.tasks as StoredTask[]);
-        setCurrentTaskId(storage.currentTaskId as string | null);
-      }
-      setStatus("ready");
-    } catch (err) {
-      const storageError =
-        err instanceof StorageError
-          ? err
-          : new StorageError("unknown", err instanceof Error ? err.message : "Unknown error");
-      setError(storageError);
-      setStatus("error");
-    }
-  }, []);
+    storage.update(readStorage());
+  }, [storage]);
 
   // Persist to localStorage on changes (debounced)
   useEffect(() => {
     if (status !== "ready") return;
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
+    const timer = setTimeout(() => {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, tasks, currentTaskId }));
       } catch (err) {
         const type =
           err instanceof Error && err.name === "QuotaExceededError" ? "quota_exceeded" : "unknown";
-        setError(new StorageError(type, err instanceof Error ? err.message : "Save failed"));
-        setStatus("error");
+        storage.update({
+          error: new StorageError(type, err instanceof Error ? err.message : "Save failed"),
+          status: "error",
+        });
       }
     }, SAVE_DEBOUNCE_MS);
-    return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    };
-  }, [tasks, currentTaskId, status]);
+    return () => clearTimeout(timer);
+  }, [storage, tasks, currentTaskId, status]);
 
-  const addTask = useCallback((content: string, lockIds?: string[]): StoredTask => {
-    const now = Date.now();
-    const newTask: StoredTask = {
-      id:
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${now}-${Math.random().toString(36).slice(2)}`,
-      title: extractTitle(content),
-      content,
-      lockIds: lockIds ?? [],
-      category: TaskCategory.WRITING,
-      priority: TaskPriority.MEDIUM,
-      dueDate: null,
-      wordCount: 0,
-      createdAt: now,
-      updatedAt: now,
-    };
-    setTasks((prev) => [newTask, ...prev]);
-    return newTask;
-  }, []);
+  const addTask = useCallback(
+    (content: string, lockIds?: string[]): StoredTask => {
+      const now = Date.now();
+      const newTask: StoredTask = {
+        id:
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${now}-${Math.random().toString(36).slice(2)}`,
+        title: extractTitle(content),
+        content,
+        lockIds: lockIds ?? [],
+        category: TaskCategory.WRITING,
+        priority: TaskPriority.MEDIUM,
+        dueDate: null,
+        wordCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+      storage.update({ tasks: [newTask, ...storage.getSnapshot().tasks] });
+      return newTask;
+    },
+    [storage]
+  );
 
   const updateTask = useCallback(
     (id: string, updates: Partial<Omit<StoredTask, "id" | "createdAt">>): void => {
-      setTasks((prev) =>
-        prev.map((task) => (task.id === id ? { ...task, ...updates, updatedAt: Date.now() } : task))
-      );
+      storage.update({
+        tasks: storage
+          .getSnapshot()
+          .tasks.map((task) =>
+            task.id === id ? { ...task, ...updates, updatedAt: Date.now() } : task
+          ),
+      });
     },
-    []
+    [storage]
   );
 
-  const deleteTask = useCallback((id: string): void => {
-    setTasks((prev) => prev.filter((task) => task.id !== id));
-    setCurrentTaskId((prev) => (prev === id ? null : prev));
-  }, []);
+  const deleteTask = useCallback(
+    (id: string): void => {
+      const current = storage.getSnapshot();
+      storage.update({
+        tasks: current.tasks.filter((task) => task.id !== id),
+        currentTaskId: current.currentTaskId === id ? null : current.currentTaskId,
+      });
+    },
+    [storage]
+  );
 
-  const setCurrentTask = useCallback((id: string | null): void => {
-    setCurrentTaskId(id);
-  }, []);
+  const setCurrentTask = useCallback(
+    (id: string | null): void => {
+      storage.update({ currentTaskId: id });
+    },
+    [storage]
+  );
 
   const actions: TaskStorageActions = {
     addTask,

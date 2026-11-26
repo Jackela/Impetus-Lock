@@ -7,12 +7,20 @@
  * @module hooks/useTelemetry
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   emitTelemetry as emitTelemetryService,
   isTelemetryEnabled,
   setTelemetryEnabled,
 } from "../services/telemetry";
+
+function readTelemetryPreference(): boolean {
+  try {
+    return isTelemetryEnabled();
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Hook return type for telemetry management.
@@ -52,31 +60,13 @@ export interface UseTelemetryReturn {
  * ```
  */
 export function useTelemetry(): UseTelemetryReturn {
-  const [enabled, setEnabled] = useState<boolean>(() => {
-    try {
-      return isTelemetryEnabled();
-    } catch {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      setEnabled(isTelemetryEnabled());
-    } catch {
-      setEnabled(false);
-    }
-  }, []);
+  const [enabled, setEnabled] = useState(readTelemetryPreference);
 
   const toggleTelemetry = useCallback(() => {
-    setEnabled((prev) => {
-      const next = !prev;
-      setTelemetryEnabled(next);
-      return next;
-    });
+    const next = !readTelemetryPreference();
+    setTelemetryEnabled(next);
+    setEnabled(next);
   }, []);
 
-  const emitTelemetry = useCallback(emitTelemetryService, []);
-
-  return { enabled, toggleTelemetry, emitTelemetry };
+  return { enabled, toggleTelemetry, emitTelemetry: emitTelemetryService };
 }

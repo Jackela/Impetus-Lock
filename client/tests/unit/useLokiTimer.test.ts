@@ -81,24 +81,24 @@ describe("useLokiTimer", () => {
 
   it("should schedule new random timer after trigger", () => {
     const onTrigger = vi.fn();
-    renderHook(() => useLokiTimer({ mode: "loki" as AgentMode, onTrigger }));
+    const { result } = renderHook(() => useLokiTimer({ mode: "loki" as AgentMode, onTrigger }));
 
-    // First trigger
+    const firstInterval = result.current.currentInterval;
     act(() => {
-      vi.advanceTimersByTime(120000); // Max interval
+      vi.advanceTimersByTime(firstInterval);
     });
+    expect(onTrigger).toHaveBeenCalledTimes(1);
 
-    // Should have triggered at least once (might be more due to recursive scheduling)
-    const firstCallCount = onTrigger.mock.calls.length;
-    expect(firstCallCount).toBeGreaterThanOrEqual(1);
-
-    // Second trigger (new timer scheduled)
+    const secondInterval = result.current.currentInterval;
+    expect(secondInterval).not.toBe(firstInterval);
     act(() => {
-      vi.advanceTimersByTime(120000);
+      vi.advanceTimersByTime(secondInterval - 1);
     });
-
-    // Should have more calls than before
-    expect(onTrigger.mock.calls.length).toBeGreaterThan(firstCallCount);
+    expect(onTrigger).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onTrigger).toHaveBeenCalledTimes(2);
   });
 
   it('should NOT trigger when mode is "muse"', () => {

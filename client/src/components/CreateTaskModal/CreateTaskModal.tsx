@@ -57,9 +57,6 @@ export function CreateTaskModal({
   onClose: () => void;
   onSuccess?: (task: { id: string; title: string }) => void;
 }) {
-  const [title, setTitle] = useState("");
-  const latestTitle = useRef(title);
-  latestTitle.current = title;
   const [error, setError] = useState<string | null>(null);
   const [isExiting, setIsExiting] = useState(false);
   const {
@@ -82,12 +79,31 @@ export function CreateTaskModal({
   const viewSession = auth?.session;
   const ownerId = auth?.user?.id;
   const remoteEnabled = auth === undefined || auth.remoteEnabled;
-  const formOwner = useRef(ownerId);
-  const ownsTitle = formOwner.current === ownerId;
-  const pendingSnapshot = useRef(pendingAttempt);
-  pendingSnapshot.current = pendingAttempt;
+  const [title, setTitle] = useState(() => (open ? (pendingAttempt?.content ?? "") : ""));
+  const [formScope, setFormScope] = useState({ open, ownerId });
+
+  // Reset for a new opening or account before React commits the form.
+  if (formScope.open !== open || formScope.ownerId !== ownerId) {
+    setFormScope({ open, ownerId });
+    if (open) {
+      setIsExiting(false);
+      setTitle(pendingAttempt?.content ?? "");
+      setError(null);
+      setCandidates(null);
+      setCreatingAnother(false);
+    }
+  }
+
+  const latestTitle = useRef(title);
+  const getTitle = useCallback(() => latestTitle.current, []);
+  useLayoutEffect(() => {
+    latestTitle.current = title;
+  }, [title]);
+
   const currentView = useRef(viewSession);
-  currentView.current = viewSession;
+  useLayoutEffect(() => {
+    currentView.current = viewSession;
+  }, [viewSession]);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const busy = isCreating || isCheckingCreation;
   const unconfirmed = creationUncertain && !creatingAnother;
@@ -98,8 +114,8 @@ export function CreateTaskModal({
     retryRecovery: retryFormRecovery,
   } = useModalFormRecovery({
     open,
-    ownerId: formOwner.current,
-    titleRef: latestTitle,
+    ownerId,
+    getTitle,
     unsubmitted: !busy && !unconfirmed,
     separateFrom: creatingAnother ? pendingAttempt?.draftId : undefined,
   });
@@ -114,18 +130,8 @@ export function CreateTaskModal({
   const isExitingRef = useRef(false);
   const { ref: focusTrapRef } = useFocusTrap<HTMLDivElement>({ active: open });
 
-  // Initialize ownership before the form becomes interactive. A session
-  // generation change keeps this account's input because ownerId is unchanged.
   useLayoutEffect(() => {
-    if (open) {
-      setIsExiting(false);
-      isExitingRef.current = false;
-      formOwner.current = ownerId;
-      setTitle(pendingSnapshot.current?.content ?? "");
-      setError(null);
-      setCandidates(null);
-      setCreatingAnother(false);
-    }
+    isExitingRef.current = false;
     return () => {
       if (closeTimer.current) clearTimeout(closeTimer.current);
     };
@@ -133,10 +139,9 @@ export function CreateTaskModal({
   const handleRestoreTitle = (draft: (typeof formRecoveries)[number]) => {
     if (!ownerId || busy) return;
     try {
-      if (ownsTitle && title && title !== draft.content && (!creationUncertain || creatingAnother))
+      if (title && title !== draft.content && (!creationUncertain || creatingAnother))
         preserveTitle();
       if (draft.workingCopyOf) selectAttempt(draft.workingCopyOf);
-      formOwner.current = ownerId;
       setTitle(draft.content);
       setCreatingAnother(creationUncertain);
       setCandidates(null);
@@ -164,7 +169,7 @@ export function CreateTaskModal({
   }, [busy, onClose]);
 
   const handleSubmit = useCallback(() => {
-    if (!ownsTitle || !remoteEnabled || busy || unconfirmed || isExitingRef.current) return;
+    if (!remoteEnabled || busy || unconfirmed || isExitingRef.current) return;
     const trimmedTitle = title.trim();
 
     // Validation: title must not be empty
@@ -193,17 +198,7 @@ export function CreateTaskModal({
         },
       }
     );
-  }, [
-    title,
-    mutate,
-    onClose,
-    onSuccess,
-    busy,
-    unconfirmed,
-    creatingAnother,
-    remoteEnabled,
-    ownsTitle,
-  ]);
+  }, [title, mutate, onClose, onSuccess, busy, unconfirmed, creatingAnother, remoteEnabled]);
 
   const handleRecheck = async () => {
     if (!remoteEnabled) return;
@@ -297,7 +292,7 @@ export function CreateTaskModal({
             <input
               id="create-task-title"
               type="text"
-              value={ownsTitle ? title : ""}
+              value={title}
               onChange={(e) => {
                 latestTitle.current = e.target.value;
                 setTitle(e.target.value);
@@ -312,7 +307,7 @@ export function CreateTaskModal({
               aria-describedby={visibleError ? "create-task-error" : undefined}
               data-testid="create-task-input"
             />
-            <span className="char-count">{ownsTitle ? title.length : 0}/200</span>
+            <span className="char-count">{title.length}/200</span>
           </div>
 
           {!remoteEnabled && (
@@ -466,14 +461,7 @@ export function CreateTaskModal({
             type="button"
             className="confirm-button"
             onClick={handleSubmit}
-            disabled={
-              !ownsTitle ||
-              !remoteEnabled ||
-              busy ||
-              unconfirmed ||
-              recoveryReadFailed ||
-              !title.trim()
-            }
+            disabled={!remoteEnabled || busy || unconfirmed || recoveryReadFailed || !title.trim()}
             data-testid="create-task-confirm"
           >
             {isCreating

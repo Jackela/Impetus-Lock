@@ -65,26 +65,38 @@ export function LLMSettingsModal({
     return () => window.removeEventListener("keydown", dismiss);
   }, [onClose, open]);
   const { emitTelemetry } = useTelemetry();
-  const [provider, setProvider] = useState<LLMProviderName>(config?.provider ?? "openai");
-  const [model, setModel] = useState<string>(config?.model ?? getLLMRecommendedModel("openai"));
-  const [apiKey, setApiKey] = useState<string>(config?.apiKey ?? "");
+  const initialProvider = config?.provider ?? "openai";
+  const initialModel = config?.model ?? getLLMRecommendedModel(initialProvider);
+  const initialApiKey = config?.apiKey ?? "";
+  const [provider, setProvider] = useState(initialProvider);
+  const [model, setModel] = useState(initialModel);
+  const [apiKey, setApiKey] = useState(initialApiKey);
   const [modelTouched, setModelTouched] = useState(false);
   const [modeChoice, setModeChoice] = useState<VaultMode>(storageMode);
   const [passphrase, setPassphrase] = useState("");
   const [passphraseConfirm, setPassphraseConfirm] = useState("");
   const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [initialForm, setInitialForm] = useState({ open, config, storageMode });
 
-  useEffect(() => {
-    if (!open) return;
-    setProvider(config?.provider ?? "openai");
-    setModel(config?.model ?? getLLMRecommendedModel(config?.provider ?? "openai"));
-    setApiKey(config?.apiKey ?? "");
-    setModelTouched(false);
-    setModeChoice(storageMode);
-    setPassphrase("");
-    setPassphraseConfirm("");
-    setUnlockError(null);
-  }, [open, config?.provider, config?.model, config?.apiKey, storageMode]);
+  if (
+    initialForm.open !== open ||
+    initialForm.config?.provider !== config?.provider ||
+    initialForm.config?.model !== config?.model ||
+    initialForm.config?.apiKey !== config?.apiKey ||
+    initialForm.storageMode !== storageMode
+  ) {
+    setInitialForm({ open, config, storageMode });
+    if (open) {
+      setProvider(initialProvider);
+      setModel(initialModel);
+      setApiKey(initialApiKey);
+      setModelTouched(false);
+      setModeChoice(storageMode);
+      setPassphrase("");
+      setPassphraseConfirm("");
+      setUnlockError(null);
+    }
+  }
 
   const providerOptions = useMemo(() => getLLMProviderOptions(), []);
 

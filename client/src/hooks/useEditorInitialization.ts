@@ -6,7 +6,7 @@
  * @module hooks/useEditorInitialization
  */
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
 import type { Editor } from "@milkdown/core";
 import { EDITOR_RETRY_INTERVAL_MS, EDITOR_MAX_RETRY_ATTEMPTS } from "../config/animation";
 import { createLogger } from "../utils/logger";
@@ -33,6 +33,24 @@ export interface UseEditorInitializationReturn {
   isInitialized: boolean;
 }
 
+function createEditorReadiness() {
+  let ready = false;
+  const listeners = new Set<() => void>();
+  return {
+    getSnapshot: () => ready,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    markReady() {
+      ready = true;
+      listeners.forEach((listener) => listener());
+    },
+  };
+}
+
 /**
  * Hook for initializing Milkdown editor with retry logic.
  *
@@ -44,64 +62,38 @@ export function useEditorInitialization(
 ): UseEditorInitializationReturn {
   const { getEditor, onReady } = options;
   const editorRef = useRef<Editor | null>(null);
-  const initializedRef = useRef(false);
-  const onReadyRef = useRef(onReady);
+  const [readiness] = useState(createEditorReadiness);
+  const isInitialized = useSyncExternalStore(
+    readiness.subscribe,
+    readiness.getSnapshot,
+    () => false
+  );
+  const reportReady = useEffectEvent((editor: Editor) => onReady?.(editor));
 
-  // Keep callback ref up to date
   useEffect(() => {
-    onReadyRef.current = onReady;
-  }, [onReady]);
-
-  const initialize = useCallback(async () => {
-    if (initializedRef.current || !getEditor) {
-      return;
-    }
+    if (!getEditor || readiness.getSnapshot()) return;
 
     let attempts = 0;
-    let mounted = true;
-
-    const tryInitialize = async () => {
-      let editor = getEditor();
-
-      while (!editor && mounted && attempts < EDITOR_MAX_RETRY_ATTEMPTS) {
-        await new Promise((resolve) => setTimeout(resolve, EDITOR_RETRY_INTERVAL_MS));
-        editor = getEditor();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const check = () => {
+      const editor = getEditor();
+      if (editor) {
+        editorRef.current = editor;
+        readiness.markReady();
+        reportReady(editor);
+      } else if (attempts < EDITOR_MAX_RETRY_ATTEMPTS) {
         attempts++;
-      }
-
-      if (!editor || !mounted) {
-        if (!editor) {
-          logger.error("Editor failed to initialize", {
-            timeoutMs: attempts * EDITOR_RETRY_INTERVAL_MS,
-          });
-        }
-        return;
-      }
-
-      editorRef.current = editor;
-      initializedRef.current = true;
-
-      if (onReadyRef.current) {
-        onReadyRef.current(editor);
+        timer = setTimeout(check, EDITOR_RETRY_INTERVAL_MS);
+      } else {
+        logger.error("Editor failed to initialize", {
+          timeoutMs: attempts * EDITOR_RETRY_INTERVAL_MS,
+        });
       }
     };
 
-    await tryInitialize();
+    check();
+    return () => clearTimeout(timer);
+  }, [getEditor, readiness]);
 
-    return () => {
-      mounted = false;
-    };
-  }, [getEditor]);
-
-  useEffect(() => {
-    const cleanup = initialize();
-    return () => {
-      cleanup?.then((cleanupFn) => cleanupFn?.());
-    };
-  }, [initialize]);
-
-  return {
-    editorRef,
-    isInitialized: initializedRef.current,
-  };
+  return { editorRef, isInitialized };
 }
