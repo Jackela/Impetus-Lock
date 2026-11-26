@@ -105,12 +105,7 @@ export const TaskSyncErrorMessages = {
  * Error type classification for task sync operations.
  */
 export type TaskSyncErrorType =
-  | "network"
-  | "server"
-  | "conflict"
-  | "auth"
-  | "validation"
-  | "unknown";
+  "network" | "server" | "conflict" | "auth" | "validation" | "unknown";
 
 /**
  * Classify an error into a specific type.
