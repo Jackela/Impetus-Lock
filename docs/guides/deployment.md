@@ -1,6 +1,6 @@
 # Deployment Guide
 
-> **Reference only (2026-11-11).** The authoritative runtime is `server/Dockerfile.prod` (Python 3.12, Poetry 2.5.1), `client/Dockerfile.prod` (Node 24), and `.github/workflows/deploy-staging.yml`. Verify every command against those files before deploying; some examples below predate the current provider registry.
+> **Reference only (2026-11-11).** The authoritative runtime is `server/Dockerfile.prod` (Python 3.12, Poetry 2.5.1), `client/Dockerfile.prod` (Node 26), and `.github/workflows/deploy-staging.yml`. Verify every command against those files before deploying; some examples below predate the current provider registry.
 
 **Last Updated**: 2026-02-05
 
@@ -204,7 +204,7 @@ CMD ["poetry", "run", "uvicorn", "server.api.main:app", "--host", "0.0.0.0", "--
 Create `client/Dockerfile`:
 
 ```dockerfile
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 

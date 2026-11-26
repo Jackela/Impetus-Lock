@@ -11,7 +11,7 @@ Thanks for helping improve Impetus Lock. This project is pre-1.0 and prioritizes
 
 ## Setup
 
-Prerequisites: Python 3.11+ (CI uses 3.12), Node.js 22.13+/24.x, and Docker for the local PostgreSQL helper.
+Prerequisites: Python 3.11+ (CI uses 3.12), Node.js 26.x, and Docker for the local PostgreSQL helper.
 
 ```bash
 cd server && poetry install

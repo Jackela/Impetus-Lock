@@ -136,7 +136,7 @@ client/
 
 ### 环境要求 | Prerequisites
 
-- Node.js 22.13+ (22.x) or 24.x (`^22.13.0 || ^24.0.0`); 24.x is recommended to match the CI toolchain
+- Node.js 26.x to match CI and `.nvmrc`. Supported versions: `^22.22.1 || ^24.0.0 || ^26.0.0`
 - npm (comes with Node.js)
 
 ### 安装 | Installation
