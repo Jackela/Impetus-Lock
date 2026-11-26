@@ -37,20 +37,49 @@ async function run() {
     const initial = await api('/library');
     assert.deepEqual(initial.runs, []);
     const start = {request_id:requestId(), theme:'letter', mode:'normal', opening:'家门口有一封信。'};
+    await assert.rejects(api('/runs','POST',{...start,opening:'……'}), error =>
+      error.status === 422 && error.message === '请输入有实际内容的文字。');
+    await assert.rejects(api('/runs','POST',{...start,opening:404}), error =>
+      error.status === 422 && error.message === '填写的内容不符合要求，请检查后重试。');
     const first = await api('/runs','POST',start);
     assert.equal(first.id,(await api('/runs','POST',start)).id);
     assert.equal(first.segments[0].text,start.opening);
-    const actionUrl = '/runs/' + first.id + '/actions';
+    const runUrl = '/runs/' + first.id;
+    const actionUrl = runUrl + '/actions';
+    const receipt = id => api(runUrl + '/receipts/' + id);
+    const staged = {request_id:requestId(), version:first.version, kind:'turn', source:'keyboard', text:'我把信递给女儿。'};
+    invalidateSession(); // An independently verified session for the same author acts first.
     const firstTurn = { request_id:requestId(),version:first.version,kind:'turn',source:'choice',text:first.choices[0] };
     let run = await api(actionUrl,'POST',firstTurn);
     assert.equal(run.turns,1);
     assert.ok(run.segments.some(s=>s.locked));
     assert.equal((await api(actionUrl,'POST',firstTurn)).turns,1);
+    invalidateSession();
+    assert.deepEqual(await receipt(staged.request_id), {status:'unknown', run_version:run.version});
+    assert.ok(run.segments.every(segment => segment.text !== staged.text));
+    const confirmed = {...staged, version:run.version};
+    run = await api(actionUrl,'POST',confirmed);
+    assert.deepEqual(await receipt(staged.request_id), {status:'committed', run_version:run.version});
+    assert.equal((await api(actionUrl,'POST',confirmed)).turns,2);
+    assert.equal(run.segments.filter(segment => segment.text === staged.text).length,1);
+
+    const oldVoiceId = requestId();
+    const cancel = {request_id:requestId(), version:run.version, kind:'cancel', target:oldVoiceId};
+    run = await api(actionUrl,'POST',cancel);
+    assert.deepEqual(await receipt(oldVoiceId), {status:'canceled', run_version:run.version});
+    assert.equal((await api(actionUrl,'POST',cancel)).version,run.version);
+    const original = {request_id:requestId(), version:run.version, kind:'turn', source:'voice', style:'verbatim', text:'她说信封上的字很眼熟。'};
+    run = await api(actionUrl,'POST',original);
+    assert.deepEqual(await receipt(original.request_id), {status:'committed', run_version:run.version});
+    assert.equal((await api(actionUrl,'POST',original)).turns,3);
+    assert.equal(run.segments.filter(segment => segment.text === original.text).length,1);
     run = await api(actionUrl,'POST',{request_id:requestId(),version:run.version,kind:'finish'});
     const workUrl = '/works/' + run.work_id;
     let work = await api(workUrl);
     work = await api(workUrl,'PATCH',{version:work.version,title:'私稿',text:'自己保存的独立文字。'});
-    const pub = await api(workUrl + '/cards','POST',{request_id:requestId(),version:work.version});
+    const publish = {request_id:requestId(),version:work.version};
+    const pub = await api(workUrl + '/cards','POST',publish);
+    assert.equal((await api(workUrl + '/cards','POST',publish)).id,pub.id);
     assert.equal(pub.text,work.text);
     assert.equal((await api('/library')).progress.detective,true);
     invalidateSession();
@@ -67,7 +96,13 @@ async function run() {
     person = 'author';
     await api(workUrl + '/cards/' + pub.id,'DELETE');
     await assert.rejects(api(cardUrl), error=>[404,410].includes(error.status));
-    console.log('PASS native transport ↔ real routes: verified sessions, first turn, idempotency, work PUT, immutable share, independent friend, revocation.');
+    await assert.rejects(api(workUrl + '/cards','POST',publish), error=>error.status===404 && error.message==='作品卡已撤回。');
+    const replacement = await api(workUrl + '/cards','POST',{...publish,request_id:requestId()});
+    assert.notEqual(replacement.id,pub.id);
+    assert.equal((await api('/cards/' + replacement.id)).text,work.text);
+    assert.equal((await api(workUrl)).text,work.text);
+    await assert.rejects(api(cardUrl), error=>error.status===404);
+    console.log('PASS native transport ↔ real routes: field and business validation, separate sessions, written and canceled receipts, idempotency, private work PUT, independent friend, withdrawal and republication.');
   } finally {
     lines.close();
     processHost.kill('SIGTERM');

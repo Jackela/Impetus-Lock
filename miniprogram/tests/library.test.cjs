@@ -500,3 +500,72 @@ test('foreground identity changes clear the previous private work and cannot rep
   assert.match(app.page.data.error, /无法打开/);
   assert.ok([...app.storage.keys()].every(key => key.includes('owner-a')));
 });
+
+test('an author can publish unchanged private work after withdrawing a card with a lost response', async () => {
+  let active;
+  let existingRequest;
+  let nextId = 1;
+  const app = host('work', ({path,method,body}) => {
+    if (path === '/works/w1') return ok(work);
+    if (path === '/works/w1/cards' && method === 'GET') return ok({cards: active ? [active] : []});
+    if (path === '/works/w1/cards' && method === 'POST') {
+      if (body.request_id === existingRequest) {
+        return active ? ok(active) : fail(404, '作品卡已撤回。');
+      }
+      active = {...pageCard, id: 'created-' + nextId++};
+      if (!existingRequest) {
+        existingRequest = body.request_id;
+        throw new Error('The first correctly persisted publication loses its transport acknowledgement');
+      }
+      return ok(active);
+    }
+    if (path === '/works/w1/cards/created-1' && method === 'DELETE') {
+      active = undefined;
+      return {status:204};
+    }
+    throw new Error('unexpected ' + method + ' ' + path);
+  }, {id:'w1'}, {confirm: () => true});
+  await app.page.refresh();
+  await tick();
+  app.page.previewShare();
+  await app.page.publish();
+  assert.ok(active);
+  app.page.closePreview();
+  await tick();
+  assert.equal(app.page.data.cards[0].id, active.id);
+  await app.page.withdraw(dataset(active.id));
+  assert.equal(app.page.data.cards.length, 0);
+  app.page.previewShare();
+  await app.page.publish();
+  const operationIds = app.requests.filter(r => r.path === '/works/w1/cards' && r.method === 'POST').map(r => r.body.request_id);
+  assert.equal(operationIds[0], operationIds[1], 'The earlier result must be checked by its original ID');
+  assert.notEqual(operationIds[0], operationIds[2], 'An explicit new publication uses a fresh ID once the old receipt is known to be revoked');
+  assert.equal(app.page.data.cards[0].id, 'created-2');
+  assert.equal(app.page.data.text, work.text);
+});
+
+test('retrying the same publication confirmation cannot undo a withdrawal on another device', async () => {
+  let savedRequest;
+  const app = host('work', ({ path, method, body }) => {
+    if (path === '/works/w1') return ok(work);
+    if (method === 'GET') return ok({ cards: [] });
+    if (!savedRequest) {
+      savedRequest = body.request_id;
+      throw new Error('publication committed before the response was lost');
+    }
+    if (body.request_id === savedRequest) {
+      return { status: 404, data: { error: { code: 'NOT_FOUND', message: '作品卡已撤回。' } } };
+    }
+    return ok(pageCard);
+  }, { id: work.id });
+  await app.page.refresh();
+  await tick();
+  app.page.previewShare();
+  await app.page.publish();
+  await app.page.publish();
+  assert.equal(app.page.data.preview, null);
+  assert.equal(app.page.data.cards.length, 0);
+  assert.match(app.page.data.error, /重新预览并发布/);
+  assert.deepEqual(app.requests.filter(item => item.path === '/works/w1/cards' && item.method === 'POST')
+    .map(item => item.body.request_id), [savedRequest, savedRequest]);
+});

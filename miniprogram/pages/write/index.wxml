@@ -34,6 +34,7 @@
         <text wx:if="{{item.locked}}" class="lock-status">已锁句</text>
         <text wx:if="{{item.text}}" class="story-paragraph" user-select="{{true}}">{{item.text}}</text>
         <text wx:elif="{{item.original}}" class="caption">这段已从正文移除。</text>
+        <text wx:if="{{item.id === firstLockId}}" class="caption">原句会保留，你仍可以写别的情节。</text>
         <view wx:if="{{run.status === 'active'}}" class="segment-controls">
           <button wx:if="{{!item.locked && item.text}}" class="button-link" data-target="{{item.id}}" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">编辑这段</button>
           <button wx:if="{{item.original}}" class="button-link" data-target="{{item.id}}" bindtap="toggleOriginal" aria-expanded="{{originalTarget === item.id}}">{{originalTarget === item.id ? '收起原文' : '查看原文'}}</button>
@@ -86,13 +87,13 @@
 
     <view wx:if="{{hasPending && !busy && !finishing}}" class="panel writer-panel" aria-label="待核对操作">
       <text class="writer-heading" aria-role="heading">待核对操作</text>
-      <block wx:if="{{pendingVoice && pendingText}}">
-        <text class="caption">识别原文</text>
+      <block wx:if="{{pendingKind === 'turn' && pendingText}}">
+        <text class="caption">{{pendingVoice ? '识别原文' : '待写入文字'}}</text>
         <text class="story-paragraph" user-select="{{true}}">{{pendingText}}</text>
       </block>
       <view class="writer-row">
-        <button wx:if="{{canRetryPending}}" class="button-secondary" hover-class="button-pressed" bindtap="retryPending">重试这次操作</button>
-        <button wx:if="{{pendingVoice && pendingText}}" class="button-secondary" hover-class="button-pressed" bindtap="useVoiceOriginal">用识别原文</button>
+        <button wx:if="{{canRetryPending}}" class="button-secondary" hover-class="button-pressed" bindtap="retryPending">{{pendingFirstKeyboard ? '确认写入这段' : '重试这次操作'}}</button>
+        <button wx:if="{{canUseVoiceOriginal && pendingText}}" class="button-secondary" hover-class="button-pressed" bindtap="useVoiceOriginal">用识别原文</button>
         <button class="button-link" bindtap="reload">核对最新正文</button>
         <button wx:if="{{pendingKind !== 'finish'}}" class="button-link" bindtap="abandonPending">放弃这次操作</button>
       </view>
@@ -166,6 +167,10 @@
         <text wx:if="{{hasPending && pendingKind !== 'finish'}}" class="body-copy">先核对这次操作。你可以处理待续写内容，或仅保存已确认的正文。</text>
         <text wx:if="{{draft && !hasPending}}" class="body-copy">还有一段没写入。你可以先写入故事，或保存当前正文。</text>
         <text wx:if="{{voicePhase === 'processing'}}" class="body-copy">正在识别这段口述。</text>
+        <block wx:if="{{pendingKind === 'turn' && pendingText}}">
+          <text class="caption">{{pendingVoice ? '识别原文' : '待写入文字'}}</text>
+          <text class="story-paragraph" user-select="{{true}}">{{pendingText}}</text>
+        </block>
         <block wx:if="{{heldVoiceText}}">
           <text class="caption">识别原文</text>
           <text class="story-paragraph" user-select="{{true}}">{{heldVoiceText}}</text>

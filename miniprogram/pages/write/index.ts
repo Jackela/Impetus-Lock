@@ -9,6 +9,7 @@ type NoticeKind = "status" | "error";
 type EditKind = "edit" | "unlock" | "replace" | "restore" | "intervene" | "restyle";
 type FinishControl = "begin_finish" | "resume";
 type ReceiptStatus = Receipt["status"];
+type FinalReceipt = Extract<ReceiptStatus, "committed" | "canceled">;
 type PlotEvent = WechatMiniprogram.CustomEvent<{}, {}, { text: string }>;
 type ValueEvent = WechatMiniprogram.CustomEvent<{ value: string }>;
 type TargetEvent = WechatMiniprogram.CustomEvent<{}, {}, { target: string; kind?: EditKind }>;
@@ -19,6 +20,7 @@ interface Pending {
   action: Action;
   first?: boolean;
   cancelRequestId?: string;
+  verbatimRequestId?: string;
   reviewedVersion?: number;
 }
 
@@ -156,6 +158,7 @@ const initialData = {
   run: null as Run | null,
   opening: "",
   sections: [] as Run["segments"],
+  firstLockId: "",
   chapter: "",
   modeLabel: "",
   loading: true,
@@ -166,7 +169,9 @@ const initialData = {
   hasPending: false,
   pendingInterventionRetry: false,
   pendingKind: "",
+  pendingFirstKeyboard: false,
   pendingVoice: false,
+  canUseVoiceOriginal: false,
   pendingText: "",
   canRetryPending: false,
   composing: false,
@@ -250,6 +255,7 @@ Page({
       run: null, draft: "", loading: false, busy: false, editor: null, originalTarget: "", showRules: false,
       opening: "", sections: [], originalText: "",
       hasPending: false, pendingInterventionRetry: false, pendingKind: "", pendingVoice: false, pendingText: "", canRetryPending: false,
+      pendingFirstKeyboard: false, canUseVoiceOriginal: false,
       offers: [], canChangeLock: false,
       canIntervene: false, showRecoveries: false,
       needsReload: true, finishing: false, pauseConfirmed: false, blockedFinishCount: 0, heldVoiceText: "",
@@ -307,11 +313,33 @@ Page({
           if (!this.valid(runtime, sequence, subject)) return;
         }
         if (receipt.status === "committed" || receipt.status === "canceled") {
-          this.clearPending(pending, receipt.status === "committed");
+          this.applyPendingOutcome(pending, receipt.status, run);
+        }
+      }
+      let firstAction: Action | undefined;
+      const first = runtime.firstConsumed || runtime.pending
+        ? undefined : readLocal<Omit<Action, "kind" | "version">>("first:" + runtime.id);
+      if (first?.text && first.source && first.request_id) {
+        const receipt = await receiptFor(runtime.id, first.request_id);
+        if (!this.valid(runtime, sequence, subject)) return;
+        if (receipt.run_version > run.version) {
+          run = await api<Run>(path);
+          if (!this.valid(runtime, sequence, subject)) return;
+        }
+        if (receipt.status === "committed" || receipt.status === "canceled") {
+          this.consumeFirst();
+        } else if (run.status === "active") {
+          const action = { ...first, kind: "turn", version: run.version } satisfies Action;
+          if (receipt.status === "pending" || (first.source === "keyboard" && (run.turns > 0 || run.finishing))) {
+            this.retainPending({ action, first: true });
+          } else if (run.turns === 0 && !run.finishing) {
+            firstAction = action;
+          } else if (run.turns > 0) {
+            this.consumeFirst();
+          }
         }
       }
       const draft = runtime.draft ?? "";
-      const first = runtime.firstConsumed ? undefined : readLocal<Omit<Action, "kind" | "version">>("first:" + runtime.id);
       if (run.finishing && runtime.finishControl?.kind === "begin_finish") runtime.finishControl = undefined;
       if (!run.finishing && runtime.finishControl?.kind === "resume") runtime.finishControl = undefined;
       this.setData({
@@ -329,23 +357,24 @@ Page({
         return;
       }
       if (runtime.pending) {
-        this.notice("有一次操作仍待核对。可以安全重试或放弃。");
+        this.notice(this.data.pendingFirstKeyboard
+          ? "首页这段尚未确认入稿。核对当前正文后，可以确认写入或放弃。"
+          : "有一次操作仍待核对。可以安全重试或放弃。");
         return;
       }
       if (this.data.finishing) {
         this.notice(run.finishing ? "本局已暂停续写。可以处理待写入内容或保存。" : "上次暂停尚未确认。请重试暂停。");
         return;
       }
-      if (run.turns > 0 && first) this.consumeFirst();
       if (runtime.leaveCancelledVoice) {
         runtime.leaveCancelledVoice = false;
         this.notice("离开写作页时已停止录音。可以重新录音或打字。");
       } else {
         this.notice("");
       }
-      if (run.turns === 0 && first?.text && first.source && first.request_id) {
+      if (firstAction) {
         runtime.loading = false;
-        await this.startAction({ ...first, kind: "turn", version: run.version }, true);
+        await this.startAction(firstAction, true);
       }
     } catch (reason) {
       if (this.runtime !== runtime || runtime.sequence !== sequence || runtime.disposed || !runtime.foreground) return;
@@ -361,6 +390,7 @@ Page({
       run,
       opening: run.segments.find((segment) => segment.id === "opening")?.text ?? run.opening,
       sections: run.segments.filter((segment) => segment.id !== "opening"),
+      firstLockId: run.mode === "normal" ? run.segments.find((segment) => segment.locked)?.id ?? "" : "",
       chapter: chapterName(run),
       modeLabel: run.mode === "high" ? "高强度" : run.mode === "custom" ? "个人模式" : "普通",
       offers: abilityOptions(run),
@@ -383,7 +413,9 @@ Page({
       hasPending: Boolean(action),
       pendingInterventionRetry: isInterventionRetry(action),
       pendingKind: action?.kind ?? "",
+      pendingFirstKeyboard: pending?.first === true && action?.source === "keyboard",
       pendingVoice: action?.kind === "turn" && action.source === "voice",
+      canUseVoiceOriginal: action?.kind === "turn" && action.source === "voice" && action.style !== "verbatim" && !pending?.verbatimRequestId,
       pendingText: action?.text ?? "",
       canRetryPending: Boolean(pending),
     });
@@ -391,10 +423,11 @@ Page({
 
   retainPending(pending: Pending) {
     const runtime = this.runtime;
-    if (!runtime) return;
+    if (!runtime) return false;
     runtime.pending = pending;
-    writeLocal("pending:" + runtime.id, pending);
+    const stored = writeLocal("pending:" + runtime.id, pending);
     this.presentPending();
+    return stored;
   },
 
   consumeFirst() {
@@ -414,6 +447,17 @@ Page({
       this.updateDraft("");
     }
     this.presentPending();
+  },
+
+  applyPendingOutcome(pending: Pending, outcome: FinalReceipt, run: Run, keepOriginal = true) {
+    if (keepOriginal && outcome === "canceled" && pending.verbatimRequestId && run.status === "active") {
+      this.retainPending({
+        action: { ...pending.action, request_id: pending.verbatimRequestId, version: run.version, style: "verbatim" },
+        first: pending.first,
+      });
+    } else {
+      this.clearPending(pending, outcome === "committed");
+    }
   },
 
   async startAction(action: Action, first = false) {
@@ -498,6 +542,10 @@ Page({
     const runtime = this.runtime;
     if (!runtime?.pending || this.data.busy) return;
     const pending = runtime.pending;
+    if (pending.verbatimRequestId) {
+      await this.useVoiceOriginal();
+      return;
+    }
     const receipt = await this.reconcilePending(pending);
     if (receipt !== "unknown" && receipt !== "pending") return;
     const run = this.data.run;
@@ -543,7 +591,7 @@ Page({
         if (!this.valid(runtime, sequence, subject)) return;
         this.setRun(latest);
         if (receipt.status === "committed" || receipt.status === "canceled") {
-          this.clearPending(pending, receipt.status === "committed");
+          this.applyPendingOutcome(pending, receipt.status, latest);
           this.notice(receipt.status === "committed" ? "这次操作已生效。正文已更新。" : "这次操作已取消。");
         }
         if (latest.status === "finished") this.openCompleted(latest);
@@ -556,7 +604,7 @@ Page({
     }
   },
 
-  async cancelPending(forRecording = false): Promise<"committed" | "canceled" | undefined> {
+  async cancelPending(forRecording = false, keepOriginal = false): Promise<FinalReceipt | undefined> {
     const runtime = this.runtime;
     const pending = runtime?.pending;
     const version = this.data.run?.version;
@@ -574,7 +622,7 @@ Page({
         () => this.valid(runtime, sequence, subject));
       if (!canceled) return;
       const { run: result, outcome } = canceled;
-      this.clearPending(pending, outcome === "committed");
+      this.applyPendingOutcome(pending, outcome, result, keepOriginal);
       this.setRun(result);
       this.setData({ busy: false, editor: null, originalTarget: "" });
       if (result.status === "finished") {
@@ -629,13 +677,22 @@ Page({
   },
 
   async useVoiceOriginal() {
-    const pending = this.runtime?.pending;
-    const original = pending?.action.text;
-    if (!pending || !original || !this.data.run || this.data.busy) return;
-    if (await this.cancelPending() !== "canceled" || !this.data.run) return;
-    await this.startAction({
-      kind: "turn", request_id: requestId(), version: this.data.run.version, source: "voice", style: "verbatim", text: original,
-    });
+    const runtime = this.runtime;
+    const pending = runtime?.pending;
+    if (!runtime || !pending || pending.action.kind !== "turn" || pending.action.source !== "voice" ||
+      !pending.action.text || pending.action.style === "verbatim" || !this.data.run || this.data.busy ||
+      !this.valid(runtime, runtime.sequence, runtime.subject)) return;
+    const switching = { ...pending, verbatimRequestId: pending.verbatimRequestId ?? requestId(),
+      cancelRequestId: pending.cancelRequestId ?? requestId() };
+    if (!this.retainPending(switching)) {
+      this.retainPending(pending);
+      this.notice("无法暂存切换操作。原文仍在，请重试。", "error");
+      return;
+    }
+    if (await this.cancelPending(false, true) !== "canceled") return;
+    const replacement = runtime.pending;
+    if (replacement && replacement.action.request_id === switching.verbatimRequestId && this.data.run?.status === "active" &&
+      !this.data.finishing && !this.data.run.finishing) await this.sendPending(replacement);
   },
 
   async takeOver() {

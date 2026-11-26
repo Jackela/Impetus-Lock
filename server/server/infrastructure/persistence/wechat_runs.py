@@ -367,7 +367,7 @@ async def _settle_generation(
     generated: Document,
     text: str,
     original: str | None,
-    generation_pending: bool,
+    generation_failed: bool,
 ) -> Document:
     request_id = payload["request_id"]
     async with db.begin():
@@ -381,11 +381,12 @@ async def _settle_generation(
             run.state = apply_retained_turn(run.state, payload["source"], text, generated, original)
         elif payload["kind"] == "turn":
             run.state = apply_turn(
-                {**run.state, "generation_pending": generation_pending},
+                run.state,
                 payload["source"],
                 text,
                 generated,
                 original,
+                generation_failed=generation_failed,
             )
         else:
             run.state = apply_deferred_generation(
