@@ -14,7 +14,8 @@
  * @module hooks/useTasks
  */
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useInfiniteQuery, useQuery, type UseQueryResult } from "@tanstack/react-query";
 
 import { fetchTasks, type TaskListResponse } from "../services/api/taskClient";
 import type { TaskRecord } from "../types/task";
@@ -54,6 +55,26 @@ function getQueryKey(limit: number, offset: number, userId?: string | null, gene
     : (["tasks", userId, { limit, offset }, generation] as const);
 }
 
+function retryTaskRequest(failures: number, error: Error) {
+  return (
+    error.name !== "AbortError" &&
+    (!("status" in error) || ![401, 403].includes(Number(error.status))) &&
+    failures < 2
+  );
+}
+
+function useTaskRequestOptions() {
+  const auth = useOptionalAuth();
+  return {
+    userId: auth ? (auth.user?.id ?? null) : undefined,
+    generation: auth?.generation,
+    enabled: auth === undefined || auth.remoteEnabled,
+    retry: auth ? retryTaskRequest : undefined,
+    load: (limit: number, offset: number, signal: AbortSignal) =>
+      fetchTasks({ limit, offset }, auth ? { session: auth.session, signal } : undefined),
+  };
+}
+
 /**
  * Hook for fetching and managing the task list.
  *
@@ -85,26 +106,13 @@ function getQueryKey(limit: number, offset: number, userId?: string | null, gene
  */
 export function useTasks(options: { limit?: number; offset?: number } = {}): UseTasksResult {
   const { limit = 100, offset = 0 } = options;
-  const auth = useOptionalAuth();
-  const session = auth?.session;
+  const { userId, generation, enabled, retry, load } = useTaskRequestOptions();
 
   const query = useQuery({
-    queryKey: getQueryKey(
-      limit,
-      offset,
-      auth ? (auth.user?.id ?? null) : undefined,
-      auth?.generation
-    ),
-    enabled: auth === undefined || auth.remoteEnabled,
-    queryFn: ({ signal }) => fetchTasks({ limit, offset }, auth ? { session, signal } : undefined),
-    ...(auth
-      ? {
-          retry: (failures: number, error: Error) =>
-            error.name !== "AbortError" &&
-            (!("status" in error) || ![401, 403].includes(Number(error.status))) &&
-            failures < 2,
-        }
-      : {}),
+    queryKey: getQueryKey(limit, offset, userId, generation),
+    enabled,
+    ...(retry ? { retry } : {}),
+    queryFn: ({ signal }) => load(limit, offset, signal),
   });
 
   return {
@@ -116,4 +124,38 @@ export function useTasks(options: { limit?: number; offset?: number } = {}): Use
     offset,
     refetch: query.refetch,
   };
+}
+
+/**
+ * Keeps the sidebar's loaded task pages available while older entries are fetched.
+ *
+ * @returns The paginated query and visible tasks in API order
+ */
+export function useTaskPages() {
+  const limit = 100;
+  const { userId, generation, enabled, retry, load } = useTaskRequestOptions();
+  const query = useInfiniteQuery({
+    queryKey: [...getQueryKey(limit, 0, userId, generation), "pages"],
+    enabled,
+    ...(retry ? { retry } : {}),
+    initialPageParam: 0,
+    queryFn: ({ pageParam, signal }) => load(limit, pageParam, signal),
+    getNextPageParam: (lastPage) => {
+      const nextOffset = lastPage.offset + lastPage.tasks.length;
+      return lastPage.tasks.length > 0 && nextOffset < lastPage.total ? nextOffset : undefined;
+    },
+  });
+  const tasks = useMemo(() => {
+    // New writes can move a task between offset pages while the sidebar is open.
+    const seen = new Set<string>();
+    return (query.data?.pages ?? []).flatMap((page) =>
+      page.tasks.filter(({ id }) => {
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      })
+    );
+  }, [query.data]);
+
+  return { query, tasks };
 }

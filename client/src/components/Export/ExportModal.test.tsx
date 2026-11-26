@@ -22,6 +22,7 @@ describe("ExportModal", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   describe("rendering", () => {
@@ -61,11 +62,12 @@ describe("ExportModal", () => {
   });
 
   describe("export actions", () => {
-    it("should call exportMarkdown when Markdown button clicked", () => {
+    it("should call exportMarkdown when Markdown button clicked", async () => {
       render(<ExportModal {...defaultProps} />);
 
       const markdownButton = screen.getByTestId("export-markdown");
-      markdownButton.click();
+      fireEvent.click(markdownButton);
+      await act(() => vi.advanceTimersByTimeAsync(150));
 
       expect(exportServiceModule.exportMarkdown).toHaveBeenCalledWith(
         "# Hello World",
@@ -77,7 +79,7 @@ describe("ExportModal", () => {
       render(<ExportModal {...defaultProps} />);
 
       const pdfButton = screen.getByTestId("export-pdf");
-      pdfButton.click();
+      fireEvent.click(pdfButton);
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
@@ -95,7 +97,7 @@ describe("ExportModal", () => {
       render(<ExportModal {...defaultProps} htmlContent="<h1>Custom HTML</h1>" />);
 
       const pdfButton = screen.getByTestId("export-pdf");
-      pdfButton.click();
+      fireEvent.click(pdfButton);
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(0);
@@ -106,6 +108,34 @@ describe("ExportModal", () => {
         filename: "impetus-export",
       });
     });
+
+    it("keeps the filename and permits a second download after a PDF failure", async () => {
+      vi.mocked(exportServiceModule.exportPdf)
+        .mockRejectedValueOnce(new Error("render failed"))
+        .mockResolvedValueOnce(undefined);
+      render(<ExportModal {...defaultProps} />);
+
+      const filename = screen.getByRole("textbox", { name: "Filename" });
+      const download = screen.getByRole("button", { name: "Export PDF" });
+      fireEvent.change(filename, { target: { value: "a long draft" } });
+      fireEvent.click(download);
+      expect(download).toBeDisabled();
+      await act(() => vi.advanceTimersByTimeAsync(200));
+
+      expect(defaultProps.onClose).not.toHaveBeenCalled();
+      expect(screen.getByRole("alert")).toHaveTextContent(/retry/i);
+      expect(filename).toHaveValue("a long draft");
+      expect(download).toBeEnabled();
+
+      fireEvent.click(download);
+      await act(() => vi.advanceTimersByTimeAsync(200));
+
+      expect(exportServiceModule.exportPdf).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ filename: "a long draft" })
+      );
+      expect(defaultProps.onClose).toHaveBeenCalledOnce();
+    });
   });
 
   describe("cancel and close", () => {
@@ -113,7 +143,7 @@ describe("ExportModal", () => {
       render(<ExportModal {...defaultProps} />);
 
       const cancelButton = screen.getByTestId("export-cancel");
-      cancelButton.click();
+      fireEvent.click(cancelButton);
 
       act(() => {
         vi.advanceTimersByTime(150);
@@ -126,7 +156,7 @@ describe("ExportModal", () => {
       render(<ExportModal {...defaultProps} />);
 
       const overlay = screen.getByTestId("export-modal");
-      overlay.click();
+      fireEvent.click(overlay);
 
       act(() => {
         vi.advanceTimersByTime(150);

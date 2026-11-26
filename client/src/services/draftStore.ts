@@ -12,6 +12,10 @@ export interface DraftSnapshot {
   recoveryOf?: string;
   /** A working copy keeps the source identity without rewriting its source. */
   workingCopyOf?: string;
+  /** A reusable clean snapshot is never rewritten by a working copy. */
+  reusable?: boolean;
+  /** A writing instance owns this mutable snapshot. */
+  writingCopy?: boolean;
   /** A dispatched creation has no definite success or rejection acknowledgement. */
   creationUncertain?: boolean;
   /** Complete body sent in that attempt, independently of subsequent editing. */
@@ -46,7 +50,8 @@ export class DraftRecoveryError extends Error {
 }
 
 const PREFIX = "impetus.draft.";
-const prefix = (userId: string) => `${PREFIX}${encodeURIComponent(userId).replace(/\./g, "%2E")}.`;
+const keyPart = (value: string) => encodeURIComponent(value).replace(/\./g, "%2E");
+const prefix = (userId: string) => `${PREFIX}${keyPart(userId)}.`;
 
 function validSnapshot(value: unknown): value is DraftSnapshot {
   if (!value || typeof value !== "object") return false;
@@ -66,6 +71,8 @@ function validSnapshot(value: unknown): value is DraftSnapshot {
     Number.isFinite(draft.updatedAt) &&
     (draft.recoveryOf === undefined || typeof draft.recoveryOf === "string") &&
     (draft.workingCopyOf === undefined || typeof draft.workingCopyOf === "string") &&
+    (draft.reusable === undefined || typeof draft.reusable === "boolean") &&
+    (draft.writingCopy === undefined || typeof draft.writingCopy === "boolean") &&
     (draft.creationUncertain === undefined || typeof draft.creationUncertain === "boolean") &&
     (draft.creationAttempt === undefined ||
       (typeof draft.creationAttempt.content === "string" &&
@@ -124,7 +131,12 @@ export function inspectOwnedDrafts(userId: string): {
       error,
     });
   }
-  return { drafts: result.sort((a, b) => b.updatedAt - a.updatedAt), issues };
+  return {
+    drafts: result.sort(
+      (a, b) => b.updatedAt - a.updatedAt || Number(!!a.reusable) - Number(!!b.reusable)
+    ),
+    issues,
+  };
 }
 
 /**
@@ -166,15 +178,31 @@ export function writeOwnedDraft(userId: string, draft: DraftSnapshot): void {
   );
 }
 
+const selectionKey = (userId: string, writingContextId: string) =>
+  `impetus.selection.${keyPart(userId)}.${keyPart(writingContextId)}`;
+const taskSelectionKey = (userId: string, writingContextId: string, taskId: string) =>
+  `impetus.task-selection.${keyPart(userId)}.${keyPart(writingContextId)}.${keyPart(taskId)}`;
+
 /**
- * Read the exact selected draft in this tab, separately from save ordering.
+ * Read the tab's task copy or current selection, independently of save ordering.
  * @param userId - Server-confirmed account ID
  * @param writingContextId - Writing surface within this tab
+ * @param taskId - Task to restore, when explicitly selected
  * @returns Selected draft identity, when retained
  */
-export function readDraftSelection(userId: string, writingContextId = "editor"): string | null {
-  return sessionStorage.getItem(
-    `impetus.selection.${encodeURIComponent(userId)}.${encodeURIComponent(writingContextId)}`
+export function readDraftSelection(
+  userId: string,
+  writingContextId = "editor",
+  taskId?: string | null
+): string | null {
+  return (
+    (taskId == null
+      ? null
+      : sessionStorage.getItem(taskSelectionKey(userId, writingContextId, taskId))) ??
+    sessionStorage.getItem(selectionKey(userId, writingContextId)) ??
+    sessionStorage.getItem(
+      `impetus.selection.${encodeURIComponent(userId)}.${encodeURIComponent(writingContextId)}`
+    )
   );
 }
 
@@ -183,16 +211,17 @@ export function readDraftSelection(userId: string, writingContextId = "editor"):
  * @param userId - Server-confirmed account ID
  * @param draftId - Selected local working copy
  * @param writingContextId - Writing surface within this tab
+ * @param taskId - Remote task associated with the selected copy
  */
 export function writeDraftSelection(
   userId: string,
   draftId: string,
-  writingContextId = "editor"
+  writingContextId = "editor",
+  taskId?: string | null
 ): void {
-  sessionStorage.setItem(
-    `impetus.selection.${encodeURIComponent(userId)}.${encodeURIComponent(writingContextId)}`,
-    draftId
-  );
+  if (taskId != null)
+    sessionStorage.setItem(taskSelectionKey(userId, writingContextId, taskId), draftId);
+  sessionStorage.setItem(selectionKey(userId, writingContextId), draftId);
 }
 
 /** Unassigned cache data and its original strings for lossless export. */

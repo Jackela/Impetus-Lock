@@ -49,6 +49,7 @@ function renderLayout(initial: Partial<HostState> = {}) {
   function Host() {
     const [overlay, setOverlay] = useState<string | null>(state.overlay);
     const [sidebarOpen, setSidebarOpen] = useState(state.sidebarOpen);
+    const [selectedTaskId, setSelectedTaskId] = useState<string>();
     const toggle = (name: string) => () =>
       setOverlay((current) => (current === name ? null : name));
     return (
@@ -59,7 +60,8 @@ function renderLayout(initial: Partial<HostState> = {}) {
           onToggleSidebar={() => setSidebarOpen((current) => !current)}
           onModeChange={vi.fn()}
           onManualTrigger={vi.fn()}
-          onTaskClick={vi.fn()}
+          selectedTaskId={selectedTaskId}
+          onTaskClick={(task) => setSelectedTaskId(task.id)}
           taskStatus="local"
           isSaving={false}
           taskError={null}
@@ -261,4 +263,62 @@ it("exposes Tasks, Style, Stats, Achievements, Export, Theme, Telemetry and sess
   const devRegion = screen.getByTestId("header-dev-region");
   expect(devRegion.tagName).toBe("DETAILS");
   expect(devRegion).not.toHaveAttribute("open");
+});
+
+it("keeps the selected task when loading older tasks fails, then opens tasks beyond page one", async () => {
+  const records = Array.from({ length: 201 }, (_, index) => ({
+    id: String(index + 1),
+    title: "",
+    content: `Writing ${index + 1}`,
+    lock_ids: [],
+    version: 1,
+    category: "WRITING",
+    priority: "MEDIUM",
+    due_date: null,
+    word_count: 2,
+    created_at: "2026-10-11T00:00:00Z",
+    updated_at: "2026-10-11T00:00:00Z",
+  }));
+  const offsets: number[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input) => {
+      const url = new URL(String(input), window.location.href);
+      const limit = Number(url.searchParams.get("limit"));
+      const offset = Number(url.searchParams.get("offset"));
+      offsets.push(offset);
+      if (offset === 100 && offsets.length === 2) {
+        return Response.json({}, { status: 500 });
+      }
+      return Response.json({
+        tasks: records.slice(offset, offset + limit),
+        total: 201,
+        limit,
+        offset,
+      });
+    })
+  );
+  renderLayout({ sidebarOpen: true });
+  const sidebar = within(screen.getByTestId("task-sidebar"));
+  const first = await sidebar.findByTestId("task-item-1");
+  fireEvent.click(first);
+  expect(offsets).toEqual([0]);
+
+  fireEvent.click(sidebar.getByRole("button", { name: "Load older tasks" }));
+  expect(await sidebar.findByRole("alert")).toHaveTextContent(/older tasks/i);
+  expect(first).toHaveAttribute("aria-current", "true");
+  expect(sidebar.getAllByRole("listitem")).toHaveLength(100);
+
+  fireEvent.click(sidebar.getByRole("button", { name: "Retry loading older tasks" }));
+  const task101 = await sidebar.findByTestId("task-item-101");
+  fireEvent.click(task101);
+  expect(task101).toHaveAttribute("aria-current", "true");
+  expect(first).not.toHaveAttribute("aria-current");
+
+  fireEvent.click(sidebar.getByRole("button", { name: "Load older tasks" }));
+  const last = await sidebar.findByTestId("task-item-201");
+  fireEvent.click(last);
+  expect(last).toHaveAttribute("aria-current", "true");
+  expect(sidebar.queryByRole("button", { name: "Load older tasks" })).not.toBeInTheDocument();
+  expect(offsets).toEqual([0, 100, 100, 200]);
 });
