@@ -2,25 +2,22 @@
 
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import pytest
 from packaging.markers import Marker
+from packaging.version import Version
 
 LOCK_FILE = Path(__file__).parents[1] / "poetry.lock"
 
 
-def _greenlet_marker() -> Marker | None:
+def _locked_package(name: str) -> dict[str, Any]:
     with LOCK_FILE.open("rb") as lock_file:
         packages = tomllib.load(lock_file)["package"]
 
-    greenlet = next(
-        (package for package in packages if package.get("name") == "greenlet"),
-        None,
-    )
-    assert greenlet is not None, "greenlet must be present in the Poetry lock file"
-
-    marker = greenlet.get("markers")
-    return Marker(marker) if marker else None
+    package = next((package for package in packages if package["name"] == name), None)
+    assert package is not None, f"{name} must be present in the Poetry lock file"
+    return package
 
 
 @pytest.mark.parametrize(
@@ -54,8 +51,26 @@ def test_greenlet_is_installable_for_supported_interpreters(
     environment: dict[str, str], interpreter: str
 ) -> None:
     """The public greenlet requirement must select both supported environments."""
-    marker = _greenlet_marker()
+    greenlet = _locked_package("greenlet")
+    marker = Marker(greenlet["markers"]) if "markers" in greenlet else None
 
     assert marker is None or marker.evaluate(environment), (
         f"greenlet dependency marker excludes {interpreter}: {marker}"
     )
+
+
+@pytest.mark.parametrize(
+    ("package", "minimum"),
+    [
+        ("cryptography", "50.0.2"),
+        ("opentelemetry-api", "1.45.2"),
+        ("opentelemetry-sdk", "1.45.2"),
+        ("opentelemetry-exporter-otlp-proto-http", "1.45.2"),
+        ("pytest", "9.0.3"),
+    ],
+)
+def test_lock_retains_reviewed_security_updates(package: str, minimum: str) -> None:
+    """Prevent the lock from selecting a release below the reviewed security floor."""
+    locked = _locked_package(package)["version"]
+
+    assert Version(locked) >= Version(minimum), f"{package} locked at {locked}, need {minimum}+"
