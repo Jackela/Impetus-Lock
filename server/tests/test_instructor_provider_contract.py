@@ -1,4 +1,4 @@
-"""Offline wire and service contracts for the official, exact Sol provider branch."""
+"""Offline wire and service contracts for the OpenAI Sol and legacy branches."""
 
 from __future__ import annotations
 
@@ -472,7 +472,60 @@ def test_non_target_paths_keep_instructor_tools_and_temperature(
     assert response.action == "delete" and len(wire.records) == 1
     body = wire.records[0]["request"]
     assert body["model"] == model and body["temperature"] == 0.9
-    assert "tools" in body and "tool_choice" in body and "response_format" not in body
+    assert "response_format" not in body
+    assert [message["role"] for message in body["messages"]] == ["system", "user"]
+    assert CONTEXT in body["messages"][1]["content"]
+    (tool,) = body["tools"]
+    assert tool["type"] == "function"
+    assert tool["function"]["name"] == "LLMInterventionDraft"
+    schema = tool["function"]["parameters"]
+    assert schema["required"] == ["action"]
+    assert set(schema["properties"]) == {"action", "content"}
+    assert set(schema["properties"]["action"]["enum"]) == {"provoke", "delete", "rewrite"}
+    assert body["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "LLMInterventionDraft"},
+    }
+
+
+@pytest.mark.parametrize("valid_retry,attempts", [(True, 2), (False, 4)])
+def test_legacy_instructor_bounds_validation_retries(
+    make_provider: Callable[..., Any],
+    valid_retry: bool,
+    attempts: int,
+) -> None:
+    def tool_completion(action: str) -> dict[str, Any]:
+        return completion(
+            None,
+            tool_calls=[
+                {
+                    "id": "synthetic-tool",
+                    "type": "function",
+                    "function": {
+                        "name": "LLMInterventionDraft",
+                        "arguments": json.dumps({"action": action, "content": "门外有脚步。"}),
+                    },
+                }
+            ],
+        )
+
+    replies = [tool_completion("unsupported")]
+    if valid_retry:
+        replies.append(tool_completion("provoke"))
+    provider, wire = make_provider(replies, model="gpt-4o-mini")
+
+    if valid_retry:
+        draft = provider._complete("system prompt", "user prompt")
+        assert (draft.action, draft.content) == ("provoke", "门外有脚步。")
+    else:
+        with pytest.raises(LLMProviderError) as error:
+            provider._complete("system prompt", "user prompt")
+        assert (error.value.code, error.value.status_code) == ("llm_api_error", 502)
+    assert len(wire.records) == attempts
+    first, retry, *_ = [record["request"] for record in wire.records]
+    assert retry["tools"] == first["tools"]
+    assert retry["messages"][:2] == first["messages"]
+    assert any(message["role"] == "tool" for message in retry["messages"][2:])
 
 
 def upstream_error(status: int) -> httpx2.Response:
@@ -486,6 +539,29 @@ def upstream_error(status: int) -> httpx2.Response:
             }
         },
     )
+
+
+@pytest.mark.parametrize(
+    "upstream_status,code,status,attempts",
+    [
+        (401, "invalid_api_key", 401, 1),
+        (429, "quota_exceeded", 402, 3),
+        (500, "llm_api_error", 502, 3),
+    ],
+)
+def test_legacy_instructor_maps_sdk_http_errors(
+    make_provider: Callable[..., Any], upstream_status: int, code: str, status: int, attempts: int
+) -> None:
+    # Use fresh responses for each request so the SDK cannot reuse a closed body.
+    provider, wire = make_provider(
+        [upstream_error(upstream_status) for _ in range(attempts)], model="gpt-4o-mini"
+    )
+    with pytest.raises(LLMProviderError) as error:
+        provider._complete("system prompt", "user prompt")
+
+    assert error.value.provider == "openai"
+    assert (error.value.code, error.value.status_code) == (code, status)
+    assert len(wire.records) == attempts
 
 
 @pytest.mark.parametrize("upstream_status", [200, 401])

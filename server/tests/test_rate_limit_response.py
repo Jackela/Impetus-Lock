@@ -162,11 +162,13 @@ def test_unreachable_redis_warns_rate_limiting_is_fail_open(
 ) -> None:
     """A failing Redis connection keeps fail-open behaviour and logs the warning."""
 
-    def raise_connection_error(url: str) -> None:
+    def raise_connection_error(url: str, **_options: object) -> None:
         raise ConnectionError(f"cannot reach {url}")
 
     assert rate_limiting.redis is not None
-    monkeypatch.setattr(rate_limiting.redis, "from_url", raise_connection_error)
+    monkeypatch.setattr(
+        rate_limiting.redis.BlockingConnectionPool, "from_url", raise_connection_error
+    )
 
     with caplog.at_level(logging.WARNING, logger=LOGGER_NAME):
         rate_limiter = RateLimiter(redis_url="redis://127.0.0.1:6390/0")

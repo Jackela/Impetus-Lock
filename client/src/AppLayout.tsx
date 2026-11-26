@@ -199,7 +199,7 @@ export function AppLayout({
   const editorAreaRef = useRef<HTMLDivElement>(null);
   const menuAnchorRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const sheetFocus = useFocusTrap<HTMLElement>({ active: sheetOpen });
+  const { ref: sheetFocusRef } = useFocusTrap<HTMLElement>({ active: sheetOpen });
 
   const statusState = resolveStatusState(taskStatus, isSaving);
 
@@ -535,7 +535,7 @@ export function AppLayout({
             <aside
               className="task-sidebar"
               data-testid="task-sidebar"
-              ref={sheetFocus.ref}
+              ref={sheetFocusRef}
               role={sheetOpen ? "dialog" : undefined}
               aria-modal={sheetOpen ? "true" : undefined}
               aria-label={sheetOpen ? "Tasks" : undefined}

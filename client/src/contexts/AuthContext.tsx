@@ -90,7 +90,10 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<AuthContextType["status"]>("checking");
-  const [session, setSession] = useState<RemoteSession | null>(null);
+  const [{ session, generation }, setAuthorization] = useState<{
+    session: RemoteSession | null;
+    generation: number;
+  }>({ session: null, generation: 0 });
   const sessionRef = useRef<RemoteSession | null>(null);
   const sessionController = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
@@ -101,7 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     controller: AbortController;
     promise: Promise<void> | null;
   } | null>(null);
-  const startOperation = useCallback((kind: "check" | "login" | "register" | "logout") => {
+  const beginOperation = useCallback((kind: "check" | "login" | "register" | "logout") => {
     activeOperation.current?.controller.abort();
     const operation = {
       kind,
@@ -109,7 +112,6 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       promise: null as Promise<void> | null,
     };
     activeOperation.current = operation;
-    setIsLoading(true);
     return operation;
   }, []);
   const cancelOperation = useCallback((): void => {
@@ -137,8 +139,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     sessionRef.current = null;
     sessionController.current?.abort();
     sessionController.current = null;
-    setSession(null);
-    ++generationRef.current;
+    setAuthorization({ session: null, generation: ++generationRef.current });
     return snapshotError;
   }, []);
 
@@ -188,7 +189,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       };
       sessionController.current = controller;
       sessionRef.current = nextSession;
-      setSession(nextSession);
+      setAuthorization({ session: nextSession, generation: nextSession.generation });
       userRef.current = nextUser;
       setUser(nextUser);
       setStatus("authenticated");
@@ -196,18 +197,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     [cancelOperation, pause]
   );
 
-  const recheck = useCallback((): Promise<void> => {
-    if (activeOperation.current?.kind === "check" && activeOperation.current.promise)
-      return activeOperation.current.promise;
-    const snapshotError = pause();
-    cancelOperation();
-    setError(snapshotError?.message ?? null);
-    setStatus("checking");
-    if (snapshotError) {
-      setStatus("check-error");
-      return Promise.resolve();
-    }
-    const operation = startOperation("check");
+  const checkSession = useCallback((): Promise<void> => {
+    const operation = beginOperation("check");
     const current = (): boolean => activeOperation.current === operation;
     operation.promise = (async (): Promise<void> => {
       try {
@@ -248,17 +239,34 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       }
     })();
     return operation.promise;
-  }, [authorize, cancelOperation, pause, startOperation]);
+  }, [authorize, beginOperation, pause]);
+
+  const recheck = useCallback((): Promise<void> => {
+    if (activeOperation.current?.kind === "check" && activeOperation.current.promise)
+      return activeOperation.current.promise;
+    const snapshotError = pause();
+    cancelOperation();
+    setError(snapshotError?.message ?? null);
+    if (snapshotError) {
+      setStatus("check-error");
+      return Promise.resolve();
+    }
+    setStatus("checking");
+    setIsLoading(true);
+    return checkSession();
+  }, [cancelOperation, checkSession, pause]);
 
   useEffect(() => {
-    void recheck();
+    // Initial state already reflects a pending check. A child may have started
+    // an auth operation before this effect, in which case it owns the result.
+    if (!activeOperation.current) void checkSession();
     return () => {
       sessionRef.current = null;
       sessionController.current?.abort();
       activeOperation.current?.controller.abort();
       activeOperation.current = null;
     };
-  }, [recheck]);
+  }, [checkSession]);
 
   useEffect(() => {
     const stop = observeAuthenticationWrites(pageIdentity.current, (stage) => {
@@ -302,7 +310,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         }
       }
       setError(null);
-      const operation = startOperation(action);
+      const operation = beginOperation(action);
+      setIsLoading(true);
       const current = (): boolean => activeOperation.current === operation;
       operation.promise = (async (): Promise<void> => {
         try {
@@ -351,7 +360,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       })();
       return operation.promise;
     },
-    [authorize, cancelOperation, pause, startOperation]
+    [authorize, beginOperation, cancelOperation, pause]
   );
 
   const login = useCallback(
@@ -376,7 +385,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       setStatus("logout-unconfirmed");
       return Promise.reject(snapshotError);
     }
-    const operation = startOperation("logout");
+    const operation = beginOperation("logout");
+    setIsLoading(true);
     const current = (): boolean => activeOperation.current === operation;
     operation.promise = (async (): Promise<void> => {
       let serverSignedOut = false;
@@ -424,7 +434,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       }
     })();
     return operation.promise;
-  }, [cancelOperation, pause, startOperation]);
+  }, [beginOperation, cancelOperation, pause]);
 
   const clearError = useCallback((): void => {
     setError(null);
@@ -437,7 +447,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     status,
     session,
     remoteEnabled: status === "authenticated",
-    generation: generationRef.current,
+    generation,
     registerSnapshot,
     recheck,
     login,

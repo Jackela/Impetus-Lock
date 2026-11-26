@@ -8,9 +8,8 @@ name: CI
 # `poetry build`) were folded in here. Branch protection requires the job names
 # below, so do not rename them.
 #
-# Python: 3.12 everywhere (matches server/Dockerfile.prod). The declared
-# support floor is still ^3.11 in server/pyproject.toml; that floor is covered
-# by test-matrix.yml, not by this gate.
+# .python-version and .nvmrc match the Docker build images.
+# test-matrix.yml also covers earlier Python versions.
 permissions:
   contents: read
 
@@ -58,10 +57,11 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.sha }}
 
       # Backend lint
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
 
       - name: Install Poetry
         run: |
@@ -74,9 +74,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             server/.venv
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install backend dependencies
         working-directory: ./server
@@ -100,9 +100,9 @@ jobs:
 
       # Frontend lint
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.x"
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
@@ -136,10 +136,11 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.sha }}
 
       # Backend type check
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
 
       - name: Install Poetry
         run: |
@@ -152,9 +153,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             server/.venv
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install backend dependencies
         working-directory: ./server
@@ -166,9 +167,9 @@ jobs:
 
       # Frontend type check
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.x"
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
@@ -220,10 +221,11 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event.inputs.ref || github.sha }}
 
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
           cache: "pip"
 
       - name: Install Poetry
@@ -237,9 +239,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             server/.venv
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         working-directory: ./server
@@ -308,9 +310,9 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.sha }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.x"
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
@@ -366,9 +368,9 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.sha }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24.x"
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
@@ -379,10 +381,10 @@ jobs:
       # `npm run api:check` imports the FastAPI app offline, so the Python
       # dependency graph must be present even though this job does not run the
       # backend test suite.
-      - name: Set up Python 3.12
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
 
       - name: Install Poetry
         run: |

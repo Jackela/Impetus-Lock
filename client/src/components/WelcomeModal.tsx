@@ -27,24 +27,15 @@ interface WelcomeModalProps {
  * @returns The rendered welcome modal
  */
 export function WelcomeModal({ forceShow = false, onDismiss }: WelcomeModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => forceShow || !localStorage.getItem(STORAGE_KEY));
+  const [wasForceShown, setWasForceShown] = useState(forceShow);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: isOpen });
 
-  // Check localStorage on initial mount to show modal for new users
-  useEffect(() => {
-    const dismissed = localStorage.getItem(STORAGE_KEY);
-    if (!dismissed) {
-      setIsOpen(true);
-    }
-  }, []); // Run once on mount
-
-  // Allow forceShow prop to override and re-open modal
-  useEffect(() => {
-    if (forceShow) {
-      setIsOpen(true);
-    }
-  }, [forceShow]);
+  if (forceShow !== wasForceShown) {
+    setWasForceShown(forceShow);
+    if (forceShow) setIsOpen(true);
+  }
 
   const handleClose = useCallback(() => {
     if (dontShowAgain) {

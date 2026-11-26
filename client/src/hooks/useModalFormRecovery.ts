@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { useOptionalAuth } from "../contexts/AuthContext";
 import { newDraftId, type DraftSnapshot } from "../services/draftStore";
 import { readModalFormDrafts, retainModalFormDraft } from "../services/modalCreateAttemptStore";
@@ -7,65 +7,79 @@ import { readModalFormDrafts, retainModalFormDraft } from "../services/modalCrea
 interface ModalFormInput {
   open: boolean;
   ownerId?: string;
-  titleRef: { current: string };
+  getTitle: () => string;
   unsubmitted: boolean;
   separateFrom?: string;
+}
+
+function readRecovery(ownerId?: string): { drafts: DraftSnapshot[]; error: string | null } {
+  if (!ownerId) return { drafts: [], error: null };
+  try {
+    return { drafts: readModalFormDrafts(ownerId), error: null };
+  } catch (failure) {
+    return {
+      drafts: [],
+      error:
+        failure instanceof Error ? failure.message : "Task title recovery failed. Please retry.",
+    };
+  }
 }
 
 /**
  * Retain unsent modal input before authentication changes, without selecting an editor draft.
  * @param input - Latest displayed input and its original owner
+ * @param input.open - Whether the form is displayed
+ * @param input.ownerId - Account that owns the form
+ * @param input.getTitle - Read the latest title, including the current input event
+ * @param input.unsubmitted - Whether the title needs a backup
+ * @param input.separateFrom - Earlier attempt associated with this separate title
  * @returns Owned backups, any recovery failure and synchronous preservation/retry actions
  */
-export function useModalFormRecovery(input: ModalFormInput) {
+export function useModalFormRecovery({
+  open,
+  ownerId,
+  getTitle,
+  unsubmitted,
+  separateFrom,
+}: ModalFormInput) {
   const auth = useOptionalAuth();
-  const ownerId = auth?.user?.id;
   const registerSnapshot = auth?.registerSnapshot;
   const identity = useMemo(() => ({ ownerId, draftId: `modal-form:${newDraftId()}` }), [ownerId]);
-  const currentInput = useRef(input);
-  currentInput.current = input;
-  const [state, setState] = useState<{
-    ownerId?: string;
-    drafts: DraftSnapshot[];
-    error: string | null;
-  }>({ drafts: [], error: null });
+  const [state, setState] = useState(() => ({
+    open,
+    ownerId,
+    ...readRecovery(open ? ownerId : undefined),
+  }));
+  if (state.open !== open || state.ownerId !== ownerId) {
+    setState({ open, ownerId, ...readRecovery(open ? ownerId : undefined) });
+  }
+
   const preserveTitle = useCallback(() => {
-    const current = currentInput.current;
-    const title = current.titleRef.current;
-    if (!ownerId || current.ownerId !== ownerId || !current.open || !current.unsubmitted || !title)
-      return;
+    if (!ownerId || !open || !unsubmitted) return;
+    const title = getTitle();
+    if (!title) return;
     try {
-      retainModalFormDraft(ownerId, identity.draftId, title, current.separateFrom);
+      retainModalFormDraft(ownerId, identity.draftId, title, separateFrom);
     } catch (failure) {
       setState((previous) => ({
         ...previous,
-        ownerId,
         error:
           "Your unsubmitted task title could not be saved. Keep this form open and retry when browser storage is available.",
       }));
       throw failure;
     }
-  }, [identity, ownerId]);
+  }, [getTitle, identity, open, ownerId, separateFrom, unsubmitted]);
+
   const retryRecovery = useCallback(() => {
-    if (!ownerId || !currentInput.current.open) return;
-    try {
-      setState({ ownerId, drafts: readModalFormDrafts(ownerId), error: null });
-    } catch (failure) {
-      setState({
-        ownerId,
-        drafts: [],
-        error:
-          failure instanceof Error ? failure.message : "Task title recovery failed. Please retry.",
-      });
-    }
-  }, [ownerId]);
-  useEffect(() => {
-    retryRecovery();
-  }, [retryRecovery, input.open]);
-  useEffect(() => {
-    if (!registerSnapshot || !ownerId || !input.open) return;
+    if (!ownerId || !open) return;
+    setState({ open, ownerId, ...readRecovery(ownerId) });
+  }, [ownerId, open]);
+
+  useLayoutEffect(() => {
+    if (!registerSnapshot || !ownerId || !open) return;
     return registerSnapshot(preserveTitle);
-  }, [registerSnapshot, ownerId, input.open, preserveTitle]);
+  }, [registerSnapshot, ownerId, open, preserveTitle]);
+
   return {
     drafts: state.ownerId === ownerId ? state.drafts : [],
     error: state.ownerId === ownerId ? state.error : null,

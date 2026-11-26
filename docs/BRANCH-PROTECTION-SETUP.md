@@ -11,7 +11,7 @@ Current configuration for `main` on `Jackela/Impetus-Lock`. Update this file whe
 - `Validate (API Types + OpenSpec)`
 - `Playwright E2E Tests`
 
-`Muse/Loki Story E2E` and `browser-authentication` are high-value suites but are not required until their flake rate is observed. Do **not** require `Test Matrix (Python 3.11/3.12)`: it is path-filtered and will leave non-backend PRs waiting forever.
+`Muse/Loki Story E2E` and `browser-authentication` are high-value suites but are not required until their flake rate is observed. Do **not** require `Test Matrix` jobs (Python 3.11, 3.12, 3.15): it is path-filtered and will leave non-backend PRs waiting forever.
 
 ## Repository rules
 

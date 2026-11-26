@@ -7,7 +7,7 @@ React + TypeScript + Vite frontend for Impetus Lock - an un-deletable task press
 Impetus Lock 客户端使用现代 React 技术栈构建，提供流畅的 Markdown 编辑体验和对抗式 AI 干预功能。
 
 - **Runtime**: React 19 with strict mode
-- **Build Tool**: Vite 7 with HMR
+- **Build Tool**: Vite 8 with HMR
 - **Type System**: TypeScript strict mode (mandatory)
 - **Editor**: Milkdown v7 + ProseMirror (WYSIWYG Markdown)
 - **Animations**: Framer Motion
@@ -136,7 +136,7 @@ client/
 
 ### 环境要求 | Prerequisites
 
-- Node.js 22.13+ (22.x) or 24.x (`^22.13.0 || ^24.0.0`); 24.x is recommended to match the CI toolchain
+- Node.js 26.x to match CI and `.nvmrc`. Supported versions: `^22.22.1 || ^24.0.0 || ^26.0.0`
 - npm (comes with Node.js)
 
 ### 安装 | Installation

@@ -7,7 +7,14 @@
  * @module hooks/useTaskSync
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   createTask,
   fetchTask,
@@ -213,6 +220,74 @@ export interface TaskSyncState {
   adoptCreation: (id: string) => Promise<void>;
 }
 
+type DraftView = Pick<
+  TaskSyncState,
+  | "content"
+  | "lockIds"
+  | "taskId"
+  | "version"
+  | "status"
+  | "error"
+  | "isSaving"
+  | "hasUnsavedChanges"
+  | "hasBlockedRecovery"
+  | "draftIdentity"
+  | "conflict"
+  | "creationUncertain"
+> & { ownerId?: string | null };
+
+type RecoveryView = { ownerId?: string | null; issues: DraftRecoveryIssue[] };
+
+function emptyDraftView(content: string, ownerId?: string | null): DraftView {
+  return {
+    ownerId,
+    content,
+    lockIds: [],
+    taskId: null,
+    version: 0,
+    status: "loading",
+    error: null,
+    isSaving: false,
+    hasUnsavedChanges: false,
+    hasBlockedRecovery: false,
+    draftIdentity: "",
+    conflict: null,
+    creationUncertain: false,
+  };
+}
+
+function createTaskSyncView(content: string, ownerId?: string | null) {
+  const initial: { draft: DraftView; recovery: RecoveryView } = {
+    draft: emptyDraftView(content, ownerId),
+    recovery: { ownerId, issues: [] },
+  };
+  let snapshot = initial;
+  const listeners = new Set<() => void>();
+  const publish = (next: typeof snapshot) => {
+    snapshot = next;
+    listeners.forEach((listener) => listener());
+  };
+  return {
+    getSnapshot: () => snapshot,
+    getServerSnapshot: () => initial,
+    subscribe(listener: () => void) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    updateDraft(patch: Partial<DraftView>) {
+      const keys = Object.keys(patch) as (keyof DraftView)[];
+      if (keys.some((key) => !Object.is(patch[key], snapshot.draft[key]))) {
+        publish({ ...snapshot, draft: { ...snapshot.draft, ...patch } });
+      }
+    },
+    setRecovery(recovery: RecoveryView) {
+      publish({ ...snapshot, recovery });
+    },
+  };
+}
+
 /**
  * Options for useTaskSync hook.
  */
@@ -267,19 +342,15 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
   const { externalTaskId, userId, session, registerSnapshot, canSave, writingContextId } =
     options || {};
   const context = useRef({ userId, session, canSave });
-  context.current = { userId, session, canSave };
-  const [content, setContent] = useState(defaultContent);
-  const [lockIds, setLockIds] = useState<string[]>([]);
-  const [taskId, setTaskId] = useState<string | null>(null);
-  const [version, setVersion] = useState(0);
-  const [status, setStatus] = useState<Status>("loading");
-  const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [conflict, setConflict] = useState<DraftConflict | null>(null);
-  const [recovery, setRecovery] = useState<{
-    ownerId?: string | null;
-    issues: DraftRecoveryIssue[];
-  }>({ ownerId: userId, issues: [] });
+  const [view] = useState(() => createTaskSyncView(defaultContent, userId));
+  const { draft: draftView, recovery } = useSyncExternalStore(
+    view.subscribe,
+    view.getSnapshot,
+    view.getServerSnapshot
+  );
+  const currentView =
+    draftView.ownerId === userId ? draftView : emptyDraftView(defaultContent, userId);
+  const { draftIdentity } = currentView;
   const makeDraft = useCallback(
     (id: string | null = null, snapshot?: DraftSnapshot): TaskDraft => ({
       // Always fork restored storage. A duplicated tab can inherit sessionStorage,
@@ -310,8 +381,13 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     [defaultContent]
   );
   const active = useRef<TaskDraft | null>(null);
-  if (!active.current) active.current = makeDraft();
-  const [draftIdentity, setDraftIdentity] = useState(active.current.draftId);
+  useLayoutEffect(() => {
+    context.current = { userId, session, canSave };
+    if (!active.current) {
+      active.current = makeDraft();
+      view.updateDraft({ draftIdentity: active.current.draftId });
+    }
+  }, [userId, session, canSave, makeDraft, view]);
   const mounted = useRef(true);
   const bootstrapStarted = useRef(false);
   const drafts = useRef(new Map<string, TaskDraft>());
@@ -404,26 +480,39 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       } catch {
         draft.storageError = true;
         draft.error = TaskSyncErrorMessages.STORAGE_FAILED;
-        if (visible(draft)) setError(draft.error);
+        if (visible(draft)) view.updateDraft({ error: draft.error });
       }
     },
-    [sameOwner, visible, writeLocal]
+    [sameOwner, visible, view, writeLocal]
+  );
+  const publishDraft = useCallback(
+    (draft: TaskDraft) => {
+      if (!visible(draft)) return;
+      view.updateDraft({
+        ownerId: draft.ownerId,
+        draftIdentity: draft.draftId,
+        taskId: draft.taskId,
+        content: draft.content,
+        lockIds: draft.lockIds,
+        version: draft.version,
+        error: draft.error,
+        status: draft.status,
+        isSaving: draft.saving && remoteAllowed(draft),
+        conflict: draft.conflict,
+        hasUnsavedChanges: draft.dirty || draft.pending !== null,
+        hasBlockedRecovery: Boolean(draft.recoveryIssue),
+        creationUncertain: draft.creationUncertain,
+      });
+    },
+    [remoteAllowed, view, visible]
   );
   const showDraft = useCallback(
     (draft: TaskDraft) => {
       if (!visible(draft)) return;
-      setDraftIdentity(draft.draftId);
-      setTaskId(draft.taskId);
-      setContent(draft.content);
-      setLockIds(draft.lockIds);
-      setVersion(draft.version);
-      setError(draft.error);
-      setStatus(draft.status);
-      setIsSaving(draft.saving && remoteAllowed(draft));
-      setConflict(draft.conflict);
       if (draft.status !== "loading") cacheDraft(draft);
+      publishDraft(draft);
     },
-    [cacheDraft, remoteAllowed, visible]
+    [cacheDraft, publishDraft, visible]
   );
   const mayWrite = useCallback(
     (draft: TaskDraft, candidate: Draft) => {
@@ -437,11 +526,11 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         draft.error =
           validationError instanceof Error ? validationError.message : String(validationError);
         cacheDraft(draft);
-        if (visible(draft)) setError(draft.error);
+        if (visible(draft)) view.updateDraft({ error: draft.error });
         return false;
       }
     },
-    [cacheDraft, visible]
+    [cacheDraft, view, visible]
   );
   const createRemote = useCallback(
     async (draft: TaskDraft, payload: Draft) => {
@@ -458,6 +547,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
           draft.storageError = true;
           throw storageFailure;
         }
+        publishDraft(draft);
       }
       try {
         return await createTask(payload, requestOptions(draft));
@@ -476,7 +566,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         throw failure;
       }
     },
-    [cacheDraft, remoteAllowed, requestOptions, writeLocal]
+    [cacheDraft, publishDraft, remoteAllowed, requestOptions, writeLocal]
   );
   const persist = useCallback(
     async (draft: TaskDraft) => {
@@ -493,7 +583,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       const requestSession = draft.session;
       const allowed = () => remoteAllowed(draft) && draft.session === requestSession;
       draft.saving = true;
-      if (visible(draft)) setIsSaving(true);
+      if (visible(draft)) view.updateDraft({ isSaving: true });
       try {
         while (draft.pending && allowed() && !draft.conflict && !draft.creationUncertain) {
           const payload = draft.pending;
@@ -569,7 +659,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       } finally {
         if (draft.session === requestSession) {
           draft.saving = false;
-          if (visible(draft)) setIsSaving(false);
+          if (visible(draft)) view.updateDraft({ isSaving: false });
         }
       }
     },
@@ -581,6 +671,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       requestOptions,
       showDraft,
       snapshotOf,
+      view,
       visible,
     ]
   );
@@ -643,7 +734,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       } catch {
         throw new DraftStorageReadError(TaskSyncErrorMessages.STORAGE_FAILED);
       }
-      setRecovery({ ownerId: context.current.userId, issues: inspected.issues });
+      view.setRecovery({ ownerId: context.current.userId, issues: inspected.issues });
       const selectedKey =
         selectedId === null
           ? null
@@ -685,7 +776,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         );
       return null;
     },
-    [writingContextId]
+    [view, writingContextId]
   );
   const showRecoveryFailure = useCallback(
     (draft: TaskDraft, failure: DraftRecoveryError) => {
@@ -826,7 +917,6 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         }
         if (draft.dirty) draft.pending = { content: draft.content, lockIds: draft.lockIds };
         draft.status = "loading";
-        showDraft(draft);
       } else {
         cachedContent = localStorage.getItem(LOCAL_CACHE_KEY);
         const raw = localStorage.getItem(LOCAL_META_KEY);
@@ -875,6 +965,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       }
       if (!allowed()) return;
       if (creating && draft.ownerId !== undefined) draft.pending = null;
+      if (draft.ownerId !== undefined) showDraft(draft);
       const record = draft.taskId
         ? await fetchTask(draft.taskId, requestOptions(draft))
         : await createRemote(draft, initial);
@@ -954,7 +1045,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         drafts.current.clear();
         failedSelection.current = null;
         active.current = makeDraft();
-        setRecovery({ ownerId: userId, issues: [] });
+        view.setRecovery({ ownerId: userId, issues: [] });
       } else {
         const draft = active.current!;
         draft.session = session;
@@ -965,7 +1056,6 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       }
       bootstrapStarted.current = false;
       binding.current = { userId, session };
-      showDraft(active.current!);
     }
     if (session === null || (userId !== undefined && !session)) {
       active.current!.status = "ready";
@@ -973,8 +1063,19 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
       return;
     }
     if (externalTaskId) void loadTask(externalTaskId, changed);
-    else void bootstrap();
-  }, [bootstrap, externalTaskId, loadTask, makeDraft, session, showDraft, userId]);
+    else if (remoteAllowed(active.current!)) void bootstrap();
+    else if (changed) showDraft(active.current!);
+  }, [
+    bootstrap,
+    externalTaskId,
+    loadTask,
+    makeDraft,
+    remoteAllowed,
+    session,
+    showDraft,
+    userId,
+    view,
+  ]);
   const flushLocal = useCallback(() => {
     const draft = active.current!;
     try {
@@ -990,27 +1091,23 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     } catch (err) {
       draft.storageError = true;
       draft.error = TaskSyncErrorMessages.STORAGE_FAILED;
-      if (visible(draft)) setError(draft.error);
+      if (visible(draft)) view.updateDraft({ error: draft.error });
       throw err;
     }
-  }, [sameOwner, showDraft, visible, writeLocal]);
+  }, [sameOwner, showDraft, view, visible, writeLocal]);
   useEffect(() => registerSnapshot?.(flushLocal), [flushLocal, registerSnapshot]);
   const onChange = useCallback(
     (markdown: string, locks: string[]) => {
       const draft = active.current!;
-      if (draft.draftId !== draftIdentity || !sameOwner(draft)) return;
+      if (!draft || draft.draftId !== draftIdentity || !sameOwner(draft)) return;
       draft.content = markdown;
       draft.lockIds = [...locks];
       draft.dirty = true;
       draft.updatedAt = Date.now();
-      setContent(markdown);
-      setLockIds(draft.lockIds);
       draft.pending = { content: markdown, lockIds: draft.lockIds };
-      if (draft.conflict) {
-        draft.conflict = { ...draft.conflict, local: snapshotOf(draft) };
-        setConflict(draft.conflict);
-      }
+      if (draft.conflict) draft.conflict = { ...draft.conflict, local: snapshotOf(draft) };
       cacheDraft(draft);
+      publishDraft(draft);
       if (draft.timer) window.clearTimeout(draft.timer);
       draft.timer = null;
       if (remoteAllowed(draft) && !draft.conflict)
@@ -1019,7 +1116,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
           if (remoteAllowed(draft)) void persist(draft);
         }, 800);
     },
-    [cacheDraft, draftIdentity, persist, remoteAllowed, sameOwner, snapshotOf]
+    [cacheDraft, draftIdentity, persist, publishDraft, remoteAllowed, sameOwner, snapshotOf]
   );
   const createLocalDraft = useCallback(
     (markdown: string, locks: string[]) => {
@@ -1101,7 +1198,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
         showStorageReadFailure(draft);
         return;
       }
-      setRecovery({ ownerId: draft.ownerId, issues: inspected.issues });
+      view.setRecovery({ ownerId: draft.ownerId, issues: inspected.issues });
       const currentIssue = inspected.issues.find((issue) => issue.key === draft.recoveryIssue!.key);
       if (currentIssue) {
         showRecoveryFailure(draft, new DraftRecoveryError([currentIssue]));
@@ -1172,6 +1269,7 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     showRecoveryFailure,
     showStorageReadFailure,
     snapshotOf,
+    view,
   ]);
   const checkCreation = useCallback(async (): Promise<TaskRecord[]> => {
     const draft = active.current!;
@@ -1247,26 +1345,25 @@ export function useTaskSync(defaultContent: string, options?: UseTaskSyncOptions
     },
     [adoptTask, remoteAllowed, requestOptions, showDraft, snapshotOf, visible]
   );
-  const owned = active.current!.ownerId === userId;
   return {
-    content: owned ? content : defaultContent,
-    lockIds: owned ? lockIds : [],
-    taskId: owned ? taskId : null,
-    version: owned ? version : 0,
-    status: owned ? status : "loading",
-    error: owned ? error : null,
-    isSaving: owned && isSaving && session !== null,
-    hasUnsavedChanges: owned && (active.current!.dirty || active.current!.pending !== null),
+    content: currentView.content,
+    lockIds: currentView.lockIds,
+    taskId: currentView.taskId,
+    version: currentView.version,
+    status: currentView.status,
+    error: currentView.error,
+    isSaving: currentView.isSaving && session !== null,
+    hasUnsavedChanges: currentView.hasUnsavedChanges,
     recoveryIssues: recovery.ownerId === userId ? recovery.issues : [],
-    hasBlockedRecovery: owned && Boolean(active.current!.recoveryIssue),
+    hasBlockedRecovery: currentView.hasBlockedRecovery,
     onChange,
-    draftIdentity: owned ? draftIdentity : "",
-    conflict: owned ? conflict : null,
+    draftIdentity,
+    conflict: currentView.conflict,
     retry,
     flushLocal,
     resolveConflict,
     createLocalDraft,
-    creationUncertain: owned && active.current!.creationUncertain,
+    creationUncertain: currentView.creationUncertain,
     checkCreation,
     adoptCreation,
   };

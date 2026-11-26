@@ -41,10 +41,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
 
       - name: Install Poetry
         run: |
@@ -57,9 +58,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             ~/.local/share/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         run: poetry install
@@ -87,10 +88,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
 
       - name: Install Poetry
         run: |
@@ -103,9 +105,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             ~/.local/share/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         run: poetry install
@@ -124,10 +126,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
           cache: "pip"
 
       - name: Install Poetry
@@ -141,9 +144,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             ~/.local/share/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         run: |
@@ -192,10 +195,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
           cache: "pip"
 
       - name: Install Poetry
@@ -209,9 +213,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             ~/.local/share/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         run: |
@@ -267,10 +271,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
           cache: "pip"
 
       - name: Install Poetry
@@ -284,9 +289,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             ~/.local/share/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         run: |
@@ -330,10 +335,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python 3.12
+      - name: Set up Python
+        id: python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
 
       - name: Install Poetry
         run: |
@@ -346,9 +352,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             ~/.local/share/pypoetry
-          key: ${{ runner.os }}-poetry-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         run: |

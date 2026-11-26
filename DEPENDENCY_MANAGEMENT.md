@@ -1,6 +1,6 @@
 # Dependency Management
 
-Impetus Lock uses two lockfiles and Dependabot. Reproducibility comes from the lockfiles; updates come from reviewed PRs.
+Impetus Lock uses committed lockfiles and Dependabot. Reproducibility comes from the lockfiles; updates come from reviewed PRs.
 
 ## Reproducible installs
 
@@ -31,9 +31,16 @@ If a Dependabot label is missing, the PR is created without it. Labels used by t
 
 - **Patch/minor**: normal Dependabot PR, full gate.
 - **Major**: open or link a tracking issue, read the migration guide, and run the full gate plus the affected E2E suites. Do not merge a major runtime bump just because CI is green if the supported runtime range has not been updated deliberately.
-- **Runtime floors**: Python 3.11+ (CI 3.12), Node 22.13+/24.x. A dependency that requires a newer runtime needs an explicit decision and a CI matrix update.
-- **Held majors** (as of 2026-11): Python 3.13–3.15, Node 26 / `@types/node` 26, Vite 8 + `@vitejs/plugin-react` 6, ESLint 10 + `eslint-plugin-react-hooks` 7, `lint-staged` 17, `redis` 8, `google-genai` 3, and the `actions/setup-node` / `docker/*` action majors. These are tracked in [#266](https://github.com/Jackela/Impetus-Lock/issues/266) and held in `.github/dependabot.yml`; do not merge them piecemeal. Remove the hold as part of the coordinated upgrade PR.
-- **pytest security update:** [CVE-2025-71176](https://github.com/advisories/GHSA-6w46-j5rx-g56g) requires pytest 9.0.3. The backend uses the 9.0 patch line with the existing test plugins and Python support.
+- **Runtime support**: Python 3.11 is the supported floor. CI exercises 3.11, 3.12 and the production interpreter. For Node, use the version in `.nvmrc`. Root and client tooling support Node 22.22.1+ on 22.x, 24.x and 26.x. lint-staged 17 requires Git 2.32 or newer.
+- **Major version reviews**: Dependabot's general major-version exclusions keep future major upgrades on the coordinated review path. The package-specific holds for [#266](https://github.com/Jackela/Impetus-Lock/issues/266) have been removed. Inspect the language runtime, lockfiles, type definitions, plugins and CI runners together.
+- **Backend compatibility**: The login path uses bcrypt directly. Existing bcrypt password hashes remain readable. Verify the Google provider through the real SDK with a test transport, Redis using the server version in CI, and both current and legacy login fixtures.
+- **pytest security minimum**: The pytest 9.2 upgrade retains the 9.0.3 security floor for [CVE-2025-71176](https://github.com/advisories/GHSA-6w46-j5rx-g56g).
+
+### Instructor on Python 3.15
+
+Python 3.11 and 3.12 install Instructor from PyPI. On Python 3.15 the lock selects an [official upstream commit](https://github.com/567-labs/instructor/commit/7b28ef5dd62af32e1c09726679b3486cc9721efd) because the PyPI 1.17.0 release excludes the `jiter` wheels built for the final CPython 3.15 ABI. Poetry verifies the source archive hash during installation. The native JSON parser comes from the published [jiter 0.18.0 wheels](https://pypi.org/project/jiter/0.18.0/#files).
+
+When PyPI publishes a compatible Instructor release, replace the conditional source URL with the reviewed release, regenerate the lock and run the Python matrix, both SDK transport contracts and the production image build.
 
 ## Adding a dependency
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useFocusTrap } from "../../hooks/useFocusTrap";
 // eslint-disable-next-line no-restricted-imports
 import { exportMarkdown, exportPdf } from "../../services/exportService";
@@ -39,27 +39,32 @@ pre { white-space: pre-wrap; word-wrap: break-word; font-family: ui-monospace, S
  * @param root0.onClose - Callback to close the modal
  * @returns The rendered export modal
  */
-export function ExportModal({ open, content, htmlContent, onClose }: ExportModalProps) {
+export function ExportModal({ open, ...props }: ExportModalProps) {
+  return open ? <ExportDialog {...props} /> : null;
+}
+
+function ExportDialog({ content, htmlContent, onClose }: Omit<ExportModalProps, "open">) {
   const [filename, setFilename] = useState("impetus-export");
   const [isExiting, setIsExiting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const isExitingRef = useRef(false);
-  const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: open });
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: true });
 
-  useEffect(() => {
-    if (open) {
-      setIsExiting(false);
-      isExitingRef.current = false;
-      setFilename("impetus-export");
-      setIsExporting(false);
-    }
-  }, [open]);
+  useLayoutEffect(() => {
+    isExitingRef.current = false;
+    return () => {
+      isExitingRef.current = true;
+      if (closeTimer.current !== null) clearTimeout(closeTimer.current);
+    };
+  }, []);
 
   const handleClose = useCallback(() => {
     if (!isExporting && !isExitingRef.current) {
       isExitingRef.current = true;
       setIsExiting(true);
-      setTimeout(() => {
+      closeTimer.current = setTimeout(() => {
+        closeTimer.current = null;
         setFilename("impetus-export");
         setIsExporting(false);
         onClose();
@@ -87,18 +92,14 @@ export function ExportModal({ open, content, htmlContent, onClose }: ExportModal
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open && !isExitingRef.current) {
+      if (e.key === "Escape") {
         handleClose();
       }
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [open, handleClose]);
-
-  if (!open) {
-    return null;
-  }
+  }, [handleClose]);
 
   return (
     <div

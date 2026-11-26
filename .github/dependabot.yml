@@ -30,7 +30,6 @@ updates:
       security:
         patterns:
           - "cryptography"
-          - "passlib"
           - "bcrypt"
           - "argon2-c*"
         update-types:
@@ -84,7 +83,6 @@ updates:
           - "minor"
         exclude-patterns:
           - "cryptography"
-          - "passlib"
           - "fastapi"
           - "pydantic"
           - "sqlalchemy"
@@ -99,26 +97,9 @@ updates:
       prefix: "chore(deps)"
       include: "scope"
 
-    # Never ignore security updates
+    # Future major upgrades are coordinated in a tracking issue.
     ignore:
-      # All major updates require coordinated review in #266.
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-      # Major versions: Manual review required
-      - dependency-name: "fastapi"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "pydantic"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "sqlalchemy"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "cryptography"
-        update-types: ["version-update:semver-major"]
-      # Held majors tracked in #266
-      - dependency-name: "google-genai"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "pytest"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "redis"
         update-types: ["version-update:semver-major"]
 
   # ==========================================
@@ -199,30 +180,9 @@ updates:
       prefix: "chore(deps)"
       include: "scope"
 
+    # Future major upgrades are coordinated in a tracking issue.
     ignore:
-      # All major updates require coordinated review in #266.
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-      # React major versions: Manual migration required
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "react-dom"
-        update-types: ["version-update:semver-major"]
-      # TypeScript: Careful updates
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]
-      # Held majors tracked in #266
-      - dependency-name: "vite"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@vitejs/plugin-react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "eslint-plugin-react-hooks"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "lint-staged"
         update-types: ["version-update:semver-major"]
 
   # ==========================================
@@ -254,16 +214,9 @@ updates:
       prefix: "chore(ci)"
       include: "scope"
 
+    # Future major upgrades are coordinated in a tracking issue.
     ignore:
-      # All major updates require coordinated review in #266.
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-      # Held majors tracked in #266
-      - dependency-name: "actions/setup-node"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "docker/build-push-action"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "docker/login-action"
         update-types: ["version-update:semver-major"]
 
   # ==========================================
@@ -293,15 +246,9 @@ updates:
       prefix: "chore(docker)"
       include: "scope"
 
+    # Future major upgrades are coordinated in a tracking issue.
     ignore:
-      # All major updates require coordinated review in #266.
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-      # Held majors tracked in #266. Python 3.12 -> 3.15 is a minor update,
-      # so the version range must be explicit; semver-major alone does not catch it.
-      - dependency-name: "python"
-        versions: ["3.13", "3.14", "3.15"]
-      - dependency-name: "python"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
@@ -324,10 +271,7 @@ updates:
       prefix: "chore(docker)"
       include: "scope"
 
+    # Future major upgrades are coordinated in a tracking issue.
     ignore:
-      # All major updates require coordinated review in #266.
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-      # Held majors tracked in #266
-      - dependency-name: "node"
         update-types: ["version-update:semver-major"]

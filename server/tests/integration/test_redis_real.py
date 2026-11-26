@@ -16,6 +16,7 @@ import json
 import os
 from collections.abc import AsyncGenerator
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit
 from uuid import uuid4
 
 import pytest
@@ -110,6 +111,29 @@ class TestRealRedisCollaboration:
         assert manager._running is False
         assert manager._redis is None
 
+    @pytest.mark.asyncio
+    async def test_room_state_and_membership_preserve_decoded_values(
+        self, real_redis: redis_asyncio.Redis
+    ) -> None:
+        """Room state and hash results keep their public shape on the live server."""
+        room_id = uuid4().hex
+        state = {"content": "一封来信", "version": 2}
+        manager = RedisPubSubManager(redis_url=REDIS_URL)
+
+        await manager.connect()
+        try:
+            await manager.set_room_state(room_id, state)
+            assert await manager.get_room_state(room_id) == state
+
+            await manager.add_user_to_room(room_id, "写作者", "worker")
+            assert await manager.get_room_servers(room_id) == {"写作者": "worker"}
+            assert await manager.get_room_user_count(room_id) == 1
+            await manager.remove_user_from_room(room_id, "写作者")
+            assert await manager.get_room_user_count(room_id) == 0
+            assert await manager.get_room_servers(room_id) == {}
+        finally:
+            await manager.disconnect()
+
 
 class TestRealRedisRateLimit:
     """Fixed-window rate limiting semantics against a real Redis server."""
@@ -133,3 +157,30 @@ class TestRealRedisRateLimit:
         # The counter key carries a TTL matching the 60s window.
         ttl = await real_redis.ttl(key)
         assert 0 < ttl <= 60
+
+    @pytest.mark.asyncio
+    async def test_busy_pool_waits_to_check_a_full_bucket(
+        self, real_redis: redis_asyncio.Redis
+    ) -> None:
+        """A busy pool waits for Redis instead of allowing an over-limit request."""
+        key = f"test:ratelimit:{uuid4().hex}"
+        url = urlsplit(REDIS_URL)
+        query = dict(parse_qsl(url.query))
+        query["max_connections"] = "1"
+        limiter = RateLimiter(redis_url=url._replace(query=urlencode(query)).geturl())
+        await real_redis.set(key, 1, ex=60)
+
+        assert limiter._redis is not None
+        pool = limiter._redis.connection_pool
+        occupied = await pool.get_connection()
+        check = asyncio.create_task(limiter.is_allowed(key, "1/minute"))
+        try:
+            with pytest.raises(TimeoutError):
+                await asyncio.wait_for(asyncio.shield(check), timeout=0.05)
+        finally:
+            await pool.release(occupied)
+            try:
+                allowed = await asyncio.wait_for(check, timeout=2)
+            finally:
+                await limiter._redis.aclose()
+        assert allowed is False

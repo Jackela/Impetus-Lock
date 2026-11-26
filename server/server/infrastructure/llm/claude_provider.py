@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 
 import instructor
 from anthropic.types import Message
+from instructor.core import InstructorRetryException
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import (
@@ -197,18 +198,24 @@ class ClaudeProvider(BasePromptLLMProvider):
             # Instructor handles retries internally.
             # anthropic>=1.0 removed the `temperature` kwarg; instructor forwards
             # extra_body to messages.create, so transmit the temperature there.
-            completion, raw_response = (
-                self._instructor_client.chat.completions.create_with_completion(
-                    model=self.model,
-                    max_tokens=self.max_tokens,
-                    extra_body={"temperature": self.temperature},
-                    response_model=LLMInterventionDraft,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_message},
-                    ],
+            try:
+                completion, raw_response = (
+                    self._instructor_client.chat.completions.create_with_completion(
+                        model=self.model,
+                        max_tokens=self.max_tokens,
+                        extra_body={"temperature": self.temperature},
+                        response_model=LLMInterventionDraft,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_message},
+                        ],
+                    )
                 )
-            )
+            except InstructorRetryException as exc:
+                # Instructor wraps SDK errors even when only one attempt was made.
+                if isinstance(exc.__cause__, (RateLimitError, AuthenticationError)):
+                    raise exc.__cause__ from None
+                raise
 
             # Track token usage if available
             if hasattr(raw_response, "usage"):

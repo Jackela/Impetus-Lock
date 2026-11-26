@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { parserCtx, remarkCtx, type Editor } from "@milkdown/core";
 import { useOptionalAuth } from "./contexts/AuthContext";
 import { useDraftRecovery } from "./hooks/useDraftRecovery";
@@ -37,9 +37,6 @@ function App() {
   const [recoveryAttempt, setRecoveryAttempt] = useState(0);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [legacyNotice, setLegacyNotice] = useState<string | null>(null);
-  const [creationCandidates, setCreationCandidates] = useState<TaskRecord[] | null>(null);
-  const [creationChecking, setCreationChecking] = useState(false);
-  const [creationCheckError, setCreationCheckError] = useState<string | null>(null);
   const recovery = useDraftRecovery();
   const validateDraft = useCallback((identity: string, content: string, locks: string[]) => {
     if (!editorRef.current || editorIdentity.current !== identity) return false;
@@ -116,43 +113,65 @@ function App() {
     canSave: auth ? validateDraft : undefined,
   });
 
-  const activeIdentity = useRef(draftIdentity);
-  activeIdentity.current = draftIdentity;
-  useEffect(() => {
-    setCreationCandidates(null);
-    setCreationCheckError(null);
-    setCreationChecking(false);
+  const [creationCheck, setCreationCheck] = useState<{
+    identity: string;
+    candidates: TaskRecord[] | null;
+    checking: boolean;
+    error: string | null;
+  }>({ identity: draftIdentity, candidates: null, checking: false, error: null });
+  if (creationCheck.identity !== draftIdentity) {
+    setCreationCheck({ identity: draftIdentity, candidates: null, checking: false, error: null });
+  }
+  const {
+    candidates: creationCandidates,
+    checking: creationChecking,
+    error: creationCheckError,
+  } = creationCheck;
+
+  const activeDraft = useRef<{ identity: string } | null>(null);
+  useLayoutEffect(() => {
+    activeDraft.current = { identity: draftIdentity };
+    return () => {
+      activeDraft.current = null;
+    };
   }, [draftIdentity]);
+
   const checkCreatedTask = async (): Promise<void> => {
-    const identity = draftIdentity;
-    setCreationChecking(true);
-    setCreationCheckError(null);
+    const draft = activeDraft.current;
+    if (draft?.identity !== draftIdentity) return;
+    setCreationCheck((check) => ({ ...check, checking: true, error: null }));
     try {
       const candidates = await checkCreation();
-      if (activeIdentity.current === identity) setCreationCandidates(candidates);
+      if (activeDraft.current === draft) {
+        setCreationCheck((check) => ({ ...check, candidates }));
+      }
     } catch (failure) {
-      if (activeIdentity.current === identity)
-        setCreationCheckError(
+      if (activeDraft.current === draft) {
+        const error =
           failure instanceof Error
             ? failure.message
-            : "The created task could not be checked. Retry."
-        );
+            : "The created task could not be checked. Retry.";
+        setCreationCheck((check) => ({ ...check, error }));
+      }
     } finally {
-      if (activeIdentity.current === identity) setCreationChecking(false);
+      if (activeDraft.current === draft) {
+        setCreationCheck((check) => ({ ...check, checking: false }));
+      }
     }
   };
   const handleEditorChange = useCallback(
     (markdown: string, locks: string[]) => {
-      if (activeIdentity.current === draftIdentity && !recoveryError && !hasBlockedRecovery)
+      if (activeDraft.current?.identity === draftIdentity && !recoveryError && !hasBlockedRecovery)
         handleTaskChange(markdown, locks);
     },
     [draftIdentity, handleTaskChange, recoveryError, hasBlockedRecovery]
   );
   const importLegacy = () => {
     const payload = recovery.legacy?.payload;
-    if (!payload || !editorRef.current) return;
+    const editor = editorRef.current;
+    if (!payload || !editor || editorIdentity.current !== draftIdentity) return;
     try {
-      const locks = editorRef.current.action((ctx) =>
+      const locks = editor.action((ctx) =>
         validateRecoveredLocks(
           payload.content,
           payload.lockIds,
@@ -268,10 +287,7 @@ function App() {
             <button
               type="button"
               disabled={
-                !remoteEnabled ||
-                readyIdentity !== draftIdentity ||
-                editorIdentity.current !== draftIdentity ||
-                !recovery.legacy.payload
+                !remoteEnabled || readyIdentity !== draftIdentity || !recovery.legacy.payload
               }
               onClick={importLegacy}
             >
@@ -378,9 +394,11 @@ function App() {
                   createLocalDraft(taskContent, taskLocks);
                   setEditingTaskId(null);
                 } catch {
-                  setCreationCheckError(
-                    "Your current draft could not be preserved. Keep this page open and export it before switching drafts."
-                  );
+                  setCreationCheck((check) => ({
+                    ...check,
+                    error:
+                      "Your current draft could not be preserved. Keep this page open and export it before switching drafts.",
+                  }));
                 }
               }}
             >
@@ -404,18 +422,23 @@ function App() {
                     type="button"
                     disabled={!remoteEnabled || creationChecking}
                     onClick={() => {
-                      setCreationChecking(true);
+                      const draft = activeDraft.current;
+                      if (draft?.identity !== draftIdentity) return;
+                      setCreationCheck((check) => ({ ...check, checking: true }));
                       void adoptCreation(candidate.id)
                         .catch((failure: unknown) => {
-                          if (activeIdentity.current === draftIdentity)
-                            setCreationCheckError(
+                          if (activeDraft.current === draft) {
+                            const error =
                               failure instanceof Error
                                 ? failure.message
-                                : "This task could not be adopted. Your local writing remains open."
-                            );
+                                : "This task could not be adopted. Your local writing remains open.";
+                            setCreationCheck((check) => ({ ...check, error }));
+                          }
                         })
                         .finally(() => {
-                          if (activeIdentity.current === draftIdentity) setCreationChecking(false);
+                          if (activeDraft.current === draft) {
+                            setCreationCheck((check) => ({ ...check, checking: false }));
+                          }
                         });
                     }}
                   >
@@ -513,7 +536,7 @@ function App() {
             onChange={handleEditorChange}
             onRecoveryError={(error) => setRecoveryError(error.message)}
             onReady={(editor) => {
-              if (activeIdentity.current !== draftIdentity) return;
+              if (activeDraft.current?.identity !== draftIdentity) return;
               editorRef.current = editor;
               editorIdentity.current = draftIdentity;
               setReadyIdentity(draftIdentity);

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # Import before the fixture sets JWT_SECRET to exercise configuration time-of-read.
 from server.auth.utils import create_access_token
 from server.infrastructure.security.jwt_handler import JWTHandler
+from server.models.user import User
 
 
 @pytest.fixture
@@ -155,6 +156,37 @@ async def test_login_read_and_logout_with_runtime_signing_configuration(
     assert logged_out.status_code == 204
     assert sorted(mounted_auth_client.cookies.keys()) == []
     assert (await mounted_auth_client.get("/auth/me")).status_code == 401
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "stored_hash",
+    [
+        pytest.param("$2a$12$BPuG3BP0M2T6j8D6sggaSe4V9uRcAqDEqDVWCB9cl8pCQwQb1K/S2", id="2a"),
+        pytest.param("$2b$12$XiApGsS82gYZAyMNyK6sMuV5zfL54VJJtB25HXlfcK5/BUVllqlve", id="2b"),
+    ],
+)
+async def test_login_with_existing_bcrypt_password_hash(
+    mounted_auth_client: AsyncClient, db_session: AsyncSession, stored_hash: str
+) -> None:
+    """A stored bcrypt hash still authenticates the right password only."""
+    email = "legacy-bcrypt@example.com"
+    db_session.add(User(email=email, password_hash=stored_hash))
+    await db_session.commit()
+
+    rejected = await mounted_auth_client.post(
+        "/auth/login", json={"email": email, "password": "incorrectPassword123"}
+    )
+    assert rejected.status_code == 401
+    assert not mounted_auth_client.cookies
+
+    authenticated = await mounted_auth_client.post(
+        "/auth/login", json={"email": email, "password": "兼容旧账户Password123"}
+    )
+    assert authenticated.status_code == 200
+    me = await mounted_auth_client.get("/auth/me")
+    assert me.status_code == 200
+    assert me.json()["email"] == email
 
 
 @pytest.mark.asyncio

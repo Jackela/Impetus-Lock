@@ -194,6 +194,10 @@ describe("useWritingState", () => {
 
     // Wait more time in STUCK state
     act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(result.current.state).toBe("STUCK");
+    act(() => {
       vi.advanceTimersByTime(30000);
     });
 
@@ -224,6 +228,25 @@ describe("useWritingState", () => {
       vi.advanceTimersByTime(60000);
     });
     expect(onStuck).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts a fresh Muse countdown and restarts it on input after entering Muse", () => {
+    const onStuck = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ mode }: { mode: "off" | "muse" }) => useWritingState({ mode, onStuck }),
+      { initialProps: { mode: "off" } }
+    );
+    act(() => vi.advanceTimersByTime(60000));
+    rerender({ mode: "muse" });
+    act(() => vi.advanceTimersByTime(4000));
+    expect(result.current.state).toBe("WRITING");
+    act(() => result.current.onInput());
+    act(() => vi.advanceTimersByTime(59000));
+    expect(result.current.state).toBe("IDLE");
+    expect(onStuck).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(1000));
+    expect(result.current.state).toBe("STUCK");
+    expect(onStuck).toHaveBeenCalledTimes(1);
   });
 
   it("should cleanup timers on unmount", () => {

@@ -6,9 +6,9 @@
 
 ## Prerequisites
 
-- Python 3.11+ (CI uses 3.12; `.python-version` pins 3.12 for local tooling)
+- Python 3.15 (`.python-version`, CI and Docker); the compatibility matrix also tests 3.11 and 3.12
 - [Poetry](https://python-poetry.org/) 2.5.1 (matches `server/poetry.lock`)
-- Node.js 22.13+ or 24.x (`.nvmrc` pins 24)
+- Node.js 26.x (`.nvmrc`, CI and Docker); the Web client also supports 22.22.1+ within 22.x and 24.x
 - Docker, only for the local PostgreSQL helper
 - Optional: [Act](https://github.com/nektos/act) for local CI simulation
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import type { RefObject } from "react";
 
 /**
@@ -57,7 +57,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
   const ref = useRef<T>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const exclusions = useRef(excludeSelectors);
-  exclusions.current = excludeSelectors;
+  useLayoutEffect(() => {
+    exclusions.current = excludeSelectors;
+  }, [excludeSelectors]);
 
   // Get all focusable elements within container
   const getFocusableElements = useCallback((): HTMLElement[] => {

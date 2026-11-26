@@ -6,7 +6,7 @@
  * @module hooks/useManualDelete
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Editor } from "@milkdown/core";
 import { editorViewCtx } from "@milkdown/core";
 import { deleteContentAtAnchor } from "../services/ContentInjector";
@@ -46,6 +46,12 @@ export interface UseManualDeleteReturn {
 export function useManualDelete(options: UseManualDeleteOptions): UseManualDeleteReturn {
   const { onSensoryFeedback } = options;
   const isDeletingRef = useRef(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    return () => clearTimeout(resetTimer.current);
+  }, []);
 
   const handleManualDelete = useCallback(
     (editor: Editor | null) => {
@@ -58,6 +64,7 @@ export function useManualDelete(options: UseManualDeleteOptions): UseManualDelet
 
       // Set flag immediately
       isDeletingRef.current = true;
+      setIsDeleting(true);
 
       try {
         const view = editor.action((ctx) => ctx.get(editorViewCtx));
@@ -84,8 +91,9 @@ export function useManualDelete(options: UseManualDeleteOptions): UseManualDelet
         }
       } finally {
         // Reset flag after delay
-        setTimeout(() => {
+        resetTimer.current = setTimeout(() => {
           isDeletingRef.current = false;
+          setIsDeleting(false);
         }, DELETE_RESET_DELAY_MS);
       }
     },
@@ -94,6 +102,6 @@ export function useManualDelete(options: UseManualDeleteOptions): UseManualDelet
 
   return {
     handleManualDelete,
-    isDeleting: isDeletingRef.current,
+    isDeleting,
   };
 }

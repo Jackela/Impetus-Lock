@@ -15,10 +15,9 @@
  * @module hooks/useLokiTimer
  */
 
-import { useEffect, useRef, useCallback, useState, useLayoutEffect } from "react";
+import { useLayoutEffect, useRef, useCallback, useState, useSyncExternalStore } from "react";
 import type { AgentMode } from "../types/mode";
 import { LOKI_MIN_INTERVAL_MS, LOKI_MAX_INTERVAL_MS } from "../config/animation";
-import { useInterval } from "./useInterval";
 
 /**
  * Configuration options for useLokiTimer hook.
@@ -65,6 +64,45 @@ function getRandomInterval(min: number, max: number): number {
   return Math.floor(randomFloat * (max - min + 1)) + min;
 }
 
+function createLokiTimer() {
+  let interval = 0;
+  const listeners = new Set<() => void>();
+  return {
+    getSnapshot: () => interval,
+    subscribe(onIntervalChange: () => void) {
+      listeners.add(onIntervalChange);
+      return () => {
+        listeners.delete(onIntervalChange);
+      };
+    },
+    start(onTrigger: () => void) {
+      let timeout: ReturnType<typeof setTimeout>;
+      let stopped = false;
+
+      function schedule() {
+        interval = getRandomInterval(MIN_INTERVAL, MAX_INTERVAL);
+        timeout = setTimeout(() => {
+          try {
+            onTrigger();
+          } finally {
+            if (!stopped) schedule();
+          }
+        }, interval);
+        for (const onIntervalChange of listeners) onIntervalChange();
+      }
+
+      schedule();
+      return () => {
+        stopped = true;
+        clearTimeout(timeout);
+        interval = 0;
+      };
+    },
+  };
+}
+
+const getServerInterval = () => 0;
+
 /**
  * Loki Mode random chaos timer hook.
  *
@@ -100,50 +138,13 @@ function getRandomInterval(min: number, max: number): number {
 export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
   const { mode, onTrigger } = options;
 
-  // Store current interval for testing
-  const [currentInterval, setCurrentInterval] = useState<number>(0);
+  const [timer] = useState(createLokiTimer);
 
   // Store callback reference to avoid stale closures
   const onTriggerRef = useRef(onTrigger);
-  useEffect(() => {
+  useLayoutEffect(() => {
     onTriggerRef.current = onTrigger;
   }, [onTrigger]);
-
-  /**
-   * Generate and set next random interval.
-   */
-  const generateNextInterval = useCallback(() => {
-    const interval = getRandomInterval(MIN_INTERVAL, MAX_INTERVAL);
-    setCurrentInterval(interval);
-    return interval;
-  }, []);
-
-  /**
-   * Timer tick handler.
-   * Triggers callback and generates next random interval.
-   */
-  const handleTick = useCallback(() => {
-    onTriggerRef.current();
-    generateNextInterval();
-  }, [generateNextInterval]);
-
-  // Use generic interval hook with setDelay for dynamic interval management
-  const { stop, setDelay } = useInterval({
-    callback: handleTick,
-    delay: null, // Initial delay, will be set via setDelay
-    immediate: false,
-  });
-
-  /**
-   * Schedule next random timer.
-   *
-   * Generates a random interval and schedules the next trigger.
-   * Recursively reschedules after each trigger for continuous chaos.
-   */
-  const scheduleNextTimer = useCallback(() => {
-    const interval = generateNextInterval();
-    setDelay(interval);
-  }, [generateNextInterval, setDelay]);
 
   /**
    * Manual trigger function for demo mode.
@@ -155,25 +156,19 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
     onTriggerRef.current();
   }, []);
 
-  // Effect: Start/stop timer based on mode
+  // Stop the old timeout during the mode commit, before passive effects run.
   useLayoutEffect(() => {
-    if (mode === "loki") {
-      // Start timer
-      scheduleNextTimer();
-    } else {
-      // Stop timer
-      stop();
-      setCurrentInterval(0);
-    }
+    if (mode === "loki") return timer.start(manualTrigger);
+  }, [mode, timer, manualTrigger]);
 
-    // Cleanup on unmount
-    return () => {
-      stop();
-    };
-  }, [mode, scheduleNextTimer, stop]);
+  const currentInterval = useSyncExternalStore(
+    timer.subscribe,
+    timer.getSnapshot,
+    getServerInterval
+  );
 
   return {
-    currentInterval,
+    currentInterval: mode === "loki" ? currentInterval : 0,
     manualTrigger,
   };
 }

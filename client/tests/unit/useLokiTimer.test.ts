@@ -18,6 +18,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+import { useLayoutEffect } from "react";
 import { useLokiTimer } from "../../src/hooks/useLokiTimer";
 import type { AgentMode } from "../../src/types/mode";
 
@@ -81,24 +82,24 @@ describe("useLokiTimer", () => {
 
   it("should schedule new random timer after trigger", () => {
     const onTrigger = vi.fn();
-    renderHook(() => useLokiTimer({ mode: "loki" as AgentMode, onTrigger }));
+    const { result } = renderHook(() => useLokiTimer({ mode: "loki" as AgentMode, onTrigger }));
 
-    // First trigger
+    const firstInterval = result.current.currentInterval;
     act(() => {
-      vi.advanceTimersByTime(120000); // Max interval
+      vi.advanceTimersByTime(firstInterval);
     });
+    expect(onTrigger).toHaveBeenCalledTimes(1);
 
-    // Should have triggered at least once (might be more due to recursive scheduling)
-    const firstCallCount = onTrigger.mock.calls.length;
-    expect(firstCallCount).toBeGreaterThanOrEqual(1);
-
-    // Second trigger (new timer scheduled)
+    const secondInterval = result.current.currentInterval;
+    expect(secondInterval).not.toBe(firstInterval);
     act(() => {
-      vi.advanceTimersByTime(120000);
+      vi.advanceTimersByTime(secondInterval - 1);
     });
-
-    // Should have more calls than before
-    expect(onTrigger.mock.calls.length).toBeGreaterThan(firstCallCount);
+    expect(onTrigger).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(onTrigger).toHaveBeenCalledTimes(2);
   });
 
   it('should NOT trigger when mode is "muse"', () => {
@@ -138,6 +139,27 @@ describe("useLokiTimer", () => {
     });
 
     expect(onTrigger).not.toHaveBeenCalled();
+  });
+
+  it("stops scheduled interventions at the Off commit and still allows manual trigger", () => {
+    const onTrigger = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ mode }: { mode: AgentMode }) => {
+        const timer = useLokiTimer({ mode, onTrigger });
+        useLayoutEffect(() => {
+          if (mode === "off") vi.advanceTimersByTime(120000);
+        }, [mode]);
+        return timer;
+      },
+      { initialProps: { mode: "loki" }, reactStrictMode: true }
+    );
+
+    rerender({ mode: "off" });
+    expect(onTrigger).not.toHaveBeenCalled();
+    expect(result.current.currentInterval).toBe(0);
+
+    act(() => result.current.manualTrigger());
+    expect(onTrigger).toHaveBeenCalledTimes(1);
   });
 
   it('should start timer when mode changes from "off" to "loki"', () => {
