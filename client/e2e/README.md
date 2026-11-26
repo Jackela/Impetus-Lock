@@ -10,21 +10,37 @@ cd client
 npm run test:e2e          # local main suite
 npm run test:e2e:ci       # CI-shaped main suite (one worker, one retry)
 npm run test:e2e:ci-like  # one worker + retries, closer to CI locally
-npm run test:e2e:auth     # real cookies/CSRF, isolated PostgreSQL
+npm run test:e2e:auth     # browser only, needs the auth runner's backend
 npm run test:e2e:story    # Muse/Loki story flow
 npm run test:e2e:ui       # Playwright UI mode
 ```
 
-Prerequisites for the main suite: backend on `:8000` with `TESTING=1` and the debug provider, Vite on `:5173`, and PostgreSQL migrated. `./scripts/dev-start.sh` starts all three. Authenticated and story suites start their own isolated backend/DB; see `scripts/run-auth-e2e.py` and `scripts/run-story-e2e.py`. `npm run test:e2e:story` invokes the story runner through Poetry and requires `DATABASE_URL` pointing at a disposable PostgreSQL database; it refuses to use an occupied `:8001`.
+Prerequisites for the main suite are a backend on `:8000` with `TESTING=1` and the debug provider, Vite on `:5173`, and a migrated PostgreSQL database. `./scripts/dev-start.sh` starts all three. For real authentication, set `DATABASE_URL` to a disposable PostgreSQL database and run `python3 scripts/run-auth-e2e.py` from the repository root. The runner applies migrations, restarts the backend on `:8001`, and runs `npm run test:e2e:auth`. The story runner also needs a disposable `DATABASE_URL` and uses `:8001`.
 
 ## Config boundaries
 
-| Config                        | Specs                                 | Notes                                                     |
-| ----------------------------- | ------------------------------------- | --------------------------------------------------------- |
-| `playwright.config.ts`        | default `e2e/*.spec.ts`               | Excludes auth, safety, story, manual, and `**/*.test.mjs` |
-| `playwright.auth.config.ts`   | `authenticated-editor.spec.ts`        | Real login/register/CSRF, isolated data, retries 0        |
-| `playwright.safety.config.ts` | `authenticated-editor-safety.spec.ts` | Chromium/Firefox/WebKit evidence suite; manual/CI-gated   |
-| `playwright.story.config.ts`  | `muse-loki-story.spec.ts`             | Real backend with provider boundary                       |
+| Config                            | Specs                                                               | Where it runs                                       |
+| --------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------- |
+| `playwright.config.ts`            | Default editor and UI specs                                         | E2E Tests workflow, local Vite                      |
+| `playwright.auth.config.ts`       | Basic auth, draft recovery, and selected account recovery scenarios | Authenticated Editor workflow and local auth runner |
+| `playwright.safety.config.ts`     | Full `authenticated-editor-safety.spec.ts`                          | Manual Chromium, Firefox, and WebKit evidence suite |
+| `playwright.story.config.ts`      | `muse-loki-story.spec.ts`                                           | E2E Tests workflow and local story runner           |
+| `playwright.production.config.ts` | `production-proxy.spec.ts`                                          | CI production images job and local smoke script     |
+
+The account recovery project in the regular auth gate covers shared cookies across tabs, unknown draft versions, and recovery when a task creation response is lost. Use the auth config with `--list` to see the current case names.
+
+## Production images
+
+On a host with Docker, Node, jq, the client dependencies, and Playwright Chromium installed, run these commands from the repository root.
+
+```bash
+docker build -f server/Dockerfile.prod -t impetus-ci-api:local server
+docker build -f client/Dockerfile.prod -t impetus-ci-client:local client
+TEST_API_BASE_IMAGE=impetus-ci-api:local TEST_CLIENT_BASE_IMAGE=impetus-ci-client:local \
+  bash scripts/run-production-smoke.sh
+```
+
+The smoke test uses a disposable PostgreSQL database. It checks the built editor with normal Chromium security and real Web cookie/CSRF requests, the WeChat session route through Nginx, and credentialed CORS preflight against the backend image. The WeChat route is checked with a request that fails local schema validation before any platform call. Serve the authenticated editor and its API from the same origin so the editor can read the host's CSRF cookie.
 
 ## Non-negotiable rules
 

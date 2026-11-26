@@ -12,15 +12,13 @@ mkdir -p "$TARGET_DIR" "$CACHE_DIR"
 RSYNC_EXCLUDES=(
   --exclude '.venv*'
   --exclude 'test-results/act-e2e.log'
+  --exclude '/tmp/impetus-dev/'
+  --exclude '/server/.backend.pid'
+  --exclude '/client/.frontend.pid'
 )
 
 echo "[act-sync] Syncing repo to $TARGET_DIR"
 rsync -a --delete "${RSYNC_EXCLUDES[@]}" "$SRC_ROOT/" "$TARGET_DIR/"
-
-echo "[act-sync] Ensuring conflicting containers are stopped"
-if docker ps -q --filter name=impetus-lock-postgres >/dev/null; then
-  docker stop impetus-lock-postgres >/dev/null || true
-fi
 
 export ACT_WORKSPACE_BASE="$TARGET_DIR"
 export ACT_CACHE_DIR="$CACHE_DIR"

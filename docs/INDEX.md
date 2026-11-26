@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-11-26
 
-`AGENTS.md` is the authority for working rules and quality gates. This index is a map, not a second source of truth. Material under `docs/archive/`, `docs/sessions/`, and dated `docs/process/` phase notes is **historical evidence**, never current status.
+`AGENTS.md` is the authority for working rules and quality gates. The listed references lead to their governing configuration or implementation. Dated reports, session notes, archives and prior phase records are historical evidence.
 
 ## Start here
 
@@ -12,11 +12,13 @@
 - [`CONTEXT.md`](../CONTEXT.md) — current product and architecture context
 - [`AGENTS.md`](../AGENTS.md) — precedence, protected files, quality gates, task routing
 - [`DEVELOPMENT.md`](../DEVELOPMENT.md) — local development workflow
-- [`TESTING.md`](../TESTING.md) — test suite layout and commands
+- [`TESTING.md`](../TESTING.md) — test setup, workflow coverage and revision-specific evidence
+- [Branch protection](BRANCH-PROTECTION-SETUP.md) — required merge checks and GitHub source
+- [Handoff instructions](../AGENTS.md#delivery-evidence-and-stop-conditions) — evidence and location for blocked work
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution workflow
 - [`SECURITY.md`](../SECURITY.md) — vulnerability reporting and security scope
 
-## Current reference
+## Reference
 
 | Document                                                      | Purpose                                                         |
 | ------------------------------------------------------------- | --------------------------------------------------------------- |
@@ -28,8 +30,6 @@
 | [`docs/architecture-deep-dive.md`](architecture-deep-dive.md) | Architecture walkthrough                                        |
 | [`docs/observability.md`](observability.md)                   | Logging, metrics, health checks                                 |
 | [`docs/prompts.md`](prompts.md)                               | Prompt templates and evaluation entry points                    |
-| [`docs/MIGRATION_v1_to_v2.md`](MIGRATION_v1_to_v2.md)         | Data migration notes                                            |
-| [`docs/investigation-report.md`](investigation-report.md)     | Dated investigation record                                      |
 
 ## Guides
 
@@ -64,10 +64,10 @@
 - [`docs/technical-designs/P1_FIX_DESIGN_01_provider_registry.md`](technical-designs/P1_FIX_DESIGN_01_provider_registry.md)
 - [`docs/technical-designs/P1_FIX_DESIGN_02_transaction_filter.md`](technical-designs/P1_FIX_DESIGN_02_transaction_filter.md)
 
-## Reports
+## Dated reports and migration records
 
-Current and recent delivery evidence:
-
+- [`docs/MIGRATION_v1_to_v2.md`](MIGRATION_v1_to_v2.md) — v1 to v2 migration record
+- [`docs/investigation-report.md`](investigation-report.md) — investigation record
 - [`docs/reports/20261111-test-suite-optimization.md`](reports/20261111-test-suite-optimization.md) — PR #249
 - [`docs/reports/20261109-quality-roadmap.md`](reports/20261109-quality-roadmap.md) — PR #246
 - [`docs/reports/COMPREHENSIVE_REVIEW_REPORT.md`](reports/COMPREHENSIVE_REVIEW_REPORT.md)
@@ -96,5 +96,5 @@ Current and recent delivery evidence:
 
 1. Product direction and milestones: [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md). Use dated reports as evidence for the recorded revision.
 2. Agreed behavior: `openspec/specs/`. Check implementation and runtime evidence separately.
-3. Historical context: `docs/archive/`, `docs/sessions/`, dated `docs/process/` notes.
+3. Historical context: `docs/archive/`, `docs/reports/`, `docs/sessions/`, and dated `docs/process/` notes.
 4. Do not cite archived material as a current requirement.

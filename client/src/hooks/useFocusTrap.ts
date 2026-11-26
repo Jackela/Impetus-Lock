@@ -28,7 +28,8 @@ export interface UseFocusTrapOptions {
  * - Moves focus to the first focusable element on activation
  * - Cycles focus within the container on Tab/Shift+Tab
  * - Returns focus to the triggering element on deactivation
- * - Supports Escape key to deactivate (via callback)
+ *
+ * The dialog handles dismissal and changes the active state.
  *
  * @param options - Configuration options
  * @param options.active - Whether the focus trap is active
@@ -44,7 +45,7 @@ export interface UseFocusTrapOptions {
  *     <div ref={ref} role="dialog">
  *       <input autoFocus />
  *       <button>OK</button>
- *       <button>Cancel</button>
+ *       <button onClick={onClose}>Cancel</button>
  *     </div>
  *   );
  * }

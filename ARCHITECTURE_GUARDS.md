@@ -50,7 +50,6 @@ server/
 │   └── repositories/ # 仓储接口 (DIP)
 │
 ├── application/     # 用例/应用服务
-│   ├── use_cases/   # 业务用例
 │   └── services/    # 应用服务
 │
 ├── infrastructure/  # 外部依赖实现
@@ -61,74 +60,23 @@ server/
 └── api/            # HTTP 接口层 (最外层)
     ├── routes/      # FastAPI 路由
     ├── schemas/     # Pydantic 模型
-    └── dependencies/ # FastAPI 依赖注入
+    └── dependencies.py # FastAPI 依赖注入
 ```
 
-### 黄金规则 (由 import-linter 强制执行)
+### 导入契约
 
-```python
-# ✅ ALLOWED: 依赖方向 (从外到内)
-api          → application → domain
-infrastructure → application → domain
+[服务端配置](server/pyproject.toml)启用了三条 `forbidden` 契约：
 
-# ❌ FORBIDDEN: 反向依赖
-domain       ✗→ application
-domain       ✗→ infrastructure
-domain       ✗→ api
-application  ✗→ api
-application  ✗→ infrastructure
-infrastructure ✗→ api
-```
+| 来源                    | 受限目标                                                    |
+| ----------------------- | ----------------------------------------------------------- |
+| `server.domain`         | `server.application`、`server.infrastructure`、`server.api` |
+| `server.application`    | `server.api`、`server.infrastructure`                       |
+| `server.infrastructure` | `server.api`                                                |
 
-### 配置 (`pyproject.toml`)
-
-```toml
-[tool.importlinter]
-root_package = "server"
-include_external_packages = true
-
-# Contract 1: Domain Layer 完全独立
-[[tool.importlinter.contracts]]
-name = "Clean Architecture: Domain Layer Independence"
-type = "forbidden"
-source_modules = ["server.domain"]
-forbidden_modules = [
-    "server.application",
-    "server.infrastructure",
-    "server.api",
-]
-
-# Contract 2: Application Layer 不依赖外层
-[[tool.importlinter.contracts]]
-name = "Clean Architecture: Application Layer Dependencies"
-type = "forbidden"
-source_modules = ["server.application"]
-forbidden_modules = [
-    "server.api",
-    "server.infrastructure",
-]
-
-# Contract 3: Infrastructure Layer 不依赖 API
-[[tool.importlinter.contracts]]
-name = "Clean Architecture: Infrastructure Layer Dependencies"
-type = "forbidden"
-source_modules = ["server.infrastructure"]
-forbidden_modules = [
-    "server.api",
-]
-
-# Contract 4: 分层顺序验证 (temporarily disabled)
-# import-linter 的 layers 契约当前禁用；见 pyproject.toml 注释
-# [[tool.importlinter.contracts]]
-# name = "Clean Architecture: API Layer (Outermost)"
-# type = "layers"
-# layers = [
-#     "api",
-#     "application",
-#     "domain",
-# ]
-# containers = ["server"]
-```
+应用层契约有一条明确例外，允许
+`server.application.services.intervention_service` 导入
+`server.infrastructure.observability.tracing`。FastAPI 入口负责用
+`server/api/dependencies.py` 注入基础设施实现。额外的 `layers` 契约仍处于注释停用状态。
 
 ### 本地测试
 
@@ -170,71 +118,23 @@ server.domain.entities.task imports server.infrastructure.database:
 
 ## 🎨 前端架构 (Layer Separation)
 
-### 分层结构
+### 展示组件、Hooks 和服务
 
-```
-client/src/
-├── components/     # 展示组件 (最内层)
-│   ├── ui/         # 纯 UI 组件 (Button, Input)
-│   └── layout/     # 布局组件 (Header, Sidebar)
-│
-├── features/       # 业务特性 (中间层)
-│   ├── tasks/      # 任务功能模块
-│   │   ├── hooks/  # useTask, useTaskLock
-│   │   └── components/ # TaskCard, TaskList
-│   └── editor/     # 编辑器功能模块
-│
-├── services/       # API 和外部服务 (外层)
-│   ├── api/        # REST API 客户端
-│   └── storage/    # LocalStorage 抽象
-│
-├── hooks/          # 共享自定义 Hooks
-├── utils/          # 工具函数
-└── types/          # TypeScript 类型定义
-```
+生产代码通常由 `components/` 使用 `hooks/`，Hooks 调用
+`services/`。任务与编辑器现有逻辑沿用这一结构；`features/`
+目前保留占位文件。
 
-### 黄金规则 (由 ESLint 强制执行)
+[ESLint 配置](client/eslint.config.js)对 TS/TSX 默认禁止匹配
+`**/features/**` 和 `**/services/**` 的导入。这条规则按导入路径
+匹配，在 `features/` 内的普通文件同样适用。
+`hooks/**/*.ts` 只禁止匹配 `**/features/**` 的导入，可以使用服务。
 
-```typescript
-// ✅ ALLOWED: 依赖方向
-features/    → components/  (使用展示组件)
-features/    → services/    (调用 API)
-features/    → hooks/       (使用共享 hooks)
+以下文件模式有现存的 `no-restricted-imports` 例外：
 
-// ❌ FORBIDDEN: 反向依赖
-components/  ✗→ features/   (展示组件不能依赖业务逻辑)
-components/  ✗→ services/   (展示组件不能直接调用 API)
-```
-
-### 配置 (`eslint.config.js`)
-
-```javascript
-export default defineConfig([
-  {
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: ["**/features/**"],
-              message:
-                "Components (presentational layer) must not import from features (business logic layer). " +
-                "Use props/callbacks for data and event handling instead.",
-            },
-            {
-              group: ["**/services/**"],
-              message:
-                "Components must not directly import services. " +
-                "Use custom hooks from features/ layer to access services.",
-            },
-          ],
-        },
-      ],
-    },
-  },
-]);
-```
+- `contexts/**/*.tsx` 和 `types/**/*.ts`。
+- `components/Editor/` 下的 `EditorCore.tsx`、`LockDecorations.ts`、
+  `TransactionFilter.ts`，以及 `utils/prosemirror-helpers.ts`。
+- `*.test.{ts,tsx}`、`*.spec.{ts,tsx}` 及 `e2e/**/*.{ts,tsx}`。
 
 ### 本地测试
 
@@ -246,10 +146,8 @@ npm run lint
 **输出示例 (违规):**
 
 ```
-error: Components (presentational layer) must not import from features (business logic layer).
-Use props/callbacks for data and event handling instead.
-  src/components/ui/Button.tsx
-  5:1  error  'useTaskLock' import from '../features/tasks/hooks' is restricted
+src/components/ui/Button.tsx
+  1:1  error  '../../services/api/taskClient' import is restricted  no-restricted-imports
 ```
 
 ---
@@ -275,12 +173,11 @@ lint:
 
 ### CI 行为
 
-| 场景                 | 结果                             |
-| -------------------- | -------------------------------- |
-| ✅ 所有架构规则遵守  | Build 通过                       |
-| ❌ Backend 违反分层  | Build 失败 (import-linter)       |
-| ❌ Frontend 违反分层 | Build 失败 (ESLint)              |
-| ⚠️ 违规但添加 ignore | Build 通过 (需 code review 审核) |
+| 场景                 | 结果                       |
+| -------------------- | -------------------------- |
+| ✅ 所有架构规则遵守  | Build 通过                 |
+| ❌ Backend 违反分层  | Build 失败 (import-linter) |
+| ❌ Frontend 违反分层 | Build 失败 (ESLint)        |
 
 ### Current Status ✅
 
@@ -310,7 +207,7 @@ The CI workflow runs the enforced contracts with `poetry run lint-imports`; the 
    - ✅ 不导入任何外层模块
    - ✅ 只使用标准库和 Pydantic
 
-2. **编写应用用例** (`server/application/use_cases/`)
+2. **编写应用用例** (`server/application/services/`)
    - ✅ 导入 domain 层
    - ❌ 不导入 api 或 infrastructure
 
@@ -328,11 +225,7 @@ The CI workflow runs the enforced contracts with `poetry run lint-imports`; the 
    - ✅ 只接受 props
    - ❌ 不导入 features/ 或 services/
 
-2. **编写业务组件** (`client/src/features/tasks/components/`)
-   - ✅ 使用 hooks 管理状态
-   - ✅ 导入 components/ui/ 展示组件
-
-3. **编写自定义 Hooks** (`client/src/features/tasks/hooks/`)
+2. **编写自定义 Hooks** (`client/src/hooks/`)
    - ✅ 调用 services/ API
    - ✅ 管理业务逻辑状态
 
@@ -367,29 +260,19 @@ server.domain.entities.task imports server.infrastructure.database
 **错误示例:**
 
 ```
-error: Components must not import from features
-  src/components/ui/Button.tsx
-  3:1  error  'useTaskLock' import is restricted
+src/components/ui/Button.tsx
+  1:1  error  '../../services/api/taskClient' import is restricted  no-restricted-imports
 ```
 
 **修复步骤:**
 
-1. 将 `useTaskLock` 调用移到 `features/` 组件
-2. 通过 props 传递数据到 `components/ui/Button`
-3. 使用回调函数而非直接调用
+将状态和服务调用放在 `hooks/`。使用 props 和回调将结果传给展示组件。
 
 ---
 
 ## 📊 架构合规性监控
 
-### 度量指标
-
-| 指标                  | 目标                       | 当前                               | 状态 |
-| --------------------- | -------------------------- | ---------------------------------- | ---- |
-| **Backend Contracts** | 3 enforced + 1 disabled ✅ | 3 enforced, 1 temporarily disabled | ✅   |
-| **Frontend Rules**    | 2/2 ✅                     | 2/2                                | ✅   |
-| **CI 失败率 (架构)**  | 0%                         | 0%                                 | ✅   |
-| **违规 Ignore 行数**  | <5                         | 0                                  | ✅   |
+检查结果以对应提交的 CI 产物为准。本页上方的契约和例外来自当前配置。
 
 ### 审计日志
 
@@ -431,13 +314,6 @@ npm run lint -- --format json > lint-report.json
 - ✅ 测试导入已更新: `from server.api.main import app`
 - ✅ 目录结构已创建
 
-### P1 实现时
-
-1. 创建 `server/domain/entities/task.py`
-2. 创建 `server/application/use_cases/lock_task.py`
-3. 创建 `server/api/routes/tasks.py`
-4. 运行 `poetry run lint-imports` 验证
-
 ---
 
 ## 📚 参考资料
@@ -449,5 +325,6 @@ npm run lint -- --format json > lint-report.json
 
 ---
 
-**Last Updated:** 2025-11-06  
+**Last Updated:** 2026-11-26
+
 **Status:** ✅ Active in CI

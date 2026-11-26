@@ -117,17 +117,13 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(AuthenticationMiddleware)
 
 
-# P2 Security Fix: Environment-specific CORS configuration
-# Production: Only allow configured origins
-# Development: Allow localhost on standard Vite ports
-env = os.getenv("ENV", "development")
+# Match the environment selection used for the authentication cookies.
+env = os.getenv("APP_ENV", os.getenv("ENV", "development"))
 if env == "production":
-    # Production: Use configured origins only
-    allowed_origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
-    allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
-    if not allowed_origins:
-        # Fallback to empty list if not configured (blocks all cross-origin)
-        allowed_origins = []
+    configured_origins = os.getenv("CORS_ORIGINS", os.getenv("ALLOWED_ORIGINS", ""))
+    # Cookie-authenticated CORS requires an explicit allowlist.
+    origins = map(str.strip, configured_origins.split(","))
+    allowed_origins = [origin for origin in origins if origin not in {"", "*"}]
     logger.info(f"CORS configured for production with {len(allowed_origins)} origins")
 else:
     # Development: Allow standard Vite dev server ports only

@@ -17,10 +17,15 @@ import type { EditorView } from "@milkdown/prose/view";
 import type { Editor } from "@milkdown/core";
 import { openHeaderMenu, openHeaderDevTools } from "./helpers/waitHelpers";
 
-const API = "http://127.0.0.1:8101";
-const UI = "http://127.0.0.1:3101";
+const authGate = process.env.AUTH_E2E_GATE === "1";
+const API = authGate ? "http://127.0.0.1:8001" : "http://127.0.0.1:8101";
+const UI = authGate ? "http://127.0.0.1:3000" : "http://127.0.0.1:3101";
 const PASSWORD = "localAuthPass!2026";
-const evidence = resolve("../.scratch/authenticated-editor-safety-2026-10-11");
+const evidence = resolve(
+  authGate
+    ? "./test-results/authenticated-editor/safety"
+    : "../.scratch/authenticated-editor-safety-2026-10-11"
+);
 type Storage = Awaited<ReturnType<BrowserContext["storageState"]>>;
 type Account = { email: string; id: string; storage: Storage };
 type RetainedAccounts = {
@@ -835,15 +840,19 @@ test.beforeAll(async ({ browser }) => {
   // the setup hook's timeout; individual business/action timeouts stay intact.
   test.setTimeout(240_000);
   await mkdir(evidence, { recursive: true });
-  const checkpoint = resolve(
-    evidence,
-    `.env.browser-accounts-${process.platform}-${browser.browserType().name()}.json`
-  );
+  const checkpoint = authGate
+    ? null
+    : resolve(
+        evidence,
+        `.env.browser-accounts-${process.platform}-${browser.browserType().name()}.json`
+      );
   let retained: RetainedAccounts | null = null;
-  try {
-    retained = JSON.parse(await readFile(checkpoint, "utf8")) as RetainedAccounts;
-  } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
+  if (checkpoint) {
+    try {
+      retained = JSON.parse(await readFile(checkpoint, "utf8")) as RetainedAccounts;
+    } catch (error) {
+      if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
+    }
   }
   const authenticated = async (account: Pick<Account, "email" | "id">): Promise<Account> => {
     expect(account.email).toMatch(/^browser-.*@example\.com$/);
@@ -887,17 +896,20 @@ test.beforeAll(async ({ browser }) => {
   } else {
     alice = await register(await makePage(browser), `browser-alice-${randomUUID()}@example.com`);
     bob = await register(await makePage(browser), `browser-bob-${randomUUID()}@example.com`);
-    await writeFile(
-      checkpoint,
-      JSON.stringify(
-        { alice: { email: alice.email, id: alice.id }, bob: { email: bob.email, id: bob.id } },
-        null,
-        2
-      ),
-      { mode: 0o600 }
-    );
+    if (checkpoint) {
+      await writeFile(
+        checkpoint,
+        JSON.stringify(
+          { alice: { email: alice.email, id: alice.id }, bob: { email: bob.email, id: bob.id } },
+          null,
+          2
+        ),
+        { mode: 0o600 }
+      );
+    }
   }
   for (const context of contexts.splice(0)) await context.close();
+  if (authGate && !process.env.REDIS_URL) return;
   // Previous runners and real setup share the same Redis/IP login bucket.
   // Wait one actual policy window after setup so delayed auth tests begin with
   // a fresh budget, rather than accidentally gating a 429 without Set-Cookie.

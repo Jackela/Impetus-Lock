@@ -1,10 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const evidence = "./test-results/authenticated-editor/browser";
+process.env.AUTH_E2E_GATE = "1";
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: ["authenticated-editor.spec.ts", "authenticated-editor-drafts.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -21,7 +21,17 @@ export default defineConfig({
     viewport: { width: 1280, height: 900 },
   },
   projects: [
-    { name: "safe-chromium-auth", use: { ...devices["Desktop Chrome"], channel: "chromium" } },
+    {
+      name: "safe-chromium-auth",
+      testMatch: ["authenticated-editor.spec.ts", "authenticated-editor-drafts.spec.ts"],
+      use: { ...devices["Desktop Chrome"], channel: "chromium" },
+    },
+    {
+      name: "safe-chromium-account-recovery",
+      testMatch: "authenticated-editor-safety.spec.ts",
+      grep: /multi-tab shared cookie rejects|unknown owned version keeps|unconfirmed creation preserves/,
+      use: { ...devices["Desktop Chrome"], channel: "chromium" },
+    },
   ],
   webServer: {
     command: "npm run dev -- --host 127.0.0.1 --port 3000 --strictPort",

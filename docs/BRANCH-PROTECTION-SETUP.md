@@ -1,36 +1,31 @@
-# Branch Protection
+# Main branch protection
 
-Current configuration for `main` on `Jackela/Impetus-Lock`. Update this file when the rules change; do not treat it as a second gate definition.
+The public GitHub branch response for `Jackela/Impetus-Lock` reported protection
+enabled and `required_status_checks.enforcement_level: everyone` on 2026-11-26,
+at head `daab9e2e7b04dcb5a75b3acdea7c1d76bb7ee516`.
+Recheck the [main branch API response](https://api.github.com/repos/Jackela/Impetus-Lock/branches/main)
+before changing this record.
 
-## Required checks
+## Verified required checks
 
-- `Lint (Backend + Frontend)`
-- `Type Check (Backend + Frontend)`
-- `Backend Tests`
-- `Frontend Tests`
-- `Validate (API Types + OpenSpec)`
-- `Playwright E2E Tests`
+| Workflow or service                                                   | Required check names                                                                                                                 |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| [CI](../.github/workflows/ci.yml)                                     | `Lint (Backend + Frontend)`, `Type Check (Backend + Frontend)`, `Backend Tests`, `Frontend Tests`, `Validate (API Types + OpenSpec)` |
+| [E2E Tests](../.github/workflows/e2e.yml)                             | `Playwright E2E Tests`, `Muse/Loki Story E2E`                                                                                        |
+| [Authenticated Editor](../.github/workflows/authenticated-editor.yml) | `browser-authentication`                                                                                                             |
+| GitHub CodeQL                                                         | `CodeQL`                                                                                                                             |
 
-`Muse/Loki Story E2E` and `browser-authentication` are high-value suites but are not required until their flake rate is observed. Do **not** require `Test Matrix` jobs (Python 3.11, 3.12, 3.15): it is path-filtered and will leave non-backend PRs waiting forever.
+The `Test Matrix` and `WeChat Mini Program` workflows use path filters. Run and
+review their checks when triggered.
 
-## Repository rules
+## Merge review and protected settings
 
-- Require a pull request before merging.
-- Required approvals: **0** for the single-maintainer workflow; human review is still required by `AGENTS.md` for significant product decisions and release.
-- Require status checks to pass and branches to be up to date.
-- Require conversation resolution before merging.
-- Block force pushes and branch deletion.
-- Do not include administrators in bypass rules for normal feature work; direct pushes to `main` remain prohibited.
+[AGENTS.md](../AGENTS.md) requires human approval for merge and release. Open a
+PR, review checks on the intended head and resolve review threads before
+merging through normal protection. [.github/CODEOWNERS](../.github/CODEOWNERS)
+identifies `@Jackela` as the owner for review.
 
-## CODEOWNERS
-
-`.github/CODEOWNERS` assigns `* @Jackela` and the same owner for `server/`, `client/`, `docs/`, and `.github/`. Because the repository requires zero approving reviews, CODEOWNERS is informational rather than a hard gate.
-
-## AI agents
-
-- Every change goes through a branch and PR; do not push directly to `main`.
-- Do not bypass a failing check with `--no-verify`, ignore directives, skipped tests, or lowered thresholds.
-- Merge only after the required checks are green and review threads are resolved.
-- A local pass or merged PR is not deployment or user acceptance; state unverified environments explicitly.
-
-See `AGENTS.md` for the authoritative rules and `.github/workflows/ci.yml` for the gate implementation.
+Required approval counts, strict up-to-date checks, conversation resolution,
+force-push and deletion settings, and bypass permissions need an authorized
+maintainer view of the protection or ruleset. The public branch response
+confirms required check names and enforcement level.

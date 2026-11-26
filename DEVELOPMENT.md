@@ -2,7 +2,7 @@
 
 **Impetus Lock** — local workflow for the React/Vite frontend, FastAPI backend, and WeChat mini program.
 
-`AGENTS.md` is the authority for precedence, protected files, task routing, and quality gates. This guide is the practical local path; `.github/workflows/ci.yml` is the gate implementation.
+`AGENTS.md` is the authority for precedence, protected files, task routing, and quality gates. The [workflow table](AGENTS.md#quality-gates) identifies the source for each check.
 
 ## Prerequisites
 
@@ -25,7 +25,17 @@ cd client && npm ci && cd ..
 ./scripts/dev-stop.sh         # stop what the helper started
 ```
 
-Windows PowerShell: `./scripts/dev-start.ps1`.
+The startup helper supervises services it starts in this checkout. To reuse
+an existing PostgreSQL service, explicitly set `AUTO_START_POSTGRES=0` and
+`DATABASE_URL` when running `./scripts/dev-start.sh`. `AUTO_START_FRONTEND=0`
+starts the backend without Vite. A normal stop retains the database.
+Use `./scripts/dev-stop.sh --clean` only when you want to remove this
+checkout's recorded development database resources. The helper checks
+ownership before stopping or removing resources.
+
+On Windows, run the same Bash commands inside WSL. WSL was not exercised in
+this review. The legacy PowerShell launcher expects an already configured,
+migrated database. Native Windows one-command startup remains unverified.
 
 Manual startup:
 
@@ -64,6 +74,18 @@ Impetus-Lock/
 └── AGENTS.md               # working agreement and quality gates
 ```
 
+## Web Muse/Loki model configuration
+
+A saved browser model is sent explicitly with the writer's provider and API key.
+If LLM Settings marks a saved model as retired, choose **Use recommended model**
+and then **Save**. You can also enter a model ID manually. Unlock the vault first
+if you keep the key encrypted.
+
+Deployment variables `ANTHROPIC_MODEL`, `CLAUDE_MODEL` and `GEMINI_MODEL`
+remain explicit pins. If an existing pin points to a retired model, update it
+or remove it to use the current fallback, then restart the Web API process.
+See [server environment examples](server/.env.example) for the current IDs.
+
 ## Backend development
 
 ```bash
@@ -83,7 +105,7 @@ npm run dev
 npm run test:watch
 ```
 
-Respect the import boundaries: `components` must not import `features` or `services`; use hooks/contexts at the boundary. `npm run lint` enforces this.
+Use hooks and contexts as the component boundary for service calls. [Architecture guards](ARCHITECTURE_GUARDS.md) records the ESLint rules and existing exceptions.
 
 ## WeChat mini program development
 
@@ -132,53 +154,15 @@ Build with `WECHAT_SPEECH_ENABLED=1` to include the WechatSI plugin for an autho
 
 ## Quality gates
 
-Run the full gate before opening a PR. From `server/`:
-
-```bash
-poetry run ruff check .
-poetry run pydocstyle server/
-poetry run ruff format --check
-poetry run lint-imports
-poetry run mypy .
-poetry run pytest tests/ -n auto --cov=server --cov-report=term-missing
-poetry run python check_critical_coverage.py
-```
-
-From `client/`:
-
-```bash
-npm run lint
-npm run format
-npm run type-check
-npm run api:check
-npm run test -- --coverage
-npm run test:coverage-gate
-npm run build
-```
-
-E2E when the flow changes:
-
-```bash
-npm run test:e2e:ci-like      # main suite, one worker
-npm run test:e2e:ci           # CI-shaped suite
-npm run test:e2e:auth         # real cookies/CSRF, isolated data
-npm run test:e2e:story        # Muse/Loki story flow
-```
-
-Do not add ignore directives, lower thresholds, skip tests, or use `--no-verify` to get a green result. If a gate fails outside your scope, write `.scratch/<date>-<topic>/handoff.md` with the evidence and stop.
+Run the applicable [local gates](AGENTS.md#quality-gates) before opening a PR.
+If a check fails outside your scope, follow
+[the handoff instructions](AGENTS.md#delivery-evidence-and-stop-conditions).
 
 ## CI and local CI
 
-PR gates are defined in `.github/workflows/ci.yml` plus `e2e.yml` and `authenticated-editor.yml`:
-
-- `Lint (Backend + Frontend)`
-- `Type Check (Backend + Frontend)`
-- `Backend Tests`
-- `Frontend Tests`
-- `Validate (API Types + OpenSpec)`
-- `Playwright E2E Tests`, `Muse/Loki Story E2E`, `browser-authentication`
-
-`Backend Tests` uses PostgreSQL/Redis services and branch coverage (floor 78%). `Frontend Tests` runs Vitest with coverage, the `node:test` coverage gate, and uploads JUnit/coverage artifacts. E2E uploads failure evidence; teardown only prunes artifacts older than seven days.
+Use the [workflow table and local commands](AGENTS.md#quality-gates) to select
+checks. The [branch protection record](docs/BRANCH-PROTECTION-SETUP.md) links
+the live merge-check configuration.
 
 Act CLI:
 
@@ -190,11 +174,21 @@ The helper mirrors the repo to `$HOME/impetus-lock-act`, exports `ACT_WORKSPACE_
 
 ## Testing
 
-See [`TESTING.md`](TESTING.md) for the test pyramid, marker layout, coverage gates, and E2E configuration. Test counts and the latest measured coverage are recorded in `docs/reports/20261111-test-suite-optimization.md`.
+See [TESTING.md](TESTING.md) for suite layout, setup, thresholds and links to revision-specific evidence.
 
 ## OpenSpec
 
 New behavior, public API, schema, architecture, or dependency changes require an approved OpenSpec change. For bugs that restore intended behavior, write the failing test first and fix directly. Read `openspec/AGENTS.md` before creating or applying a proposal.
+
+From the repository root, list open changes and inspect the named change
+under `openspec/changes/`.
+
+```bash
+npm exec --yes --package=@fission-ai/openspec@1.16.1 -- openspec list
+```
+
+Check its proposal, task checklist and approval record. Use the linked
+PR, CI run and deployment evidence to establish those statuses.
 
 ## Troubleshooting
 
@@ -205,7 +199,9 @@ python -m pip install --user pipx && python -m pipx ensurepath
 pipx install "poetry==2.5.1"
 ```
 
-**Port already in use** — `./scripts/dev-stop.sh`, or stop the process shown by `lsof -i :8000` / `lsof -i :5173`.
+**Port already in use** — use `lsof -i :8000` or `lsof -i :5173` to
+identify the listener. Run `./scripts/dev-stop.sh` for this checkout's services.
+For another listener, choose another port or have its owner stop it.
 
 **Playwright browsers missing**
 
