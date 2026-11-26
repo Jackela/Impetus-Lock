@@ -8,10 +8,10 @@ Constitutional Compliance:
 - Article V (Documentation): Complete docstrings per Google style
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from server.domain.models.anchor import Anchor
 
@@ -152,8 +152,17 @@ class InterventionResponse(BaseModel):
         description="Agent mode responsible for the action",
     )
     issued_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Server timestamp when action was generated"
+        default_factory=lambda: datetime.now(UTC),
+        description="Server timestamp when action was generated",
     )
+
+    @field_validator("issued_at")
+    @classmethod
+    def _normalize_issued_at(cls, issued_at: datetime) -> datetime:
+        """Use UTC for both the first result and the response built from history."""
+        if issued_at.tzinfo is None:
+            return issued_at.replace(tzinfo=UTC)
+        return issued_at.astimezone(UTC)
 
     @model_validator(mode="after")
     def _validate_payload(self) -> "InterventionResponse":

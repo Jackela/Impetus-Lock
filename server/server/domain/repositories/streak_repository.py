@@ -20,9 +20,6 @@ class StreakRepository(ABC):
     """Repository abstraction for user-scoped streak persistence.
 
     Every operation is scoped to a user id; streaks are unique per user.
-    Write operations finish the current commit/refresh sequence before
-    returning, matching the historical route behavior.
-
     Implementations:
         - PostgreSQLStreakRepository: SQLAlchemy async persistence
     """
@@ -39,10 +36,12 @@ class StreakRepository(ABC):
         """
 
     @abstractmethod
-    async def upsert(self, streak: Streak) -> Streak:
-        """Insert or update the user's streak row from the entity's values.
+    async def lock_user(self, user_id: UUID) -> None:
+        """Serialize writes for this user until the current transaction ends."""
 
-        Finishes the current commit/refresh sequence before returning.
+    @abstractmethod
+    async def upsert(self, streak: Streak) -> Streak:
+        """Insert or update the user's streak row under the acquired write lock.
 
         Args:
             streak: Streak entity carrying the values to persist.

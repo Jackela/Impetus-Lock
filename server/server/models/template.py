@@ -6,7 +6,7 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, Text
+from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -27,24 +27,30 @@ class Template(Base):
 
     __tablename__ = "templates"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
-    name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
-    content: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+        server_default=func.gen_random_uuid(),
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         default=lambda: datetime.now(UTC),
+        server_default=func.current_timestamp(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
         default=lambda: datetime.now(UTC),
+        server_default=func.current_timestamp(),
         onupdate=lambda: datetime.now(UTC),
     )
 

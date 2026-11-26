@@ -188,7 +188,7 @@ class TestUpsertWriteFirstShape:
         statement = session.execute.await_args.args[0]
         assert isinstance(statement, Update)
         assert not isinstance(statement, Select)
-        session.get.assert_awaited_once_with(StreakModel, row_id)
+        session.get.assert_awaited_once_with(StreakModel, row_id, populate_existing=True)
         session.refresh.assert_not_awaited()
         session.commit.assert_awaited_once_with()
         assert [name for name, _, _ in session.mock_calls] == ["execute", "commit", "get"]

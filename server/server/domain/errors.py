@@ -4,6 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from uuid import UUID
+
+
+class TaskMissingError(ValueError):
+    """A task no longer exists in storage."""
+
+    def __init__(self, task_id: UUID) -> None:
+        """Identify the missing task without treating it as a version conflict."""
+        super().__init__(f"Task {task_id} not found")
 
 
 class TaskVersionConflictError(ValueError):

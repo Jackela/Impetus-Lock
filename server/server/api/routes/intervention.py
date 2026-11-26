@@ -19,13 +19,14 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from server.api.dependencies import get_task_repository, get_task_service
+from server.api.dependencies import get_task_repository, get_task_service, get_writing_progress
 from server.application.services.intervention_service import InterventionService
 from server.application.services.task_service import TaskNotFoundError, TaskService
-from server.domain.errors import LLMProviderError
+from server.domain.errors import LLMProviderError, TaskMissingError
 from server.domain.llm_provider import LLMProvider
 from server.domain.models.intervention import InterventionRequest, InterventionResponse
 from server.domain.repositories.task_repository import TaskRepository
+from server.domain.writing_progress import WritingProgress
 from server.infrastructure.cache.idempotency_cache import AsyncIdempotencyCache
 from server.infrastructure.llm.provider_registry import (
     ProviderOverride,
@@ -33,6 +34,9 @@ from server.infrastructure.llm.provider_registry import (
     close_provider,
 )
 from server.infrastructure.persistence.database import get_session_optional
+from server.infrastructure.persistence.postgresql_intervention_replay import (
+    PostgreSQLInterventionReplay,
+)
 
 router = APIRouter(prefix="/impetus", tags=["intervention"])
 logger = logging.getLogger(__name__)
@@ -99,6 +103,7 @@ async def generate_intervention(
     idempotency_cache: AsyncIdempotencyCache = Depends(get_idempotency_cache),
     service: InterventionService = Depends(get_intervention_service),
     task_service: TaskService = Depends(get_task_service),
+    progress: WritingProgress | None = Depends(get_writing_progress),
 ) -> InterventionResponse | JSONResponse:
     """Generate AI intervention action based on context and mode.
 
@@ -166,9 +171,30 @@ async def generate_intervention(
             idempotency_key,
         ]
     )
+    durable_replay = None
+    if (
+        session is not None
+        and user_id is not None
+        and task_id is not None
+        and session.get_bind().dialect.name == "postgresql"
+    ):
+        durable_replay = PostgreSQLInterventionReplay(
+            session, user_id, task_id, effective_key, idempotency_cache.ttl
+        )
+
     async with idempotency_cache.serialize(effective_key):
-        # Check idempotency cache
-        cached_response = await idempotency_cache.get(effective_key)
+        try:
+            cached_response = (
+                await durable_replay.lock_and_read()
+                if durable_replay is not None
+                else await idempotency_cache.get(effective_key)
+            )
+        except TaskMissingError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except OperationalError as exc:
+            if session is not None:
+                await session.rollback()
+            raise _persistence_error(exc) from exc
         if cached_response is not None:
             # Return cached response (within 15s window)
             response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
@@ -222,20 +248,20 @@ async def generate_intervention(
             # Commit persistence when applicable
             if session is not None:
                 try:
+                    if progress is not None and task_id is not None and user_id is not None:
+                        await progress.record_intervention(
+                            user_id, request.mode, intervention_response.issued_at
+                        )
+                    if durable_replay is not None:
+                        await durable_replay.store(intervention_response.action_id)
                     await session.commit()
                 except (OperationalError, RuntimeError) as e:
                     await session.rollback()
-                    raise HTTPException(
-                        status_code=500,
-                        detail={
-                            "error": "DatabaseError",
-                            "message": "Failed to persist intervention",
-                            "details": {"db_error": str(e)},
-                        },
-                    ) from e
+                    raise _persistence_error(e) from e
 
             # Publish only responses whose applicable persistence has committed.
-            await idempotency_cache.set(effective_key, intervention_response)
+            if durable_replay is None:
+                await idempotency_cache.set(effective_key, intervention_response)
 
             response.headers["X-Contract-Version"] = SERVER_CONTRACT_VERSION
             _set_cooldown_header(response, intervention_response.source, idempotency_key)
@@ -275,6 +301,18 @@ async def generate_intervention(
             # cached instances must survive to serve subsequent requests.
             if provider is not None and not provider_registry.is_cached(provider):
                 close_provider(provider)
+
+
+def _persistence_error(error: Exception) -> HTTPException:
+    """Keep the existing HTTP failure shape for a failed intervention write."""
+    return HTTPException(
+        status_code=500,
+        detail={
+            "error": "DatabaseError",
+            "message": "Failed to persist intervention",
+            "details": {"db_error": str(error)},
+        },
+    )
 
 
 def _safe_uuid(value: str | None) -> UUID | None:

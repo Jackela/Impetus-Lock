@@ -16,6 +16,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -48,19 +49,22 @@ class TaskModel(Base):
     __tablename__ = "tasks"
 
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
     )
-    title: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    # The database permits NULL in legacy metadata. Runtime task writes supply these values.
+    title: Mapped[str] = mapped_column(String, nullable=True, default="", server_default="")
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    lock_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, server_default="[]")
-    category: Mapped[str] = mapped_column(String(20), nullable=False, default="WRITING")
-    priority: Mapped[str] = mapped_column(String(10), nullable=False, default="MEDIUM")
+    lock_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, server_default=text("'[]'"))
+    category: Mapped[str] = mapped_column(
+        String, nullable=True, default="WRITING", server_default="WRITING"
+    )
+    priority: Mapped[str] = mapped_column(
+        String, nullable=True, default="MEDIUM", server_default="MEDIUM"
+    )
     due_date: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
-    word_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    word_count: Mapped[int] = mapped_column(Integer, nullable=True, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
@@ -83,8 +87,6 @@ class TaskModel(Base):
         Index("idx_tasks_user_id", "user_id"),
         Index("idx_tasks_created_at", "created_at"),
         Index("idx_tasks_updated_at", "updated_at"),
-        Index("idx_tasks_category", "category"),
-        Index("idx_tasks_priority", "priority"),
     )
 
     def __repr__(self) -> str:

@@ -15,9 +15,10 @@ from uuid import UUID
 
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
-from server.domain.errors import TaskVersionConflictError
+from server.domain.errors import TaskMissingError, TaskVersionConflictError
 from server.domain.repositories.task_repository import TaskRepository
 from server.domain.transactions import NullTransaction, TransactionSupport
+from server.domain.writing_progress import WritingProgress
 
 
 class TaskServiceError(Exception):
@@ -171,6 +172,7 @@ class TaskService:
         self,
         repository: TaskRepository,
         transaction: TransactionSupport | None = None,
+        progress: WritingProgress | None = None,
     ) -> None:
         """Initialize service with repository.
 
@@ -179,9 +181,11 @@ class TaskService:
             transaction: Optional transaction support used by the user-scoped
                 write operations to finish exactly one commit; defaults to a
                 no-op for session-less (fallback) repositories.
+            progress: Optional activity recorder in the same unit of work.
         """
         self._repository = repository
         self._transaction: TransactionSupport = transaction or NullTransaction()
+        self._progress = progress
 
     # ------------------------------------------------------------------
     # User-scoped, route-facing operations
@@ -277,6 +281,10 @@ class TaskService:
             due_date=due_date,
             word_count=word_count,
         )
+        if self._progress is not None:
+            await self._progress.record_task(
+                user_id, task.updated_at, created=True, added_locks=len(set(task.lock_ids))
+            )
         await self._transaction.commit()
         return task
 
@@ -324,6 +332,7 @@ class TaskService:
         if task.version != version:
             raise VersionMismatchError(version, task.version)
 
+        added_locks = len(set(lock_ids).difference(task.lock_ids))
         task.update(
             content=content,
             lock_ids=lock_ids,
@@ -336,8 +345,14 @@ class TaskService:
 
         try:
             updated_task = await self._repository.update_task(task)
+        except TaskMissingError as missing:
+            raise TaskNotFoundError(task_id) from missing
         except TaskVersionConflictError as conflict:
             raise VersionMismatchError(conflict.expected, conflict.actual) from conflict
+        if self._progress is not None:
+            await self._progress.record_task(
+                user_id, updated_task.updated_at, created=False, added_locks=added_locks
+            )
         await self._transaction.commit()
         return updated_task
 

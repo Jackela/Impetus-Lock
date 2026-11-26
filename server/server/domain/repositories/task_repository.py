@@ -71,7 +71,8 @@ class TaskRepository(ABC):
                 equal to task.version - 1 may be replaced atomically.
 
         Raises:
-            ValueError: If task not found or version mismatch (optimistic locking).
+            TaskMissingError: If the task no longer exists.
+            TaskVersionConflictError: If the version changed (optimistic locking).
 
         Example:
             ```python
