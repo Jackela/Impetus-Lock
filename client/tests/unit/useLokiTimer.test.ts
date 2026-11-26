@@ -18,6 +18,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+import { useLayoutEffect } from "react";
 import { useLokiTimer } from "../../src/hooks/useLokiTimer";
 import type { AgentMode } from "../../src/types/mode";
 
@@ -138,6 +139,27 @@ describe("useLokiTimer", () => {
     });
 
     expect(onTrigger).not.toHaveBeenCalled();
+  });
+
+  it("stops scheduled interventions at the Off commit and still allows manual trigger", () => {
+    const onTrigger = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ mode }: { mode: AgentMode }) => {
+        const timer = useLokiTimer({ mode, onTrigger });
+        useLayoutEffect(() => {
+          if (mode === "off") vi.advanceTimersByTime(120000);
+        }, [mode]);
+        return timer;
+      },
+      { initialProps: { mode: "loki" }, reactStrictMode: true }
+    );
+
+    rerender({ mode: "off" });
+    expect(onTrigger).not.toHaveBeenCalled();
+    expect(result.current.currentInterval).toBe(0);
+
+    act(() => result.current.manualTrigger());
+    expect(onTrigger).toHaveBeenCalledTimes(1);
   });
 
   it('should start timer when mode changes from "off" to "loki"', () => {

@@ -66,9 +66,16 @@ function getRandomInterval(min: number, max: number): number {
 
 function createLokiTimer() {
   let interval = 0;
+  const listeners = new Set<() => void>();
   return {
     getSnapshot: () => interval,
-    subscribe(onIntervalChange: () => void, onTrigger: () => void) {
+    subscribe(onIntervalChange: () => void) {
+      listeners.add(onIntervalChange);
+      return () => {
+        listeners.delete(onIntervalChange);
+      };
+    },
+    start(onTrigger: () => void) {
       let timeout: ReturnType<typeof setTimeout>;
       let stopped = false;
 
@@ -81,7 +88,7 @@ function createLokiTimer() {
             if (!stopped) schedule();
           }
         }, interval);
-        onIntervalChange();
+        for (const onIntervalChange of listeners) onIntervalChange();
       }
 
       schedule();
@@ -149,14 +156,16 @@ export function useLokiTimer(options: UseLokiTimerOptions): UseLokiTimerReturn {
     onTriggerRef.current();
   }, []);
 
-  const subscribe = useCallback(
-    (onIntervalChange: () => void) => {
-      if (mode === "loki") return timer.subscribe(onIntervalChange, manualTrigger);
-      return () => {};
-    },
-    [mode, timer, manualTrigger]
+  // Stop the old timeout during the mode commit, before passive effects run.
+  useLayoutEffect(() => {
+    if (mode === "loki") return timer.start(manualTrigger);
+  }, [mode, timer, manualTrigger]);
+
+  const currentInterval = useSyncExternalStore(
+    timer.subscribe,
+    timer.getSnapshot,
+    getServerInterval
   );
-  const currentInterval = useSyncExternalStore(subscribe, timer.getSnapshot, getServerInterval);
 
   return {
     currentInterval: mode === "loki" ? currentInterval : 0,
