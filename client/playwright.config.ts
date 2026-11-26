@@ -39,6 +39,7 @@ export default defineConfig({
   // - manual/**                     -> exploratory/debug specs, run explicitly (see e2e/manual/README.md)
   testIgnore: [
     "authenticated-editor.spec.ts",
+    "authenticated-editor-drafts.spec.ts",
     "authenticated-editor-safety.spec.ts",
     "muse-loki-story.spec.ts",
     "manual/**",

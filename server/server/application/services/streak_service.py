@@ -1,20 +1,4 @@
-"""Streak Service (Business Logic Layer).
-
-Orchestrates user-scoped streak operations while keeping the HTTP boundary
-free of persistence concerns and date arithmetic. Extracted from the streak
-routes by openspec/changes/refactor-route-service-boundaries.
-
-IMPORTANT: this service reproduces the OBSERVED calculation exactly — the
-last-activity date differing from today (in UTC) increments the streak, the
-same UTC day does not. The grace/recovery rule in the streaks specification
-is NOT implemented and is tracked as separate behavior work; this refactor
-must not change the calculation.
-
-Constitutional Compliance:
-- Article IV (SOLID - SRP): Business logic separated from API and persistence
-- Article IV (SOLID - DIP): Depends on StreakRepository abstraction
-- Article V (Documentation): Complete Google-style docstrings
-"""
+"""Record user-scoped writing days and the one-day recovery allowance."""
 
 from datetime import UTC, datetime
 from uuid import UUID
@@ -62,11 +46,8 @@ class StreakService:
     async def record_activity(self, user_id: UUID) -> Streak:
         """Record user activity and return the resulting streak.
 
-        Applies the observed calculation: first activity initializes the
-        streak at one day; a last-activity date different from today (UTC)
-        increments it (and raises the longest when exceeded); the same UTC
-        day leaves the counters unchanged. Persistence (commit/refresh)
-        always finalizes the operation, exactly as before extraction.
+        Count a UTC day once. Allow one missed day per streak and expose
+        its use through the existing grace flag.
 
         Args:
             user_id: Authenticated user's UUID.
@@ -74,26 +55,36 @@ class StreakService:
         Returns:
             Streak: Persisted streak as refreshed from storage.
         """
+        await self._repository.lock_user(user_id)
         streak = await self._repository.get_by_user(user_id)
-
         now = datetime.now(UTC)
-        today = now.date()
 
         if streak is None:
-            streak = Streak(
-                user_id=user_id,
-                current_streak_days=1,
-                longest_streak_days=1,
-                streak_start_date=now,
-                last_activity_date=now,
-                grace_used=False,
-            )
-        else:
-            last_date = streak.last_activity_date.date() if streak.last_activity_date else None
-            if last_date != today:
-                streak.current_streak_days += 1
-                streak.last_activity_date = now
-                if streak.current_streak_days > streak.longest_streak_days:
-                    streak.longest_streak_days = streak.current_streak_days
+            streak = Streak(user_id=user_id)
+        self._advance_streak(streak, now)
 
         return await self._repository.upsert(streak)
+
+    @staticmethod
+    def _advance_streak(streak: Streak, now: datetime) -> None:
+        """Count the latest day while preserving the previous longest streak."""
+        last_activity = streak.last_activity_date
+        gap = 1
+        if last_activity is not None:
+            if last_activity.tzinfo is None:
+                last_activity = last_activity.replace(tzinfo=UTC)
+            gap = (now.date() - last_activity.astimezone(UTC).date()).days
+            if gap <= 0:
+                return
+
+        can_recover = gap == 2 and not streak.grace_used
+        if streak.current_streak_days == 0 or (gap > 1 and not can_recover):
+            streak.current_streak_days = 1
+            streak.streak_start_date = now
+            streak.grace_used = False
+        else:
+            streak.current_streak_days += 1
+            streak.grace_used = streak.grace_used or can_recover
+
+        streak.last_activity_date = now
+        streak.longest_streak_days = max(streak.longest_streak_days, streak.current_streak_days)

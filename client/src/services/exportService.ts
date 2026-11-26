@@ -37,10 +37,53 @@ export function exportMarkdown(content: string, filename: string): void {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = `${filename}.md`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
+  try {
+    document.body.appendChild(anchor);
+    anchor.click();
+  } finally {
+    if (anchor.parentElement === document.body) document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  }
+}
+
+function createExportFrame(): HTMLIFrameElement {
+  const frame = document.createElement("iframe");
+  frame.setAttribute("sandbox", "allow-same-origin");
+  frame.setAttribute("aria-hidden", "true");
+  frame.tabIndex = -1;
+  Object.assign(frame.style, {
+    position: "fixed",
+    left: "-9999px",
+    top: "0",
+    width: "800px",
+    height: "0",
+    border: "0",
+  });
+  return frame;
+}
+
+/**
+ * Measures line boxes so page breaks do not split text across pages.
+ *
+ * @param target - DOM subtree to render
+ * @param targetTop - Viewport position of the top of the subtree
+ * @returns Line bounds relative to the subtree, ordered from bottom to top
+ */
+function measureTextLines(target: HTMLElement, targetTop: number) {
+  const page = target.ownerDocument;
+  const range = page.createRange();
+  const walker = page.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+  const lines: { top: number; bottom: number }[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    range.selectNodeContents(node);
+    for (const rect of range.getClientRects?.() ?? []) {
+      lines.push({
+        top: Math.floor(rect.top - targetTop),
+        bottom: Math.ceil(rect.bottom - targetTop),
+      });
+    }
+  }
+  return lines.sort((first, second) => second.top - first.top);
 }
 
 /**
@@ -57,59 +100,54 @@ export async function exportPdf(options: {
   filename: string;
 }): Promise<void> {
   const { element, html, filename } = options;
+  if (!element && !html) throw new Error("Either element or html must be provided");
 
-  let target = element;
+  const frame = element ? null : createExportFrame();
+  try {
+    let target = element;
+    if (frame && html) {
+      document.body.append(frame);
+      const page = frame.contentDocument;
+      if (!page) throw new Error("Could not create the PDF document");
+      const parsed = new DOMParser().parseFromString(html, "text/html");
+      page.replaceChild(page.importNode(parsed.documentElement, true), page.documentElement);
+      await page.fonts?.ready;
+      target = page.documentElement;
+    }
+    if (!target) throw new Error("Could not create the PDF document");
 
-  if (!target && html) {
-    const container = document.createElement("div");
-    container.innerHTML = html;
-    container.style.position = "fixed";
-    container.style.left = "-9999px";
-    container.style.top = "0";
-    container.style.width = "800px";
-    document.body.appendChild(container);
-    await new Promise<void>((resolve) => {
-      requestAnimationFrame(() => resolve());
-    });
-    target = container;
-  }
+    const { html2canvas, jsPDF } = await loadPdfDependencies();
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+    const bounds = target.getBoundingClientRect();
+    const width = Math.ceil(Math.max(bounds.width, target.scrollWidth, 1));
+    const height = Math.ceil(Math.max(bounds.height, target.scrollHeight, 1));
+    const margin = 10;
+    const pdfWidth = pdf.internal.pageSize.getWidth() - 2 * margin;
+    const mmPerPixel = pdfWidth / width;
+    const pageHeight = pdf.internal.pageSize.getHeight() - 2 * margin;
+    const pixelsPerPage = Math.max(1, Math.floor(pageHeight / mmPerPixel));
+    const lines = height > pixelsPerPage ? measureTextLines(target, bounds.top) : [];
 
-  if (!target) {
-    throw new Error("Either element or html must be provided");
-  }
-
-  const { html2canvas, jsPDF } = await loadPdfDependencies();
-
-  const canvas = await html2canvas(target, {
-    scale: 2,
-    useCORS: true,
-  });
-
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
-
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 10;
-  const maxWidth = pageWidth - margin * 2;
-
-  const imgWidth = canvas.width;
-  const imgHeight = canvas.height;
-  const ratio = Math.min(maxWidth / imgWidth, pageHeight / imgHeight);
-  const pdfWidth = imgWidth * ratio;
-  const pdfHeight = imgHeight * ratio;
-
-  const x = margin + (maxWidth - pdfWidth) / 2;
-  const y = margin;
-
-  pdf.addImage(imgData, "PNG", x, y, pdfWidth, pdfHeight);
-  pdf.save(`${filename}.pdf`);
-
-  if (html && target.parentNode) {
-    document.body.removeChild(target);
+    // Capture each printable region separately to bound canvas memory on long drafts.
+    for (let offset = 0; offset < height;) {
+      let end = Math.min(offset + pixelsPerPage, height);
+      for (const line of lines) {
+        if (line.top <= offset) break;
+        if (line.top < end && end < line.bottom) end = line.top;
+      }
+      const canvas = await html2canvas(target, {
+        y: offset,
+        width,
+        height: end - offset,
+        scale: 2,
+        useCORS: true,
+      });
+      if (offset > 0) pdf.addPage();
+      pdf.addImage(canvas, "PNG", margin, margin, pdfWidth, (end - offset) * mmPerPixel);
+      offset = end;
+    }
+    await pdf.save(`${filename}.pdf`, { returnPromise: true });
+  } finally {
+    frame?.remove();
   }
 }

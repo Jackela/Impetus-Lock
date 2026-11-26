@@ -7,6 +7,7 @@ import { copyWork, shareTextFile } from '../../lib/work-files';
 
 const COPIES_NOTICE = '持有卡片的人可以阅读。已阅读、复制、截图或由微信缓存的内容，撤回后仍可能保留。';
 const UNAVAILABLE_NOTICE = '当前微信身份需要重新确认，请重试读取。';
+const WITHDRAWN_PUBLICATION = '作品卡已撤回。';
 
 type Draft = { base: Work; title: string; text: string };
 type CardSummary = Pick<Card, 'id' | 'title'> & { snippet: string };
@@ -14,7 +15,7 @@ type Data = {
   fontSize: number;
   base: Work | null;
   latest: Work | null;
-  preview: (Work & { consentNotice: string }) | null;
+  preview: (Work & { consentNotice: string; publicationRequestId?: string }) | null;
   title: string;
   text: string;
   themeName: string;
@@ -336,11 +337,29 @@ Page<Data, Methods>({
     const key = 'publish:' + this.id + ':' + preview.version;
     this.setData({ busy: true, error: '', status: '' });
     try {
-      const operation = getPrivate<string>(key) || requestId();
-      putPrivate(key, operation);
-      const card = await api<Card>('/works/' + encodeURIComponent(this.id) + '/cards', 'POST', {
-        request_id: operation, version: preview.version,
-      });
+      const previous = getPrivate<string>(key);
+      const submit = (operation: string) => {
+        putPrivate(key, operation);
+        this.setData({ preview: { ...preview, publicationRequestId: operation } });
+        return api<Card>('/works/' + encodeURIComponent(this.id) + '/cards', 'POST', {
+          request_id: operation, version: preview.version,
+        });
+      };
+      let card: Card;
+      try {
+        card = await submit(previous || requestId());
+      } catch (error) {
+        // The server can distinguish a revoked receipt from an unrelated card withdrawal.
+        if (!previous || !this.isCurrent(generation, subject) || !(error instanceof ApiError) ||
+          error.status !== 404 || error.message !== WITHDRAWN_PUBLICATION) throw error;
+        removePrivate(key);
+        if (preview.publicationRequestId) {
+          // A retry of the same confirmation cannot republish a card after withdrawal.
+          this.setData({ preview: null, error: '上次发布的作品卡已撤回。如需再次分享，请重新预览并发布。' });
+          return;
+        }
+        card = await submit(requestId());
+      }
       if (!this.isCurrent(generation, subject)) return;
       const cards = [summarizeCard(card), ...this.data.cards.filter(previous => previous.id !== card.id)];
       this.setData({ preview: null, cards, status: '已发布固定版本，使用下方按钮发送给微信好友。' }, () => {

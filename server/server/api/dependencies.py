@@ -17,6 +17,7 @@ from server.application.services.task_service import TaskService
 from server.application.services.template_service import TemplateService
 from server.domain.repositories.task_repository import TaskRepository
 from server.domain.transactions import NullTransaction
+from server.domain.writing_progress import WritingProgress
 from server.infrastructure.persistence.database import get_session_optional
 from server.infrastructure.persistence.in_memory_task_repository import InMemoryTaskRepository
 from server.infrastructure.persistence.postgresql_streak_repository import (
@@ -28,6 +29,7 @@ from server.infrastructure.persistence.postgresql_task_repository import (
 from server.infrastructure.persistence.postgresql_template_repository import (
     PostgreSQLTemplateRepository,
 )
+from server.infrastructure.persistence.postgresql_writing_progress import PostgreSQLWritingProgress
 from server.infrastructure.persistence.transactions import SqlAlchemyTransaction
 
 # Module-level singleton for in-memory fallback (TESTING mode)
@@ -62,9 +64,19 @@ def _get_in_memory_repository() -> InMemoryTaskRepository:
     return _in_memory_repository
 
 
+def get_writing_progress(
+    session: AsyncSession | None = Depends(get_session_optional),
+) -> WritingProgress | None:
+    """Provide writing activity backed by the originating request's unit of work."""
+    if session is None:
+        return None
+    return PostgreSQLWritingProgress(session)
+
+
 def get_task_service(
     repository: TaskRepository = Depends(get_task_repository),
     session: AsyncSession | None = Depends(get_session_optional),
+    progress: WritingProgress | None = Depends(get_writing_progress),
 ) -> TaskService:
     """Provide the user-scoped TaskService as a FastAPI dependency.
 
@@ -75,13 +87,14 @@ def get_task_service(
     Args:
         repository: Task repository resolved for the current request.
         session: Optional async database session backing the transaction.
+        progress: Writing activity persisted in that transaction.
 
     Returns:
         The TaskService wired with the session-bound or null transaction.
     """
     if session is None:
         return TaskService(repository, transaction=NullTransaction())
-    return TaskService(repository, transaction=SqlAlchemyTransaction(session))
+    return TaskService(repository, transaction=SqlAlchemyTransaction(session), progress=progress)
 
 
 def get_template_service(

@@ -20,6 +20,15 @@
       </view>
     </view>
 
+    <view wx:if="{{completedWithInput.length}}" class="library-section">
+      <view class="library-section-title" aria-role="heading">收笔后留在本机的文字</view>
+      <view wx:for="{{completedWithInput}}" wx:key="id" class="panel library-entry">
+        <view class="library-entry-title">{{item.title}}</view>
+        <text class="caption">{{item.themeName}}</text>
+        <button class="button-secondary" hover-class="button-pressed" data-id="{{item.id}}" disabled="{{opening}}" bindtap="openRun">查看暂存文字</button>
+      </view>
+    </view>
+
     <view class="library-section">
       <view class="library-section-title" aria-role="heading">私密作品</view>
       <text wx:if="{{!works.length}}" class="caption">收笔后的作品会出现在这里。</text>

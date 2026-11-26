@@ -1,14 +1,4 @@
-"""Characterization tests pinning the current /streaks API contract.
-
-Frozen safety net for the route-to-service extraction described in
-openspec/changes/refactor-route-service-boundaries. These tests exercise the
-real sqlite-backed session and pin the CURRENT external contract: response
-fields, zero response when the row is absent, observed UTC date calculation
-(same-day no increment; ANY other last-activity date increments — the grace
-rule in the streaks specification is NOT implemented today and stays
-untouched), user isolation and the no-session 500 outcomes. They must pass
-UNCHANGED before and after the refactor.
-"""
+"""Pin the /streaks API response fields, day transitions and account isolation."""
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
@@ -154,7 +144,7 @@ class TestStreakGetContract:
 
 
 class TestStreakUpdateDateLogic:
-    """Pins the observed (non-grace) streak calculation."""
+    """Pins existing response fields and writing-day transitions."""
 
     async def test_update_initializes_streak_at_one(
         self, async_client: AsyncClient, current_user: dict[str, User]
@@ -217,21 +207,23 @@ class TestStreakUpdateDateLogic:
         assert data["current_streak_days"] == 3
         assert data["longest_streak_days"] == 9
 
-    async def test_update_future_dated_last_activity_still_increments(
+    async def test_update_future_dated_last_activity_preserves_recorded_day(
         self, async_client: AsyncClient, current_user: dict[str, User], user_a: User
     ) -> None:
-        """Any date difference (even a future last activity) increments today."""
+        """Keep both counters and the latest activity date when a date is out of order."""
+        future = datetime.now(UTC) + timedelta(days=2)
         await seed_streak(
             user_a.id,
             current=1,
             longest=1,
-            last_activity=datetime.now(UTC) + timedelta(days=2),
+            last_activity=future,
         )
 
         data = await _update_streak(async_client)
 
-        assert data["current_streak_days"] == 2
-        assert data["longest_streak_days"] == 2
+        assert data["current_streak_days"] == 1
+        assert data["longest_streak_days"] == 1
+        assert data["last_activity_date"] == await _stored_timestamp_wire(future)
 
     async def test_update_null_last_activity_increments(
         self, async_client: AsyncClient, current_user: dict[str, User], user_a: User

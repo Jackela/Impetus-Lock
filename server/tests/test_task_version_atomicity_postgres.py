@@ -24,7 +24,10 @@ from server.domain.entities.task import Task
 from server.infrastructure.persistence.models import Base, InterventionActionModel, TaskModel
 from server.infrastructure.persistence.postgresql_task_repository import PostgreSQLTaskRepository
 from server.infrastructure.persistence.transactions import SqlAlchemyTransaction
+from server.models.achievement import Achievement
+from server.models.streak import Streak
 from server.models.user import User
+from server.models.user_stats import UserStats
 
 POSTGRES_TEST_URL = os.getenv(
     "POSTGRES_TEST_URL",
@@ -90,7 +93,14 @@ async def postgres_sessions() -> AsyncIterator[async_sessionmaker[AsyncSession]]
         async with engine.begin() as connection:
             await connection.run_sync(
                 Base.metadata.create_all,
-                tables=[User.__table__, TaskModel.__table__, InterventionActionModel.__table__],
+                tables=[
+                    User.__table__,
+                    TaskModel.__table__,
+                    InterventionActionModel.__table__,
+                    Streak.__table__,
+                    Achievement.__table__,
+                    UserStats.__table__,
+                ],
             )
         yield async_sessionmaker(engine, expire_on_commit=False)
     finally:
