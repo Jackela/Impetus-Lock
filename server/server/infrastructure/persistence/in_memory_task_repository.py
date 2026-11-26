@@ -13,7 +13,7 @@ from uuid import UUID
 
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
-from server.domain.errors import TaskVersionConflictError
+from server.domain.errors import TaskMissingError, TaskVersionConflictError
 from server.domain.repositories.task_repository import TaskRepository
 
 ActionType = Literal["provoke", "delete", "rewrite"]
@@ -95,7 +95,7 @@ class InMemoryTaskRepository(TaskRepository):
         """
         current = self._tasks.get(task.id)
         if current is None:
-            raise ValueError(f"Task {task.id} not found")
+            raise TaskMissingError(task.id)
         if current.version != task.version - 1:
             raise TaskVersionConflictError(task.version - 1, current.version)
         # No await between the version comparison and replacement. Keep the

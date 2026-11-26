@@ -1,13 +1,4 @@
-"""Unit tests for the user-scoped StreakService.
-
-Written BEFORE extraction (openspec/changes/refactor-route-service-boundaries
-task 1.3) and kept as the service regression suite afterwards. They pin the
-OBSERVED calculation: same UTC day never increments, any other last-activity
-date increments, missing rows initialize at one, and persistence is always
-finalized (upsert) — even when the value did not change. The grace/recovery
-rule from the streaks specification is intentionally NOT asserted here; that
-discrepancy stays explicit and untouched.
-"""
+"""Unit tests for user-scoped writing days and the recovery allowance."""
 
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
@@ -31,6 +22,9 @@ class FakeStreakRepository(StreakRepository):
 
     async def get_by_user(self, user_id: UUID) -> Streak | None:
         return self.rows.get(user_id)
+
+    async def lock_user(self, user_id: UUID) -> None:
+        """Keep this single-client fake free of database locking."""
 
     async def upsert(self, streak: Streak) -> Streak:
         persisted = Streak(
@@ -102,7 +96,7 @@ class TestGetStreak:
 
 
 class TestRecordActivity:
-    """record_activity keeps the observed date calculation."""
+    """Activity uses UTC writing days and retains historical milestones."""
 
     async def test_first_activity_initializes_one_day(
         self, service: StreakService, repository: FakeStreakRepository, user_id: UUID
@@ -164,15 +158,17 @@ class TestRecordActivity:
         assert streak.current_streak_days == 3
         assert streak.longest_streak_days == 9
 
-    async def test_future_dated_activity_still_increments(
+    async def test_future_dated_activity_keeps_last_recorded_day(
         self, service: StreakService, repository: FakeStreakRepository, user_id: UUID
     ) -> None:
-        """Any date difference — even a future last activity — increments."""
-        repository.rows[user_id] = _existing(user_id, 1, 1, datetime.now(UTC) + timedelta(days=2))
+        """An out-of-order date leaves the already recorded streak in place."""
+        future = datetime.now(UTC) + timedelta(days=2)
+        repository.rows[user_id] = _existing(user_id, 1, 1, future)
 
         streak = await service.record_activity(user_id)
 
-        assert streak.current_streak_days == 2
+        assert streak.current_streak_days == 1
+        assert streak.last_activity_date == future
 
     async def test_null_last_activity_increments(
         self, service: StreakService, repository: FakeStreakRepository, user_id: UUID

@@ -42,6 +42,21 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Revert lock_ids back to PostgreSQL ARRAY."""
+    # ALTER TYPE's USING expression cannot contain a subquery. Use a
+    # connection-local function to decode JSON strings and preserve their order.
+    op.execute(
+        """
+        CREATE FUNCTION pg_temp.impetus_55b03991a06c_lock_array(locks json)
+        RETURNS varchar[] LANGUAGE sql IMMUTABLE STRICT AS $$
+            SELECT ARRAY(
+                SELECT value::varchar
+                FROM pg_catalog.json_array_elements_text(locks)
+                WITH ORDINALITY AS elements(value, position)
+                ORDER BY position
+            );
+        $$
+        """
+    )
     op.execute("ALTER TABLE tasks ALTER COLUMN lock_ids DROP DEFAULT")
     op.alter_column(
         "tasks",
@@ -49,6 +64,7 @@ def downgrade() -> None:
         existing_type=sa.JSON(),
         type_=sa.ARRAY(sa.String()),
         existing_nullable=False,
-        postgresql_using="array(select jsonb_array_elements_text(lock_ids::jsonb))",
+        postgresql_using="pg_temp.impetus_55b03991a06c_lock_array(lock_ids)",
     )
     op.execute("ALTER TABLE tasks ALTER COLUMN lock_ids SET DEFAULT '{}'")
+    op.execute("DROP FUNCTION pg_temp.impetus_55b03991a06c_lock_array(json)")

@@ -16,6 +16,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.auth.middleware import AuthenticationMiddleware
+from server.api.dependencies import get_writing_progress
 from server.api.routes import intervention
 from server.infrastructure.llm.debug_provider import DebugLLMProvider
 from server.infrastructure.persistence.database import get_session_optional
@@ -69,6 +70,7 @@ async def authenticated_commit_client(
     app.include_router(intervention.router)
     # Router, auth, service, provider, cache and SQL repository remain real.
     app.dependency_overrides[get_session_optional] = lambda: session
+    app.dependency_overrides[get_writing_progress] = lambda: None
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
