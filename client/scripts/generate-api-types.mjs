@@ -14,10 +14,8 @@ const clientDir = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2);
 const check = args.includes("--check");
 const outputIndex = args.indexOf("--output");
-const output =
-  outputIndex === -1
-    ? resolve(clientDir, "src/types/api.generated.ts")
-    : resolve(clientDir, args[outputIndex + 1]);
+const canonicalOutput = resolve(clientDir, "src/types/api.generated.ts");
+const output = outputIndex === -1 ? canonicalOutput : resolve(clientDir, args[outputIndex + 1]);
 const result = spawnSync(
   "poetry",
   [
@@ -48,7 +46,7 @@ const generated = await prettier.format(
     "// Generator: openapi-typescript 7.13.0; source: offline FastAPI app.openapi().\n" +
     "// Regenerate: npm run api:generate; verify drift: npm run api:check.\n\n" +
     astToString(await openapiTS(schema, { defaultNonNullable: false })),
-  { ...(await prettier.resolveConfig(output)), parser: "typescript" }
+  { ...(await prettier.resolveConfig(canonicalOutput)), parser: "typescript" }
 );
 
 if (check) {
