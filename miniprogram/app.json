@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/write/index",
+    "pages/library/index",
+    "pages/modes/index",
+    "pages/work/index",
+    "pages/card/index"
+  ],
+  "window": {
+    "navigationStyle": "default",
+    "navigationBarTitleText": "Impetus Lock",
+    "navigationBarTextStyle": "black",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#ffffff",
+    "backgroundTextStyle": "dark"
+  },
+  "__usePrivacyCheck__": true,
+  "permission": {
+    "scope.record": {
+      "desc": "将你主动说出的故事识别为文字；也可打字或选择剧情。"
+    }
+  },
+  "sitemapLocation": "sitemap.json"
+}

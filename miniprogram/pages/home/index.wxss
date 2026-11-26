@@ -1,0 +1,128 @@
+.home {
+  padding-top: 56px;
+}
+
+.home-title {
+  display: block;
+  margin-bottom: 20px;
+  font-size: 2.82em;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.48px;
+}
+
+.home-opening {
+  padding: 24px 22px 10px;
+}
+
+.home-opening-text {
+  display: block;
+  color: #1d1d1f;
+  font-size: 1.42em;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.27px;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.home-opening-editor {
+  height: 5em;
+  padding: 8px 10px;
+  font-size: 1.29em;
+  line-height: 1.5;
+}
+
+.home .home-opening-action {
+  margin: 3px 0 0 auto;
+  font-size: 0.88em;
+}
+
+.home-full {
+  width: 100%;
+}
+
+.home-story > .button-primary {
+  margin-top: 24px;
+}
+
+.home-actions,
+.home-launch {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.home-choice {
+  min-height: 52px;
+  padding: 11px 18px;
+  background: #fff;
+}
+
+.home-composer {
+  margin-top: 10px;
+  padding: 16px;
+}
+
+.home-draft {
+  height: 6.6em;
+  font-size: 1em;
+}
+
+.home button,
+.home navigator {
+  font-size: 1em;
+}
+
+.home-composer-actions,
+.home-library-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.home-story > .notice {
+  margin-top: 12px;
+}
+
+.home-footer {
+  margin-top: 20px;
+  padding-top: 8px;
+  border-top: 1px solid #d9d9df;
+}
+
+.home-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 14px;
+}
+
+.home-notes .button-link,
+.home-library-error .button-link,
+.home .caption {
+  font-size: 0.82em;
+}
+
+.home .notice {
+  font-size: 0.88em;
+}
+
+.home-rules {
+  display: block;
+  max-width: 360px;
+  margin: 4px 8px 8px;
+}
+
+@media screen and (max-width: 420px) {
+  .home {
+    padding-top: 44px;
+  }
+
+  .home-title {
+    font-size: 2.59em;
+  }
+}

@@ -62,6 +62,24 @@ Mega Crit，2019-01-23 发布。 [Slay the Spire 1.0: Farewell Early Access](htt
 
 微信开放文档，页面标注末次编辑 2026-11-12。 [小程序协同工作和发布](https://developers.weixin.qq.com/miniprogram/dev/framework/quickstart/release.html)
 
+## 界面与首次体验
+
+### U1
+
+VoltAgent 的 Apple 网站设计分析，本机资料固定到 `fcc70284932276d085f01ef9f83edde90b1258cb`。定版色彩取该分析的白底、浅灰背景、深灰正文和 `#0066cc` 操作蓝。该资料分析网站视觉样式，触控与字号另参考 Apple 官方指南。 [Apple DESIGN.md](https://github.com/VoltAgent/awesome-design-md/blob/fcc70284932276d085f01ef9f83edde90b1258cb/design-md/apple/DESIGN.md)
+
+### U2
+
+Apple HIG，2026-11-26 核对。建议通过实际操作学习，在相关界面适时提示，按需请求权限。可访问性指南建议支持字号放大及足够大的触控范围。 [Onboarding](https://developer.apple.com/design/human-interface-guidelines/onboarding?changes=_7) · [Designing for games](https://developer.apple.com/design/human-interface-guidelines/designing-for-games) · [Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility?changes=____5_8_2) · [UI Design Dos and Don’ts](https://developer.apple.com/design/tips/)
+
+### U3
+
+Roblox Creator Hub，2026-11-26 核对。文档把最初几分钟的实际游玩纳入首次体验，以目标达成和逐步流失检查引导，并建议首次遇到功能时提供情境提示。 [Onboarding](https://create.roblox.com/docs/production/game-design/onboarding) · [Onboarding techniques](https://create.roblox.com/docs/production/game-design/onboarding-techniques)
+
+### U4
+
+微信广告《流量主成长营》，2026-11-26 核对“广告竞争分析与转化漏斗”页。课件把小游戏加载速度列入转化率的优化方向。项目据此优先显示可操作的首屏。该材料描述广告转化，首局交互与留存仍须用本产品验证。 [腾讯广告课堂 PDF](https://training.tencentads.com/uploads/202406/XjoUfkBl_ExGwb9.pdf)
+
 ## 项目资料
 
 - 仓库规则、领域术语、开发指南和 CI 均从基线 `6f23cdf1b387a4deefc5e8cf17a598371654642a` 对照。可用 `git show <提交>:<路径>` 回查同版原文。 [仓库约定](../AGENTS.md) · [OpenSpec 工作约定](../openspec/AGENTS.md) · [领域术语](../CONTEXT.md) · [开发指南](../DEVELOPMENT.md) · [CI 工作流](../.github/workflows/ci.yml)
@@ -75,5 +93,7 @@ Mega Crit，2019-01-23 发布。 [Slay the Spire 1.0: Farewell Early Access](htt
 - 2026-11-26 · 入口确定为剧情选项旁常驻“自己写”，其中提供打字和语音。模式锁法、能力进化与标准回合节奏见[首局功能设计](../docs/product/first-story.md)。
 
 - 2026-11-26 · 根据烧信与留信的三轮对照更新项目设计取舍，包括高强度模式的一次切身后果、两条能力的进化及满级调整。[首局推演](../docs/product/first-story.md) · [挑战规则](../openspec/changes/add-story-challenge-rules/specs/story-challenge-rules/spec.md)
+
+- 2026-11-26 · 登记 Apple、Roblox 和微信广告课堂材料，记录首屏直接游玩和逐步说明的依据。[小程序首局界面](../docs/product/miniapp-interface.md)
 
 [返回知识库](README.md)

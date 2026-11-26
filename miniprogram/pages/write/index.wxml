@@ -1,0 +1,188 @@
+<view class="page writing-page" style="font-size:{{fontSize}}px">
+  <view class="writer-top">
+    <text class="writer-chapter" aria-role="heading">{{chapter || '写故事'}}</text>
+    <button class="button-link writer-library" bindtap="openLibrary">我的写作</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="notice" aria-live="polite">正在打开故事…</view>
+  <view wx:if="{{status}}" class="notice {{noticeKind === 'error' ? 'notice-error' : ''}}" aria-live="polite">{{status}}</view>
+  <view wx:if="{{needsReload}}" class="writer-row">
+    <button class="button-primary" hover-class="button-pressed" bindtap="reload">重新确认并打开</button>
+    <button class="button-link" bindtap="goHome">回首页</button>
+  </view>
+  <button wx:if="{{!run && !loading && !needsReload}}" class="button-link" bindtap="goHome">回首页</button>
+
+  <block wx:if="{{run}}">
+    <view class="writer-details">
+      <text class="caption">{{modeLabel}} · {{run.turns}} 次续写</text>
+      <button class="button-link" bindtap="toggleRules" aria-expanded="{{showRules}}">{{showRules ? '收起局规' : '查看局规'}}</button>
+    </view>
+    <view wx:if="{{showRules}}" class="panel rules-panel">
+      <text class="body-copy">已锁的句子保留在正文里。剧情行动和自己写都能推进故事。</text>
+      <text wx:if="{{run.mode === 'high'}}" class="body-copy">这局可能写出重要行动的后果。「换个解释」进化并启用后，可用一次机会解锁或替换一句。剩余 {{run.lock_uses}} 次。</text>
+      <text wx:if="{{run.rules && run.rules.action === 'delete' && !run.rules.recoverable}}" class="body-copy">这局允许删除未锁内容，被删的文字在局内无法恢复。</text>
+      <text wx:if="{{run.abilities.returning.level}}" class="caption">{{run.abilities.returning.level > 1 ? '旧人物带回线索' : '旧人物回场'}} · {{run.abilities.returning.enabled ? '启用' : '停用'}}</text>
+      <text wx:if="{{run.abilities.interpret.level}}" class="caption">换个解释{{run.abilities.interpret.level > 1 ? '（已进化）' : ''}} · {{run.abilities.interpret.enabled ? '启用' : '停用'}}</text>
+    </view>
+
+    <view class="manuscript" aria-label="故事正文">
+      <view class="manuscript-opening">
+        <text class="story-opening" user-select="{{true}}">{{opening}}</text>
+        <button wx:if="{{run.status === 'active'}}" class="button-link" data-target="opening" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">编辑题句</button>
+      </view>
+      <view wx:for="{{sections}}" wx:key="id" class="story-segment {{item.locked ? 'story-segment-locked' : ''}}">
+        <text wx:if="{{item.locked}}" class="lock-status">已锁句</text>
+        <text wx:if="{{item.text}}" class="story-paragraph" user-select="{{true}}">{{item.text}}</text>
+        <text wx:elif="{{item.original}}" class="caption">这段已从正文移除。</text>
+        <view wx:if="{{run.status === 'active'}}" class="segment-controls">
+          <button wx:if="{{!item.locked && item.text}}" class="button-link" data-target="{{item.id}}" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">编辑这段</button>
+          <button wx:if="{{item.original}}" class="button-link" data-target="{{item.id}}" bindtap="toggleOriginal" aria-expanded="{{originalTarget === item.id}}">{{originalTarget === item.id ? '收起原文' : '查看原文'}}</button>
+          <button wx:if="{{item.locked && canChangeLock}}" class="button-link" data-target="{{item.id}}" data-kind="unlock" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">解锁</button>
+          <button wx:if="{{item.locked && canChangeLock}}" class="button-link" data-target="{{item.id}}" data-kind="replace" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">替换</button>
+          <button wx:if="{{!item.locked && item.text && canIntervene}}" class="button-link" data-target="{{item.id}}" data-kind="intervene" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">{{run.rules.action === 'delete' ? '按局规删除' : run.rules.action === 'rewrite' ? '按局规改写' : '按局规插入'}}</button>
+        </view>
+        <view wx:if="{{originalText && originalTarget === item.id}}" class="original-note">
+          <text class="caption">{{item.source === 'voice' ? '识别原文' : '改动前的文字'}}</text>
+          <text class="story-paragraph" user-select="{{true}}">{{originalText}}</text>
+          <view wx:if="{{!item.locked && run.status === 'active'}}" class="segment-controls">
+            <button class="button-link" data-target="{{item.id}}" data-kind="restore" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">恢复原文</button>
+            <button wx:if="{{item.source === 'voice'}}" class="button-link" data-target="{{item.id}}" data-kind="restyle" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">更改口述样式</button>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{run.status === 'active' && run.recoveries && run.recoveries.length}}" class="writer-panel">
+      <button class="button-link" bindtap="toggleRecoveries" aria-expanded="{{showRecoveries}}">{{showRecoveries ? '收起可恢复的原文' : '查看可恢复的原文'}}</button>
+      <view wx:if="{{showRecoveries}}" class="panel recoveries-panel">
+        <view wx:for="{{run.recoveries}}" wx:key="id">
+          <text class="caption">{{item.replacement ? '改写前的文字' : '删除前的文字'}}</text>
+          <text class="story-paragraph" user-select="{{true}}">{{item.segment.text}}</text>
+          <button class="button-link" data-target="{{item.id}}" data-kind="restore" bindtap="openEditor" disabled="{{busy || hasPending || finishing || voicePhase}}">恢复这段原文</button>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{editor}}" id="writing-editor" class="panel writer-panel" aria-label="{{editor.title}}">
+      <text class="writer-heading" aria-role="heading">{{editor.title}}</text>
+      <text wx:if="{{editor.description}}" class="body-copy">{{editor.description}}</text>
+      <block wx:if="{{editor.kind !== 'edit'}}">
+        <text class="caption">当前文字</text>
+        <text class="story-paragraph">{{editor.current || '这段已从正文移除。'}}</text>
+      </block>
+      <textarea wx:if="{{editor.kind === 'edit'}}" class="field writer-textarea" aria-label="新文字" value="{{editor.text}}" bindinput="editText" maxlength="16000" auto-height adjust-position disabled="{{busy || hasPending}}" />
+      <block wx:elif="{{editor.text}}">
+        <text class="caption">改动后</text>
+        <text class="story-paragraph">{{editor.text}}</text>
+      </block>
+      <picker wx:if="{{editor.kind === 'restyle'}}" mode="selector" range="{{styles}}" value="{{styleIndex}}" bindchange="selectStyle" disabled="{{busy || hasPending}}">
+        <view class="writer-picker" aria-label="口述样式，{{styles[styleIndex]}}">{{styles[styleIndex]}} <text aria-hidden="{{true}}">⌄</text></view>
+      </picker>
+      <view class="writer-row">
+        <button class="button-primary" hover-class="button-pressed" bindtap="confirmEditor" disabled="{{busy || hasPending || (editor.kind === 'edit' && !editor.text)}}">{{editor.previewKind && !editor.text ? '生成预览' : '确认保存'}}</button>
+        <button class="button-link" bindtap="closeEditor" disabled="{{busy}}">取消</button>
+      </view>
+    </view>
+
+    <view wx:if="{{hasPending && !busy && !finishing}}" class="panel writer-panel" aria-label="待核对操作">
+      <text class="writer-heading" aria-role="heading">待核对操作</text>
+      <block wx:if="{{pendingVoice && pendingText}}">
+        <text class="caption">识别原文</text>
+        <text class="story-paragraph" user-select="{{true}}">{{pendingText}}</text>
+      </block>
+      <view class="writer-row">
+        <button wx:if="{{canRetryPending}}" class="button-secondary" hover-class="button-pressed" bindtap="retryPending">重试这次操作</button>
+        <button wx:if="{{pendingVoice && pendingText}}" class="button-secondary" hover-class="button-pressed" bindtap="useVoiceOriginal">用识别原文</button>
+        <button class="button-link" bindtap="reload">核对最新正文</button>
+        <button wx:if="{{pendingKind !== 'finish'}}" class="button-link" bindtap="abandonPending">放弃这次操作</button>
+      </view>
+    </view>
+
+    <view wx:if="{{run.status === 'active' && !finishing && heldVoiceText}}" class="panel writer-panel">
+      <text class="writer-heading" aria-role="heading">待写入的口述</text>
+      <text class="story-paragraph" user-select="{{true}}">{{heldVoiceText}}</text>
+      <view class="writer-row">
+        <button class="button-primary" hover-class="button-pressed" bindtap="submitHeldVoice" disabled="{{busy || hasPending}}">写入这段</button>
+        <button class="button-link" bindtap="discardHeldVoice" disabled="{{busy}}">放弃这段</button>
+      </view>
+    </view>
+    <view wx:if="{{run.status === 'active' && !finishing && !editor && !heldVoiceText}}">
+      <view wx:if="{{offers.length}}" class="panel writer-panel ability-panel">
+        <text class="writer-heading" aria-role="heading">选择局内能力</text>
+        <button wx:for="{{offers}}" wx:key="key" class="button-secondary ability-choice" hover-class="button-pressed" data-ability="{{item.key}}" bindtap="chooseAbility" disabled="{{busy || hasPending || voicePhase}}">
+          <text class="ability-title">{{item.name}}</text>
+          <text class="caption">{{item.description}}</text>
+        </button>
+      </view>
+      <view wx:if="{{run.interpretations && run.interpretations.length}}" class="panel writer-panel ability-panel">
+        <text class="writer-heading" aria-role="heading">可以沿这个解释写</text>
+        <button wx:for="{{run.interpretations}}" wx:key="*this" class="button-secondary" hover-class="button-pressed" data-text="{{item}}" bindtap="adoptInterpretation" disabled="{{busy || hasPending || voicePhase}}">{{item}}</button>
+        <text class="caption">也可以继续写，把原因留白。</text>
+      </view>
+      <view wx:if="{{run.pending_intervention || run.generation_pending}}" class="writer-row">
+        <text class="caption">上一段已写入，本轮局规的变化还未生成。</text>
+        <button class="button-link" bindtap="retryIntervention" disabled="{{busy || hasPending || voicePhase}}">重试本轮变化</button>
+      </view>
+      <view class="writer-panel next-actions">
+        <text wx:if="{{run.choices.length}}" class="writer-heading" aria-role="heading">接下来怎么做？</text>
+        <button wx:for="{{run.choices}}" wx:key="*this" class="button-secondary plot-choice" hover-class="button-pressed" data-text="{{item}}" bindtap="choosePlot" disabled="{{busy || voicePhase || (hasPending && pendingKind !== 'turn')}}">{{item}}</button>
+        <button class="{{composing ? 'button-link' : 'button-primary'}} take-over" hover-class="button-pressed" bindtap="takeOver" aria-expanded="{{composing}}">自己写</button>
+      </view>
+
+      <view wx:if="{{composing}}" id="writing-composer" class="panel writer-panel composer" aria-label="自由续写">
+        <textarea class="field writer-textarea" aria-label="接着写一段" value="{{draft}}" bindinput="onDraft" placeholder="接着写一段…" maxlength="16000" auto-height adjust-position disabled="{{voicePhase}}" />
+        <view class="writer-row">
+          <button class="button-primary" hover-class="button-pressed" bindtap="submitDraft" disabled="{{busy || hasPending || !draft || voicePhase}}">写入故事</button>
+          <button wx:if="{{draft}}" class="button-link" bindtap="discardDraft" disabled="{{busy || hasPending || voicePhase}}">清空输入</button>
+        </view>
+        <view class="voice-controls">
+          <picker mode="selector" range="{{styles}}" value="{{styleIndex}}" bindchange="selectStyle" disabled="{{voicePhase || busy}}">
+            <view class="writer-picker" aria-label="口述样式，{{styles[styleIndex]}}">{{styles[styleIndex]}} <text aria-hidden="{{true}}">⌄</text></view>
+          </picker>
+          <button class="button-secondary record-button {{voicePhase === 'recording' ? 'is-recording' : ''}}" hover-class="none" bindtouchstart="startRecording" bindtouchend="releaseRecording" bindtouchcancel="cancelRecording" aria-label="按住说话，松手发送" disabled="{{busy || hasPending || privacyBusy}}">{{voicePhase === 'recording' ? '录音 ' + seconds + ' 秒' : voicePhase === 'limit' ? '松手发送' : '按住说话'}}</button>
+          <button class="button-link" bindtap="toggleRecording" disabled="{{busy || hasPending || voicePhase === 'processing' || privacyBusy}}">{{voicePhase === 'recording' || voicePhase === 'limit' ? '点按发送' : voiceReady ? '点按录音' : '启用语音'}}</button>
+          <button wx:if="{{voicePhase}}" class="button-link" bindtap="cancelRecording">取消录音</button>
+          <button wx:if="{{mustOpenSettings}}" class="button-link" bindtap="openMicSettings">打开微信权限设置</button>
+        </view>
+        <view wx:if="{{privacyOpen}}" class="privacy-note" aria-label="语音隐私授权">
+          <text class="writer-heading" aria-role="heading">启用语音续写</text>
+          <text class="body-copy">录音期间，语音由微信同声传译识别。正常松手后才会发送识别文字，正文和作品只保存文字。你也可以继续打字或点选剧情。</text>
+          <button class="button-link" bindtap="viewPrivacy">查看隐私保护指引</button>
+          <view class="writer-row">
+            <button id="write-agree-privacy" class="button-primary" hover-class="button-pressed" open-type="agreePrivacyAuthorization" bindagreeprivacyauthorization="agreePrivacy">同意并启用</button>
+            <button class="button-link" bindtap="declinePrivacy">暂不开启</button>
+          </view>
+        </view>
+      </view>
+    </view>
+    <button wx:if="{{run.status === 'active' && !finishing}}" class="button-link finish-entry" bindtap="beginFinish">收笔</button>
+
+    <view wx:if="{{finishing}}" class="panel writer-panel finish-panel">
+      <text class="writer-heading" aria-role="heading">收笔</text>
+      <text class="body-copy">收笔后，本局正文会保存成一篇私密作品。</text>
+      <button wx:if="{{!pauseConfirmed && !busy}}" class="button-primary" hover-class="button-pressed" bindtap="retryPause">重试暂停</button>
+      <block wx:if="{{pauseConfirmed}}">
+        <text wx:if="{{hasPending && pendingKind !== 'finish'}}" class="body-copy">先核对这次操作。你可以处理待续写内容，或仅保存已确认的正文。</text>
+        <text wx:if="{{draft && !hasPending}}" class="body-copy">还有一段没写入。你可以先写入故事，或保存当前正文。</text>
+        <text wx:if="{{voicePhase === 'processing'}}" class="body-copy">正在识别这段口述。</text>
+        <block wx:if="{{heldVoiceText}}">
+          <text class="caption">识别原文</text>
+          <text class="story-paragraph" user-select="{{true}}">{{heldVoiceText}}</text>
+        </block>
+        <view class="writer-row">
+          <button wx:if="{{hasPending && canRetryPending && (pendingKind === 'finish' || pendingKind === 'turn')}}" class="button-secondary" hover-class="button-pressed" bindtap="retryPending" disabled="{{busy}}">{{pendingKind === 'finish' ? '重试保存作品' : '核对并保留这段'}}</button>
+          <button wx:if="{{voicePhase === 'recording' || voicePhase === 'limit'}}" class="button-secondary" hover-class="button-pressed" bindtap="releaseRecording">结束录音，核对文字</button>
+          <button wx:if="{{!hasPending && heldVoiceText}}" class="button-primary" hover-class="button-pressed" bindtap="submitHeldVoice" disabled="{{busy}}">写入这段口述</button>
+          <button wx:if="{{!hasPending && draft && !voicePhase && !heldVoiceText}}" class="button-primary" hover-class="button-pressed" bindtap="includeDraft" disabled="{{busy}}">先写入这段</button>
+          <button wx:if="{{pendingKind !== 'finish' && (hasPending || draft || heldVoiceText || voicePhase)}}" class="button-secondary" hover-class="button-pressed" bindtap="discardAndFinish" disabled="{{busy}}">放弃待写入内容并收笔</button>
+          <button wx:if="{{!hasPending && !draft && !heldVoiceText && !voicePhase}}" class="button-primary" hover-class="button-pressed" bindtap="confirmFinish" disabled="{{busy}}">确认收笔</button>
+          <button wx:if="{{pendingKind !== 'finish'}}" class="button-link" bindtap="returnToWriting" disabled="{{busy}}">继续写</button>
+        </view>
+      </block>
+    </view>
+
+    <view wx:if="{{run.status === 'finished'}}" class="writer-row">
+      <button class="button-link" bindtap="goHome">回首页</button>
+    </view>
+  </block>
+</view>

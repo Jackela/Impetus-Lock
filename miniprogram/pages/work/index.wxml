@@ -1,0 +1,73 @@
+<view class="page work-page" style="font-size: {{fontSize}}px">
+  <view wx:if="{{loading}}" class="notice" aria-role="status">正在读取私密作品…</view>
+  <view wx:if="{{!base && error}}" class="notice notice-error" aria-role="alert">
+    <text>{{error}}</text>
+    <button class="button-secondary" hover-class="button-pressed" bindtap="refresh">重试读取</button>
+  </view>
+
+  <block wx:if="{{preview}}">
+    <view class="heading work-title" aria-role="heading">分享预览</view>
+    <text class="caption work-support">发布后，这一版标题、正文和同题信息将固定在卡片里。持有卡片的人可以阅读，转发后也能访问。</text>
+    <view class="panel work-preview">
+      <view class="work-section-title" aria-role="heading">{{preview.title || '无题作品'}}</view>
+      <text class="caption">{{themeName}} · {{modeName}}</text>
+      <text wx:if="{{preview.opening}}" class="caption">同题开场：{{preview.opening}}</text>
+      <text wx:if="{{preview.rules}}" class="caption">{{preview.rules}}</text>
+      <text wx:if="{{preview.requires_consent}}" class="caption">好友开局前需要确认不可恢复删除规则。</text>
+      <text wx:if="{{preview.ai_generated}}" class="caption">作品含 AI 生成内容</text>
+      <text class="body-copy work-story">{{preview.text}}</text>
+    </view>
+    <text class="caption work-support">已阅读、复制、截图或由微信缓存的内容，撤回后仍可能保留。</text>
+    <view wx:if="{{error}}" class="notice notice-error" aria-role="alert">{{error}}</view>
+    <button class="button-primary work-action" hover-class="button-pressed" bindtap="publish" disabled="{{busy}}" loading="{{busy}}">{{busy ? '正在发布' : '确认发布这张卡'}}</button>
+    <button class="button-secondary work-action" hover-class="button-pressed" bindtap="closePreview" disabled="{{busy}}">返回私密作品</button>
+  </block>
+
+  <block wx:elif="{{base}}">
+    <view class="heading work-title" aria-role="heading">私密作品</view>
+    <text class="caption work-support">用当前微信身份可以重新打开。修改作品不会改变已经收笔的挑战。</text>
+
+    <label class="work-label" for="work-title">标题</label>
+    <input class="field work-input" id="work-title" aria-label="作品标题" placeholder="作品标题（可留空）" maxlength="255" value="{{title}}" disabled="{{busy || loading}}" bindinput="titleChanged" />
+    <label class="work-label" for="work-text">正文</label>
+    <textarea class="field work-editor" id="work-text" aria-label="作品正文" value="{{text}}" maxlength="-1" disabled="{{busy || loading}}" cursor-spacing="24" bindinput="textChanged"></textarea>
+
+    <text wx:if="{{dirty && !storageError}}" class="caption work-support">修改已在本机暂存，保存后可从当前微信身份找回。</text>
+    <view wx:if="{{storageError}}" class="notice notice-error" aria-role="alert">{{storageError}}</view>
+    <view wx:if="{{error}}" class="notice notice-error" aria-role="alert">{{error}}</view>
+    <view wx:if="{{status}}" class="notice" aria-role="status">{{status}}</view>
+
+    <view wx:if="{{latest}}" class="panel work-preview">
+      <view class="work-section-title" aria-role="heading">已保存的版本</view>
+      <text class="work-saved-title">{{latest.title || '无题作品'}}</text>
+      <text selectable="true" class="body-copy work-story">{{latest.text}}</text>
+      <button class="button-primary" hover-class="button-pressed" bindtap="useCurrentEdits" disabled="{{busy}}">保留我的修改</button>
+      <button class="button-secondary" hover-class="button-pressed" bindtap="useSavedVersion" disabled="{{busy}}">采用已保存版本</button>
+    </view>
+
+    <button wx:if="{{!verified && !loading}}" class="button-secondary work-action" hover-class="button-pressed" bindtap="refresh" disabled="{{busy}}">重试读取已保存版本</button>
+    <button wx:if="{{verified && dirty && !latest}}" class="button-primary work-action" hover-class="button-pressed" bindtap="save" disabled="{{busy}}">保存作品</button>
+    <view class="work-export">
+      <button class="button-secondary" hover-class="button-pressed" bindtap="copy" disabled="{{busy}}">复制文字</button>
+      <button class="button-secondary" hover-class="button-pressed" bindtap="exportTxt" disabled="{{busy}}">导出 TXT</button>
+    </view>
+
+    <view class="work-section" id="work-card-section">
+      <view class="work-section-title" aria-role="heading">微信作品卡</view>
+      <button wx:if="{{verified && !dirty && !latest}}" class="button-primary" hover-class="button-pressed" bindtap="previewShare" disabled="{{busy || cardsLoading}}">预览分享版本</button>
+      <text wx:if="{{dirty}}" class="caption work-support">保存当前修改后可以预览并发布新版本。原来的卡片继续展示原版本。</text>
+      <view wx:if="{{cardsLoading}}" class="notice" aria-role="status">正在读取作品卡…</view>
+      <view wx:if="{{cardsError}}" class="notice notice-error" aria-role="alert">
+        <text>{{cardsError}}</text>
+        <button class="button-secondary" hover-class="button-pressed" bindtap="refreshCards" disabled="{{busy}}">核对作品卡列表</button>
+      </view>
+      <view wx:for="{{cards}}" wx:key="id" class="panel work-preview">
+        <text class="work-saved-title">{{item.title || '无题作品'}}</text>
+        <text class="caption work-shared-snippet">{{item.snippet}}</text>
+        <navigator wx:if="{{!busy && !cardsLoading}}" class="button-link" hover-class="button-pressed" url="/pages/card/index?id={{item.id}}">查看卡片正文</navigator>
+        <button class="button-primary" hover-class="button-pressed" open-type="share" data-id="{{item.id}}" disabled="{{busy || cardsLoading}}">发送这张作品卡</button>
+        <button class="button-secondary work-withdraw" hover-class="button-pressed" bindtap="withdraw" data-id="{{item.id}}" disabled="{{busy || cardsLoading}}">撤回这张卡</button>
+      </view>
+    </view>
+  </block>
+</view>

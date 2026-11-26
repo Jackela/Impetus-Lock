@@ -1,0 +1,13 @@
+{
+  "description": "Impetus Lock · 微信互动故事",
+  "projectname": "Impetus-Lock",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "dist/",
+  "appid": "touristappid",
+  "setting": {
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": true
+  }
+}

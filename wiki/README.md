@@ -5,6 +5,7 @@
 - [GitHub 开发范式](github-development.md) · 迭代 Issue、可复现任务、OpenSpec、人工评审和结果证据。
 - [Rogue-like 玩法借鉴](roguelike-design.md) · 同题写作、能力组合和局间解锁，以及 bunkiten 的点选与自由输入参考。
 - [微信小程序平台](wechat-platform.md) · 语音、隐私、分享和公开首发的资料及主体核验事项。
+- [小程序首局界面](../docs/product/miniapp-interface.md) · 首屏操作、按需说明、可访问性及 Apple、Roblox 和微信资料的项目取舍。
 - [来源和更新记录](SOURCES.md) · 原始链接、固定版本、核对日期和变更摘要。
 
 ## 维护方法

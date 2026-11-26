@@ -1,0 +1,7 @@
+.card-title { overflow-wrap: anywhere; }
+.card-credit { display: block; margin-top: 12px; }
+.card-story { display: block; margin: 24px 0 36px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.card-challenge { display: flex; flex-direction: column; gap: 10px; padding: 20px; overflow-wrap: anywhere; }
+.card-challenge-title { font-size: 1.29em; font-weight: 600; }
+.card-challenge button { margin-top: 8px; }
+.card-other { margin-top: 14px; }

@@ -36,6 +36,7 @@ from server.api.routes import (
     style_history,
     tasks,
     templates,
+    wechat,
 )
 from server.auth import router as auth_router
 from server.domain.errors import AppError, LLMProviderError
@@ -164,6 +165,7 @@ app.include_router(achievements.router)
 app.include_router(stats.router)
 app.include_router(streaks.router)
 app.include_router(templates.router)
+app.include_router(wechat.router)
 
 # Include testing routes (only when TESTING=true)
 if os.getenv("TESTING"):

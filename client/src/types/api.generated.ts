@@ -67,6 +67,258 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/wechat/cards/{card_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Read Card
+     * @description Read a live card through its public text-only projection.
+     */
+    get: operations["read_card_api_wechat_cards__card_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/library": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Library
+     * @description List the signed-in author's runs, works, saved modes and discoveries.
+     */
+    get: operations["library_api_wechat_library_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/modes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * New Mode
+     * @description Save a personal mode using the author's discovered rules.
+     */
+    post: operations["new_mode_api_wechat_modes_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/runs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * New Run
+     * @description Open a run with its own rules, ownership and request receipt.
+     */
+    post: operations["new_run_api_wechat_runs_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/runs/{run_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Run
+     * @description Return the current run for its owner.
+     */
+    get: operations["run_api_wechat_runs__run_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/runs/{run_id}/actions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Action
+     * @description Apply a command at the writer's expected version.
+     */
+    post: operations["action_api_wechat_runs__run_id__actions_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/runs/{run_id}/preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Preview
+     * @description Preview an authorized change and discard candidates whose source version changed.
+     */
+    post: operations["preview_api_wechat_runs__run_id__preview_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/runs/{run_id}/receipts/{request_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Receipt
+     * @description Reconcile an input or command without replaying it or returning deleted text.
+     */
+    get: operations["receipt_api_wechat_runs__run_id__receipts__request_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/session": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Session
+     * @description Exchange a WeChat code for a mini-program session.
+     */
+    post: operations["session_api_wechat_session_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/works/{work_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Work
+     * @description Read the author's independently editable private work.
+     */
+    get: operations["work_api_wechat_works__work_id__get"];
+    /**
+     * Edit Work
+     * @description Update the title and text at the expected work version.
+     */
+    put: operations["edit_work_api_wechat_works__work_id__put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Edit Work
+     * @description Update the title and text at the expected work version.
+     */
+    patch: operations["edit_work_api_wechat_works__work_id__patch"];
+    trace?: never;
+  };
+  "/api/wechat/works/{work_id}/cards": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cards
+     * @description List an author's published cards for this work.
+     */
+    get: operations["cards_api_wechat_works__work_id__cards_get"];
+    put?: never;
+    /**
+     * Publish
+     * @description Check the selected text before publishing its immutable snapshot.
+     */
+    post: operations["publish_api_wechat_works__work_id__cards_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/wechat/works/{work_id}/cards/{card_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Revoke
+     * @description Revoke future reads and starts from the author's card.
+     */
+    delete: operations["revoke_api_wechat_works__work_id__cards__card_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/auth/login": {
     parameters: {
       query?: never;
@@ -1067,6 +1319,16 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
+     * AbilityView
+     * @description Current level and activation of a story ability.
+     */
+    AbilityView: {
+      /** Enabled */
+      enabled: boolean;
+      /** Level */
+      level: number;
+    };
+    /**
      * AchievementDefinition
      * @description Definition of an achievement type.
      */
@@ -1121,6 +1383,52 @@ export interface components {
       } | null;
       /** Name */
       name: string;
+    };
+    /**
+     * Action
+     * @description Versioned command issued by the writer.
+     */
+    Action: {
+      /** Ability */
+      ability?:
+        | ("returning" | "interpret" | "skip" | "toggle_returning" | "toggle_interpret" | "keep")
+        | null;
+      /** Interpretation */
+      interpretation?: string | null;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind:
+        | "turn"
+        | "ability"
+        | "edit"
+        | "unlock"
+        | "replace"
+        | "begin_finish"
+        | "resume"
+        | "finish"
+        | "restore"
+        | "restyle"
+        | "intervene"
+        | "cancel";
+      /** Request Id */
+      request_id: string;
+      /**
+       * Retain
+       * @default false
+       */
+      retain?: boolean;
+      /** Source */
+      source?: ("choice" | "keyboard" | "voice") | null;
+      /** Style */
+      style?: ("verbatim" | "voice" | "polish") | null;
+      /** Target */
+      target?: string | null;
+      /** Text */
+      text?: string | null;
+      /** Version */
+      version: number;
     };
     /**
      * AnchorLockId
@@ -1230,6 +1538,51 @@ export interface components {
       user: components["schemas"]["UserResponse"];
     };
     /**
+     * CardList
+     * @description Owner's active share cards for one work.
+     */
+    CardList: {
+      /** Cards */
+      cards: components["schemas"]["CardView"][];
+    };
+    /**
+     * CardView
+     * @description Fields visible to every holder of a published card.
+     */
+    CardView: {
+      /** Ai Generated */
+      ai_generated: boolean;
+      /** Challenge Id */
+      challenge_id: string;
+      /** Id */
+      id: string;
+      /**
+       * Mode
+       * @enum {string}
+       */
+      mode: "normal" | "high" | "custom";
+      /** Opening */
+      opening: string;
+      /** Requires Consent */
+      requires_consent: boolean;
+      /**
+       * Rules
+       * @default
+       */
+      rules?: string;
+      /** Rules Version */
+      rules_version: number;
+      /** Text */
+      text: string;
+      /**
+       * Theme
+       * @enum {string}
+       */
+      theme: "letter" | "detective";
+      /** Title */
+      title: string;
+    };
+    /**
      * ClientMeta
      * @description Client-provided metadata about document state.
      *
@@ -1263,6 +1616,34 @@ export interface components {
        * @description Selection end position
        */
       selection_to: number;
+    };
+    /**
+     * DiscoveryView
+     * @description Persistent discoveries earned by this author.
+     */
+    DiscoveryView: {
+      /** Completed */
+      completed: number;
+      /** Delete */
+      delete: boolean;
+      /** Detective */
+      detective: boolean;
+      /** High */
+      high: boolean;
+      /** Rewrite */
+      rewrite: boolean;
+    };
+    /**
+     * EditWork
+     * @description A new version of a private work.
+     */
+    EditWork: {
+      /** Text */
+      text: string;
+      /** Title */
+      title: string;
+      /** Version */
+      version: number;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -1516,6 +1897,27 @@ export interface components {
       source: "muse" | "loki";
     };
     /**
+     * LibraryView
+     * @description Owned drafts, finished works, reusable rules and discovered privileges.
+     */
+    LibraryView: {
+      /** Modes */
+      modes: components["schemas"]["ModeView"][];
+      progress: components["schemas"]["DiscoveryView"];
+      /** Runs */
+      runs: components["schemas"]["RunView"][];
+      /** Works */
+      works: components["schemas"]["WorkView"][];
+    };
+    /**
+     * Login
+     * @description One-time code obtained from wx.login.
+     */
+    Login: {
+      /** Code */
+      code: string;
+    };
+    /**
      * LoginRequest
      * @description User login request.
      * @example {
@@ -1533,6 +1935,110 @@ export interface components {
       password: string;
     };
     /**
+     * ModeView
+     * @description The stored recipe for a future personal challenge.
+     */
+    ModeView: {
+      /**
+       * Action
+       * @enum {string}
+       */
+      action: "insert" | "rewrite" | "delete";
+      /** Id */
+      id: string;
+      /** Lock */
+      lock: boolean;
+      /** Name */
+      name: string;
+      /** Recoverable */
+      recoverable: boolean;
+      /**
+       * Trigger
+       * @enum {string}
+       */
+      trigger: "manual" | "response" | "automatic";
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * NewMode
+     * @description A named rule configuration for later runs.
+     */
+    NewMode: {
+      /**
+       * Action
+       * @enum {string}
+       */
+      action: "insert" | "rewrite" | "delete";
+      /** Lock */
+      lock: boolean;
+      /** Name */
+      name: string;
+      /** Recoverable */
+      recoverable: boolean;
+      /**
+       * Trigger
+       * @enum {string}
+       */
+      trigger: "manual" | "response" | "automatic";
+    };
+    /**
+     * Preview
+     * @description A non-mutating request for one candidate at an exact run version.
+     */
+    Preview: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "restyle" | "replace" | "rewrite" | "insert";
+      /**
+       * Style
+       * @default voice
+       * @enum {string}
+       */
+      style?: "verbatim" | "voice" | "polish";
+      /** Target */
+      target: string;
+      /** Version */
+      version: number;
+    };
+    /**
+     * PreviewView
+     * @description Text that the writer can review before issuing a versioned action.
+     */
+    PreviewView: {
+      /** Target */
+      target: string;
+      /** Text */
+      text: string;
+      /** Version */
+      version: number;
+    };
+    /**
+     * Publish
+     * @description Explicit authorization to publish exactly the previewed work version.
+     */
+    Publish: {
+      /** Request Id */
+      request_id: string;
+      /** Version */
+      version: number;
+    };
+    /**
+     * ReceiptView
+     * @description Current state of an action without any historical text from the draft.
+     */
+    ReceiptView: {
+      /** Run Version */
+      run_version: number;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "unknown" | "pending" | "committed" | "canceled";
+    };
+    /**
      * RegisterRequest
      * @description User registration request.
      * @example {
@@ -1548,6 +2054,118 @@ export interface components {
       email: string;
       /** Password */
       password: string;
+    };
+    /**
+     * RunView
+     * @description An owned run including the rule engine's current narrative state.
+     */
+    RunView: {
+      /** Abilities */
+      abilities: {
+        [key: string]: components["schemas"]["AbilityView"];
+      };
+      /** Choices */
+      choices: string[];
+      /**
+       * Finishing
+       * @default false
+       */
+      finishing?: boolean;
+      /** Id */
+      id: string;
+      /** Lock Uses */
+      lock_uses: number;
+      /**
+       * Mode
+       * @enum {string}
+       */
+      mode: "normal" | "high" | "custom";
+      /** Offers */
+      offers: string[];
+      /** Opening */
+      opening: string;
+      /** Segments */
+      segments: components["schemas"]["SegmentView"][];
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "active" | "finished";
+      /**
+       * Theme
+       * @enum {string}
+       */
+      theme: "letter" | "detective";
+      /** Turns */
+      turns: number;
+      /** Version */
+      version: number;
+      /** Work Id */
+      work_id?: string | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * SegmentView
+     * @description Current text and private recovery information for an owned segment.
+     */
+    SegmentView: {
+      /** Id */
+      id: string;
+      /** Locked */
+      locked: boolean;
+      /** Original */
+      original?: string | null;
+      /** Source */
+      source: string;
+      /** Text */
+      text: string;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * SessionView
+     * @description Application session returned after identity exchange.
+     */
+    SessionView: {
+      /** Subject */
+      subject: string;
+      /** Token */
+      token: string;
+    };
+    /**
+     * Start
+     * @description Start an owned run, optionally from a published card or saved mode.
+     */
+    Start: {
+      /**
+       * Accept High
+       * @default false
+       */
+      accept_high?: boolean;
+      /**
+       * Accept Irreversible
+       * @default false
+       */
+      accept_irreversible?: boolean;
+      /** Card Id */
+      card_id?: string | null;
+      /**
+       * Mode
+       * @enum {string}
+       */
+      mode: "normal" | "high" | "custom";
+      /** Mode Id */
+      mode_id?: string | null;
+      /** Opening */
+      opening?: string | null;
+      /** Request Id */
+      request_id: string;
+      /**
+       * Theme
+       * @enum {string}
+       */
+      theme: "letter" | "detective";
     };
     /**
      * StatsResponse
@@ -2130,6 +2748,38 @@ export interface components {
       type: string;
     };
     /**
+     * WorkView
+     * @description Private manuscript fields for editing, exporting and publication preview.
+     */
+    WorkView: {
+      /** Ai Generated */
+      ai_generated: boolean;
+      /** Challenge Id */
+      challenge_id: string;
+      /** Id */
+      id: string;
+      /**
+       * Mode
+       * @enum {string}
+       */
+      mode: "normal" | "high" | "custom";
+      /** Rules Version */
+      rules_version: number;
+      /** Text */
+      text: string;
+      /**
+       * Theme
+       * @enum {string}
+       */
+      theme: "letter" | "detective";
+      /** Title */
+      title: string;
+      /** Version */
+      version: number;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
      * Anchor
      * @description Target position (pos/range/lock_id)
      */
@@ -2221,6 +2871,486 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["AchievementResponse"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  read_card_api_wechat_cards__card_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        card_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CardView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  library_api_wechat_library_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LibraryView"];
+        };
+      };
+    };
+  };
+  new_mode_api_wechat_modes_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewMode"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ModeView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  new_run_api_wechat_runs_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Start"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RunView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  run_api_wechat_runs__run_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RunView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  action_api_wechat_runs__run_id__actions_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Action"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RunView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  preview_api_wechat_runs__run_id__preview_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Preview"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PreviewView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  receipt_api_wechat_runs__run_id__receipts__request_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+        request_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReceiptView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  session_api_wechat_session_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Login"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  work_api_wechat_works__work_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        work_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  edit_work_api_wechat_works__work_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        work_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditWork"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  edit_work_api_wechat_works__work_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        work_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditWork"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  cards_api_wechat_works__work_id__cards_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        work_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CardList"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  publish_api_wechat_works__work_id__cards_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        work_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Publish"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CardView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  revoke_api_wechat_works__work_id__cards__card_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        work_id: string;
+        card_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

@@ -20,6 +20,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from server.infrastructure.persistence.models import Base
 
+# Import mapped tables before reading the shared metadata.
+from server.models import user, wechat_identity, wechat_runs, wechat_works
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -105,5 +108,8 @@ def run_migrations_online() -> None:
 
 if context.is_offline_mode():
     run_migrations_offline()
+elif (connection := config.attributes.get("connection")) is not None:
+    # Programmatic callers can supply an existing connection and its search path.
+    do_run_migrations(connection)
 else:
     run_migrations_online()
