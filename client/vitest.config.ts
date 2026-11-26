@@ -115,9 +115,6 @@ export default defineConfig({
         ...criticalThresholds,
       },
     },
-    // The supported Vitest/jsdom runtime intersection is declared in package
-    // `engines` as ^22.13.0 || ^24.0.0. CI and Docker build stages run Node 24.
-    //
     // Vitest 4 removed `poolOptions.{threads,forks}.single`; per-file
     // isolation in the standard pools replaces it (the old single-worker
     // mode's shared registry let file-scoped vi.mock instances bleed across

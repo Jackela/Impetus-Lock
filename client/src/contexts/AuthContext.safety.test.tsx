@@ -56,8 +56,10 @@ it("keeps the only memory draft when final preservation fails after the server h
   const { result } = renderHook(() => useAuth(), { wrapper });
   await waitFor(() => expect(result.current.status).toBe("authenticated"));
   let content = "Initially recoverable";
+  const snapshotAttempts: string[] = [];
   let rejectStorage = false;
   result.current.registerSnapshot(() => {
+    snapshotAttempts.push(content);
     if (rejectStorage) throw new Error("Storage full");
   });
   let signingOut!: Promise<void>;
@@ -74,7 +76,7 @@ it("keeps the only memory draft when final preservation fails after the server h
   expect(result.current.status).toBe("signed-out-local-error");
   expect(result.current.remoteEnabled).toBe(false);
   expect(result.current.error).toContain("Keep this page open");
-  expect(content).toBe("The only latest memory draft");
+  expect(snapshotAttempts).toEqual(["Initially recoverable", "The only latest memory draft"]);
 });
 
 it("does not remove local writing when a delayed session check confirms 401 and storage now fails", async () => {
