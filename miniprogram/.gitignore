@@ -1,4 +1,5 @@
 node_modules/
 dist/
 .build/
+.api-contract/
 project.private.config.json

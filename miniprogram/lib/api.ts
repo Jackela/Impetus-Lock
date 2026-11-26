@@ -1,17 +1,26 @@
 import { API_ORIGIN } from "./config";
 
-export type Method = "GET" | "POST" | "PATCH" | "DELETE";
+export type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly code?: string,
+    public readonly details?: Record<string, unknown>,
+  ) {
     super(message);
     this.name = "ApiError";
   }
 }
 
 interface Session { token: string; subject: string }
+interface SessionVerification {
+  subject: Promise<string>;
+  readonly ownerProof?: Promise<string | undefined>;
+}
 let session: Session | undefined;
-let login: Promise<string> | undefined;
+let login: SessionVerification | undefined;
 let generation = 0;
 let serial = 0;
 
@@ -75,18 +84,31 @@ function request<T>(path: string, method: Method, data?: unknown, token?: string
       header: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T);
-        else reject(new ApiError(res.statusCode, errorText(res.data, res.statusCode)));
+        else {
+          const body = res.data as { error?: { code?: unknown; details?: unknown } } | null;
+          const code = body?.error?.code;
+          const details = body?.error?.details;
+          reject(new ApiError(
+            res.statusCode, errorText(res.data, res.statusCode),
+            typeof code === "string" ? code : undefined,
+            details && typeof details === "object" && !Array.isArray(details) ? details as Record<string, unknown> : undefined,
+          ));
+        }
       },
       fail() { reject(new ApiError(0, "网络连接中断，请核对结果后重试。")); },
     });
   });
 }
 
-export function ensureSession(): Promise<string> {
-  if (session) return Promise.resolve(session.subject);
+export function verifySession(): SessionVerification {
+  if (session) {
+    const subject = Promise.resolve(session.subject);
+    return { subject, ownerProof: subject };
+  }
   if (login) return login;
   const epoch = generation;
-  const task = new Promise<string>((resolve, reject) => {
+  let dispatched = false;
+  const exchange = new Promise<string>((resolve, reject) => {
     wx.login({
       timeout: 10000,
       success(result) {
@@ -97,15 +119,26 @@ export function ensureSession(): Promise<string> {
     });
   }).then(async code => {
     if (generation !== epoch) throw changedIdentity();
+    dispatched = true;
     const result = await request<Session>("/session", "POST", {code});
-    if (generation !== epoch) throw changedIdentity();
     if (!result || typeof result.token !== "string" || !result.token
         || typeof result.subject !== "string" || !result.subject) throw changedIdentity();
+    return result;
+  });
+  // A response from an already dispatched exchange can identify its own input after invalidation.
+  // Only the current generation can activate the returned credentials.
+  const ownerProof = exchange.then(result => result.subject, () => undefined);
+  const subject = exchange.then(result => {
+    if (generation !== epoch) throw changedIdentity();
     session = { token: result.token, subject: result.subject };
     return result.subject;
   }).finally(() => { if (generation === epoch) login = undefined; });
-  login = task;
-  return task;
+  login = { subject, get ownerProof() { return dispatched ? ownerProof : undefined; } };
+  return login;
+}
+
+export function ensureSession(): Promise<string> {
+  return verifySession().subject;
 }
 
 export async function api<T>(path: string, method: Method = "GET", body?: unknown): Promise<T> {

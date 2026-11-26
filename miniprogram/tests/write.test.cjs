@@ -2,37 +2,46 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const Module = require("node:module");
 
-function harness(initialRun, stored = {}) {
+function harness(initialRun, stored = {}, voice) {
   let definition;
   let subject = "wechat-author";
   let id = 0;
   const calls = [];
   const navigation = [];
   const memory = new Map(Object.entries(stored));
+  const committed = new Map();
+  const storage = {
+    getPrivate: (key) => memory.get(key),
+    putPrivate: (key, value) => memory.set(key, value),
+    removePrivate: (key) => memory.delete(key),
+  };
   const endpoint = {
     handle: async () => initialRun,
-    receipt: async () => ({ status: "unknown", run_version: initialRun.version }),
+    receipt: async (path) => {
+      const version = committed.get(path.split("/").at(-1));
+      return { status: version ? "committed" : "unknown", run_version: version ?? initialRun.version };
+    },
   };
   const originalLoad = Module._load;
   Module._load = function (path, parent, ...rest) {
     if (path === "../../lib/api") {
       return {
-        api: (...args) => {
+        api: async (...args) => {
           calls.push(args);
-          return args[0].includes("/receipts/") ? endpoint.receipt(...args) : endpoint.handle(...args);
+          if (args[0].includes("/receipts/")) return endpoint.receipt(...args);
+          const result = await endpoint.handle(...args);
+          if (args[2]?.kind === "turn" && result.version > args[2].version) {
+            committed.set(args[2].request_id, result.version);
+          }
+          return result;
         },
         ensureSession: async () => subject,
         currentSubject: () => subject,
         requestId: () => `request-${++id}`,
       };
     }
-    if (path === "../../lib/storage") {
-      return {
-        getPrivate: (key) => memory.get(key),
-        putPrivate: (key, value) => memory.set(key, value),
-        removePrivate: (key) => memory.delete(key),
-      };
-    }
+    if (path === "../../lib/storage") return storage;
+    if (path === "../../lib/voice" && voice) return voice;
     return originalLoad.call(this, path, parent, ...rest);
   };
   global.Page = (options) => { definition = options; };
@@ -54,7 +63,7 @@ function harness(initialRun, stored = {}) {
     data: structuredClone(definition.data),
     setData(value) { Object.assign(this.data, value); },
   };
-  return { page, memory, calls, endpoint, navigation, setSubject: (value) => { subject = value; } };
+  return { page, memory, calls, endpoint, navigation, storage, setSubject: (value) => { subject = value; } };
 }
 
 const run = {
@@ -66,6 +75,259 @@ const run = {
 const event = (dataset = {}, detail = {}) => ({ currentTarget: { dataset }, detail });
 const actionCalls = (calls) => calls.filter(([path]) => path.endsWith("/actions")).map(([, , action]) => action);
 const settle = async () => new Promise((resolve) => setImmediate(resolve));
+
+test("本机暂存失败时，同一页跨后台保留草稿和结果未知的操作，并按原标识重试一次", async () => {
+  const { page, calls, endpoint, storage } = harness(run);
+  storage.putPrivate = () => { throw new Error("本机故障"); };
+  storage.removePrivate = () => { throw new Error("本机故障"); };
+  await page.onLoad({ id: run.id, compose: "1" });
+  page.onDraft(event({}, { value: "我用铅笔留下了记号。" }));
+  endpoint.handle = async (_, method) => {
+    if (method === "POST") throw new Error("连接中断");
+    return run;
+  };
+  await page.submitDraft();
+  page.onHide();
+  assert.equal(page.data.draft, "");
+  await page.onShow();
+  assert.equal(page.data.draft, "我用铅笔留下了记号。");
+  assert.equal(page.data.hasPending, true);
+  assert.deepEqual(actionCalls(calls).map(({ request_id }) => request_id), ["request-1"]);
+  endpoint.handle = async (_, method) => method === "POST" ? { ...run, version: 2, turns: 1 } : run;
+  await page.retryPending();
+  assert.deepEqual(actionCalls(calls).map(({ request_id }) => request_id), ["request-1", "request-1"]);
+  assert.equal(page.data.run.turns, 1);
+  assert.equal(page.data.draft, "");
+  assert.equal(page.data.hasPending, false);
+});
+
+test("本机读取失败仍能写入，切换身份或打开另一局不带入页内文字", async () => {
+  const { page, endpoint, storage, calls, setSubject } = harness(run);
+  const unavailable = () => { throw new Error("本机故障"); };
+  Object.assign(storage, { getPrivate: unavailable, putPrivate: unavailable, removePrivate: unavailable });
+  await page.onLoad({ id: run.id, compose: "1" });
+  assert.equal(page.data.run?.id, run.id);
+  page.onDraft(event({}, { value: "只属于原身份和原局的文字。" }));
+  page.onHide();
+  setSubject("another-author");
+  await page.onShow();
+  assert.equal(page.data.draft, "");
+  assert.equal(page.data.run, null);
+  assert.equal(page.data.hasPending, false);
+  endpoint.handle = async () => ({ ...run, id: "run-b" });
+  await page.onLoad({ id: "run-b", compose: "1" });
+  assert.equal(page.data.run?.id, "run-b");
+  assert.equal(page.data.draft, "");
+  assert.deepEqual(actionCalls(calls), []);
+});
+
+test("别处已有新段时，取消操作的成功回包不能清除未入稿草稿", async () => {
+  const { page, endpoint, memory } = harness(run);
+  await page.onLoad({ id: run.id, compose: "1" });
+  const otherTurn = { ...run, version: 3, turns: 1 };
+  endpoint.handle = async () => otherTurn;
+  endpoint.receipt = async () => ({ status: "canceled", run_version: 3 });
+  page.onDraft(event({}, { value: "这段还没有入稿。" }));
+  await page.submitDraft();
+  assert.equal(page.data.run.version, 3);
+  assert.equal(page.data.draft, "这段还没有入稿。");
+  assert.equal(memory.get("draft:run-a"), "这段还没有入稿。");
+  assert.equal(page.data.hasPending, false);
+  assert.match(page.data.status, /取消/);
+});
+
+function recordingStub() {
+  const recording = { starts: 0, stops: 0 };
+  recording.voice = {
+    voiceAvailable: () => true,
+    beginVoice: (listener, scope) => {
+      recording.starts++;
+      recording.listener = listener;
+      recording.scope = scope;
+      return () => {
+        recording.stops++;
+        listener.processing();
+      };
+    },
+    cancelVoice() {},
+  };
+  return recording;
+}
+
+test("补发干预时先确认取消已生效，再开录并按新版本入稿，迟到干预不显示", async () => {
+  const recording = recordingStub();
+  const awaiting = { ...run, version: 4, turns: 1, generation_pending: true };
+  const { page, calls, endpoint } = harness(awaiting, {}, recording.voice);
+  let resolveIntervention;
+  let stored = awaiting;
+  let canceledId;
+  endpoint.handle = async (_, method, action) => {
+    if (method !== "POST") return stored;
+    if (action.kind === "intervene") return new Promise((resolve) => { resolveIntervention = resolve; });
+    if (action.kind === "cancel") {
+      canceledId = action.target;
+      stored = { ...stored, version: 5 };
+    }
+    if (action.kind === "turn") stored = { ...stored, version: 6, turns: 2, generation_pending: false };
+    return stored;
+  };
+  endpoint.receipt = async (path) => ({
+    status: path.endsWith("/" + canceledId) ? "canceled" : "committed", run_version: stored.version,
+  });
+  await page.onLoad({ id: run.id, compose: "1" });
+  page.runtime.voiceAuthorized = true;
+  const intervention = page.retryIntervention();
+  await settle();
+  await page.startRecording();
+  assert.equal(recording.starts, 1);
+  assert.equal(page.data.run.version, 5);
+  assert.deepEqual(actionCalls(calls).map(({ kind }) => kind), ["intervene", "cancel"]);
+  resolveIntervention({ ...awaiting, version: 99, generation_pending: false, choices: ["旧候选"] });
+  await intervention;
+  assert.equal(page.data.run.version, 5);
+  assert.equal(page.data.voicePhase, "recording");
+
+  page.releaseRecording();
+  recording.listener.complete("我把信交给了女儿。");
+  await settle();
+  assert.equal(recording.stops, 1);
+  const [original, cancel, voice] = actionCalls(calls);
+  assert.equal(cancel.target, original.request_id);
+  assert.equal(voice.version, 5);
+  assert.equal(voice.source, "voice");
+  assert.equal(page.data.run.version, 6);
+  assert.equal(page.data.run.generation_pending, false);
+});
+
+test("补发仲裁中提前松手不会打开麦克风，干预先成功时下次录音使用最新版本", async () => {
+  const recording = recordingStub();
+  const awaiting = { ...run, version: 4, turns: 1, pending_intervention: true };
+  const { page, calls, endpoint } = harness(awaiting, {}, recording.voice);
+  let resolveIntervention;
+  let resolveCancel;
+  let stored = awaiting;
+  endpoint.handle = async (_, method, action) => {
+    if (method !== "POST") return stored;
+    if (action.kind === "intervene") return new Promise((resolve) => { resolveIntervention = resolve; });
+    if (action.kind === "cancel") return new Promise((resolve) => { resolveCancel = resolve; });
+    stored = { ...stored, version: 7, turns: 2 };
+    return stored;
+  };
+  endpoint.receipt = async () => ({ status: "committed", run_version: stored.version });
+  await page.onLoad({ id: run.id, compose: "1" });
+  page.runtime.voiceAuthorized = true;
+  const intervention = page.retryIntervention();
+  await settle();
+  const preparing = page.startRecording();
+  page.releaseRecording();
+  await settle();
+  assert.equal(recording.starts, 0);
+  stored = { ...awaiting, version: 6, pending_intervention: false };
+  resolveCancel(stored);
+  resolveIntervention({ ...stored, version: 5 });
+  await Promise.all([intervention, preparing]);
+  assert.equal(recording.starts, 0);
+  assert.equal(page.data.run.version, 6);
+
+  await page.startRecording();
+  page.releaseRecording();
+  recording.listener.complete("我听见楼梯上的脚步。");
+  await settle();
+  assert.equal(recording.starts, 1);
+  assert.equal(actionCalls(calls).at(-1).version, 6);
+  assert.equal(page.data.run.turns, 2);
+});
+
+test("录音准备时取消回执丢失，核对前不开麦且重试沿用同一取消标识", async () => {
+  const recording = recordingStub();
+  const awaiting = { ...run, version: 4, turns: 1, generation_pending: true };
+  const { page, calls, endpoint } = harness(awaiting, {}, recording.voice);
+  let stored = awaiting;
+  let resolveIntervention;
+  endpoint.handle = async (_, method, action) => {
+    if (method !== "POST") return stored;
+    if (action.kind === "intervene") return new Promise((resolve) => { resolveIntervention = resolve; });
+    if (stored.version === 4) {
+      stored = { ...stored, version: 5 };
+      throw new Error("取消回包丢失");
+    }
+    return stored;
+  };
+  endpoint.receipt = async () => ({ status: "canceled", run_version: stored.version });
+  await page.onLoad({ id: run.id, compose: "1" });
+  page.runtime.voiceAuthorized = true;
+  const intervention = page.retryIntervention();
+  await settle();
+  await page.startRecording();
+  assert.equal(recording.starts, 0);
+  assert.equal(page.data.hasPending, true);
+  assert.match(page.data.status, /取消回包丢失/);
+  await page.startRecording();
+  assert.equal(recording.starts, 1);
+  assert.equal(page.data.run.version, 5);
+  const cancels = actionCalls(calls).filter(({ kind }) => kind === "cancel");
+  assert.equal(cancels.length, 2);
+  assert.equal(cancels[0].request_id, cancels[1].request_id);
+  resolveIntervention({ ...awaiting, version: 99, choices: ["旧候选"] });
+  await intervention;
+  assert.equal(page.data.run.version, 5);
+  page.cancelRecording();
+});
+
+test("不能确认录音归属时，只为当前身份与局展示文字供明确确认", async () => {
+  const recording = recordingStub();
+  const { page, calls, endpoint } = harness(run, {}, recording.voice);
+  await page.onLoad({ id: run.id, compose: "1" });
+  page.runtime.voiceAuthorized = true;
+  await page.startRecording();
+  assert.equal(recording.scope, JSON.stringify(["wechat-author", run.id]));
+  page.releaseRecording();
+  recording.listener.review("这段识别内容需要核对。");
+  assert.equal(page.data.heldVoiceText, "这段识别内容需要核对。");
+  assert.deepEqual(actionCalls(calls), []);
+  endpoint.handle = async () => ({ ...run, version: 2, turns: 1 });
+  await page.submitHeldVoice();
+  assert.equal(actionCalls(calls)[0].text, "这段识别内容需要核对。");
+  assert.equal(page.data.heldVoiceText, "");
+});
+
+test("收笔发现别处待续写时，明确放弃前只核查状态，确认后才逐项处理并保存", async () => {
+  const paused = { ...run, version: 4, finishing: true };
+  const { page, calls, endpoint, navigation } = harness(paused);
+  const unresolved = new Set(["elsewhere-1", "elsewhere-2"]);
+  let stored = paused;
+  endpoint.handle = async (_, method, action) => {
+    if (method !== "POST") return stored;
+    if (action.kind === "finish" && unresolved.size) {
+      throw Object.assign(new Error("还有待续写输入。"), {
+        status: 409, code: "STORY_FINISH_INPUT_PENDING", details: { request_ids: [...unresolved] },
+      });
+    }
+    if (action.kind === "cancel") {
+      assert.equal(action.version, stored.version);
+      unresolved.delete(action.target);
+      stored = { ...stored, version: stored.version + 1 };
+    }
+    if (action.kind === "finish") stored = { ...stored, version: stored.version + 1, status: "finished", work_id: "work-a" };
+    return stored;
+  };
+  endpoint.receipt = async (path) => ({
+    status: unresolved.has(path.split("/").at(-1)) ? "pending" : "canceled",
+    run_version: stored.version,
+  });
+  await page.onLoad({ id: run.id });
+  await page.confirmFinish();
+  assert.equal(page.data.finishing, true);
+  assert.equal(page.data.blockedFinishCount, 2);
+  assert.equal(page.data.hasPending, false);
+  assert.deepEqual(actionCalls(calls).map(({ kind }) => kind), ["finish"]);
+  assert.deepEqual(navigation, []);
+  await page.discardBlockedAndFinish();
+  assert.deepEqual(actionCalls(calls).map(({ kind, target }) => [kind, target]), [
+    ["finish", undefined], ["cancel", "elsewhere-1"], ["cancel", "elsewhere-2"], ["finish", undefined],
+  ]);
+  assert.deepEqual(navigation, ["/pages/work/index?id=work-a"]);
+});
 
 test("首页行动在当前局成功入稿，使用首页提交标识且不触发麦克风授权", async () => {
   const first = { request_id: "first-action", source: "choice", text: "先看看信封" };
@@ -138,7 +400,7 @@ test("暂停后只在作者明确保留时按新版本重用原回合标识，�
     if (action.kind === "turn" && action.version === 2) stored = { ...stored, version: 3, turns: 1 };
     return stored;
   };
-  endpoint.receipt = async () => ({ status: "pending", run_version: stored.version });
+  endpoint.receipt = async () => ({ status: stored.turns ? "committed" : "pending", run_version: stored.version });
   await page.onLoad({ id: run.id });
   const early = page.choosePlot(event({ text: "先看看信封" }));
   await settle();

@@ -3,32 +3,34 @@ import { confirm, errorText, HIGH_NOTICE, IRREVERSIBLE_NOTICE, startWriting, THE
 import { readingSize } from '../../lib/font';
 import type { Library, Mode, Run } from '../../lib/types';
 
-type Data = {
+type ModeFields = Omit<Mode, 'id'>;
+const EMPTY_FORM: ModeFields = { name: '', trigger: 'manual', action: 'insert', lock: true, recoverable: true };
+
+type Data = ModeFields & {
   fontSize: number;
   progress: Library['progress'] | null;
   modes: Mode[];
   theme: Run['theme'];
   mode: Run['mode'];
   modeId: string;
+  editingModeId: string;
   loading: boolean;
   starting: boolean;
   saving: boolean;
   error: string;
   message: string;
-  name: string;
-  trigger: Mode['trigger'];
-  action: Mode['action'];
-  lock: boolean;
-  recoverable: boolean;
   highNotice: string;
 };
 type Methods = {
   subject: string;
   generation: number;
+  newModeDraft: ModeFields;
   refresh(): Promise<void>;
   themeChanged(event: WechatMiniprogram.RadioGroupChange): void;
   modeChanged(event: WechatMiniprogram.RadioGroupChange): void;
   savedModeChanged(event: WechatMiniprogram.RadioGroupChange): void;
+  editMode(event: WechatMiniprogram.BaseEvent): void;
+  cancelEdit(): void;
   nameChanged(event: WechatMiniprogram.Input): void;
   triggerChanged(event: WechatMiniprogram.RadioGroupChange): void;
   actionChanged(event: WechatMiniprogram.RadioGroupChange): void;
@@ -41,12 +43,13 @@ type Methods = {
 Page<Data, Methods>({
   data: {
     fontSize: 17,
-    progress: null, modes: [], theme: 'letter', mode: 'normal', modeId: '',
+    progress: null, modes: [], theme: 'letter', mode: 'normal', modeId: '', editingModeId: '',
     loading: true, starting: false, saving: false, error: '', message: '',
-    name: '', trigger: 'manual', action: 'insert', lock: true, recoverable: true, highNotice: HIGH_NOTICE,
+    ...EMPTY_FORM, highNotice: HIGH_NOTICE,
   },
   subject: '',
   generation: 0,
+  newModeDraft: EMPTY_FORM,
 
   onShow() {
     this.setData({ fontSize: readingSize() });
@@ -69,7 +72,8 @@ Page<Data, Methods>({
       const subject = await ensureSession();
       if (generation !== this.generation || subject !== currentSubject()) return;
       if (this.subject !== subject) {
-        this.setData({ theme: 'letter', mode: 'normal', modeId: '', name: '', trigger: 'manual', action: 'insert', lock: true, recoverable: true });
+        this.newModeDraft = EMPTY_FORM;
+        this.setData({ theme: 'letter', mode: 'normal', modeId: '', editingModeId: '', ...EMPTY_FORM });
       }
       this.subject = subject;
       const { modes, progress } = await api<Library>('/library');
@@ -107,6 +111,23 @@ Page<Data, Methods>({
     if (this.data.modes.some(mode => mode.id === value)) this.setData({ mode: 'custom', modeId: value });
   },
 
+  editMode(event) {
+    const { progress, name, trigger, action, lock, recoverable, editingModeId, starting, saving } = this.data;
+    if (!progress?.rewrite || editingModeId || starting || saving || this.subject !== currentSubject()) return;
+    const saved = this.data.modes.find(mode => mode.id === event.currentTarget.dataset.id);
+    if (!saved) return;
+    this.newModeDraft = { name, trigger, action, lock, recoverable };
+    const { id, ...fields } = saved;
+    this.setData({ ...fields, editingModeId: id, error: '', message: '' }, () => {
+      wx.pageScrollTo?.({ selector: '#mode-form', duration: 0 });
+    });
+  },
+
+  cancelEdit() {
+    if (!this.data.editingModeId || this.data.saving) return;
+    this.setData({ ...this.newModeDraft, editingModeId: '', error: '', message: '' });
+  },
+
   nameChanged(event) {
     this.setData({ name: event.detail.value, message: '' });
   },
@@ -130,14 +151,14 @@ Page<Data, Methods>({
   },
 
   recoveryChanged(event) {
-    if (this.data.action === 'delete') this.setData({ recoverable: event.detail.value, message: '' });
+    if (this.data.action !== 'insert') this.setData({ recoverable: event.detail.value, message: '' });
   },
 
   async launch() {
-    const { progress, theme, mode, modeId, loading, starting, saving } = this.data;
+    const { progress, theme, mode, modeId, editingModeId, loading, starting, saving } = this.data;
     const subject = this.subject;
     const generation = this.generation;
-    if (!progress || loading || starting || saving || !subject || subject !== currentSubject()) return;
+    if (!progress || editingModeId || loading || starting || saving || !subject || subject !== currentSubject()) return;
     const custom = mode === 'custom' ? this.data.modes.find(option => option.id === modeId) : undefined;
     if ((mode === 'custom' && !custom) || (mode === 'high' && !progress.high) || (theme === 'detective' && !progress.detective)) return;
     const stillCurrent = () => generation === this.generation && subject === currentSubject();
@@ -172,7 +193,7 @@ Page<Data, Methods>({
   },
 
   async saveMode() {
-    const { progress, name, trigger, action, lock, recoverable, starting, saving } = this.data;
+    const { progress, name, trigger, action, lock, recoverable, editingModeId, starting, saving } = this.data;
     const subject = this.subject;
     const generation = this.generation;
     if (!progress?.rewrite || starting || saving || !subject || subject !== currentSubject()) return;
@@ -182,9 +203,21 @@ Page<Data, Methods>({
     }
     this.setData({ saving: true, error: '', message: '' });
     try {
-      const saved = await api<Mode>('/modes', 'POST', { name: name.trim(), trigger, action, lock, recoverable });
+      const fields = { name: name.trim(), trigger, action, lock, recoverable };
+      const saved = editingModeId
+        ? await api<Mode>('/modes/' + encodeURIComponent(editingModeId), 'PUT', fields)
+        : await api<Mode>('/modes', 'POST', fields);
       if (generation !== this.generation || subject !== currentSubject()) return;
-      this.setData({ modes: [...this.data.modes, saved], mode: 'custom', modeId: saved.id, name: '', message: '个人模式已保存，可以在上方选择开局。' });
+      const modes = editingModeId
+        ? this.data.modes.map(mode => mode.id === editingModeId ? saved : mode)
+        : [...this.data.modes, saved];
+      this.setData({
+        ...(editingModeId ? this.newModeDraft : { name: '' }),
+        modes, mode: 'custom', modeId: saved.id, editingModeId: '',
+        message: editingModeId ? '个人模式已更新，下次开局使用新规则。' : '个人模式已保存，可以在上方选择开局。',
+      }, () => {
+        if (editingModeId) wx.pageScrollTo?.({ scrollTop: 0, duration: 0 });
+      });
     } catch (error) {
       if (generation === this.generation) {
         if (subject !== currentSubject()) this.setData({ progress: null, modes: [] });

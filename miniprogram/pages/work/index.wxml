@@ -13,7 +13,7 @@
       <text class="caption">{{themeName}} · {{modeName}}</text>
       <text wx:if="{{preview.opening}}" class="caption">同题开场：{{preview.opening}}</text>
       <text wx:if="{{preview.rules}}" class="caption">{{preview.rules}}</text>
-      <text wx:if="{{preview.requires_consent}}" class="caption">好友开局前需要确认不可恢复删除规则。</text>
+      <text wx:if="{{preview.consentNotice}}" class="caption">{{preview.consentNotice}}</text>
       <text wx:if="{{preview.ai_generated}}" class="caption">作品含 AI 生成内容</text>
       <text class="body-copy work-story">{{preview.text}}</text>
     </view>

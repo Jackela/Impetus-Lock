@@ -1,7 +1,7 @@
 <view class="page modes-page" style="font-size: {{fontSize}}px">
   <view class="heading" aria-role="heading">选择开场题</view>
   <view wx:if="{{loading}}" class="notice" aria-role="status">正在读取可用题目和模式…</view>
-  <view wx:if="{{error}}" class="notice notice-error" aria-role="alert">
+  <view wx:if="{{error && (!editingModeId || !progress)}}" class="notice notice-error" aria-role="alert">
     <text>{{error}}</text>
     <button wx:if="{{!progress}}" class="button-secondary" hover-class="button-pressed" bindtap="refresh">重试读取</button>
   </view>
@@ -46,19 +46,23 @@
     </radio-group>
 
     <radio-group wx:if="{{modes.length}}" class="panel modes-options modes-saved" bindchange="savedModeChanged" aria-label="已保存的个人模式">
-      <label wx:for="{{modes}}" wx:key="id" class="modes-option">
-        <radio value="{{item.id}}" checked="{{mode === 'custom' && modeId === item.id}}" disabled="{{starting || saving}}" color="#0066cc" />
-        <view>
-          <view class="modes-option-title">{{item.name}}</view>
-          <text class="caption modes-rule-description">{{item.trigger === 'manual' ? '手动触发' : (item.trigger === 'response' ? '回应后触发' : '每段续写后触发')}} · {{item.action === 'insert' ? '插入文字' : (item.action === 'rewrite' ? '改写未锁正文' : '删除未锁正文')}}</text>
-          <text wx:if="{{item.action !== 'delete'}}" class="caption modes-rule-description">{{item.lock ? '锁定新文字' : '新文字可以编辑'}}</text>
-          <text wx:if="{{item.action === 'rewrite' || item.action === 'delete' && item.recoverable}}" class="caption modes-rule-description">保留受影响的原文。</text>
-          <text wx:if="{{item.action === 'delete' && !item.recoverable}}" class="caption">可能删除未锁正文，删除后不可恢复。每次开局需确认。</text>
-        </view>
-      </label>
+      <view wx:for="{{modes}}" wx:key="id" class="modes-saved-item">
+        <label class="modes-option">
+          <radio value="{{item.id}}" checked="{{mode === 'custom' && modeId === item.id}}" disabled="{{starting || saving || editingModeId}}" color="#0066cc" />
+          <view>
+            <view class="modes-option-title">{{item.name}}</view>
+            <text class="caption modes-rule-description">{{item.trigger === 'manual' ? '手动触发' : (item.trigger === 'response' ? '首段或回应后触发' : '符合条件时自动触发')}} · {{item.action === 'insert' ? '插入文字' : (item.action === 'rewrite' ? '改写未锁正文' : '删除未锁正文')}}</text>
+            <text wx:if="{{item.action !== 'delete'}}" class="caption modes-rule-description">{{item.lock ? '锁定新文字' : '新文字可以编辑'}}</text>
+            <text wx:if="{{item.action !== 'insert' && item.recoverable}}" class="caption modes-rule-description">保留受影响的原文。</text>
+            <text wx:if="{{item.action === 'rewrite' && !item.recoverable}}" class="caption modes-rule-description">改写后，原文不可恢复。</text>
+            <text wx:if="{{item.action === 'delete' && !item.recoverable}}" class="caption">可能删除未锁正文，删除后不可恢复。每次开局需确认。</text>
+          </view>
+        </label>
+        <button wx:if="{{progress.rewrite}}" class="button-link modes-edit" hover-class="button-pressed" aria-label="编辑{{item.name}}" data-id="{{item.id}}" bindtap="editMode" disabled="{{starting || saving || editingModeId}}">编辑模式</button>
+      </view>
     </radio-group>
 
-    <button class="button-primary modes-start" hover-class="button-pressed" bindtap="launch" disabled="{{starting || saving}}" loading="{{starting}}">{{starting ? '正在开局' : '开始写'}}</button>
+    <button class="button-primary modes-start" hover-class="button-pressed" bindtap="launch" disabled="{{starting || saving || editingModeId}}" loading="{{starting}}">{{starting ? '正在开局' : '开始写'}}</button>
 
     <view class="modes-section-title" aria-role="heading">已发现的规则</view>
     <view class="panel modes-rule-list">
@@ -67,21 +71,22 @@
       <text>{{progress.delete ? '删除规则已发现' : '删除规则尚未发现'}}</text>
     </view>
 
-    <view class="modes-section-title" aria-role="heading">创建个人模式</view>
+    <view class="modes-section-title" id="mode-form" aria-role="heading">{{editingModeId ? '编辑个人模式' : '创建个人模式'}}</view>
     <text wx:if="{{!progress.rewrite}}" class="caption">完成首篇续写作品后，再在另一局回应至少一次锁句并收笔，即可开放个人模式。</text>
     <view wx:else class="panel modes-form">
+      <text wx:if="{{editingModeId}}" class="caption modes-rule-description">修改只用于以后用此模式新开的挑战。已开局和已发布的卡片继续使用原规则。</text>
       <label class="modes-field-label" for="mode-name">模式名称</label>
       <input id="mode-name" class="field" aria-label="模式名称" placeholder="例如：慢慢揭开线索" maxlength="80" value="{{name}}" disabled="{{starting || saving}}" bindinput="nameChanged" />
 
       <text class="modes-field-label">触发条件</text>
       <radio-group bindchange="triggerChanged" aria-label="触发条件">
         <label class="modes-option"><radio value="manual" checked="{{trigger === 'manual'}}" disabled="{{starting || saving}}" color="#0066cc" />手动触发</label>
-        <label class="modes-option"><radio value="response" checked="{{trigger === 'response'}}" disabled="{{starting || saving}}" color="#0066cc" />回应后触发</label>
+        <label class="modes-option"><radio value="response" checked="{{trigger === 'response'}}" disabled="{{starting || saving}}" color="#0066cc" />首段或回应后触发</label>
         <label class="modes-option">
           <radio value="automatic" checked="{{trigger === 'automatic'}}" disabled="{{starting || saving}}" color="#0066cc" />
           <view>
-            <view class="modes-option-title">每段续写后触发</view>
-            <text class="caption">每次新增正文成功入稿后，按所选规则触发。</text>
+            <view class="modes-option-title">符合条件时自动触发</view>
+            <text class="caption">续写成功且本回合没有回应上一次干预时，系统尝试执行所选动作。</text>
           </view>
         </label>
       </radio-group>
@@ -98,14 +103,16 @@
         <switch checked="{{lock}}" color="#0066cc" disabled="{{starting || saving}}" bindchange="lockChanged" aria-label="锁定新文字" />
       </label>
 
-      <label wx:if="{{action === 'delete'}}" class="modes-switch">
-        <text>保留被删除的原文</text>
-        <switch checked="{{recoverable}}" color="#0066cc" disabled="{{starting || saving}}" bindchange="recoveryChanged" aria-label="保留被删除的原文" />
+      <label wx:if="{{action !== 'insert'}}" class="modes-switch">
+        <text>保留受影响的原文</text>
+        <switch checked="{{recoverable}}" color="#0066cc" disabled="{{starting || saving}}" bindchange="recoveryChanged" aria-label="保留受影响的原文" />
       </label>
       <text wx:if="{{action === 'delete' && !recoverable}}" class="caption">关闭后，被删除的未锁正文无法通过产品恢复。用此模式开局时每次都要确认。</text>
-      <text wx:if="{{action === 'rewrite'}}" class="caption">本局可查回被改写前的文字。</text>
+      <text wx:if="{{action === 'rewrite'}}" class="caption">{{recoverable ? '本局可查回被改写前的文字。' : '改写后，原文无法通过本局恢复。'}}</text>
 
-      <button class="button-secondary modes-save" hover-class="button-pressed" bindtap="saveMode" disabled="{{starting || saving}}" loading="{{saving}}">{{saving ? '正在保存' : '保存个人模式'}}</button>
+      <text wx:if="{{editingModeId && error}}" class="notice notice-error" aria-role="alert">{{error}}</text>
+      <button class="button-secondary modes-save" hover-class="button-pressed" bindtap="saveMode" disabled="{{starting || saving}}" loading="{{saving}}">{{saving ? '正在保存' : (editingModeId ? '保存修改' : '保存个人模式')}}</button>
+      <button wx:if="{{editingModeId}}" class="button-link modes-cancel" hover-class="button-pressed" bindtap="cancelEdit" disabled="{{saving}}">取消修改</button>
     </view>
   </block>
 </view>

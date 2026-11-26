@@ -78,9 +78,9 @@
         class="button-primary home-full"
         hover-class="button-pressed"
         bindtap="continueLaunch"
-      >{{frozen ? '继续开局' : '重试开局'}}</button>
+      >{{frozen || !selectedAction ? '继续开局' : '重试开局'}}</button>
       <button
-        wx:if="{{pendingLaunch && !frozen}}"
+        wx:if="{{pendingLaunch && !frozen && selectedAction}}"
         class="button-link home-full"
         hover-class="button-pressed"
         bindtap="editPending"

@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { afterEach, beforeEach, test } = require('node:test');
-const { invalidateSession } = require('../.build/lib/api');
+const apiModule = require('../.build/lib/api');
+const { invalidateSession } = apiModule;
 
 const work = { id: 'w1', title: '初稿', version: 3, text: '初稿正文', theme: 'letter', mode: 'normal', ai_generated: true, opening: '题句' };
 const pageCard = { id: 'card1', title: '已公开文本', text: '固定的公开文字', theme: 'detective', mode: 'custom', ai_generated: true, requires_consent: true, opening: '县衙案头的结案书', rules: '手动触发删除，无法恢复。' };
@@ -130,6 +131,73 @@ test('new players cannot select undiscovered rules and personal mode creation us
   assert.equal(app.page.data.theme, 'detective');
   assert.equal(app.page.data.mode, 'custom');
   assert.equal(app.page.data.modeId, 'personal1');
+});
+
+test('editing an existing personal mode starts from saved settings and saves to the same ID', async t => {
+  const apiCalls = t.mock.method(apiModule, 'api');
+  const anotherMode = { id: 'mode2', name: '插入一句', trigger: 'response', action: 'insert', lock: true, recoverable: true };
+  const app = host('modes', ({ path, method, body }) => {
+    if (path === '/library') return library({ modes: [eraseMode, anotherMode] });
+    if (path === '/runs') return ok({ id: 'edited-rule-run' });
+    assert.equal(path, '/modes/mode1');
+    assert.equal(method, 'PUT');
+    assert.deepEqual(body, { name: '慢慢查明', trigger: 'automatic', action: 'rewrite', lock: false, recoverable: false });
+    return ok({ ...body, id: eraseMode.id });
+  });
+  await app.page.refresh();
+  app.page.nameChanged(input('尚未创建的模式'));
+  app.page.editMode(dataset(eraseMode.id));
+  assert.equal(app.page.data.editingModeId, eraseMode.id);
+  assert.equal(app.page.data.name, eraseMode.name);
+  assert.equal(app.page.data.action, 'delete');
+  assert.equal(app.page.data.recoverable, false);
+
+  app.page.nameChanged(input('慢慢查明'));
+  app.page.triggerChanged(input('automatic'));
+  app.page.actionChanged(input('rewrite'));
+  app.page.lockChanged(input(false));
+  app.page.recoveryChanged(input(false));
+  await app.page.saveMode();
+  const update = apiCalls.mock.calls.find(call => call.arguments[0] === '/modes/mode1');
+  assert.equal(update?.arguments[1], 'PUT');
+  assert.deepEqual(app.page.data.modes.map(mode => mode.id), [eraseMode.id, anotherMode.id]);
+  assert.equal(app.page.data.modes[0].name, '慢慢查明');
+  assert.equal(app.page.data.modeId, eraseMode.id);
+  assert.equal(app.page.data.editingModeId, '');
+  assert.equal(app.page.data.name, '尚未创建的模式');
+  await app.page.launch();
+  assert.equal(app.requests.at(-1).body.mode_id, eraseMode.id);
+  assert.equal(app.confirmations.length, 0);
+  assert.equal(app.paths[0].url, '/pages/write/index?id=edited-rule-run');
+});
+
+test('a failed mode edit keeps its draft and cancel restores the independent creation form', async () => {
+  const app = host('modes', ({ path }) => path === '/library'
+    ? library({ modes: [eraseMode] })
+    : fail(503, '暂时无法保存'));
+  await app.page.refresh();
+  app.page.nameChanged(input('准备创建'));
+  app.page.triggerChanged(input('response'));
+  app.page.actionChanged(input('rewrite'));
+  app.page.lockChanged(input(false));
+  app.page.editMode(dataset(eraseMode.id));
+  app.page.nameChanged(input('仍想保存的名称'));
+  app.page.triggerChanged(input('automatic'));
+  await app.page.saveMode();
+  assert.match(app.page.data.error, /暂时无法保存/);
+  assert.equal(app.page.data.editingModeId, eraseMode.id);
+  assert.equal(app.page.data.name, '仍想保存的名称');
+  assert.equal(app.page.data.trigger, 'automatic');
+  assert.equal(app.page.data.recoverable, false);
+
+  app.page.cancelEdit();
+  assert.equal(app.page.data.editingModeId, '');
+  assert.deepEqual(app.page.data.modes, [eraseMode]);
+  assert.deepEqual([app.page.data.name, app.page.data.trigger, app.page.data.action, app.page.data.lock],
+    ['准备创建', 'response', 'rewrite', false]);
+  assert.equal(app.requests.filter(item => item.method === 'PUT').length, 1);
+  app.page.editMode(dataset(eraseMode.id));
+  assert.equal(app.page.data.name, eraseMode.name);
 });
 
 test('a high-intensity mode requires explicit acceptance each time and normal opens without the flag', async () => {
@@ -372,6 +440,24 @@ test('only explicit publication creates a fixed card with a static cover and ret
   await app.page.withdraw(dataset(pageCard.id));
   assert.equal(app.page.data.cards.length, 0);
   assert.equal(app.page.data.text, '未公开的最新稿');
+});
+
+test('work preview shows the fixed public rules and only the applicable friend consent', async () => {
+  for (const [mode, requires_consent, expectedNotice] of [
+    ['custom', true, /不可恢复删除/],
+    ['high', false, /高强度模式/],
+    ['normal', false, /^$/],
+  ]) {
+    const current = { ...work, mode, requires_consent, rules: `固定的${mode}规则说明` };
+    const app = host('work', ({ path }) => path.endsWith('/cards') ? ok({ cards: [] }) : ok(current), { id: work.id });
+    await app.page.refresh();
+    await tick();
+    app.page.previewShare();
+    assert.equal(app.page.data.preview.rules, current.rules);
+    assert.match(app.page.data.preview.consentNotice, expectedNotice);
+    assert.equal(app.page.data.preview.opening, current.opening);
+    assert.equal(app.requests.filter(item => item.method === 'POST' && item.path.endsWith('/cards')).length, 0);
+  }
 });
 
 test('TXT export hands the selected title and text to native sharing as UTF-8 and removes the temporary file', async () => {

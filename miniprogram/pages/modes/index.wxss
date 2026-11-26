@@ -1,12 +1,13 @@
 .modes-page > .heading { margin-bottom: 18px; }
 .modes-options, .modes-rule-list, .modes-form { padding: 14px 18px; }
 .modes-section-title { margin: 32px 0 12px; font-size: 1.29em; font-weight: 600; }
-.modes-options > .modes-option + .modes-option { border-top: 1px solid #e3e3e7; }
+.modes-options > .modes-option + .modes-option, .modes-saved-item + .modes-saved-item { border-top: 1px solid #e3e3e7; }
 .modes-option, .modes-switch { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 0; overflow-wrap: anywhere; }
 .modes-option radio { flex: none; }
 .modes-option-title { margin-bottom: 3px; font-size: 1em; font-weight: 600; }
 .modes-rule-description { display: block; }
 .modes-saved { margin-top: 12px; }
+.modes-edit, .modes-cancel { width: fit-content; }
 .modes-start { margin-top: 20px; }
 .modes-rule-list { display: flex; flex-direction: column; gap: 8px; }
 .modes-field-label { display: block; margin: 16px 0 8px; font-weight: 600; }

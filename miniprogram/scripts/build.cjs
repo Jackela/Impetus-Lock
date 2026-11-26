@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { TmplGroup } = require('glass-easel-template-compiler');
+require('./prepare-contract.cjs');
 
 const root = path.resolve(__dirname, '..');
 const test = process.argv.includes('--test');

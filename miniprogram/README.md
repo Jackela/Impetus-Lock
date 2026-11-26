@@ -20,7 +20,11 @@ WECHAT_API_ORIGIN=https://your-api.example.com WECHAT_SPEECH_ENABLED=1 npm run b
 
 需要语音时，在小程序后台添加微信同声传译插件，再设置 `WECHAT_SPEECH_ENABLED=1` 重新构建。产物会登记 `WechatSI` 0.0.7，提供方为 `wx069ba97219f66d99`。插件未启用或设备无法启动识别时，用户仍可打字或点选。麦克风授权在主动使用语音时发起。前台正常松手后发送识别文字；录音时切后台或取消手势会中止自动提交。应用在插件返回临时录音路径时请求清理文件。供应方的数据处理期限与主体后台配置需在上线前核实。[微信同声传译](https://developers.weixin.qq.com/miniprogram/dev/platform-capabilities/extended/translator.html) · [微信隐私授权](https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/PrivacyAuthorize.html)
 
+若识别超时，同一账号在原局可以重录。插件晚到的回调无法区分两段录音时，页面会先让作者核对识别文字。切换账号或挑战局后，若旧录音始终没有结束回调，可先打字，或关闭并重新打开小程序后再录音。
+
 微信技术会话通过服务端交换。Bearer token 仅保存在进程内存，前台重新确认身份后才能读写相应私有数据。作品卡使用独立公开读取路径，默认缩略图来自包内固定封面。原生作品保存调用 `PUT /api/wechat/works/{id}`，与服务端 PATCH 别名共用版本及正文合同。TXT 用 UTF-8 生成，用户主动操作后调用微信文件分享面板。
+
+安装、类型检查和构建会从仓库的 `client/src/types/api.generated.ts` 读取接口声明。后端接口变动后，在 `client/` 运行 `npm run api:generate` 即可更新两端共用的类型。
 
 ## 本地检查
 

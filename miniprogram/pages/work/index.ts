@@ -8,14 +8,13 @@ import { copyWork, shareTextFile } from '../../lib/work-files';
 const COPIES_NOTICE = '持有卡片的人可以阅读。已阅读、复制、截图或由微信缓存的内容，撤回后仍可能保留。';
 const UNAVAILABLE_NOTICE = '当前微信身份需要重新确认，请重试读取。';
 
-type PreviewWork = Work & { opening?: string; requires_consent?: boolean; rules?: string };
-type Draft = { base: PreviewWork; title: string; text: string };
+type Draft = { base: Work; title: string; text: string };
 type CardSummary = Pick<Card, 'id' | 'title'> & { snippet: string };
 type Data = {
   fontSize: number;
-  base: PreviewWork | null;
-  latest: PreviewWork | null;
-  preview: PreviewWork | null;
+  base: Work | null;
+  latest: Work | null;
+  preview: (Work & { consentNotice: string }) | null;
   title: string;
   text: string;
   themeName: string;
@@ -41,11 +40,11 @@ type Methods = {
   refreshCards(): Promise<void>;
   isCurrent(generation: number, subject: string): boolean;
   keepDraft(): void;
-  setVersion(work: PreviewWork): void;
+  setVersion(work: Work): void;
   titleChanged(event: WechatMiniprogram.Input): void;
   textChanged(event: WechatMiniprogram.TextareaInput): void;
   save(): Promise<void>;
-  detectSaveResult(base: PreviewWork, title: string, text: string, generation: number, subject: string): Promise<void>;
+  detectSaveResult(base: Work, title: string, text: string, generation: number, subject: string): Promise<void>;
   useCurrentEdits(): void;
   useSavedVersion(): Promise<void>;
   copy(): Promise<void>;
@@ -121,7 +120,7 @@ Page<Data, Methods>({
         });
         this.keepDraft();
       }
-      const work = await api<PreviewWork>(path);
+      const work = await api<Work>(path);
       if (!this.isCurrent(generation, subject)) return;
       this.setData({ verified: true });
       if (!local || (local.title === work.title && local.text === work.text)) {
@@ -217,7 +216,7 @@ Page<Data, Methods>({
     if (!base || !dirty || !verified || latest || busy || !this.isCurrent(generation, subject)) return;
     this.setData({ busy: true, error: '', status: '' });
     try {
-      const updated = await api<PreviewWork>('/works/' + encodeURIComponent(this.id), 'PATCH', { version: base.version, title, text });
+      const updated = await api<Work>('/works/' + encodeURIComponent(this.id), 'PATCH', { version: base.version, title, text });
       if (!this.isCurrent(generation, subject)) return;
       this.setVersion(updated);
       this.setData({ status: '作品已保存。' });
@@ -237,7 +236,7 @@ Page<Data, Methods>({
 
   async detectSaveResult(base, title, text, generation, subject) {
     try {
-      const saved = await api<PreviewWork>('/works/' + encodeURIComponent(this.id));
+      const saved = await api<Work>('/works/' + encodeURIComponent(this.id));
       if (!this.isCurrent(generation, subject)) return;
       if (saved.title === title && saved.text === text) {
         this.setVersion(saved);
@@ -312,7 +311,10 @@ Page<Data, Methods>({
       this.setData({ error: '保存一段正文后即可发布作品卡。' });
       return;
     }
-    this.setData({ preview: base, error: '', status: '' }, () => {
+    const consentNotice = base.requires_consent
+      ? '好友开局前需要确认不可恢复删除规则。'
+      : base.mode === 'high' ? '好友开局前需要确认高强度模式。' : '';
+    this.setData({ preview: { ...base, consentNotice }, error: '', status: '' }, () => {
       wx.pageScrollTo?.({ scrollTop: 0, duration: 0 });
     });
   },

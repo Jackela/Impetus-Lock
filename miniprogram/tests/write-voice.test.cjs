@@ -22,8 +22,9 @@ function sandbox() {
     limit: () => fields.push(["limit"]),
     processing: () => fields.push(["processing"]),
     complete: (text) => fields.push(["complete", text]),
+    review: (text) => fields.push(["review", text]),
     error: (error) => fields.push(["error", error]),
-  });
+  }, JSON.stringify(["wechat-author", "run-a"]));
   return { manager, listen, voice, clean, calls, fields };
 }
 
@@ -47,10 +48,10 @@ test("后台或取消的回包只清理文件，不会提交到下一录音", ()
   release();
   const newRelease = listen();
   newRelease();
-  manager.onStop({ result: "这是新录音" });
+  manager.onStop({ result: "这是新录音", tempFilePath: "wxfile://new" });
   assert.deepEqual(fields.map(([type]) => type), ["error", "processing", "complete"]);
   assert.deepEqual(fields.at(-1), ["complete", "这是新录音"]);
-  assert.deepEqual(clean, ["wxfile://cancelled"]);
+  assert.deepEqual(clean, ["wxfile://cancelled", "wxfile://new"]);
 });
 
 test("手势还未松开时系统提前中止录音，清理且不会提交", () => {

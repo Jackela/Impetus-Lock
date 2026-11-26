@@ -102,7 +102,7 @@
       <text class="writer-heading" aria-role="heading">待写入的口述</text>
       <text class="story-paragraph" user-select="{{true}}">{{heldVoiceText}}</text>
       <view class="writer-row">
-        <button class="button-primary" hover-class="button-pressed" bindtap="submitHeldVoice" disabled="{{busy || hasPending}}">写入这段</button>
+        <button class="button-primary" hover-class="button-pressed" bindtap="submitHeldVoice" disabled="{{busy || hasPending}}">确认写入</button>
         <button class="button-link" bindtap="discardHeldVoice" disabled="{{busy}}">放弃这段</button>
       </view>
     </view>
@@ -139,8 +139,8 @@
           <picker mode="selector" range="{{styles}}" value="{{styleIndex}}" bindchange="selectStyle" disabled="{{voicePhase || busy}}">
             <view class="writer-picker" aria-label="口述样式，{{styles[styleIndex]}}">{{styles[styleIndex]}} <text aria-hidden="{{true}}">⌄</text></view>
           </picker>
-          <button class="button-secondary record-button {{voicePhase === 'recording' ? 'is-recording' : ''}}" hover-class="none" bindtouchstart="startRecording" bindtouchend="releaseRecording" bindtouchcancel="cancelRecording" aria-label="按住说话，松手发送" disabled="{{busy || hasPending || privacyBusy}}">{{voicePhase === 'recording' ? '录音 ' + seconds + ' 秒' : voicePhase === 'limit' ? '松手发送' : '按住说话'}}</button>
-          <button class="button-link" bindtap="toggleRecording" disabled="{{busy || hasPending || voicePhase === 'processing' || privacyBusy}}">{{voicePhase === 'recording' || voicePhase === 'limit' ? '点按发送' : voiceReady ? '点按录音' : '启用语音'}}</button>
+          <button class="button-secondary record-button {{voicePhase === 'recording' ? 'is-recording' : ''}}" hover-class="none" bindtouchstart="startRecording" bindtouchend="releaseRecording" bindtouchcancel="cancelRecording" aria-label="按住说话，松手发送" disabled="{{((busy || hasPending) && !pendingInterventionRetry && voicePhase !== 'preparing') || privacyBusy}}">{{voicePhase === 'preparing' ? '正在准备录音' : voicePhase === 'recording' ? '录音 ' + seconds + ' 秒' : voicePhase === 'limit' ? '松手发送' : '按住说话'}}</button>
+          <button class="button-link" bindtap="toggleRecording" disabled="{{((busy || hasPending) && !pendingInterventionRetry && voicePhase !== 'preparing') || voicePhase === 'processing' || privacyBusy}}">{{voicePhase === 'preparing' ? '取消准备' : voicePhase === 'recording' || voicePhase === 'limit' ? '点按发送' : voiceReady ? '点按录音' : '启用语音'}}</button>
           <button wx:if="{{voicePhase}}" class="button-link" bindtap="cancelRecording">取消录音</button>
           <button wx:if="{{mustOpenSettings}}" class="button-link" bindtap="openMicSettings">打开微信权限设置</button>
         </view>
@@ -162,6 +162,7 @@
       <text class="body-copy">收笔后，本局正文会保存成一篇私密作品。</text>
       <button wx:if="{{!pauseConfirmed && !busy}}" class="button-primary" hover-class="button-pressed" bindtap="retryPause">重试暂停</button>
       <block wx:if="{{pauseConfirmed}}">
+        <text wx:if="{{blockedFinishCount}}" class="body-copy">还有 {{blockedFinishCount}} 次待续写操作。可以回原设备处理，再回来核对。</text>
         <text wx:if="{{hasPending && pendingKind !== 'finish'}}" class="body-copy">先核对这次操作。你可以处理待续写内容，或仅保存已确认的正文。</text>
         <text wx:if="{{draft && !hasPending}}" class="body-copy">还有一段没写入。你可以先写入故事，或保存当前正文。</text>
         <text wx:if="{{voicePhase === 'processing'}}" class="body-copy">正在识别这段口述。</text>
@@ -175,7 +176,8 @@
           <button wx:if="{{!hasPending && heldVoiceText}}" class="button-primary" hover-class="button-pressed" bindtap="submitHeldVoice" disabled="{{busy}}">写入这段口述</button>
           <button wx:if="{{!hasPending && draft && !voicePhase && !heldVoiceText}}" class="button-primary" hover-class="button-pressed" bindtap="includeDraft" disabled="{{busy}}">先写入这段</button>
           <button wx:if="{{pendingKind !== 'finish' && (hasPending || draft || heldVoiceText || voicePhase)}}" class="button-secondary" hover-class="button-pressed" bindtap="discardAndFinish" disabled="{{busy}}">放弃待写入内容并收笔</button>
-          <button wx:if="{{!hasPending && !draft && !heldVoiceText && !voicePhase}}" class="button-primary" hover-class="button-pressed" bindtap="confirmFinish" disabled="{{busy}}">确认收笔</button>
+          <button wx:if="{{!hasPending && !draft && !heldVoiceText && !voicePhase}}" class="button-primary" hover-class="button-pressed" bindtap="confirmFinish" disabled="{{busy}}">{{blockedFinishCount ? '重新核对后收笔' : '确认收笔'}}</button>
+          <button wx:if="{{blockedFinishCount && !hasPending && !draft && !heldVoiceText && !voicePhase}}" class="button-secondary" hover-class="button-pressed" bindtap="discardBlockedAndFinish" disabled="{{busy}}">放弃这些待续写并收笔</button>
           <button wx:if="{{pendingKind !== 'finish'}}" class="button-link" bindtap="returnToWriting" disabled="{{busy}}">继续写</button>
         </view>
       </block>

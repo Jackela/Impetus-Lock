@@ -3,6 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
+    "postinstall": "node scripts/prepare-contract.cjs",
+    "pretype-check": "node scripts/prepare-contract.cjs",
     "build": "node scripts/build.cjs",
     "type-check": "tsc --noEmit",
     "test": "node scripts/build.cjs --test && node --test tests/*.test.cjs",

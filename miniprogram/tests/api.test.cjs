@@ -75,6 +75,17 @@ test('native work updates use supported PUT and show the API domain error', asyn
   response(1, 409, {error:{code:'STALE',message:'已保存的作品版本比当前版本新。'}})
   await assert.rejects(write,e=>e.status===409 && e.message==='已保存的作品版本比当前版本新。')
 })
+test('a finish conflict carries the pending request IDs for its confirmed owner', async () => {
+  await confirm('A')
+  const finish = api.api('/runs/r/actions', 'POST', {kind:'finish'})
+  await tick()
+  response(1, 409, {error:{code:'STORY_FINISH_INPUT_PENDING',message:'请先核对输入',details:{request_ids:['turn-1']}}})
+  await assert.rejects(finish, error => {
+    assert.equal(error.code, 'STORY_FINISH_INPUT_PENDING')
+    assert.deepEqual(error.details, {request_ids:['turn-1']})
+    return true
+  })
+})
 test('developer timing sample contains only durations and is empty for release', () => {
   const perf = require('../.build/lib/perf')
   wx.getAccountInfoSync = () => ({miniProgram:{envVersion:'develop'}})
@@ -85,4 +96,34 @@ test('developer timing sample contains only durations and is empty for release',
   wx.getAccountInfoSync = () => ({miniProgram:{envVersion:'release'}})
   perf.markLaunch(); perf.markReady(); perf.beginAction(); perf.markCommitted()
   assert.deepEqual(perf.getFirstStoryTimings(), {})
+})
+test('a late session exchange proves the old owner without authorizing any old requests', async () => {
+  const old = api.verifySession()
+  const invalidated = assert.rejects(old.subject, /身份/)
+  await tick()
+  api.invalidateSession()
+  const current = api.ensureSession()
+  await tick()
+  response(1, 200, {token:'current-token', subject:'B'})
+  await current
+  response(0, 200, {token:'old-token', subject:'A'})
+  assert.equal(await old.ownerProof, 'A')
+  await invalidated
+  assert.equal(api.currentSubject(), 'B')
+  const library = api.api('/library')
+  await tick()
+  assert.equal(requests[2].header.Authorization, 'Bearer current-token')
+  response(2, 200, {})
+  await library
+})
+test('a wx.login that had not dispatched an exchange cannot prove the owner of hidden input', async () => {
+  let resolveLogin
+  wx.login = ({success}) => { resolveLogin = success }
+  const old = api.verifySession()
+  const invalidated = assert.rejects(old.subject, /身份/)
+  assert.equal(old.ownerProof, undefined)
+  api.invalidateSession()
+  resolveLogin({code:'late-code'})
+  await invalidated
+  assert.deepEqual(requests, [])
 })

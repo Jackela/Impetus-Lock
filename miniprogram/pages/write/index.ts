@@ -2,40 +2,23 @@ import { api, currentSubject, ensureSession, requestId } from "../../lib/api";
 import { readingSize } from "../../lib/font";
 import { markCommitted } from "../../lib/perf";
 import { getPrivate, putPrivate, removePrivate } from "../../lib/storage";
-import type { Action, Run, Segment, VoiceStyle } from "../../lib/types";
+import type { Action, Receipt, Run, VoiceStyle } from "../../lib/types";
 import { beginVoice, cancelVoice, voiceAvailable } from "../../lib/voice";
 
 type NoticeKind = "status" | "error";
 type EditKind = "edit" | "unlock" | "replace" | "restore" | "intervene" | "restyle";
 type FinishControl = "begin_finish" | "resume";
-type WriterAction = Action & { retain?: boolean };
-type ReceiptStatus = "unknown" | "pending" | "committed" | "canceled";
-interface Receipt { status: ReceiptStatus; run_version: number }
+type ReceiptStatus = Receipt["status"];
 type PlotEvent = WechatMiniprogram.CustomEvent<{}, {}, { text: string }>;
 type ValueEvent = WechatMiniprogram.CustomEvent<{ value: string }>;
 type TargetEvent = WechatMiniprogram.CustomEvent<{}, {}, { target: string; kind?: EditKind }>;
 type AbilityEvent = WechatMiniprogram.CustomEvent<{}, {}, { ability: NonNullable<Action["ability"]> }>;
 type PrivacyDecision = (choice: { event: "agree"; buttonId: string } | { event: "disagree" }) => void;
 type PreviewKind = "restyle" | "rewrite" | "insert" | "replace";
-type StoryRun = Run & {
-  generation_pending?: boolean;
-  waiting_response?: boolean;
-  finishing?: boolean;
-  recoveries?: Recovery[];
-};
-
-interface Recovery {
-  id: string;
-  target: string;
-  segment: Segment;
-  replacement?: string | null;
-}
-
 interface Pending {
-  action: WriterAction;
+  action: Action;
   first?: boolean;
   cancelRequestId?: string;
-  turnsAtStart: number;
   reviewedVersion?: number;
 }
 
@@ -64,9 +47,13 @@ interface Runtime {
   sequence: number;
   loading: boolean;
   cancelling: boolean;
-  pending?: Pending;
+  draft?: string | null;
+  pending?: Pending | null;
+  firstConsumed?: boolean;
   finishControl?: { kind: FinishControl; requestId: string };
+  blockedFinish?: { target: string; requestId?: string }[];
   heldVoice?: { text: string; style: VoiceStyle };
+  preparingVoice?: object;
   releaseVoice?: () => void;
   privacyDecision?: PrivacyDecision;
   voiceAuthorized: boolean;
@@ -109,6 +96,36 @@ function receiptFor(runId: string, requestId: string): Promise<Receipt> {
   return api<Receipt>("/runs/" + encodeURIComponent(runId) + "/receipts/" + encodeURIComponent(requestId));
 }
 
+function readLocal<T>(key: string): T | null | undefined {
+  try {
+    return getPrivate<T>(key) ?? null;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeLocal(key: string, value?: unknown): boolean {
+  try {
+    if (value === undefined) removePrivate(key);
+    else putPrivate(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isInterventionRetry(action?: Action): boolean {
+  return action?.kind === "intervene" && !action.target && !action.text;
+}
+
+function pendingFinishInputs(reason: unknown): string[] {
+  if (statusOf(reason) !== 409 || !reason || typeof reason !== "object" ||
+    !("code" in reason) || reason.code !== "STORY_FINISH_INPUT_PENDING" || !("details" in reason)) return [];
+  const details = reason.details;
+  if (!details || typeof details !== "object" || !("request_ids" in details) || !Array.isArray(details.request_ids)) return [];
+  return [...new Set(details.request_ids.filter((id): id is string => typeof id === "string" && Boolean(id)))];
+}
+
 function chapterName(run: Run): string {
   return run.theme === "detective" ? "古风探案" : "来信";
 }
@@ -136,7 +153,7 @@ function abilityOptions(run: Run) {
 
 const initialData = {
   fontSize: 17,
-  run: null as StoryRun | null,
+  run: null as Run | null,
   opening: "",
   sections: [] as Run["segments"],
   chapter: "",
@@ -147,6 +164,7 @@ const initialData = {
   noticeKind: "status" as NoticeKind,
   needsReload: false,
   hasPending: false,
+  pendingInterventionRetry: false,
   pendingKind: "",
   pendingVoice: false,
   pendingText: "",
@@ -156,13 +174,14 @@ const initialData = {
   styles: styleNames,
   styleIndex: 1,
   voiceReady: false,
-  voicePhase: "" as "" | "recording" | "limit" | "processing",
+  voicePhase: "" as "" | "preparing" | "recording" | "limit" | "processing",
   seconds: 60,
   privacyOpen: false,
   privacyBusy: false,
   mustOpenSettings: false,
   finishing: false,
   pauseConfirmed: false,
+  blockedFinishCount: 0,
   heldVoiceText: "",
   showRules: false,
   editor: null as Editor | null,
@@ -217,7 +236,7 @@ Page({
     this.rejectPrivacy();
     this.setData({ run: null, draft: "", busy: false, editor: null, originalTarget: "", showRules: false,
       opening: "", sections: [], pendingText: "", voiceReady: false, mustOpenSettings: false, privacyBusy: false,
-      originalText: "", showRecoveries: false, pauseConfirmed: false, heldVoiceText: "", loading: true });
+      originalText: "", showRecoveries: false, pauseConfirmed: false, blockedFinishCount: 0, heldVoiceText: "", loading: true, status: "" });
   },
 
   notice(status: string, noticeKind: NoticeKind = "status") {
@@ -230,10 +249,10 @@ Page({
     this.setData({
       run: null, draft: "", loading: false, busy: false, editor: null, originalTarget: "", showRules: false,
       opening: "", sections: [], originalText: "",
-      hasPending: false, pendingKind: "", pendingVoice: false, pendingText: "", canRetryPending: false,
+      hasPending: false, pendingInterventionRetry: false, pendingKind: "", pendingVoice: false, pendingText: "", canRetryPending: false,
       offers: [], canChangeLock: false,
       canIntervene: false, showRecoveries: false,
-      needsReload: true, finishing: false, pauseConfirmed: false, heldVoiceText: "",
+      needsReload: true, finishing: false, pauseConfirmed: false, blockedFinishCount: 0, heldVoiceText: "",
       voiceReady: false, privacyBusy: false, mustOpenSettings: false,
     });
     this.notice(message, "error");
@@ -264,35 +283,35 @@ Page({
       if (!this.valid(runtime, sequence, subject)) return;
       if (runtime.subject && runtime.subject !== subject) {
         runtime.pending = undefined;
+        runtime.draft = undefined;
         runtime.heldVoice = undefined;
         runtime.finishControl = undefined;
+        runtime.blockedFinish = undefined;
+        runtime.firstConsumed = undefined;
         this.hidePrivateContents("微信身份已切换。请在「我的写作」打开当前身份的草稿。");
         return;
       }
       runtime.subject = subject;
       const path = "/runs/" + encodeURIComponent(runtime.id);
-      let run = await api<StoryRun>(path);
+      let run = await api<Run>(path);
       if (!this.valid(runtime, sequence, subject)) return;
       if (run.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。请重新打开。");
-      runtime.pending = getPrivate<Pending>("pending:" + runtime.id);
-      let draft = getPrivate<string>("draft:" + runtime.id) ?? "";
+      if (runtime.pending === undefined) runtime.pending = readLocal<Pending>("pending:" + runtime.id);
+      if (runtime.draft === undefined) runtime.draft = readLocal<string>("draft:" + runtime.id);
       const { pending } = runtime;
       if (pending) {
         const receipt = await receiptFor(runtime.id, pending.action.request_id);
         if (!this.valid(runtime, sequence, subject)) return;
         if (receipt.run_version > run.version) {
-          run = await api<StoryRun>(path);
+          run = await api<Run>(path);
           if (!this.valid(runtime, sequence, subject)) return;
         }
         if (receipt.status === "committed" || receipt.status === "canceled") {
-          if (receipt.status === "committed" && draft.trim() === pending.action.text) {
-            draft = "";
-            removePrivate("draft:" + runtime.id);
-          }
-          this.clearPending(pending, false);
+          this.clearPending(pending, receipt.status === "committed");
         }
       }
-      const first = getPrivate<Omit<Action, "kind" | "version">>("first:" + runtime.id);
+      const draft = runtime.draft ?? "";
+      const first = runtime.firstConsumed ? undefined : readLocal<Omit<Action, "kind" | "version">>("first:" + runtime.id);
       if (run.finishing && runtime.finishControl?.kind === "begin_finish") runtime.finishControl = undefined;
       if (!run.finishing && runtime.finishControl?.kind === "resume") runtime.finishControl = undefined;
       this.setData({
@@ -317,7 +336,7 @@ Page({
         this.notice(run.finishing ? "本局已暂停续写。可以处理待写入内容或保存。" : "上次暂停尚未确认。请重试暂停。");
         return;
       }
-      if (run.turns > 0 && first) removePrivate("first:" + runtime.id);
+      if (run.turns > 0 && first) this.consumeFirst();
       if (runtime.leaveCancelledVoice) {
         runtime.leaveCancelledVoice = false;
         this.notice("离开写作页时已停止录音。可以重新录音或打字。");
@@ -336,7 +355,8 @@ Page({
     }
   },
 
-  setRun(run: StoryRun) {
+  setRun(run: Run) {
+    if (!run.finishing && this.runtime) this.runtime.blockedFinish = undefined;
     this.setData({
       run,
       opening: run.segments.find((segment) => segment.id === "opening")?.text ?? run.opening,
@@ -347,6 +367,7 @@ Page({
       canChangeLock: run.mode === "high" && run.lock_uses > 0 && run.abilities.interpret.enabled &&
         run.abilities.interpret.level >= 2,
       canIntervene: run.mode === "custom" && run.rules?.trigger === "manual" && run.turns > 0 && !run.waiting_response,
+      blockedFinishCount: this.runtime?.blockedFinish?.length ?? 0,
       ...(run.finishing ? { finishing: true, pauseConfirmed: true }
         : this.data.pauseConfirmed ? { finishing: false, pauseConfirmed: false } : {}),
       originalTarget: "",
@@ -360,6 +381,7 @@ Page({
     const action = pending?.action;
     this.setData({
       hasPending: Boolean(action),
+      pendingInterventionRetry: isInterventionRetry(action),
       pendingKind: action?.kind ?? "",
       pendingVoice: action?.kind === "turn" && action.source === "voice",
       pendingText: action?.text ?? "",
@@ -370,36 +392,37 @@ Page({
   retainPending(pending: Pending) {
     const runtime = this.runtime;
     if (!runtime) return;
-    putPrivate("pending:" + runtime.id, pending);
     runtime.pending = pending;
+    writeLocal("pending:" + runtime.id, pending);
     this.presentPending();
+  },
+
+  consumeFirst() {
+    const runtime = this.runtime;
+    if (!runtime) return;
+    runtime.firstConsumed = true;
+    writeLocal("first:" + runtime.id);
   },
 
   clearPending(pending: Pending, committed: boolean) {
     const runtime = this.runtime;
     if (!runtime || runtime.pending !== pending) return;
-    runtime.pending = undefined;
-    removePrivate("pending:" + runtime.id);
-    if (pending.first) removePrivate("first:" + runtime.id);
-    if (committed && pending.action.kind === "turn" && this.data.draft.trim() === pending.action.text) {
-      this.setData({ draft: "" });
-      removePrivate("draft:" + runtime.id);
+    runtime.pending = null;
+    writeLocal("pending:" + runtime.id);
+    if (pending.first) this.consumeFirst();
+    if (committed && pending.action.kind === "turn" && runtime.draft?.trim() === pending.action.text) {
+      this.updateDraft("");
     }
     this.presentPending();
   },
 
-  async startAction(action: WriterAction, first = false) {
+  async startAction(action: Action, first = false) {
     if (!this.runtime || !this.data.run || this.data.run.status !== "active" || this.data.busy || this.runtime.pending) return;
     if (this.data.finishing && (!this.data.pauseConfirmed || (action.kind !== "turn" && action.kind !== "finish"))) return;
     if (!this.valid(this.runtime, this.runtime.sequence, this.runtime.subject)) return;
     const command = this.data.finishing && action.kind === "turn" ? { ...action, retain: true } : action;
-    const pending = { action: command, first, turnsAtStart: this.data.run.turns };
-    try {
-      this.retainPending(pending);
-    } catch (reason) {
-      this.notice("无法在本机暂存这次操作。" + errorText(reason), "error");
-      return;
-    }
+    const pending = { action: command, first };
+    this.retainPending(pending);
     await this.sendPending(pending);
   },
 
@@ -416,12 +439,23 @@ Page({
     if (action.kind === "finish") label = "正在保存作品…";
     this.notice(label);
     try {
-      const result = await api<StoryRun>("/runs/" + encodeURIComponent(runtime.id) + "/actions", "POST", action);
-      if (!this.valid(runtime, sequence, subject) || runtime.pending !== pending) return;
+      const url = "/runs/" + encodeURIComponent(runtime.id);
+      const isCurrent = () => this.valid(runtime, sequence, subject) && runtime.pending === pending;
+      let result = await api<Run>(url + "/actions", "POST", action);
+      if (!isCurrent()) return;
+      let outcome: ReceiptStatus = "committed";
+      if (action.kind === "turn") {
+        const receipt = await receiptFor(runtime.id, action.request_id);
+        if (!isCurrent()) return;
+        outcome = receipt.status;
+        if (receipt.run_version > result.version) {
+          result = await api<Run>(url);
+          if (!isCurrent()) return;
+        }
+      }
       if (result.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。请核对后重试。");
-      const turnCommitted = action.kind === "turn" && result.turns > pending.turnsAtStart;
-      if (turnCommitted && pending.turnsAtStart === 0) markCommitted();
-      this.clearPending(pending, action.kind !== "turn" || turnCommitted);
+      if (outcome === "committed" && action.kind === "turn" && this.data.run?.turns === 0) markCommitted();
+      if (outcome === "committed" || outcome === "canceled") this.clearPending(pending, outcome === "committed");
       if (!this.data.run || result.version >= this.data.run.version) this.setRun(result);
       this.setData({ editor: null, originalTarget: "", busy: false });
       if (result.status === "finished") {
@@ -429,8 +463,9 @@ Page({
         return;
       }
       if (action.kind === "turn") {
-        this.notice(turnCommitted ? "新段已写入。" : "这次没有新增正文。请核对当前稿件。", turnCommitted ? "status" : "error");
-      } else if (action.kind === "intervene" && !action.target && (result.pending_intervention || result.generation_pending)) {
+        this.notice(outcome === "committed" ? "新段已写入。" : outcome === "canceled" ? "这次操作已取消。"
+          : "这段文字仍待核对。可以按原操作重试。");
+      } else if (isInterventionRetry(action) && (result.pending_intervention || result.generation_pending)) {
         this.notice("本轮变化还未生成。可以继续写或稍后重试。");
       } else {
         this.notice("已保存。");
@@ -443,7 +478,13 @@ Page({
         return;
       }
       this.setData({ busy: false });
-      if (status === 409) {
+      const blocked = action.kind === "finish" ? pendingFinishInputs(reason) : [];
+      if (blocked.length) {
+        this.clearPending(pending, false);
+        runtime.blockedFinish = blocked.map((target) => ({ target }));
+        this.setData({ blockedFinishCount: blocked.length });
+        this.notice("另有待续写内容尚未确认。请回原设备处理，或明确放弃后收笔。", "error");
+      } else if (status === 409) {
         this.notice("这一局已有新版本。先核对最新正文，再处理待写入内容。", "error");
       } else if (action.kind === "turn" && action.source === "voice" && action.style !== "verbatim") {
         this.notice("这段口述还未确认入稿。" + errorText(reason), "error");
@@ -483,12 +524,7 @@ Page({
       }
       pending.action = { ...pending.action, version: run.version, retain: false };
     }
-    try {
-      this.retainPending(pending);
-    } catch (reason) {
-      this.notice(errorText(reason), "error");
-      return;
-    }
+    this.retainPending(pending);
     await this.sendPending(pending);
   },
 
@@ -503,7 +539,7 @@ Page({
       const receipt = await receiptFor(runtime.id, pending.action.request_id);
       if (!this.valid(runtime, sequence, subject)) return;
       if (receipt.status === "committed" || receipt.status === "canceled" || receipt.run_version !== this.data.run?.version) {
-        const latest = await api<StoryRun>("/runs/" + encodeURIComponent(runtime.id));
+        const latest = await api<Run>("/runs/" + encodeURIComponent(runtime.id));
         if (!this.valid(runtime, sequence, subject)) return;
         this.setRun(latest);
         if (receipt.status === "committed" || receipt.status === "canceled") {
@@ -520,51 +556,34 @@ Page({
     }
   },
 
-  async cancelPending(): Promise<"committed" | "canceled" | undefined> {
+  async cancelPending(forRecording = false): Promise<"committed" | "canceled" | undefined> {
     const runtime = this.runtime;
     const pending = runtime?.pending;
-    if (!runtime || !pending || pending.action.kind === "finish" || runtime.cancelling) return;
+    const version = this.data.run?.version;
+    if (!runtime || !pending || version === undefined || pending.action.kind === "finish" || runtime.cancelling) return;
     if (!this.valid(runtime, runtime.sequence, runtime.subject)) return;
     const sequence = ++runtime.sequence;
     const subject = runtime.subject;
     this.setData({ busy: true });
-    this.notice("正在核对这次操作是否已写入…");
+    this.notice(forRecording ? "正在准备录音并核对本轮变化…" : "正在核对这次操作是否已写入…");
     runtime.cancelling = true;
     try {
       pending.cancelRequestId ??= requestId();
       this.retainPending(pending);
-      const url = "/runs/" + encodeURIComponent(runtime.id);
-      const latestBeforeCancel = await api<StoryRun>(url);
-      if (!this.valid(runtime, sequence, subject)) return;
-      const cancel = (version: number) => api<StoryRun>(url + "/actions", "POST", {
-        kind: "cancel", request_id: pending.cancelRequestId, version, target: pending.action.request_id,
-      });
-      let cancelled: StoryRun;
-      try {
-        cancelled = await cancel(latestBeforeCancel.version);
-      } catch (reason) {
-        if (statusOf(reason) !== 409 || !this.valid(runtime, sequence, subject)) throw reason;
-        const latestVersion = await api<StoryRun>(url);
-        if (!this.valid(runtime, sequence, subject)) return;
-        cancelled = await cancel(latestVersion.version);
-      }
-      if (!this.valid(runtime, sequence, subject)) return;
-      const receipt = await receiptFor(runtime.id, pending.action.request_id);
-      if (!this.valid(runtime, sequence, subject)) return;
-      if (receipt.status !== "canceled" && receipt.status !== "committed") throw new Error("尚未确认这次操作的结果。");
-      const latest = await api<StoryRun>(url);
-      if (!this.valid(runtime, sequence, subject)) return;
-      if (latest.id !== runtime.id || cancelled.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。");
-      this.clearPending(pending, receipt.status === "committed");
-      const result = latest.version >= cancelled.version ? latest : cancelled;
+      const canceled = await this.cancelAction(runtime.id, version, pending.action.request_id, pending.cancelRequestId,
+        () => this.valid(runtime, sequence, subject));
+      if (!canceled) return;
+      const { run: result, outcome } = canceled;
+      this.clearPending(pending, outcome === "committed");
       this.setRun(result);
       this.setData({ busy: false, editor: null, originalTarget: "" });
       if (result.status === "finished") {
         this.openCompleted(result);
         return;
       }
-      this.notice(receipt.status === "committed" ? "这次操作在取消前已生效，正文已更新。" : "已放弃这次操作。");
-      return receipt.status;
+      this.notice(outcome === "committed" ? "这次操作在取消前已生效，正文已更新。"
+        : forRecording ? "本轮变化已暂停。可以继续录音，待写入后再核对。" : "已放弃这次操作。");
+      return outcome;
     } catch (reason) {
       if (this.valid(runtime, sequence, subject)) {
         this.setData({ busy: false });
@@ -574,6 +593,35 @@ Page({
     } finally {
       if (runtime.sequence === sequence) runtime.cancelling = false;
     }
+  },
+
+  async cancelAction(runId: string, version: number, target: string, request_id: string, isCurrent: () => boolean) {
+    const path = "/runs/" + encodeURIComponent(runId);
+    const cancel = (version: number) => api<Run>(path + "/actions", "POST", {
+      kind: "cancel", request_id, version, target,
+    });
+    let result: Run;
+    try {
+      result = await cancel(version);
+    } catch (reason) {
+      if (statusOf(reason) !== 409 || !isCurrent()) throw reason;
+      const latest = await api<Run>(path);
+      if (!isCurrent()) return;
+      if (latest.id !== runId) throw new Error("返回的稿件与当前故事不一致。");
+      result = await cancel(latest.version);
+    }
+    if (!isCurrent()) return;
+    if (result.id !== runId) throw new Error("返回的稿件与当前故事不一致。");
+    const receipt = await receiptFor(runId, target);
+    if (!isCurrent()) return;
+    const outcome = receipt.status;
+    if (outcome !== "canceled" && outcome !== "committed") throw new Error("尚未确认这次操作的结果。");
+    if (receipt.run_version > result.version) {
+      result = await api<Run>(path);
+      if (!isCurrent()) return;
+      if (result.id !== runId) throw new Error("返回的稿件与当前故事不一致。");
+    }
+    return { run: result, outcome };
   },
 
   async abandonPending() {
@@ -611,21 +659,23 @@ Page({
   onDraft(event: ValueEvent) {
     const runtime = this.runtime;
     if (!runtime || !this.valid(runtime, runtime.sequence, runtime.subject) || !this.data.run) return;
-    const draft = event.detail.value;
-    this.setData({ draft });
-    try {
-      if (draft) putPrivate("draft:" + runtime.id, draft);
-      else removePrivate("draft:" + runtime.id);
-    } catch {
+    if (!this.updateDraft(event.detail.value)) {
       this.notice("本机无法暂存文字。可以在当前页面写入故事。", "error");
     }
+  },
+
+  updateDraft(draft: string): boolean {
+    const runtime = this.runtime;
+    if (!runtime) return false;
+    runtime.draft = draft;
+    this.setData({ draft });
+    return writeLocal("draft:" + runtime.id, draft || undefined);
   },
 
   discardDraft() {
     const runtime = this.runtime;
     if (!runtime || !this.valid(runtime, runtime.sequence, runtime.subject)) return;
-    this.setData({ draft: "" });
-    removePrivate("draft:" + runtime.id);
+    this.updateDraft("");
   },
 
   async submitDraft() {
@@ -668,7 +718,7 @@ Page({
     this.setData({ busy: true, originalTarget: "", originalText: "" });
     this.notice("正在核对这段的原文…");
     try {
-      const latest = await api<StoryRun>("/runs/" + encodeURIComponent(runtime.id));
+      const latest = await api<Run>("/runs/" + encodeURIComponent(runtime.id));
       if (!this.valid(runtime, sequence, subject)) return;
       if (latest.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。");
       this.setRun(latest);
@@ -807,6 +857,7 @@ Page({
   async beginFinish() {
     if (!this.data.run || this.data.run.status !== "active") return;
     if (this.data.privacyBusy) this.rejectPrivacy();
+    if (this.runtime?.preparingVoice) this.abortRecording();
     this.setData({ finishing: true, editor: null, privacyOpen: false });
     await this.sendFinishControl("begin_finish");
   },
@@ -824,16 +875,16 @@ Page({
     this.setData({ busy: true });
     this.notice(kind === "begin_finish" ? "正在暂停续写并核对正文…" : "正在恢复写作…");
     const path = "/runs/" + encodeURIComponent(runtime.id);
-    const submit = (version: number) => api<StoryRun>(path + "/actions", "POST", {
+    const submit = (version: number) => api<Run>(path + "/actions", "POST", {
       request_id: request.requestId, kind, version,
     });
     try {
-      let result: StoryRun;
+      let result: Run;
       try {
         result = await submit(run.version);
       } catch (reason) {
         if (statusOf(reason) !== 409 || !this.valid(runtime, sequence, subject)) throw reason;
-        const latest = await api<StoryRun>(path);
+        const latest = await api<Run>(path);
         if (!this.valid(runtime, sequence, subject)) return;
         result = await submit(latest.version);
       }
@@ -876,6 +927,57 @@ Page({
     this.discardHeldVoice();
     this.discardDraft();
     await this.confirmFinish();
+  },
+
+  async discardBlockedAndFinish() {
+    const runtime = this.runtime;
+    const blocked = runtime?.blockedFinish;
+    if (!runtime || !blocked?.length || !this.data.pauseConfirmed || this.data.busy || this.data.hasPending ||
+      !this.valid(runtime, runtime.sequence, runtime.subject)) return;
+    const subject = runtime.subject;
+    const sequence = ++runtime.sequence;
+    const isCurrent = () => this.valid(runtime, sequence, subject);
+    const path = "/runs/" + encodeURIComponent(runtime.id);
+    this.setData({ busy: true });
+    this.notice("正在核对并处理这些待续写内容…");
+    try {
+      let latest = await api<Run>(path);
+      if (!isCurrent()) return;
+      if (latest.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。");
+      for (const input of blocked) {
+        if (!latest.finishing) break;
+        const receipt = await receiptFor(runtime.id, input.target);
+        if (!isCurrent()) return;
+        if (receipt.status === "canceled" || receipt.status === "committed") {
+          if (receipt.run_version > latest.version) {
+            latest = await api<Run>(path);
+            if (!isCurrent()) return;
+            if (latest.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。");
+          }
+        } else {
+          input.requestId ??= requestId();
+          const canceled = await this.cancelAction(runtime.id, latest.version, input.target, input.requestId, isCurrent);
+          if (!canceled) return;
+          latest = canceled.run;
+        }
+        runtime.blockedFinish = runtime.blockedFinish?.filter(({ target }) => target !== input.target);
+        this.setRun(latest);
+      }
+      this.setRun(latest);
+      this.setData({ busy: false });
+      if (latest.status === "finished") {
+        this.openCompleted(latest);
+      } else if (latest.finishing) {
+        await this.confirmFinish();
+      } else {
+        this.notice("这局已恢复写作。可重新发起收笔。");
+      }
+    } catch (reason) {
+      if (isCurrent()) {
+        this.setData({ busy: false });
+        this.notice("尚未核对完待续写内容。" + errorText(reason), "error");
+      }
+    }
   },
 
   async includeDraft() {
@@ -1011,19 +1113,38 @@ Page({
     wx.openSetting?.({ fail: () => this.notice("暂时无法打开微信设置。", "error") });
   },
 
-  startRecording() {
+  async startRecording() {
     const runtime = this.runtime;
-    if (!runtime || !this.valid(runtime, runtime.sequence, runtime.subject) || !this.data.run || this.data.hasPending ||
-      this.data.finishing || this.data.voicePhase || this.data.busy || this.data.editor) return;
+    if (!runtime || !this.valid(runtime, runtime.sequence, runtime.subject) || this.data.run?.status !== "active" ||
+      this.data.finishing || this.data.voicePhase || this.data.editor || runtime.heldVoice) return;
+    const retryingIntervention = isInterventionRetry(runtime.pending?.action);
+    if (!retryingIntervention && (this.data.hasPending || this.data.busy)) return;
     if (!runtime.voiceAuthorized) {
       this.enableVoice();
       return;
     }
-    const version = this.data.run.version;
     const style = styleValues[this.data.styleIndex];
+    if (retryingIntervention) {
+      const preparation = {};
+      runtime.preparingVoice = preparation;
+      this.setData({ voicePhase: "preparing" });
+      const outcome = await this.cancelPending(true);
+      if (runtime.preparingVoice !== preparation) return;
+      runtime.preparingVoice = undefined;
+      this.setData({ voicePhase: "" });
+      if (!outcome || this.data.finishing || !this.valid(runtime, runtime.sequence, runtime.subject)) return;
+    }
+    const run = this.data.run;
+    if (run?.status !== "active") return;
+    const subject = runtime.subject;
     const voiceEpoch = ++runtime.voiceEpoch;
     const isCurrent = () => this.runtime === runtime && runtime.voiceEpoch === voiceEpoch &&
-      runtime.foreground && currentSubject() === runtime.subject;
+      runtime.foreground && currentSubject() === subject && this.data.run?.id === run.id;
+    const holdVoice = (text: string) => {
+      runtime.heldVoice = { text, style };
+      this.setData({ heldVoiceText: text });
+      this.notice("口述已识别。请核对文字，再选择写入或放弃。");
+    };
     this.setData({ voicePhase: "recording", seconds: 60 });
     this.notice("正在录音。正常松手后发送文字。");
     runtime.releaseVoice = beginVoice({
@@ -1039,33 +1160,42 @@ Page({
         this.notice("正在识别这段口述…");
       },
       complete: (text) => {
-        runtime.releaseVoice = undefined;
         if (!isCurrent()) return;
+        runtime.releaseVoice = undefined;
         this.setData({ voicePhase: "" });
         if (this.data.finishing) {
-          runtime.heldVoice = { text, style };
-          this.setData({ heldVoiceText: text });
-          this.notice("口述已识别。你可以写入这段文字或放弃。");
+          holdVoice(text);
           return;
         }
-        void this.startAction({ kind: "turn", request_id: requestId(), version, source: "voice", style, text });
+        void this.startAction({ kind: "turn", request_id: requestId(), version: run.version, source: "voice", style, text });
+      },
+      review: (text) => {
+        if (!isCurrent()) return;
+        runtime.releaseVoice = undefined;
+        this.setData({ voicePhase: "" });
+        holdVoice(text);
       },
       error: (message) => {
-        runtime.releaseVoice = undefined;
         if (!isCurrent()) return;
+        runtime.releaseVoice = undefined;
         this.setData({ voicePhase: "" });
         this.notice(message, "error");
       },
-    });
+    }, JSON.stringify([subject, run.id]));
   },
 
   releaseRecording() {
+    if (this.runtime?.preparingVoice) {
+      this.abortRecording();
+      this.notice("已松手。可以重新录音或打字。");
+      return;
+    }
     this.runtime?.releaseVoice?.();
   },
 
   toggleRecording() {
-    if (this.runtime?.releaseVoice) this.releaseRecording();
-    else this.startRecording();
+    if (this.runtime?.releaseVoice || this.runtime?.preparingVoice) this.releaseRecording();
+    else void this.startRecording();
   },
 
   async submitHeldVoice() {
@@ -1090,10 +1220,12 @@ Page({
 
   abortRecording() {
     const runtime = this.runtime;
-    if (!runtime?.releaseVoice) return;
+    if (!runtime || (!runtime.releaseVoice && !runtime.preparingVoice)) return;
+    const recording = Boolean(runtime.releaseVoice);
     runtime.voiceEpoch++;
+    runtime.preparingVoice = undefined;
     runtime.releaseVoice = undefined;
-    cancelVoice();
+    if (recording) cancelVoice();
     this.setData({ voicePhase: "" });
   },
 
