@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -56,9 +57,7 @@ test("generated components expose task metadata and required intervention respon
 
 test("offline schema check is deterministic and rejects drift without rewriting files", () => {
   const clientDir = fileURLToPath(new URL("../", import.meta.url));
-  const scratch = fileURLToPath(new URL("../../.scratch/", import.meta.url));
-  mkdirSync(scratch, { recursive: true });
-  const tempDir = mkdtempSync(join(scratch, "r11-api-types-"));
+  const tempDir = mkdtempSync(join(tmpdir(), "r11-api-types-"));
   const output = join(tempDir, "api.generated.ts");
   const run = (...args) =>
     spawnSync(process.execPath, ["scripts/generate-api-types.mjs", ...args], {

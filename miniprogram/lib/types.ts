@@ -1,0 +1,20 @@
+import type { components } from "../.api-contract/schema";
+
+type Schema = components["schemas"];
+export type Run = Schema["RunView"];
+export type Segment = Schema["SegmentView"];
+export type Recovery = Schema["RecoveryView"];
+export type Action = Schema["Action"];
+export type Receipt = Schema["ReceiptView"];
+export type Work = Schema["WorkView"];
+export type Card = Schema["CardView"];
+export type Mode = Schema["ModeView"];
+export type Progress = Schema["DiscoveryView"];
+export type Library = Schema["LibraryView"];
+export type Rules = Omit<Schema["NewMode"], "name">;
+export type Theme = Run["theme"];
+export type ModeName = Run["mode"];
+export type Source = NonNullable<Action["source"]>;
+export type VoiceStyle = NonNullable<Action["style"]>;
+export type Offer = NonNullable<Action["ability"]>;
+export type AbilityName = Extract<Offer, "returning" | "interpret">;

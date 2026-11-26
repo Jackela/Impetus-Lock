@@ -1,0 +1,33 @@
+<view class="page library-page" style="font-size: {{fontSize}}px">
+  <view class="heading" aria-role="heading">我的写作</view>
+  <text class="caption">用当前微信身份可找回已保存的挑战和作品。</text>
+
+  <view wx:if="{{loading}}" class="notice" aria-role="status">正在读取写作记录…</view>
+  <view wx:if="{{error}}" class="notice notice-error" aria-role="alert">
+    <text>{{error}}</text>
+    <button wx:if="{{!loaded}}" class="button-secondary" hover-class="button-pressed" bindtap="refresh">重试读取</button>
+  </view>
+
+  <block wx:if="{{loaded}}">
+    <view class="library-section">
+      <view class="library-section-title" aria-role="heading">继续写</view>
+      <text wx:if="{{!runs.length}}" class="caption">没有进行中的挑战。</text>
+      <view wx:for="{{runs}}" wx:key="id" class="panel library-entry">
+        <view class="library-entry-title">{{item.themeName}}</view>
+        <text class="caption">{{item.modeName}} · 已续写 {{item.turns}} 回合</text>
+        <text class="library-excerpt">{{item.excerpt}}</text>
+        <button class="button-primary" hover-class="button-pressed" data-id="{{item.id}}" aria-label="继续{{item.themeName}}，已续写{{item.turns}}回合" disabled="{{opening}}" bindtap="openRun">继续写</button>
+      </view>
+    </view>
+
+    <view class="library-section">
+      <view class="library-section-title" aria-role="heading">私密作品</view>
+      <text wx:if="{{!works.length}}" class="caption">收笔后的作品会出现在这里。</text>
+      <navigator wx:for="{{works}}" wx:key="id" class="panel library-entry library-link" hover-class="button-pressed" url="/pages/work/index?id={{item.id}}">
+        <text class="library-entry-title">{{item.title || '无题作品'}}</text>
+        <text class="caption">{{item.themeName}} · 打开作品</text>
+      </navigator>
+    </view>
+  </block>
+  <navigator class="button-secondary library-new" hover-class="button-pressed" url="/pages/modes/index">另开一局</navigator>
+</view>

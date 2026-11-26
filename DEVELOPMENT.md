@@ -1,6 +1,6 @@
 # Development Guide
 
-**Impetus Lock** — local workflow for the React/Vite frontend and FastAPI backend.
+**Impetus Lock** — local workflow for the React/Vite frontend, FastAPI backend, and WeChat mini program.
 
 `AGENTS.md` is the authority for precedence, protected files, task routing, and quality gates. This guide is the practical local path; `.github/workflows/ci.yml` is the gate implementation.
 
@@ -55,6 +55,7 @@ Impetus-Lock/
 │   ├── e2e/                # Playwright suites and helpers
 │   ├── eslint.config.js    # flat ESLint config
 │   └── vitest.config.ts    # unit tests + coverage thresholds
+├── miniprogram/            # native WeChat pages, build scripts, and Node tests
 ├── .github/                # CI, security, issue/PR templates, Dependabot
 ├── docs/                   # current guides + archived evidence (see docs/INDEX.md)
 ├── openspec/               # current specs and change proposals (authority)
@@ -83,6 +84,51 @@ npm run test:watch
 ```
 
 Respect the import boundaries: `components` must not import `features` or `services`; use hooks/contexts at the boundary. `npm run lint` enforces this.
+
+## WeChat mini program development
+
+To run the complete story and sharing flow with local sample identities and a local story provider, see the [local integration runner](scripts/verify-wechat-local/README.md). Its `serve` mode can also supply the API for a local Developer Tools project.
+
+The mini program uses FastAPI. With the backend dependencies installed, start or reuse a local PostgreSQL instance and create an empty development database for the mini program. Substitute your local account, password, port, and dedicated database name below. Use the same URL for migrations and FastAPI.
+
+```bash
+cd server
+export DATABASE_URL='postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/impetus_lock_wechat_dev'
+poetry run alembic upgrade head
+poetry run alembic current
+poetry run uvicorn server.api.main:app --reload
+```
+
+The migration check uses a fresh schema in a test PostgreSQL database. Run it from `server/` with `POSTGRES_TEST_URL` pointing to that database. It tests upgrade, downgrade and re-upgrade while preserving a sample Web draft and its lock.
+
+```bash
+POSTGRES_TEST_URL='postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/impetus_lock_wechat_test' \
+  poetry run pytest tests/test_wechat_migration.py -q
+```
+
+Set the following FastAPI environment variables through `server/.env` or the backend process environment. Keep credentials server-side.
+
+| Variables                                                             | Used for                                                                                                                                                                                                     |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `WECHAT_APP_ID`, `WECHAT_APP_SECRET`                                  | Login code exchange and checking the text of works before publication. Select the matching AppID in WeChat Developer Tools when testing with WeChat.                                                         |
+| `WECHAT_SESSION_SECRET`                                               | Secret for mini program sessions, at least 32 bytes.                                                                                                                                                         |
+| `WECHAT_STORY_BASE_URL`, `WECHAT_STORY_MODEL`, `WECHAT_STORY_API_KEY` | Provider endpoint prefix, model ID, and key for the story service. The server appends `/chat/completions`. The target environment needs access to a compatible provider that supports JSON-object responses. |
+
+From the repository root, build the mini program and run its checks.
+
+```bash
+cd miniprogram
+npm ci
+npm run type-check
+npm test
+WECHAT_API_ORIGIN=http://127.0.0.1:8000 npm run build
+```
+
+Import `miniprogram/` in WeChat Developer Tools. Its `project.config.json` points to `dist/`. The build accepts `WECHAT_API_ORIGIN` as an HTTPS origin or a local HTTP loopback origin. Omit the `/api/wechat` path because the client adds it. With the variable unset, the build can show the first screen and network actions report missing configuration. Local loopback testing may require the Developer Tools domain-check override. On devices, build with the reachable HTTPS origin registered as a request domain for the AppID and keep domain checks enabled.
+
+Build with `WECHAT_SPEECH_ENABLED=1` to include the WechatSI plugin for an authorized AppID. Leave it off to develop the story options and keyboard path without the plugin. `WECHAT_DEV_TIMINGS=1` enables local timing measurements. Use the default setting for release builds.
+
+`npm test` simulates WeChat APIs and checks the compiled pages and client behavior. Use a real AppID, configured services, and WeChat on iOS and Android to verify identity, permissions, recording and interruption, native TXT handoff, and opening or withdrawing a card with two accounts. The milestone acceptance scenarios are in the [roadmap](ROADMAP.md). See the [product definition](PRODUCT.md), [first story walkthrough](docs/product/first-story.md), and [mini program interface](docs/product/miniapp-interface.md) for the agreed behavior.
 
 ## Quality gates
 

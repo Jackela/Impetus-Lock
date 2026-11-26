@@ -1,0 +1,114 @@
+<view class="page home" style="font-size: {{fontSize}}px">
+  <view wx:if="{{resumeId && !editingStory}}" class="home-story">
+    <text class="home-title" aria-role="heading">继续写</text>
+    <view class="panel home-opening">
+      <text class="home-opening-text">{{resumeOpening}}</text>
+    </view>
+    <navigator class="button-primary home-full" hover-class="button-pressed" url="/pages/write/index?id={{resumeId}}">
+      续写这局
+    </navigator>
+  </view>
+
+  <view wx:else class="home-story">
+    <text class="home-title" aria-role="heading">来信</text>
+    <view class="panel home-opening">
+      <textarea
+        wx:if="{{editingOpening}}"
+        class="field home-opening-editor"
+        aria-label="开头"
+        value="{{opening}}"
+        bindinput="updateOpening"
+        disabled="{{frozen}}"
+        focus="{{!frozen}}"
+        cursor-spacing="28"
+        maxlength="8000"
+      />
+      <text wx:else class="home-opening-text">{{opening}}</text>
+      <button
+        class="button-link home-opening-action"
+        hover-class="button-pressed"
+        disabled="{{frozen}}"
+        bindtap="toggleOpening"
+      >{{editingOpening ? '完成编辑' : '改写开头'}}</button>
+    </view>
+
+    <view class="home-actions" aria-role="group" aria-label="怎么处理这封信">
+      <button
+        wx:for="{{choices}}"
+        wx:key="label"
+        class="button-secondary home-full home-choice"
+        hover-class="button-pressed"
+        disabled="{{frozen}}"
+        data-index="{{index}}"
+        bindtap="chooseAction"
+      >{{item.label}}</button>
+      <button
+        class="button-link home-full"
+        hover-class="button-pressed"
+        aria-expanded="{{writing}}"
+        disabled="{{frozen}}"
+        bindtap="toggleWrite"
+      >{{writing ? '收起输入' : '自己写'}}</button>
+    </view>
+
+    <view wx:if="{{writing}}" class="panel home-composer">
+      <textarea
+        class="field home-draft"
+        aria-label="续写一段"
+        placeholder="接着写一段"
+        placeholder-class="field-placeholder"
+        value="{{draft}}"
+        bindinput="updateDraft"
+        disabled="{{frozen}}"
+        cursor-spacing="28"
+        maxlength="16000"
+      />
+      <view class="home-composer-actions">
+        <button class="button-link" hover-class="button-pressed" disabled="{{frozen}}" bindtap="openVoice">用语音</button>
+        <button class="button-primary" hover-class="button-pressed" disabled="{{!draft || frozen}}" bindtap="submitDraft">写入故事</button>
+      </view>
+    </view>
+
+    <text wx:if="{{inputError}}" class="notice notice-error" aria-role="alert">{{inputError}}</text>
+    <view wx:if="{{pendingLaunch || launchError}}" class="home-launch">
+      <text wx:if="{{phase}}" class="notice" aria-role="status">{{selectedAction ? selectedAction + ' · ' : ''}}{{phase === 'identity' ? '正在确认微信身份…' : phase === 'navigating' ? '正在进入故事…' : '正在建立故事草稿…'}}</text>
+      <text wx:if="{{launchError}}" class="notice notice-error" aria-role="alert">{{launchError}}</text>
+      <button
+        wx:if="{{pendingLaunch && !phase}}"
+        class="button-primary home-full"
+        hover-class="button-pressed"
+        bindtap="continueLaunch"
+      >{{frozen || !selectedAction ? '继续开局' : '重试开局'}}</button>
+      <button
+        wx:if="{{pendingLaunch && !frozen && selectedAction}}"
+        class="button-link home-full"
+        hover-class="button-pressed"
+        bindtap="editPending"
+      >{{phase ? '取消这次选择' : '返回修改'}}</button>
+      <button
+        wx:if="{{frozen && selectedAction && phase !== 'navigating'}}"
+        class="button-link home-full"
+        hover-class="button-pressed"
+        bindtap="skipFirstTurn"
+      >跳过这次续写</button>
+    </view>
+  </view>
+
+  <view wx:if="{{libraryError && !pendingLaunch}}" class="home-library-error">
+    <text class="caption" aria-role="alert">{{libraryError}}</text>
+    <button class="button-link" hover-class="button-pressed" bindtap="loadLibrary">重试加载</button>
+  </view>
+
+  <view class="home-footer">
+    <view class="home-navigation" aria-role="group" aria-label="更多入口">
+      <navigator class="button-link" hover-class="button-pressed" url="/pages/modes/index">另选题</navigator>
+      <navigator class="button-link" hover-class="button-pressed" url="/pages/library/index">我的作品</navigator>
+    </view>
+    <view class="home-navigation home-notes">
+      <button wx:if="{{!resumeId || editingStory}}" class="button-link" hover-class="button-pressed" aria-expanded="{{rules}}" bindtap="toggleRules">普通模式规则</button>
+      <button class="button-link" hover-class="button-pressed" bindtap="openPrivacy">隐私说明</button>
+    </view>
+    <text wx:if="{{rules && (!resumeId || editingStory)}}" class="caption home-rules">续写后会出现一句受保护的文字。你仍可按自己的想法接着写，或随时收笔。</text>
+    <text wx:if="{{privacyError}}" class="caption" aria-role="alert">{{privacyError}}</text>
+  </view>
+</view>

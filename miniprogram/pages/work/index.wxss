@@ -1,0 +1,17 @@
+.work-title, .work-section-title, .work-saved-title { overflow-wrap: anywhere; }
+.work-support { display: block; margin: 10px 0; }
+.work-label { display: block; margin: 18px 0 8px; font-size: 0.94em; font-weight: 600; }
+.work-input, .work-editor { width: 100%; box-sizing: border-box; }
+.work-input { min-height: 44px; }
+.work-editor { height: 36vh; min-height: 175px; padding: 14px; line-height: 1.65; }
+.work-action { margin-top: 12px; }
+.work-export { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.work-export button { flex: 1 1 110px; margin: 0; }
+.work-section { margin-top: 34px; }
+.work-section-title { margin-bottom: 10px; font-size: 1.29em; font-weight: 600; }
+.work-preview { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; padding: 18px; }
+.work-preview .work-section-title { margin-bottom: 0; }
+.work-saved-title { font-weight: 600; }
+.work-story { display: block; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.work-shared-snippet { display: -webkit-box; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.work-withdraw { color: #9b2031; }

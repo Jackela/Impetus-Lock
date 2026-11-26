@@ -1,6 +1,8 @@
 # Impetus Lock
 
-Impetus Lock 是一个 React + Vite 前端与 FastAPI 后端组成的创作工具。用户在编辑器中写作，选择普通编辑、Muse 或 Loki 模式；AI 可以注入带锁定标记的创作内容，编辑器会阻止删除已锁定内容。项目同时提供任务保存、版本回载、风格学习、统计与成就等配套界面。
+Impetus Lock 是一款中文互动故事小程序。玩家可以一路点选行动，让系统写出故事，也可随时打开“自己写”，用键盘或语音接管。两种方式都能回应锁句、取得并进化能力，最后把作品发给朋友，让两个人从同一题面写出不同的故事。[本地运行与体验](scripts/verify-wechat-local/README.md) · [产品定义](PRODUCT.md) · [首局功能设计](docs/product/first-story.md) · [功能路线图](ROADMAP.md)
+
+下方的启动、演示和历史测试记录对应 React、Vite 与 FastAPI 构成的 Web 创作工具。作者可以在编辑器中选择普通编辑、Muse 或 Loki 模式，保存正文与锁，发生版本冲突时恢复草稿。微信小程序的本地构建、隔离数据库和真机配置见[微信小程序开发](DEVELOPMENT.md#wechat-mini-program-development)。
 
 [![CI](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml)

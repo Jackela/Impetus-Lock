@@ -2,6 +2,8 @@
 
 ## Purpose
 
+The current product direction and feature milestones for the Chinese WeChat Mini Program live in [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md). The following overview describes the original Web editor and its engineering context.
+
 Impetus Lock (创意施压者) is an adversarial AI Agent that acts as a "creative sparring partner." It breaks psychological fixation and blank page anxiety by forcibly implanting "un-deletable creative constraints" — turning solitary writing into a human-AI adversarial rogue-like game.
 
 ## Tech Stack

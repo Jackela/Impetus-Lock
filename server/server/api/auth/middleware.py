@@ -37,6 +37,10 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         if os.getenv("TESTING") == "1":
             return await call_next(request)
 
+        # The native client authenticates its private routes with a separate bearer.
+        if request.url.path.startswith("/api/wechat/"):
+            return await call_next(request)
+
         if any(request.url.path.startswith(path) for path in self.PUBLIC_PATHS):
             return await call_next(request)
 

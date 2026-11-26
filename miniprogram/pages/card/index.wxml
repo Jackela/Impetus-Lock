@@ -1,0 +1,25 @@
+<view class="page card-page" style="font-size: {{fontSize}}px">
+  <view wx:if="{{loading}}" class="notice" aria-role="status">正在打开作品…</view>
+  <block wx:if="{{card}}">
+    <view class="heading card-title" aria-role="heading">{{card.title || '无题作品'}}</view>
+    <text wx:if="{{card.ai_generated}}" class="caption card-credit">作品含 AI 生成内容</text>
+    <text selectable="true" class="body-copy card-story">{{card.text}}</text>
+
+    <view class="panel card-challenge">
+      <view class="card-challenge-title" aria-role="heading">用同一开场写一篇</view>
+      <text class="caption">{{themeName}} · {{modeName}}</text>
+      <text wx:if="{{opening}}" class="body-copy">{{opening}}</text>
+      <text wx:if="{{rules}}" class="caption">{{rules}}</text>
+      <text class="caption">你会从原题和初始规则独立开局。</text>
+      <text wx:if="{{card.requires_consent}}" class="caption">本局可能不可恢复地删除未锁正文，开局前会请你确认。</text>
+      <view wx:if="{{error}}" class="notice notice-error" aria-role="alert">{{error}}</view>
+      <button class="button-primary" hover-class="button-pressed" bindtap="openSamePrompt" disabled="{{starting}}" loading="{{starting}}">{{starting ? '正在开局' : '写我的同题故事'}}</button>
+    </view>
+  </block>
+
+  <view wx:if="{{!card && error}}" class="notice notice-error" aria-role="alert">
+    <text>{{error}}</text>
+    <button wx:if="{{!unavailable}}" class="button-secondary" hover-class="button-pressed" bindtap="refresh">重试读取</button>
+  </view>
+  <navigator wx:if="{{!loading && !starting}}" class="button-secondary card-other" hover-class="button-pressed" url="/pages/modes/index">另选一道题</navigator>
+</view>

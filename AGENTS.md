@@ -28,7 +28,14 @@ When sources conflict, resolve in this order:
 2. [`openspec/AGENTS.md`](openspec/AGENTS.md) — proposal/approval workflow.
 3. [`CONTEXT.md`](CONTEXT.md) — current product and architecture context.
 4. `docs/agents/*` — agent-facing role and task notes.
-5. Everything else is **historical evidence, not current status**: the rest of `docs/`, `.zcode/plans/`, `.scratch/`, `docs/archive/`.
+5. Apart from the product-design sources named below, the remaining material is **historical evidence, not current status**: the rest of `docs/`, `.zcode/plans/`, `.scratch/`, `docs/archive/`.
+
+For product design, [PRODUCT.md](PRODUCT.md) owns the agreed direction and links the
+current [feature walkthrough](docs/product/first-story.md). [ROADMAP.md](ROADMAP.md)
+owns feature milestones and their evidence. [ADRs](docs/adr/) record the reasons for
+decisions cited by those documents. The [research wiki](wiki/README.md) traces
+sources and open questions. Proposed behavior still follows the OpenSpec approval
+workflow above. Record implementation and release against their own evidence.
 
 Explicitly **retired** (kept only as history, never as instructions):
 
