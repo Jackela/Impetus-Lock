@@ -1,27 +1,51 @@
 """Tests for ClaudeProvider request contract.
 
-This module pins the request shape ClaudeProvider sends to the Anthropic
-API so that SDK migrations cannot silently drop sampling parameters or
-alter the payload structure: temperature transmission and payload shape
-on the raw API path, temperature transmission on the Instructor path,
-and compatibility with the installed SDK's create signature.
+This module pins ClaudeProvider's raw API and Instructor request shapes,
+including sampling parameters, structured tools, retries, and token usage.
 """
 
 from __future__ import annotations
 
 import inspect
 import json
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import Any
 from unittest.mock import MagicMock, patch
 
+import httpx2
 import pytest
+from anthropic import Anthropic
 from anthropic.types import Message, TextBlock, Usage
 
+from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import LLMInterventionDraft
 from server.infrastructure.llm.claude_provider import ClaudeProvider
 
-if TYPE_CHECKING:
-    pass
+Send = Callable[[httpx2.Request], httpx2.Response]
+MakeWireProvider = Callable[[Send], ClaudeProvider]
+
+
+@pytest.fixture
+def make_wire_provider(monkeypatch: pytest.MonkeyPatch) -> MakeWireProvider:
+    """Use the real SDK and Instructor with an in-memory HTTP transport."""
+    monkeypatch.setattr("anthropic._base_client.time.sleep", lambda _: None)
+
+    def make(send: Send) -> ClaudeProvider:
+        class OfflineAnthropic(Anthropic):
+            def __init__(self, *, api_key: str) -> None:
+                super().__init__(
+                    api_key=api_key,
+                    base_url="https://api.anthropic.invalid",
+                    http_client=httpx2.Client(
+                        transport=httpx2.MockTransport(send),
+                        trust_env=False,
+                    ),
+                )
+
+        monkeypatch.setattr("anthropic.Anthropic", OfflineAnthropic)
+        return ClaudeProvider(api_key="offline-key", temperature=0.6)
+
+    return make
 
 
 def extract_transmitted_temperature(kwargs: dict) -> float | None:
@@ -240,3 +264,123 @@ class TestClaudeInstructorRequestContract:
         assert usage is not None
         assert usage.input_tokens == 120
         assert usage.output_tokens == 60
+
+    @pytest.mark.parametrize(
+        ("actions", "expected_attempts"),
+        [(("provoke",), 1), (("invalid", "provoke"), 2), (("invalid",), 4)],
+    )
+    def test_instructor_tools_with_the_installed_sdk(
+        self,
+        make_wire_provider: MakeWireProvider,
+        actions: tuple[str, ...],
+        expected_attempts: int,
+    ) -> None:
+        """Check the actual Anthropic tool request, validation retry, and terminal error."""
+        requests: list[dict[str, Any]] = []
+
+        def send(request: httpx2.Request) -> httpx2.Response:
+            assert request.url.path == "/v1/messages"
+            assert request.headers["x-api-key"] == "offline-key"
+            action = actions[min(len(requests), len(actions) - 1)]
+            requests.append(json.loads(request.content))
+            return httpx2.Response(
+                200,
+                json={
+                    "id": "msg_offline",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": ClaudeProvider.CLAUDE_35_SONNET,
+                    "stop_reason": "tool_use",
+                    "stop_sequence": None,
+                    "usage": {"input_tokens": 28, "output_tokens": 9},
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "toolu_offline",
+                            "name": "LLMInterventionDraft",
+                            "input": {"action": action, "content": "门外有脚步。"},
+                        }
+                    ],
+                },
+            )
+
+        provider = make_wire_provider(send)
+        with provider._anthropic_client:
+            if actions[-1] == "invalid":
+                with pytest.raises(LLMProviderError) as error:
+                    provider._complete("system prompt", "user prompt")
+                assert (error.value.code, error.value.status_code) == ("llm_api_error", 502)
+            else:
+                draft = provider._complete("system prompt", "user prompt")
+                assert (draft.action, draft.content) == ("provoke", "门外有脚步。")
+                usage = provider.last_token_usage
+                assert usage is not None
+                assert usage.input_tokens == 28 * expected_attempts
+                assert usage.output_tokens == 9 * expected_attempts
+                assert usage.total_tokens == 37 * expected_attempts
+
+        assert len(requests) == expected_attempts
+        first = requests[0]
+        assert first["model"] == provider.model
+        assert first["temperature"] == 0.6
+        assert first["max_tokens"] == provider.max_tokens
+        assert first["system"] == [{"type": "text", "text": "system prompt"}]
+        assert first["messages"] == [{"role": "user", "content": "user prompt"}]
+        (tool,) = first["tools"]
+        assert tool["name"] == "LLMInterventionDraft"
+        schema = tool["input_schema"]
+        assert schema["required"] == ["action"]
+        assert set(schema["properties"]) == {"action", "content"}
+        assert set(schema["properties"]["action"]["enum"]) == {"provoke", "delete", "rewrite"}
+        assert first["tool_choice"]["type"] == "tool"
+        assert first["tool_choice"]["name"] == "LLMInterventionDraft"
+        if expected_attempts > 1:
+            retry = requests[1]
+            assert retry["tools"] == first["tools"]
+            assert retry["messages"][0] == first["messages"][0]
+            assert [message["role"] for message in retry["messages"]] == [
+                "user",
+                "assistant",
+                "user",
+            ]
+            (correction,) = retry["messages"][-1]["content"]
+            assert correction["type"] == "tool_result"
+            assert correction["tool_use_id"] == "toolu_offline"
+
+    @pytest.mark.parametrize(
+        "upstream_status,upstream_type,code,status,attempts",
+        [
+            (401, "authentication_error", "invalid_api_key", 401, 1),
+            (429, "rate_limit_error", "quota_exceeded", 402, 3),
+            (500, "api_error", "llm_api_error", 502, 3),
+        ],
+    )
+    def test_instructor_maps_sdk_http_errors(
+        self,
+        make_wire_provider: MakeWireProvider,
+        upstream_status: int,
+        upstream_type: str,
+        code: str,
+        status: int,
+        attempts: int,
+    ) -> None:
+        """Check provider errors after the real SDK applies its retry policy."""
+        requests: list[httpx2.Request] = []
+
+        def send(request: httpx2.Request) -> httpx2.Response:
+            requests.append(request)
+            return httpx2.Response(
+                upstream_status,
+                json={
+                    "type": "error",
+                    "error": {"type": upstream_type, "message": "Synthetic error"},
+                },
+            )
+
+        provider = make_wire_provider(send)
+        with provider._anthropic_client, pytest.raises(LLMProviderError) as error:
+            provider._complete("system prompt", "user prompt")
+
+        assert error.value.provider == "claude"
+        assert (error.value.code, error.value.status_code) == (code, status)
+        assert len(requests) == attempts

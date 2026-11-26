@@ -6,6 +6,7 @@ import logging
 from threading import Event, Lock
 
 import instructor
+from instructor.core import InstructorRetryException
 from openai import (
     APIError,
     AuthenticationError,
@@ -95,15 +96,21 @@ class InstructorLLMProvider(BasePromptLLMProvider):
         if self._sol_client is not None:
             return self._complete_sol(system_prompt, user_message)
         try:
-            completion: LLMInterventionDraft = self.client.chat.completions.create(
-                model=self.model,
-                temperature=self.temperature,
-                response_model=LLMInterventionDraft,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message},
-                ],
-            )
+            try:
+                completion: LLMInterventionDraft = self.client.chat.completions.create(
+                    model=self.model,
+                    temperature=self.temperature,
+                    response_model=LLMInterventionDraft,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message},
+                    ],
+                )
+            except InstructorRetryException as exc:
+                # Instructor wraps SDK errors even when only one attempt was made.
+                if isinstance(exc.__cause__, (RateLimitError, AuthenticationError)):
+                    raise exc.__cause__ from None
+                raise
             return completion
         except RateLimitError as exc:  # pragma: no cover - SDK provides typed error
             raise LLMProviderError(
