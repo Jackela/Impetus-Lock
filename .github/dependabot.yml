@@ -3,7 +3,7 @@
 #
 # Best Practices Applied:
 # 1. Grouped updates: Reduces PR noise by grouping related dependencies
-# 2. Version separation: Patch/minor auto-mergeable, major requires review
+# 2. Version separation: Group patch/minor updates and coordinate major upgrades
 # 3. Ecosystem-specific schedules: Different update frequencies for stability
 # 4. Production vs dev separation: Critical production deps get more scrutiny
 
@@ -67,7 +67,7 @@ updates:
         update-types:
           - "patch"
 
-      # Dev tools: Auto-mergeable
+      # Development tools
       dev-tools:
         patterns:
           - "ruff"
@@ -177,7 +177,7 @@ updates:
           - "patch"
           - "minor"
 
-      # Dev dependencies (safe to auto-merge)
+      # Development dependencies
       dev-dependencies:
         dependency-type: "development"
         update-types:
