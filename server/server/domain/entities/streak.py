@@ -3,10 +3,6 @@
 Framework-agnostic representation of a user's writing streak.
 Persistence details (ORM mapping) live in the infrastructure layer.
 
-Note: the grace/recovery rule described in the streaks specification is NOT
-implemented by the current calculation; this entity only carries the values
-the system persists today.
-
 Constitutional Compliance:
 - Article IV (SOLID - SRP): Entity carries data, no persistence concerns
 - Article V (Documentation): Complete Google-style docstrings

@@ -3,8 +3,7 @@
 HTTP adapter for streak read/update. Authentication, request validation,
 response schemas and HTTP exception mapping stay here; the observed streak
 date calculation and persistence are delegated to the injected user-scoped
-StreakService. The grace/recovery rule from the streaks specification is
-NOT implemented here or in the service; that discrepancy is separate work.
+StreakService, including the one-day recovery allowance.
 
 Constitutional Compliance:
 - Article IV (SOLID - SRP): Endpoints are HTTP adapters over StreakService

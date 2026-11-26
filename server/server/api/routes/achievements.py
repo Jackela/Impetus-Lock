@@ -14,6 +14,7 @@ from server.api.schemas.achievement import (
     AchievementResponse,
 )
 from server.auth import get_current_user
+from server.domain.writing_progress import WRITING_MILESTONES
 from server.infrastructure.persistence.database import get_session_optional
 from server.models.achievement import Achievement
 from server.models.user import User
@@ -22,39 +23,11 @@ router = APIRouter(prefix="/achievements", tags=["achievements"])
 
 ACHIEVEMENT_DEFINITIONS = [
     AchievementDefinition(
-        achievement_type="first_task", name="First Step", description="Create your first task"
-    ),
-    AchievementDefinition(
-        achievement_type="ten_tasks", name="Getting Started", description="Create 10 tasks"
-    ),
-    AchievementDefinition(
-        achievement_type="hundred_tasks", name="Century", description="Create 100 tasks"
-    ),
-    AchievementDefinition(
-        achievement_type="first_muse",
-        name="Muse Touched",
-        description="Receive your first Muse intervention",
-    ),
-    AchievementDefinition(
-        achievement_type="first_loki",
-        name="Chaos Embraced",
-        description="Receive your first Loki intervention",
-    ),
-    AchievementDefinition(
-        achievement_type="streak_3",
-        name="Three Day Streak",
-        description="Maintain a 3-day writing streak",
-    ),
-    AchievementDefinition(
-        achievement_type="streak_7",
-        name="Week Warrior",
-        description="Maintain a 7-day writing streak",
-    ),
-    AchievementDefinition(
-        achievement_type="streak_30",
-        name="Monthly Master",
-        description="Maintain a 30-day writing streak",
-    ),
+        achievement_type=milestone.achievement_type,
+        name=milestone.name,
+        description=milestone.description,
+    )
+    for milestone in WRITING_MILESTONES
 ]
 
 
