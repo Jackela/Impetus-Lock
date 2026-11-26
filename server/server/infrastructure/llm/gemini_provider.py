@@ -16,7 +16,7 @@ Features:
 Example:
     >>> provider = GeminiLLMProvider(
     ...     api_key="your-api-key",
-    ...     model="gemini-2.0-flash-lite",
+    ...     model="gemini-3.1-flash-lite",
     ...     temperature=0.7
     ... )
     >>> response = provider.generate_intervention(
@@ -37,6 +37,7 @@ import httpx2
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
+from server.infrastructure.llm.model_defaults import GEMINI_DEFAULT_MODEL
 from server.infrastructure.llm.prompts.loki_prompt import get_loki_prompts
 from server.infrastructure.llm.prompts.muse_prompt import get_muse_prompts
 
@@ -121,14 +122,14 @@ class GeminiLLMProvider(BasePromptLLMProvider):
 
     Attributes:
         provider_name: Provider identifier for error reporting.
-        model: Gemini model name (e.g., "gemini-2.0-flash-lite").
+        model: Gemini model name (e.g., "gemini-3.1-flash-lite").
         temperature: Sampling temperature (0.0 to 1.0).
         safety_settings: Configured safety thresholds for content filtering.
 
     Example:
         >>> provider = GeminiLLMProvider(
         ...     api_key="AIzaSy...",
-        ...     model="gemini-2.0-flash-lite",
+        ...     model="gemini-3.1-flash-lite",
         ...     temperature=0.7
         ... )
         >>> draft = provider._complete(
@@ -147,12 +148,13 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         "gemini-1.5-flash-latest",
         "gemini-2.0-flash",
         "gemini-2.0-flash-lite",
+        GEMINI_DEFAULT_MODEL,
     }
 
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "gemini-1.5-flash",
+        model: str = GEMINI_DEFAULT_MODEL,
         temperature: float = 0.7,
         safety_settings: list[dict[str, str]] | None = None,
     ) -> None:
@@ -161,7 +163,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         Args:
             api_key: Google Generative AI API key. If not provided, will read
                 from GEMINI_API_KEY environment variable.
-            model: Gemini model name. Defaults to "gemini-1.5-flash".
+            model: Gemini model name. Defaults to "gemini-3.1-flash-lite".
             temperature: Sampling temperature (0.0 to 1.0). Defaults to 0.7.
             safety_settings: Optional custom safety settings
                 (``{"category": ..., "threshold": ...}`` dicts).
@@ -173,7 +175,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         Example:
             >>> provider = GeminiLLMProvider(
             ...     api_key="AIzaSy...",
-            ...     model="gemini-2.0-flash-lite",
+            ...     model="gemini-3.1-flash-lite",
             ...     temperature=0.8
             ... )
         """

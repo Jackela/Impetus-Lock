@@ -8,6 +8,7 @@ import pytest
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.anthropic_provider import AnthropicLLMProvider
+from server.infrastructure.llm.base_provider import BasePromptLLMProvider
 from server.infrastructure.llm.debug_provider import DebugLLMProvider
 from server.infrastructure.llm.provider_registry import (
     ProviderConfig,
@@ -102,6 +103,62 @@ class TestProviderRegistry:
         assert first.model == "model-a"
         assert second is not first
         assert second.model == "model-b"
+
+    @pytest.mark.parametrize(
+        "provider_name,key_env,model_env,expected",
+        [
+            ("gemini", "GEMINI_API_KEY", "GEMINI_MODEL", "gemini-3.1-flash-lite"),
+            ("anthropic", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL", "claude-haiku-4-5-20251001"),
+            ("claude", "ANTHROPIC_API_KEY", "CLAUDE_MODEL", "claude-sonnet-4-6"),
+        ],
+    )
+    def test_provider_model_defaults_and_explicit_values(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        provider_name: str,
+        key_env: str,
+        model_env: str,
+        expected: str,
+    ) -> None:
+        """Use current defaults and keep environment and request model overrides."""
+        monkeypatch.setenv("LLM_DEFAULT_PROVIDER", provider_name)
+        monkeypatch.setenv(key_env, "offline-server-key")
+        monkeypatch.delenv(model_env, raising=False)
+        registry = ProviderRegistry()
+        try:
+            provider = registry.get_provider()
+            assert isinstance(provider, BasePromptLLMProvider)
+            assert provider.model == expected
+
+            provider = registry.get_provider(
+                overrides=ProviderOverride(provider=provider_name, api_key="offline-byok-key")
+            )
+            try:
+                assert isinstance(provider, BasePromptLLMProvider)
+                assert provider.model == expected
+            finally:
+                if provider is not None:
+                    close_provider(provider)
+
+            monkeypatch.setenv(model_env, "deployment-pinned-model")
+            registry.reload()
+            provider = registry.get_provider()
+            assert isinstance(provider, BasePromptLLMProvider)
+            assert provider.model == "deployment-pinned-model"
+
+            provider = registry.get_provider(
+                overrides=ProviderOverride(
+                    provider=provider_name, model="writer-custom-model", api_key="offline-byok-key"
+                )
+            )
+            try:
+                assert isinstance(provider, BasePromptLLMProvider)
+                assert provider.model == "writer-custom-model"
+            finally:
+                if provider is not None:
+                    close_provider(provider)
+        finally:
+            registry.close()
 
     def test_default_provider_cached(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that default provider is cached."""

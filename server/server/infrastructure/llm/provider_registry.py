@@ -13,6 +13,11 @@ from weakref import WeakSet
 
 from server.domain.errors import LLMProviderError
 from server.domain.llm_provider import LLMProvider
+from server.infrastructure.llm.model_defaults import (
+    ANTHROPIC_DEFAULT_MODEL,
+    CLAUDE_DEFAULT_MODEL,
+    GEMINI_DEFAULT_MODEL,
+)
 
 if TYPE_CHECKING:
     pass
@@ -39,9 +44,9 @@ _MODEL_ENV_VARS: dict[ProviderName, str] = {
 
 _MODEL_FALLBACKS: dict[ProviderName, str] = {
     "openai": "gpt-4o-mini",
-    "anthropic": "claude-3-5-haiku-latest",
-    "claude": "claude-3-5-sonnet-20241022",
-    "gemini": "gemini-2.0-flash-lite",
+    "anthropic": ANTHROPIC_DEFAULT_MODEL,
+    "claude": CLAUDE_DEFAULT_MODEL,
+    "gemini": GEMINI_DEFAULT_MODEL,
     "debug": "debug-model",
 }
 

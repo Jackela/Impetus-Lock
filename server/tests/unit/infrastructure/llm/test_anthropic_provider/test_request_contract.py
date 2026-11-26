@@ -9,10 +9,13 @@ shape, and compatibility with the installed SDK's create signature.
 from __future__ import annotations
 
 import inspect
+import json
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
+import httpx2
 import pytest
+from anthropic import Anthropic
 
 from server.infrastructure.llm.anthropic_provider import AnthropicLLMProvider
 
@@ -76,7 +79,7 @@ def mock_message() -> Message:
     return Message(
         id="msg_test",
         content=[TextBlock(text=draft_json, type="text")],
-        model="claude-3-5-haiku-latest",
+        model="claude-haiku-4-5-20251001",
         role="assistant",
         stop_reason="end_turn",
         type="message",
@@ -86,6 +89,44 @@ def mock_message() -> Message:
 
 class TestAnthropicRequestContract:
     """Test suite pinning the AnthropicLLMProvider request contract."""
+
+    def test_default_model_on_the_sdk_wire(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The SDK serializes the current model and parses its JSON text response."""
+
+        def send(request: httpx2.Request) -> httpx2.Response:
+            assert request.url.path == "/v1/messages"
+            assert request.headers["x-api-key"] == "offline-key"
+            body = json.loads(request.content)
+            assert body["model"] == "claude-haiku-4-5-20251001"
+            assert body["temperature"] == 0.8
+            assert body["messages"][0]["role"] == "user"
+            return httpx2.Response(
+                200,
+                json={
+                    "id": "msg_offline",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": body["model"],
+                    "stop_reason": "end_turn",
+                    "stop_sequence": None,
+                    "usage": {"input_tokens": 25, "output_tokens": 13},
+                    "content": [
+                        {"type": "text", "text": '{"action":"provoke","content":"门外有脚步。"}'}
+                    ],
+                },
+            )
+
+        with Anthropic(
+            api_key="offline-key",
+            base_url="https://api.anthropic.invalid",
+            max_retries=0,
+            http_client=httpx2.Client(transport=httpx2.MockTransport(send), trust_env=False),
+        ) as client:
+            monkeypatch.setattr(
+                "server.infrastructure.llm.anthropic_provider.Anthropic", lambda **_: client
+            )
+            draft = AnthropicLLMProvider(api_key="offline-key")._complete("system", "user")
+        assert (draft.action, draft.content) == ("provoke", "门外有脚步。")
 
     def test_temperature_transmitted(
         self,

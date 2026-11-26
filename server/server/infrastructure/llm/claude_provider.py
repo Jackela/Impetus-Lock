@@ -24,6 +24,7 @@ from server.infrastructure.llm.base_provider import (
     LLMInterventionDraft,
     TokenUsage,
 )
+from server.infrastructure.llm.model_defaults import CLAUDE_DEFAULT_MODEL
 
 if TYPE_CHECKING:
     pass
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 class ClaudeProvider(BasePromptLLMProvider):
     """Claude provider with Instructor integration for structured outputs.
 
-    Supports Claude 3.5 Sonnet and Opus models with configurable parameters,
+    Runs Claude Sonnet with configurable parameters,
     Muse/Loki modes, and comprehensive error handling with retries.
 
     Features:
@@ -46,7 +47,7 @@ class ClaudeProvider(BasePromptLLMProvider):
     Example:
         >>> provider = ClaudeProvider(
         ...     api_key="sk-ant-...",
-        ...     model="claude-3-5-sonnet-20241022",
+        ...     model="claude-sonnet-4-6",
         ...     temperature=0.8,
         ... )
         >>> response = provider.generate_intervention(
@@ -59,7 +60,7 @@ class ClaudeProvider(BasePromptLLMProvider):
 
     provider_name = "claude"
 
-    # Supported models
+    # Legacy model identifiers retained for explicit callers
     CLAUDE_35_SONNET = "claude-3-5-sonnet-20241022"
     CLAUDE_35_OPUS = "claude-3-opus-20240229"
     CLAUDE_35_HAIKU = "claude-3-5-haiku-20241022"
@@ -72,7 +73,7 @@ class ClaudeProvider(BasePromptLLMProvider):
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = CLAUDE_35_SONNET,
+        model: str = CLAUDE_DEFAULT_MODEL,
         temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         max_retries: int = DEFAULT_MAX_RETRIES,
@@ -82,7 +83,7 @@ class ClaudeProvider(BasePromptLLMProvider):
 
         Args:
             api_key: Anthropic API key. If not provided, reads from ANTHROPIC_API_KEY env var.
-            model: Claude model to use (defaults to claude-3-5-sonnet-20241022).
+            model: Claude model to use (defaults to claude-sonnet-4-6).
             temperature: Sampling temperature (0.0 to 1.0).
             max_tokens: Maximum tokens to generate.
             max_retries: Number of retries for transient errors.
@@ -553,6 +554,7 @@ class ClaudeProvider(BasePromptLLMProvider):
             List of model identifiers supported by this provider.
         """
         return [
+            CLAUDE_DEFAULT_MODEL,
             self.CLAUDE_35_SONNET,
             self.CLAUDE_35_OPUS,
             self.CLAUDE_35_HAIKU,

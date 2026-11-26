@@ -52,15 +52,15 @@ export const PROVIDER_METADATA: Record<LLMProviderName, ProviderMetadata> = {
   },
   anthropic: {
     label: "Anthropic Claude",
-    defaultModel: "claude-3-5-haiku-latest",
-    docUrl: "https://docs.anthropic.com/claude/docs/intro-to-the-api",
-    pricingHint: "Usage-based (~$3 per 1M input tokens)",
+    defaultModel: "claude-haiku-4-5-20251001",
+    docUrl: "https://platform.claude.com/docs/en/api/overview",
+    pricingHint: "Usage-based pricing",
   },
   gemini: {
     label: "Google Gemini",
-    defaultModel: "gemini-2.0-flash-lite",
+    defaultModel: "gemini-3.1-flash-lite",
     docUrl: "https://ai.google.dev/gemini-api/docs",
-    pricingHint: "Generous free tier then per-token",
+    pricingHint: "Pricing by model and tier",
   },
 };
 
