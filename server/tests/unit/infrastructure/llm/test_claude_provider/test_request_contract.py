@@ -289,7 +289,7 @@ class TestClaudeInstructorRequestContract:
                     "id": "msg_offline",
                     "type": "message",
                     "role": "assistant",
-                    "model": ClaudeProvider.CLAUDE_35_SONNET,
+                    "model": "claude-sonnet-4-6",
                     "stop_reason": "tool_use",
                     "stop_sequence": None,
                     "usage": {"input_tokens": 28, "output_tokens": 9},
@@ -321,7 +321,7 @@ class TestClaudeInstructorRequestContract:
 
         assert len(requests) == expected_attempts
         first = requests[0]
-        assert first["model"] == provider.model
+        assert first["model"] == "claude-sonnet-4-6"
         assert first["temperature"] == 0.6
         assert first["max_tokens"] == provider.max_tokens
         assert first["system"] == [{"type": "text", "text": "system prompt"}]

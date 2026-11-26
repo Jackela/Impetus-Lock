@@ -59,7 +59,7 @@ class TestClaudeProviderInitialization:
         """Test initialization with explicit API key."""
         provider = ClaudeProvider(api_key=mock_api_key)
 
-        assert provider.model == ClaudeProvider.CLAUDE_35_SONNET
+        assert provider.model == "claude-sonnet-4-6"
         assert provider.temperature == ClaudeProvider.DEFAULT_TEMPERATURE
         assert provider.max_tokens == ClaudeProvider.DEFAULT_MAX_TOKENS
         assert provider.use_instructor is True
@@ -133,6 +133,7 @@ class TestClaudeProviderProperties:
         """Test get_supported_models method."""
         models = claude_provider.get_supported_models()
 
+        assert "claude-sonnet-4-6" in models
         assert ClaudeProvider.CLAUDE_35_SONNET in models
         assert ClaudeProvider.CLAUDE_35_OPUS in models
         assert ClaudeProvider.CLAUDE_35_HAIKU in models

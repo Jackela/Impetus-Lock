@@ -24,7 +24,7 @@ class TestGeminiProviderInitialization:
         provider = GeminiLLMProvider(api_key="test-key")
 
         assert provider.provider_name == "gemini"
-        assert provider.model == "gemini-1.5-flash"
+        assert provider.model == "gemini-3.1-flash-lite"
         assert provider.temperature == 0.7
 
     def test_init_from_env_var(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -47,7 +47,7 @@ class TestGeminiProviderInitialization:
         """Provider uses correct default model."""
         provider = GeminiLLMProvider(api_key="test-key")
 
-        assert provider.model == "gemini-1.5-flash"
+        assert provider.model == "gemini-3.1-flash-lite"
 
     def test_clients_are_instance_scoped(self) -> None:
         """Each provider owns its clients; no shared/global SDK state."""

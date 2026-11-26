@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   getLLMProviderLabel,
   getLLMRecommendedModel,
@@ -10,6 +10,13 @@ import type { LLMConfig, LLMProviderName, VaultMetadata, VaultMode } from "../ho
 import { useTelemetry } from "../hooks/useTelemetry";
 import { useFocusTrap } from "../hooks/useFocusTrap";
 import "./LLMSettingsModal.css";
+
+// Match only known retired IDs so custom configurations remain editable.
+const RETIRED_MODELS: Record<LLMProviderName, string[]> = {
+  openai: [],
+  anthropic: ["claude-3-5-haiku-latest", "claude-3-5-haiku-20241022"],
+  gemini: ["gemini-2.0-flash-lite", "gemini-2.0-flash-lite-001"],
+};
 
 interface LLMSettingsModalProps {
   open: boolean;
@@ -56,6 +63,8 @@ export function LLMSettingsModal({
   metadata,
 }: LLMSettingsModalProps) {
   const { ref: dialogRef } = useFocusTrap<HTMLDivElement>({ active: open });
+  const modelHelpId = useId();
+  const modelInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: KeyboardEvent) => {
@@ -103,6 +112,7 @@ export function LLMSettingsModal({
   if (!open) return null;
 
   const recommendedModel = getLLMRecommendedModel(provider);
+  const isRetiredModel = RETIRED_MODELS[provider].includes(model.trim());
   const apiKeyPattern =
     provider === "gemini"
       ? /^AI[a-zA-Z0-9_-]{10,}$/
@@ -285,10 +295,29 @@ export function LLMSettingsModal({
                 setModel(e.target.value);
                 setModelTouched(true);
               }}
+              ref={modelInputRef}
               placeholder={recommendedModel}
+              aria-describedby={isRetiredModel ? modelHelpId : undefined}
               data-testid="llm-model-input"
             />
           </label>
+
+          {isRetiredModel && (
+            <div className="llm-settings__field llm-settings__model-migration">
+              <p id={modelHelpId}>This provider has retired this model.</p>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => {
+                  setModel(recommendedModel);
+                  setModelTouched(false);
+                  modelInputRef.current?.focus();
+                }}
+              >
+                Use recommended model
+              </button>
+            </div>
+          )}
 
           <label className="llm-settings__field">
             <span>API Key</span>

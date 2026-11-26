@@ -613,8 +613,8 @@ class TestSDKWireContract:
             assert body["generationConfig"]["responseMimeType"] == "application/json"
             return httpx2.Response(200, json=reply, request=request)
 
-        model = "gemini-flash-latest"
-        provider = GeminiLLMProvider(api_key="offline-key", model=model)
+        model = "gemini-3.1-flash-lite"
+        provider = GeminiLLMProvider(api_key="offline-key")
         try:
             for client in (provider._client, provider._tokens_client):
                 monkeypatch.setattr(client._api_client._httpx_client, "send", send)

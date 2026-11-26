@@ -12,6 +12,7 @@ from anthropic.types import Message, MessageParam, TextBlock
 
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
+from server.infrastructure.llm.model_defaults import ANTHROPIC_DEFAULT_MODEL
 
 
 class AnthropicLLMProvider(BasePromptLLMProvider):
@@ -22,7 +23,7 @@ class AnthropicLLMProvider(BasePromptLLMProvider):
     def __init__(
         self,
         api_key: str,
-        model: str = "claude-3-5-haiku-latest",
+        model: str = ANTHROPIC_DEFAULT_MODEL,
         temperature: float = 0.8,
     ) -> None:
         """Initialize the Anthropic Messages API client.
