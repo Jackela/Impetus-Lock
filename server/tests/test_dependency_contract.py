@@ -1,5 +1,6 @@
 """Tests for the backend's public dependency installation contract."""
 
+import sys
 import tomllib
 from importlib.metadata import requires, version
 from pathlib import Path
@@ -17,7 +18,7 @@ LOCK_FILE = Path(__file__).parents[1] / "poetry.lock"
 
 def _locked_package(name: str) -> dict[str, Any]:
     with LOCK_FILE.open("rb") as lock_file:
-        packages = tomllib.load(lock_file)["package"]
+        packages: list[dict[str, Any]] = tomllib.load(lock_file)["package"]
 
     package = next((package for package in packages if package["name"] == name), None)
     assert package is not None, f"{name} must be present in the Poetry lock file"
@@ -28,10 +29,15 @@ def _locked_package(name: str) -> dict[str, Any]:
 def test_installed_jiter_meets_active_requirements(dependent: str) -> None:
     """Check jiter against the requirements for the interpreter running the tests."""
     installed = Version(version("jiter"))
-    for requirement in map(Requirement, requires(dependent) or []):
-        marker = requirement.marker
-        if requirement.name != "jiter" or (marker and not marker.evaluate()):
-            continue
+    active_requirements = [
+        requirement
+        for requirement in map(Requirement, requires(dependent) or [])
+        if requirement.name == "jiter"
+        and (requirement.marker is None or requirement.marker.evaluate())
+    ]
+    if dependent == "instructor" or sys.version_info >= (3, 15):
+        assert active_requirements, f"{dependent} must declare an active jiter requirement"
+    for requirement in active_requirements:
         assert installed in requirement.specifier, (
             f"{dependent} requires {requirement}, installed jiter {installed}"
         )

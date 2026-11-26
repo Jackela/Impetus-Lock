@@ -2,7 +2,7 @@
 
 Impetus Lock 是一款中文互动故事小程序。玩家可以一路点选行动，让系统写出故事，也可随时打开“自己写”，用键盘或语音接管。两种方式都能回应锁句、取得并进化能力，最后把作品发给朋友，让两个人从同一题面写出不同的故事。[本地运行与体验](scripts/verify-wechat-local/README.md) · [产品定义](PRODUCT.md) · [首局功能设计](docs/product/first-story.md) · [功能路线图](ROADMAP.md)
 
-下方的启动、演示和历史测试记录对应 React、Vite 与 FastAPI 构成的 Web 创作工具。作者可以在编辑器中选择普通编辑、Muse 或 Loki 模式，保存正文与锁，发生版本冲突时恢复草稿。微信小程序的本地构建、隔离数据库和真机配置见[微信小程序开发](DEVELOPMENT.md#wechat-mini-program-development)。
+下方的启动、演示和测试说明对应 React、Vite 与 FastAPI 构成的 Web 创作工具。作者可以在编辑器中选择普通编辑、Muse 或 Loki 模式，保存正文与锁，发生版本冲突时恢复草稿。微信小程序的本地构建、隔离数据库和真机配置见[微信小程序开发](DEVELOPMENT.md#wechat-mini-program-development)。
 
 [![CI](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml)
@@ -31,17 +31,18 @@ Impetus Lock 是一款中文互动故事小程序。玩家可以一路点选行�
 - Node.js 26.x（与 CI 和 `.nvmrc` 一致）。`client/package.json` 也支持 22.22.1 及以上的 22.x 和 24.x。
 - Docker（使用便捷启动脚本时提供 PostgreSQL）。
 
-### 便捷启动（Linux / WSL）
+### 便捷启动
 
 ```bash
 ./scripts/dev-start.sh
+./scripts/dev-stop.sh
 ```
 
-该脚本会准备一个 PostgreSQL 容器、执行迁移，并启动后端 `8000` 端口和 Vite 前端 `5173` 端口。可通过 `AUTO_START_POSTGRES=0` 或 `AUTO_START_FRONTEND=0` 关闭对应步骤。Windows PowerShell 可使用：
+启动脚本准备本工作副本使用的 PostgreSQL，运行迁移，并启动后端（8000）和 Vite（5173）。复用已有的外部 PostgreSQL 时，请显式设置 `AUTO_START_POSTGRES=0` 和 `DATABASE_URL`，再运行启动脚本。只启动后端可设置 `AUTO_START_FRONTEND=0`。
 
-```powershell
-.\scripts\dev-start.ps1
-```
+常规停止保留数据库数据。只有确认要删除本工作副本的开发数据时才使用 `./scripts/dev-stop.sh --clean`。清理范围由脚本记录的归属信息确定，外部数据库和其他工作副本的资源由各自维护。
+
+Windows 下请在 WSL 终端进入仓库，运行同一套 Bash 命令。此次未在 WSL 实测。旧的 PowerShell 启动器只用于已配置并完成迁移的数据库，原生 Windows 一键启动尚未验证。
 
 ### 手动启动
 
@@ -101,42 +102,7 @@ curl http://localhost:8000/health
 
 ## 开发与门禁
 
-前端和后端各自维护依赖锁文件。常用检查如下：
-
-```bash
-cd server
-poetry run ruff check .
-poetry run pydocstyle server/
-poetry run ruff format --check
-poetry run lint-imports
-poetry run mypy .
-poetry run pytest tests/ -n auto --cov=server --cov-report=term-missing
-poetry run python check_critical_coverage.py
-
-cd ../client
-npm ci
-npm run lint
-npm run format
-npm run type-check
-npm run api:check
-npm run test -- --coverage
-npm run test:coverage-gate
-npm run build
-```
-
-提交前保持测试与实现同步，并通过 GitHub Actions 的 lint、类型检查、测试和 Validate 任务。完整门禁与文件边界以 [`AGENTS.md`](AGENTS.md) 为准；`act` 本地 CI 流程见[开发指南](DEVELOPMENT.md)。
-
-2026-11-11 的本地验证结果如下；远端 CI 是权威门禁，本地结果不代表部署或用户验收。
-
-| 范围                                                                       | 结果                                                                         |
-| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 后端测试                                                                   | 910 passed, 0 skipped；branch coverage 79.98%，关键路径 94.40%               |
-| 前端测试                                                                   | 986 tests；lines 81.72 / statements 80.40 / branches 78.59 / functions 75.31 |
-| E2E                                                                        | 主套件 111 passed / 4 fixme；Story E2E 与 browser authentication 通过        |
-| Ruff、pydocstyle、import-linter、mypy、ESLint、Prettier、TypeScript、build | PASS                                                                         |
-| OpenSpec 严格校验 / actionlint                                             | 21/21 / PASS                                                                 |
-
-证据见 [测试套件优化报告](docs/reports/20261111-test-suite-optimization.md) 与 [质量路线图报告](docs/reports/20261109-quality-roadmap.md)。
+按改动范围从 [AGENTS.md 的质量门禁](AGENTS.md#quality-gates) 选择命令。隔离依赖和浏览器检查见[测试指南](TESTING.md)。查看对应提交的 GitHub Actions 结果和覆盖率，请使用[验证记录入口](TESTING.md#revision-specific-evidence)。
 
 ## 文档导航
 

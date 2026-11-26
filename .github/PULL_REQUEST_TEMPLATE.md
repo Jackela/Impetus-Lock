@@ -4,38 +4,44 @@ Describe the user-visible change and why it is needed.
 
 ## Type of change
 
-- [ ] Bug fix (restores intended behavior; test written first)
-- [ ] New behavior / API / schema / architecture (approved OpenSpec change linked)
+- [ ] Bug fix (restores intended behavior, with a regression test)
+- [ ] New behavior / API / schema / architecture (link the approved OpenSpec change)
 - [ ] Documentation, formatting, or comments only
 - [ ] Tests or CI infrastructure
 - [ ] Dependency update
 
 ## Related work
 
-Fixes #
-OpenSpec change:
-Related PR/issue:
+Link the issue, OpenSpec change and related PRs. Include the base and tested head SHA.
 
 ## Verification
 
-List the exact commands you ran and their result. Do not claim CI, deployment, or user acceptance from a local run.
+Use [the workflow table and local commands](../AGENTS.md#quality-gates) and
+[testing setup](../TESTING.md). For example, run these focused checks from the
+repository root in separate subshells.
 
 ```bash
-# backend
-cd server && poetry run ruff check . && poetry run mypy . && poetry run pytest tests/ -n auto
-# frontend
-cd client && npm run lint && npm run type-check && npm run test -- --coverage
+(cd server && poetry run ruff check . && poetry run mypy .)
+(cd client && npm run lint && npm run type-check)
+(cd miniprogram && npm test && npm run test:contract)
 ```
 
-- [ ] Backend gates pass
-- [ ] Frontend gates pass
-- [ ] E2E run (if a user flow changed)
-- [ ] OpenSpec validation passes (if specs changed)
-- [ ] `git diff --check` passes
+List the exact commands you ran and their results, including critical coverage
+when measured. Attach CI run links for the tested SHA.
+
+- [ ] Backend gates
+- [ ] Frontend gates and coverage contract
+- [ ] Main browser suite and Muse/Loki story tests when relevant
+- [ ] Authenticated editor suite when authentication, account isolation or durability changed
+- [ ] WeChat Mini Program checks, FastAPI contract and build when relevant
+- [ ] Production image smoke/recovery when build or deployment changed
+- [ ] OpenSpec validation when proposals or specifications changed
+- [ ] `git diff --check`
 
 ### Not run / not verified
 
-State checks you could not run and why (real browser, real provider, isolated database, CI runner, deployment).
+Record checks that could not run, their blockers and any unverified
+environment (browser, provider, isolated database, CI runner or deployment).
 
 ## Risk and rollback
 
@@ -43,9 +49,9 @@ What could break, and how would we roll it back?
 
 ## Checklist
 
-- [ ] I read `AGENTS.md` and followed its precedence and file boundaries.
-- [ ] New behavior has an approved OpenSpec proposal (or this is a bug fix/docs/test-only change).
+- [ ] I read [AGENTS.md](../AGENTS.md) and followed its precedence and file boundaries.
+- [ ] An approved OpenSpec proposal is linked when required.
 - [ ] I added or updated tests for the changed behavior.
-- [ ] I did not disable, skip, or weaken a gate to get a green result.
-- [ ] No `.env`, secrets, cookies, or local test artifacts are committed.
-- [ ] Documentation links remain valid (`docs/INDEX.md` is updated when needed).
+- [ ] All applicable gates ran with their existing checks and thresholds.
+- [ ] The commit excludes environment files, secrets, cookies and local evidence.
+- [ ] Documentation links remain valid and the docs index reflects any new reference.

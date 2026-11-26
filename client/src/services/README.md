@@ -38,10 +38,17 @@ const response = await triggerMuseIntervention(context, cursorPosition, docVersi
 Handles task CRUD operations.
 
 ```typescript
-import { taskClient } from "../services/api/taskClient";
+import { fetchTasks } from "../services/api/taskClient";
 
-const tasks = await taskClient.listTasks();
+const { tasks, total } = await fetchTasks({ limit: 20, offset: 0 });
 ```
+
+To update task metadata, call the versioned `updateTask` with the current
+content, lock IDs, version, and the metadata your user changed. Handle a
+version conflict by reloading or letting the user resolve it. This API accepts a new due date and keeps the existing date when given null. The former
+internal `updateTaskMetadata` helper addressed an unimplemented
+`PUT /tasks/{task_id}/metadata` route. See the
+[task API contract](../../../API_CONTRACT.md).
 
 ## Core Services
 

@@ -192,7 +192,7 @@ export async function fetchTasks(
   requestOptions?: RemoteRequestOptions
 ): Promise<TaskListResponse> {
   const { limit = 100, offset = 0, filter, sort } = options;
-  const url = new URL(`${API_BASE_URL}/tasks/`);
+  const url = new URL(`${API_BASE_URL}/tasks/`, globalThis.location?.origin);
 
   url.searchParams.set("limit", limit.toString());
   url.searchParams.set("offset", offset.toString());
@@ -416,47 +416,6 @@ export async function updateTask(
 
   if (!res.ok) {
     throw new TaskAPIError(res.status, "Failed to update task");
-  }
-
-  const data = (await res.json()) as ApiTaskResponse;
-  assertCurrentSession(options?.session);
-  return mapTask(data);
-}
-
-/** Parameters for updating task metadata without a version check. */
-export interface UpdateTaskMetadataParams {
-  category?: TaskCategory;
-  priority?: TaskPriority;
-  dueDate?: string | null;
-}
-
-/**
- * Update only task metadata (category, priority, due_date) without version check.
- *
- * @param taskId - Task identifier
- * @param params - Metadata update parameters
- * @param options - Captured account and cancellation for this request
- * @returns Updated task record
- * @throws {TaskAPIError} If task not found
- */
-export async function updateTaskMetadata(
-  taskId: string,
-  params: UpdateTaskMetadataParams,
-  options?: RemoteRequestOptions
-): Promise<TaskRecord> {
-  const res = await sessionFetch(
-    `${API_BASE_URL}/tasks/${taskId}/metadata`,
-    cookieAuthOptions({
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(params),
-    }),
-    options
-  );
-
-  if (!res.ok) {
-    throw new TaskAPIError(res.status, "Failed to update task metadata");
   }
 
   const data = (await res.json()) as ApiTaskResponse;

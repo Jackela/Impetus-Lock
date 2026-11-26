@@ -1,45 +1,28 @@
 # API Layer
 
-**Purpose:** HTTP interface (FastAPI routes, schemas, dependencies).
+FastAPI routes handle HTTP requests, authentication, response schemas, and HTTP errors. They delegate ownership, optimistic version checks, and persistence to application services.
 
-## Structure
+| Path                               | Purpose                               |
+| ---------------------------------- | ------------------------------------- |
+| [routes/](routes/)                 | HTTP route handlers                   |
+| [schemas/](schemas/)               | Pydantic request and response schemas |
+| [dependencies.py](dependencies.py) | FastAPI dependency wiring             |
+| [main.py](main.py)                 | FastAPI app and mounted routers       |
 
-```
-api/
-├── routes/         # FastAPI routers
-├── schemas/        # Pydantic request/response models
-├── dependencies/   # Dependency injection
-└── main.py         # FastAPI app
-```
+For example, [GET /tasks/](routes/tasks.py) injects the current user and the result of `get_task_service`, then calls `TaskService.list_tasks_for_user` with that user's ID and the requested pagination.
 
-## Rules
+Run this from `server/` to inspect the route and dependency.
 
-✅ **Allowed:**
-- Import from all layers (outermost layer)
-- Use FastAPI dependencies
-- Handle HTTP requests/responses
+```bash
+poetry run python - <<'PY'
+from server.api.dependencies import get_task_service
+from server.api.main import app
+from server.application.services.task_service import TaskService
 
-❌ **Forbidden:**
-- Business logic implementation (belongs in domain/application)
-
-## Example
-
-```python
-# api/routes/tasks.py
-from fastapi import APIRouter, Depends
-from server.server.application.use_cases.lock_task import LockTaskUseCase
-from server.server.api.dependencies import get_lock_task_use_case
-
-router = APIRouter(prefix="/tasks", tags=["tasks"])
-
-
-@router.post("/{task_id}/lock")
-def lock_task(task_id: str, use_case: LockTaskUseCase = Depends(get_lock_task_use_case)):
-    """Lock a task to make it un-deletable."""
-    task = use_case.execute(task_id)
-    return {"id": task.id, "locked": task.locked}
+assert callable(get_task_service)
+assert hasattr(TaskService, "list_tasks_for_user")
+print(app.openapi()["paths"]["/tasks/"]["get"]["operationId"])
+PY
 ```
 
----
-
-**Article IV:** This layer uses dependency injection (DIP) to wire implementations.
+See the [HTTP API contract](../../../API_CONTRACT.md) for the task update path and the [architecture guards](../../../ARCHITECTURE_GUARDS.md) for enforced import rules.

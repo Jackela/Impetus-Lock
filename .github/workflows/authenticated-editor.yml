@@ -58,7 +58,7 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-      - name: Verify real authentication, account isolation and restart durability
+      - name: Verify real authentication, account recovery and restart durability
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/auth_editor
         run: python3 scripts/run-auth-e2e.py

@@ -19,33 +19,14 @@ cd ../client && npm ci
 cd .. && ./scripts/dev-start.sh   # PostgreSQL + backend :8000 + Vite :5173
 ```
 
-`./scripts/dev-stop.sh` stops the helper services. On Windows, use `./scripts/dev-start.ps1`.
+`./scripts/dev-stop.sh` stops services started by this checkout. On Windows, use the same Bash commands from WSL. See the [development guide](DEVELOPMENT.md#quick-start) for database reuse.
 
 ## Quality gates
 
-The authoritative list is in [`AGENTS.md`](AGENTS.md) and `.github/workflows/ci.yml`. Run the same commands locally:
-
-```bash
-# Backend, from server/
-poetry run ruff check .
-poetry run pydocstyle server/
-poetry run ruff format --check
-poetry run lint-imports
-poetry run mypy .
-poetry run pytest tests/ -n auto --cov=server --cov-report=term-missing
-poetry run python check_critical_coverage.py
-
-# Frontend, from client/
-npm run lint
-npm run format
-npm run type-check
-npm run api:check
-npm run test -- --coverage
-npm run test:coverage-gate
-npm run build
-```
-
-E2E suites are documented in [`client/e2e/README.md`](client/e2e/README.md). Use `npm run test:e2e:ci` for the CI-shaped main suite.
+Follow the [workflow table and local checks](AGENTS.md#quality-gates) for the
+areas changed by your PR. [TESTING.md](TESTING.md) has the fixture setup, suite
+entry points and comparison runs. Log blockers in the location identified by
+the [handoff instructions](AGENTS.md#delivery-evidence-and-stop-conditions).
 
 ## Pull requests
 

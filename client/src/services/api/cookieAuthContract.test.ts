@@ -1,14 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { clearVault, saveVaultConfig } from "../llmKeyVault";
 import { generateIntervention } from "./interventionClient";
-import {
-  createTask,
-  deleteTask,
-  updateTask,
-  updateTaskMetadata,
-  fetchTask,
-  fetchTasks,
-} from "./taskClient";
+import { createTask, deleteTask, updateTask, fetchTask, fetchTasks } from "./taskClient";
 import { createTemplate, deleteTemplate, fetchTemplate, fetchTemplates } from "./templateClient";
 import { updateStreak, fetchStreak } from "./streakClient";
 import { analyzeStyle, applyStyle } from "./styleClient";
@@ -41,7 +34,6 @@ it.each([
     "/tasks/r04-task",
     () => updateTask("r04-task", { content: "test", lockIds: [], version: 1 }),
   ],
-  ["update metadata", "PUT", "/tasks/r04-task/metadata", () => updateTaskMetadata("r04-task", {})],
   ["delete task", "DELETE", "/tasks/r04-task", () => deleteTask("r04-task")],
   ["create template", "POST", "/templates/", () => createTemplate("name", "content")],
   ["delete template", "DELETE", "/templates/r04-template", () => deleteTemplate("r04-template")],

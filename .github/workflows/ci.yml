@@ -63,6 +63,9 @@ jobs:
         with:
           python-version-file: .python-version
 
+      - name: Verify development scripts
+        run: python3 -m unittest discover -s scripts/tests -p test_dev_helpers.py -v
+
       - name: Install Poetry
         run: |
           pipx install "poetry==${POETRY_VERSION}"
@@ -331,6 +334,10 @@ jobs:
         working-directory: ./client
         run: npm run test:coverage-gate
 
+      - name: Verify Node runtime and browser-runner metadata
+        working-directory: ./client
+        run: npm run test:runtime-metadata
+
       - name: Upload frontend test reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -354,6 +361,54 @@ jobs:
       - name: Build production bundle
         working-directory: ./client
         run: npm run build
+
+  production-images:
+    name: Production images and deployment recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      TEST_API_BASE_IMAGE: impetus-ci-api:local
+      TEST_CLIENT_BASE_IMAGE: impetus-ci-client:local
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.inputs.ref || github.sha }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install smoke-test browser
+        working-directory: client
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Build production images
+        run: |
+          docker build -f server/Dockerfile.prod -t "$TEST_API_BASE_IMAGE" server
+          docker build -f client/Dockerfile.prod -t "$TEST_CLIENT_BASE_IMAGE" client
+
+      - name: Verify production Web and WeChat proxy
+        run: bash scripts/run-production-smoke.sh
+
+      - name: Verify deployment script prerequisites
+        run: python3 -m unittest discover -s scripts/tests -p test_deployment.py -v
+
+      - name: Rehearse deployment recovery
+        run: bash scripts/test-deployment-recovery.sh
+
+      - name: Preserve production browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-proxy-evidence
+          path: client/test-results/production-proxy/
+          retention-days: 7
+          if-no-files-found: ignore
 
   # Non-executable contracts: generated API types must match the server schema,
   # and the OpenSpec corpus must stay strictly valid.

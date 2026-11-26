@@ -28,7 +28,11 @@ When sources conflict, resolve in this order:
 2. [`openspec/AGENTS.md`](openspec/AGENTS.md) — proposal/approval workflow.
 3. [`CONTEXT.md`](CONTEXT.md) — current product and architecture context.
 4. `docs/agents/*` — agent-facing role and task notes.
-5. Apart from the product-design sources named below, the remaining material is **historical evidence, not current status**: the rest of `docs/`, `.zcode/plans/`, `.scratch/`, `docs/archive/`.
+5. Current operating and engineering references are indexed in [docs/INDEX.md](docs/INDEX.md). Their owning source files, configurations, and workflows govern runtime details.
+
+Dated reports, session notes, retired plans, `docs/archive/`, `.zcode/plans/`,
+and the existing `.scratch/` tree are historical evidence. Use recorded commit SHAs
+and run links when drawing conclusions from them.
 
 For product design, [PRODUCT.md](PRODUCT.md) owns the agreed direction and links the
 current [feature walkthrough](docs/product/first-story.md). [ROADMAP.md](ROADMAP.md)
@@ -46,7 +50,21 @@ Explicitly **retired** (kept only as history, never as instructions):
 
 # Quality gates
 
-`.github/workflows/ci.yml` is the single authority. Run the same commands locally, from the stated directory.
+GitHub's live branch protection determines which checks are required to merge.
+[Branch protection](docs/BRANCH-PROTECTION-SETUP.md) records the verification source.
+Each workflow defines its own jobs, triggers and environment.
+
+| Workflow                                                           | Scope                                                                                                                       |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [CI](.github/workflows/ci.yml)                                     | Core server and Web checks, OpenAPI/TypeScript and OpenSpec contracts, development script tests and Linux production smoke. |
+| [E2E Tests](.github/workflows/e2e.yml)                             | Main browser suite and the Muse/Loki story flow.                                                                            |
+| [Authenticated Editor](.github/workflows/authenticated-editor.yml) | Browser cookie/CSRF, isolated PostgreSQL and draft safety.                                                                  |
+| [WeChat Mini Program](.github/workflows/wechat-miniprogram.yml)    | Path-filtered mini program checks, build and FastAPI transport contract.                                                    |
+| [Test Matrix](.github/workflows/test-matrix.yml)                   | Path-filtered Python compatibility checks.                                                                                  |
+| [CodeQL](.github/workflows/codeql.yml)                             | Code scanning.                                                                                                              |
+| [Deploy to Staging](.github/workflows/deploy-staging.yml)          | Staging workflow. Check its run and environment before reporting deployment.                                                |
+
+Run the applicable commands locally. See [TESTING.md](TESTING.md) for fixtures, browser entry points and production smoke setup.
 
 Backend (in `server/`):
 
@@ -68,10 +86,19 @@ npm run format
 npm run type-check
 npm run api:check
 npm run test -- --coverage
+npm run test:coverage-gate
+npm run test:runtime-metadata
 npm run build
 npm run test:e2e:ci-like   # when a user flow changes
-npm run test:e2e:auth      # when authentication changes
+npm run test:e2e:story     # when a Muse/Loki story flow changes
 ```
+
+When authentication, account isolation or draft durability changes, run
+`python3 scripts/run-auth-e2e.py` from the repository root with an isolated
+PostgreSQL database. For mini program changes, follow the
+[WeChat Mini Program workflow](.github/workflows/wechat-miniprogram.yml).
+For OpenSpec changes, run the pinned strict validation command from the
+[main CI workflow](.github/workflows/ci.yml).
 
 Never buy a green result: do not add eslint/ruff/mypy ignore directives, do not use `--no-verify`, do not skip or `xfail` tests to get past a failure, do not lower coverage thresholds or the critical-path set, and do not edit gate configuration (workflow files, linter configs, coverage configs) to make a check pass. A failing gate is fixed or reported.
 
@@ -85,13 +112,13 @@ P1 lock core — changing any of these requires a failing test first and extra r
 Layering:
 
 - Backend dependency direction is `api → application → domain`; enforced by `poetry run lint-imports`.
-- Frontend: `components` must not import `features` (`components ✗→ features`) and must not import `services` (`components ✗→ services`); enforced by ESLint `no-restricted-imports`.
+- Frontend: use components, hooks and services in that order. The default ESLint rule blocks imports from `features/` and `services/`. See [architecture guards](ARCHITECTURE_GUARDS.md) for the files that receive exceptions.
 
 Read-only (do not edit in the course of a feature change):
 
 - `openspec/specs/**` — current truth; changed only through an archived OpenSpec change.
 - `.github/workflows/**` — gate authority; changes need their own approved scope.
-- `docs/archive/**` and `.scratch/**` — evidence. Never edit or delete to make a report look better.
+- `docs/archive/**` and the existing `.scratch/**` — preserved historical evidence.
 
 # Prohibited
 
@@ -123,11 +150,18 @@ Every delivery report states:
 - critical coverage numbers;
 - environments not verified (real browser, real provider, isolated database, CI runner, deployment).
 
-Stop and write `.scratch/<date>-<topic>/handoff.md` instead of guessing when:
+Record blocked work in `$HOME/.codex/recovery/impetus-lock-<date>-<topic>/handoff.md`,
+outside the checkout. When the task assigns an external evidence directory,
+write the handoff there. Continue independent work while the affected item
+waits for a decision. Use this handoff when:
 
 - the work needs an unapproved proposal;
 - a gate fails for a reason outside your scope;
 - you need credentials, a real model provider, or a browser you cannot launch.
+
+Store temporary logs, traces and test data outside the checkout or in
+the tool's ignored output directories. Keep work notes and artifacts out of
+commits. Issue-specific instructions recorded for earlier audits are historical evidence.
 
 # Current AI working agreement
 

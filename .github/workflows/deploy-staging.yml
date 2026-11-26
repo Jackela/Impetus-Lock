@@ -31,14 +31,14 @@ jobs:
       contents: read
       packages: write
     outputs:
-      api_image: ${{ steps.meta.outputs.api_image }}
-      client_image: ${{ steps.meta.outputs.client_image }}
-      version: ${{ steps.meta.outputs.version }}
+      source_sha: ${{ steps.meta.outputs.source_sha }}
+      api_image: ${{ steps.release.outputs.api_image }}
+      client_image: ${{ steps.release.outputs.client_image }}
     steps:
-      - name: Checkout code
+      - name: Resolve and check out source
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -50,46 +50,63 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate metadata
+      - name: Record build source
         id: meta
         run: |
-          VERSION=sha-$(git rev-parse --short HEAD)
+          SOURCE_SHA=$(git rev-parse --verify HEAD)
           NAMESPACE=$(printf '%s' "$DOCKER_NAMESPACE" | tr '[:upper:]' '[:lower:]')
           {
-          echo "version=$VERSION"
-          echo "api_image=$DOCKER_REGISTRY/$NAMESPACE/impetus-api"
-          echo "client_image=$DOCKER_REGISTRY/$NAMESPACE/impetus-client"
+            echo "source_sha=$SOURCE_SHA"
+            echo "api_repository=$DOCKER_REGISTRY/$NAMESPACE/impetus-api"
+            echo "client_repository=$DOCKER_REGISTRY/$NAMESPACE/impetus-client"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push API image
+        id: api
         uses: docker/build-push-action@v7
         with:
           context: ./server
           file: ./server/Dockerfile.prod
           push: true
+          labels: org.opencontainers.image.revision=${{ steps.meta.outputs.source_sha }}
           tags: |
-            ${{ steps.meta.outputs.api_image }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.api_image }}:staging
-            ${{ steps.meta.outputs.api_image }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            POETRY_VERSION=2.5.1
+            ${{ steps.meta.outputs.api_repository }}:sha-${{ steps.meta.outputs.source_sha }}
+            ${{ steps.meta.outputs.api_repository }}:staging
+            ${{ steps.meta.outputs.api_repository }}:latest
+          cache-from: type=gha,scope=staging-api
+          cache-to: type=gha,scope=staging-api,mode=max
 
       - name: Build and push Client image
+        id: client
         uses: docker/build-push-action@v7
         with:
           context: ./client
           file: ./client/Dockerfile.prod
           push: true
+          labels: org.opencontainers.image.revision=${{ steps.meta.outputs.source_sha }}
           tags: |
-            ${{ steps.meta.outputs.client_image }}:${{ steps.meta.outputs.version }}
-            ${{ steps.meta.outputs.client_image }}:staging
-            ${{ steps.meta.outputs.client_image }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ${{ steps.meta.outputs.client_repository }}:sha-${{ steps.meta.outputs.source_sha }}
+            ${{ steps.meta.outputs.client_repository }}:staging
+            ${{ steps.meta.outputs.client_repository }}:latest
+          cache-from: type=gha,scope=staging-client
+          cache-to: type=gha,scope=staging-client,mode=max
           build-args: |
             VITE_API_URL=${{ secrets.STAGING_VITE_API_URL || '/api' }}
+
+      - name: Record immutable release
+        id: release
+        env:
+          API_REPOSITORY: ${{ steps.meta.outputs.api_repository }}
+          API_DIGEST: ${{ steps.api.outputs.digest }}
+          CLIENT_REPOSITORY: ${{ steps.meta.outputs.client_repository }}
+          CLIENT_DIGEST: ${{ steps.client.outputs.digest }}
+        run: |
+          [[ "$API_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+          [[ "$CLIENT_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+          {
+            echo "api_image=$API_REPOSITORY@$API_DIGEST"
+            echo "client_image=$CLIENT_REPOSITORY@$CLIENT_DIGEST"
+          } >> "$GITHUB_OUTPUT"
 
   deploy-staging:
     name: Deploy to Staging
@@ -98,21 +115,23 @@ jobs:
     timeout-minutes: 20
     outputs:
       deployed: ${{ steps.deploy.outputs.deployed }}
+      public_url: ${{ steps.deploy.outputs.public_url }}
     env:
       STAGING_HOST: ${{ secrets.STAGING_HOST }}
       STAGING_USER: ${{ secrets.STAGING_USER }}
       STAGING_SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
     environment:
       name: staging
-      url: ${{ steps.deploy.outputs.url }}
+      url: ${{ steps.deploy.outputs.public_url }}
     steps:
-      - name: Checkout code
+      - name: Check out the built revision
+        if: env.STAGING_HOST != ''
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.inputs.ref || github.sha }}
+          ref: ${{ needs.build-and-push.outputs.source_sha }}
 
       - name: Setup SSH
-        if: ${{ env.STAGING_HOST != '' && env.STAGING_SSH_KEY != '' }}
+        if: env.STAGING_HOST != '' && env.STAGING_SSH_KEY != ''
         uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.STAGING_SSH_KEY }}
@@ -120,67 +139,50 @@ jobs:
       - name: Deploy to staging server
         id: deploy
         env:
-          STAGING_HOST: ${{ secrets.STAGING_HOST }}
-          STAGING_USER: ${{ secrets.STAGING_USER }}
           DEPLOY_DIR: ${{ secrets.STAGING_DEPLOY_DIR || '/opt/impetus-lock' }}
-          API_IMAGE: ${{ needs.build-and-push.outputs.api_image }}:${{ needs.build-and-push.outputs.version }}
-          CLIENT_IMAGE: ${{ needs.build-and-push.outputs.client_image }}:${{ needs.build-and-push.outputs.version }}
+          API_IMAGE: ${{ needs.build-and-push.outputs.api_image }}
+          CLIENT_IMAGE: ${{ needs.build-and-push.outputs.client_image }}
+          RELEASE_SHA: ${{ needs.build-and-push.outputs.source_sha }}
+          PUBLIC_URL: ${{ vars.STAGING_PUBLIC_URL }}
         run: |
-          echo "deployed=false" >> "$GITHUB_OUTPUT"
-          if [ -z "$STAGING_HOST" ]; then
+          if [[ -z "$STAGING_HOST" ]]; then
             echo "Remote staging deployment is not configured; images only."
-            echo "url=https://github.com/${{ github.repository }}/packages" >> "$GITHUB_OUTPUT"
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ -z "$STAGING_USER" ] || [ -z "$STAGING_SSH_KEY" ]; then
+          if [[ -z "$STAGING_USER" || -z "$STAGING_SSH_KEY" ]]; then
             echo "::error::STAGING_USER and STAGING_SSH_KEY are required when STAGING_HOST is set"
             exit 1
           fi
-          # Use the existing deployment implementation with the server's compose/env files.
-          scp -o StrictHostKeyChecking=accept-new scripts/deploy-staging.sh "$STAGING_USER@$STAGING_HOST:/tmp/impetus-deploy-staging.sh"
-          printf -v remote_command 'DEPLOY_DIR=%q API_IMAGE=%q CLIENT_IMAGE=%q bash /tmp/impetus-deploy-staging.sh --deploy-only' "$DEPLOY_DIR" "$API_IMAGE" "$CLIENT_IMAGE"
-          ssh -o StrictHostKeyChecking=accept-new "$STAGING_USER@$STAGING_HOST" "$remote_command"
+          host="$STAGING_USER@$STAGING_HOST"
+          remote_dir=$(ssh -o StrictHostKeyChecking=accept-new -- "$host" 'mktemp -d /tmp/impetus-deploy.XXXXXXXX')
+          [[ "$remote_dir" =~ ^/tmp/impetus-deploy\.[[:alnum:]]+$ ]]
+          trap 'ssh -- "$host" "rm -r -- $remote_dir" || true' EXIT
+          scp -- scripts/deployment.py "$host:$remote_dir/"
+          printf -v remote_command 'DEPLOY_DIR=%q API_IMAGE=%q CLIENT_IMAGE=%q RELEASE_SHA=%q python3 %q staging deploy' \
+            "$DEPLOY_DIR" "$API_IMAGE" "$CLIENT_IMAGE" "$RELEASE_SHA" "$remote_dir/deployment.py"
+          ssh -- "$host" "$remote_command"
           {
             echo "deployed=true"
-            echo "url=http://$STAGING_HOST"
+            echo "public_url=$PUBLIC_URL"
           } >> "$GITHUB_OUTPUT"
 
   health-check:
-    name: Health Checks
-    needs: deploy-staging
+    name: Public Health Checks
+    needs: [build-and-push, deploy-staging]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: needs.deploy-staging.result == 'success' && needs.deploy-staging.outputs.deployed == 'true'
+    if: needs.deploy-staging.outputs.deployed == 'true' && needs.deploy-staging.outputs.public_url != ''
     steps:
-      - name: Wait for services
-        run: sleep 30
+      - name: Check out the deployed revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.build-and-push.outputs.source_sha }}
 
-      - name: API Health Check
+      - name: Check client, API, and database via public origin
         env:
-          STAGING_HOST: ${{ secrets.STAGING_HOST }}
-        run: |
-          HOST="${STAGING_HOST:?STAGING_HOST is required for a deployed environment}"
-          echo "Checking API health at http://${HOST}:8000/health"
-          curl -sf "http://${HOST}:8000/health" || exit 1
-          echo "✅ API is healthy"
-
-      - name: Database Health Check
-        env:
-          STAGING_HOST: ${{ secrets.STAGING_HOST }}
-        run: |
-          HOST="${STAGING_HOST:?STAGING_HOST is required for a deployed environment}"
-          echo "Checking database health at http://${HOST}:8000/health/db"
-          curl -sf "http://${HOST}:8000/health/db" || exit 1
-          echo "✅ Database is healthy"
-
-      - name: Client Health Check
-        env:
-          STAGING_HOST: ${{ secrets.STAGING_HOST }}
-        run: |
-          HOST="${STAGING_HOST:?STAGING_HOST is required for a deployed environment}"
-          echo "Checking client health at http://${HOST}/health"
-          curl -sf "http://${HOST}/health" || exit 1
-          echo "✅ Client is healthy"
+          PUBLIC_URL: ${{ needs.deploy-staging.outputs.public_url }}
+        run: python3 scripts/deployment.py staging check-ready --url "$PUBLIC_URL"
 
   notify:
     name: Notify
@@ -190,22 +192,19 @@ jobs:
     if: always()
     steps:
       - name: Deployment Summary
+        env:
+          SOURCE_SHA: ${{ needs.build-and-push.outputs.source_sha }}
+          API_IMAGE: ${{ needs.build-and-push.outputs.api_image }}
+          CLIENT_IMAGE: ${{ needs.build-and-push.outputs.client_image }}
+          DEPLOYED: ${{ needs.deploy-staging.outputs.deployed || 'false' }}
+          PUBLIC_CHECK: ${{ needs.health-check.result }}
         run: |
           {
-          echo "## Staging Deployment Summary"
-          echo ""
-          echo "- **Version:** ${{ needs.build-and-push.outputs.version }}"
-          echo "- **API Image:** ${{ needs.build-and-push.outputs.api_image }}:${{ needs.build-and-push.outputs.version }}"
-          echo "- **Client Image:** ${{ needs.build-and-push.outputs.client_image }}:${{ needs.build-and-push.outputs.version }}"
-          echo ""
-
-          echo "- **Remote deployment:** ${{ needs.deploy-staging.outputs.deployed || 'false' }}"
-          if [ "${{ needs.health-check.result }}" == "success" ]; then
-            echo "✅ **Health Checks:** PASSED"
-          elif [ "${{ needs.deploy-staging.outputs.deployed }}" == "false" ] && [ "${{ needs.deploy-staging.result }}" == "success" ]; then
-            echo "⚠️ **Health Checks:** SKIPPED (remote deployment not configured)"
-          else
-            echo "❌ **Deployment or Health Checks:** FAILED"
-          fi
-
+            echo "## Staging Deployment Summary"
+            echo ""
+            echo "- Source commit: $SOURCE_SHA"
+            echo "- API image: $API_IMAGE"
+            echo "- Client image: $CLIENT_IMAGE"
+            echo "- Remote deployment verified on its host: $DEPLOYED"
+            echo "- Public origin check: $PUBLIC_CHECK"
           } >> "$GITHUB_STEP_SUMMARY"

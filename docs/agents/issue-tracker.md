@@ -46,6 +46,8 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
 - **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.
 
-## Local-only audit exception
+## Local evidence
 
-For the September 2026 audit, tickets and evidence are limited to `.scratch/audit-2026-09/` and remote access is read-only. Do not publish issues, change labels, comment, close items, or push. This local-only exception takes precedence over the generic publish/claim/resolve routes for this audit and does not change the long-term GitHub tracker choice.
+Use the [handoff location in AGENTS.md](../../AGENTS.md#delivery-evidence-and-stop-conditions)
+for blocked work. The September 2026 `.scratch/audit-2026-09/` evidence and
+its local-only restrictions apply to the archived audit.
