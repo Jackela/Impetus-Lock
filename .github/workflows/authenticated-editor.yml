@@ -42,7 +42,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version-file: .python-version
       - name: Install backend dependencies
         run: |
           pipx install "poetry==${POETRY_VERSION}"

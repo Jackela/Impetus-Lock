@@ -8,7 +8,7 @@ Impetus Lock 是一款中文互动故事小程序。玩家可以一路点选行�
 [![CodeQL](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml/badge.svg)](https://github.com/Jackela/impetus-lock/actions/workflows/codeql.yml)
 [![Version](https://img.shields.io/badge/version-0.5.1-blue.svg)](https://github.com/Jackela/Impetus-Lock/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![Python 3.15](https://img.shields.io/badge/python-3.15-blue.svg)](https://www.python.org/)
 [![Node 26](https://img.shields.io/badge/node-26.x-brightgreen.svg)](https://nodejs.org/)
 
 > **Status**: v0.5.1 (pre-1.0). CI green means the checked gates passed; it is not a deployment or user acceptance. Current working rules and gates live in [`AGENTS.md`](AGENTS.md).
@@ -27,7 +27,7 @@ Impetus Lock 是一款中文互动故事小程序。玩家可以一路点选行�
 
 ### 环境要求
 
-- Python 3.11+ 与 [Poetry](https://python-poetry.org/)。本机已用 Python 3.12 验证。
+- Python 3.15 与 [Poetry](https://python-poetry.org/) 2.5.1。后端兼容性矩阵也测试 Python 3.11 和 3.12。
 - Node.js 26.x（与 CI 和 `.nvmrc` 一致）。`client/package.json` 也支持 22.22.1 及以上的 22.x 和 24.x。
 - Docker（使用便捷启动脚本时提供 PostgreSQL）。
 

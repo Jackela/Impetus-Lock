@@ -3,10 +3,10 @@ name: Test Matrix
 on:
   push:
     branches: ["main"]
-    paths: ["server/**", ".github/workflows/test-matrix.yml"]
+    paths: ["server/**", ".python-version", ".github/workflows/test-matrix.yml"]
   pull_request:
     branches: ["main"]
-    paths: ["server/**", ".github/workflows/test-matrix.yml"]
+    paths: ["server/**", ".python-version", ".github/workflows/test-matrix.yml"]
   workflow_dispatch:
 
 permissions:
@@ -22,24 +22,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Matrix testing across supported Python versions.
-  #
-  # The dimension set is intentionally Python-only: `server/pyproject.toml`
-  # declares no `[tool.poetry.extras]`, so the former dependency-extras axis
-  # only re-ran the identical `poetry install` twice.
-  #
-  # 3.11 is deliberate, not a missed 3.12 bump: `server/pyproject.toml` still
-  # declares `python = "^3.11"` as the support floor, and the 3.12-only entry
-  # point (ci.yml, Dockerfile.prod) cannot prove that floor. 3.12 is the
-  # production runtime and is covered here plus in ci.yml.
-  #
-  # Overlap with ci.yml is intentional, not duplication to prune:
-  # - 3.12 here re-runs the backend suite that ci.yml gates on, so a break
-  #   confined to the interpreter used in production is attributed to this
-  #   workflow too (and `paths` keeps it off frontend-only PRs).
-  # - 3.11 is the support floor: nothing else in CI runs on it, so removing
-  #   this leg would silently drop the pyproject `^3.11` guarantee.
-  # Keep both legs.
+  # Exercise the Python 3.11 support floor, the previous 3.12 runtime,
+  # and the 3.15 default used by the main gate and deployment image.
   test-matrix:
     name: Test Matrix (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -47,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.15"]
     defaults:
       run:
         working-directory: server
@@ -78,6 +62,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
+        id: python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -94,9 +79,9 @@ jobs:
           path: |
             ~/.cache/pypoetry
             ~/.local/share/pypoetry
-          key: ${{ runner.os }}-poetry-py${{ matrix.python-version }}-${{ hashFiles('server/poetry.lock') }}
+          key: ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-${{ hashFiles('server/poetry.lock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-py${{ matrix.python-version }}-
+            ${{ runner.os }}-poetry-py${{ steps.python.outputs.python-version }}-
 
       - name: Install dependencies
         run: poetry install --with dev
