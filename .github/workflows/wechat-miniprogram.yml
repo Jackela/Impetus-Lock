@@ -1,0 +1,80 @@
+name: WeChat Mini Program
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'miniprogram/**'
+      - 'server/**'
+      - 'client/src/types/api.generated.ts'
+      - 'client/scripts/generate-api-types.mjs'
+      - '.github/workflows/wechat-miniprogram.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'miniprogram/**'
+      - 'server/**'
+      - 'client/src/types/api.generated.ts'
+      - 'client/scripts/generate-api-types.mjs'
+      - '.github/workflows/wechat-miniprogram.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  POETRY_VERSION: "2.5.1"
+
+jobs:
+  miniprogram:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+          cache: npm
+          cache-dependency-path: miniprogram/package-lock.json
+
+      - name: Install mini program dependencies
+        working-directory: miniprogram
+        run: npm ci
+
+      - name: Test mini program flows
+        working-directory: miniprogram
+        run: npm test
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: |
+          pipx install "poetry==${POETRY_VERSION}"
+          pipx environment --value PIPX_BIN_DIR >> "$GITHUB_PATH"
+
+      - name: Install backend dependencies for the SQLite contract fixture
+        working-directory: server
+        run: poetry install
+
+      - name: Verify the mini program transport against FastAPI
+        working-directory: miniprogram
+        run: npm run test:contract
+
+      - name: Build with the WechatSI plugin declaration
+        working-directory: miniprogram
+        env:
+          WECHAT_API_ORIGIN: http://127.0.0.1:8000
+          WECHAT_SPEECH_ENABLED: "1"
+        run: |
+          npm run build
+          node -e 'require("node:assert/strict").ok(require("./dist/app.json").plugins?.WechatSI)'
