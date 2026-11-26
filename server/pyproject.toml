@@ -11,7 +11,12 @@ python = "^3.11"
 fastapi = ">=0.131,<0.166"
 uvicorn = {extras = ["standard"], version = ">=0.40,<0.55"}
 pydantic = "^2.9.0"
-instructor = "^1.4.0"
+# Upstream #2945 allows jiter wheels built for the final CPython 3.15 ABI.
+instructor = [
+    {version = "^1.4.0", python = "<3.15", source = "PyPI"},
+    {url = "https://github.com/567-labs/instructor/archive/7b28ef5dd62af32e1c09726679b3486cc9721efd.tar.gz", python = ">=3.15"},
+]
+jiter = {version = "0.18.0", python = ">=3.15"}
 httpx = ">=0.28.1,<1.0.0"
 httpx2 = "^2.0"
 anthropic = ">=1.5,<2"
