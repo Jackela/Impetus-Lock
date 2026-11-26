@@ -45,18 +45,14 @@ function changedIdentity(): ApiError {
 
 function errorText(data: unknown, status: number): string {
   if (data && typeof data === "object") {
-    const payload = data as {message?: unknown; error?: {code?: string; message?: unknown}};
-    if (payload.error?.code === "VALIDATION_ERROR") return "填写的内容不符合要求，请检查后重试。";
+    const payload = data as {message?: unknown; detail?: unknown; error?: {code?: string; message?: unknown; details?: {errors?: unknown}}};
+    if (Array.isArray(payload.detail) || (payload.error?.code === "VALIDATION_ERROR" &&
+      (Array.isArray(payload.error.details?.errors) || payload.error.message === "Request validation failed"))) {
+      return "填写的内容不符合要求，请检查后重试。";
+    }
     const message = payload.error?.message ?? payload.message;
     if (typeof message === "string" && message.trim()) return message;
-  }
-  if (data && typeof data === "object" && "detail" in data) {
-    const detail = (data as {detail: unknown}).detail;
-    if (typeof detail === "string" && detail.trim()) return detail;
-    if (Array.isArray(detail)) {
-      const messages = detail.map(item => typeof item?.msg === "string" ? item.msg : "").filter(Boolean);
-      if (messages.length) return messages.join("；");
-    }
+    if (typeof payload.detail === "string" && payload.detail.trim()) return payload.detail;
   }
   const fallback: Record<number, string> = {
     401: "微信会话已过期，请重试。",

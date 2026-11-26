@@ -672,3 +672,351 @@ test("微信隐私和麦克风授权结束后，仍须独立录音手势才可�
   assert.equal(actionCalls(calls)[2].version, 3);
   assert.equal(page.data.heldVoiceText, "");
 });
+
+for (const initialOutcome of ["canceled", "committed", "unknown"]) {
+  test(`切后台后按口述原文切换的旧回执恢复一次写入（${initialOutcome}）`, async () => {
+    const original = "我把信原封不动寄回去。";
+    const failedVoice = {
+      action: { request_id: "failed-voice", version: 1, kind: "turn", source: "voice", style: "voice", text: original },
+    };
+    const originalPage = harness(run, { "pending:run-a": failedVoice });
+    let { page, memory } = originalPage;
+    const { endpoint, calls } = originalPage;
+    await page.onLoad({ id: run.id, compose: "1" });
+    let settleCancellation;
+    let outcome = "unknown";
+    let saved = run;
+    let cancellationCount = 0;
+    const committedIds = new Set();
+    endpoint.handle = async (_path, method, action) => {
+      if (method !== "POST") return saved;
+      if (action.kind === "cancel") {
+        if (++cancellationCount === 1) return new Promise(resolve => { settleCancellation = resolve; });
+        outcome = "canceled";
+        saved = { ...run, version: 2 };
+        return saved;
+      }
+      assert.equal(action.style, "verbatim");
+      assert.equal(outcome, "canceled");
+      assert.equal(action.text, original);
+      committedIds.add(action.request_id);
+      saved = { ...saved, version: saved.version + 1, turns: 1, segments: [{ id: "voice", text: original, source: "voice" }] };
+      return saved;
+    };
+    endpoint.receipt = async (path) => {
+      const id = path.split("/").at(-1);
+      return { run_version: saved.version, status: id === "failed-voice" ? outcome : committedIds.has(id) ? "committed" : "unknown" };
+    };
+    const switching = page.useVoiceOriginal();
+    await settle();
+    assert.equal(actionCalls(calls).at(-1).target, "failed-voice");
+    page.onHide();
+    outcome = initialOutcome;
+    if (outcome === "canceled") saved = { ...run, version: 2 };
+    if (outcome === "committed") {
+      saved = { ...run, version: 2, turns: 1, segments: [{ id: "corrected", text: "我把信原封寄回。", source: "voice" }] };
+    }
+    settleCancellation(saved);
+    await switching;
+    let resumedCalls = calls;
+    if (initialOutcome === "canceled") {
+      page.onUnload();
+      const reopened = harness(saved, Object.fromEntries(memory));
+      Object.assign(reopened.endpoint, endpoint);
+      ({ page, memory, calls: resumedCalls } = reopened);
+      await page.onLoad({ id: run.id, compose: "1" });
+    } else {
+      await page.onShow();
+    }
+    const attempts = () => actionCalls(resumedCalls === calls ? calls : [...calls, ...resumedCalls]);
+    assert.equal(attempts().length, 1);
+    assert.equal(page.data.hasPending, outcome !== "committed");
+    if (outcome !== "committed") {
+      assert.equal(page.data.pendingText, original);
+      await page.retryPending();
+      const submitted = attempts().filter(action => action.kind === "turn");
+      assert.deepEqual(submitted.map(({ version, style, text }) => [version, style, text]), [[2, "verbatim", original]]);
+      if (initialOutcome === "unknown") {
+        const cancels = attempts().filter(action => action.kind === "cancel");
+        assert.equal(cancels.length, 2);
+        assert.equal(cancels[0].request_id, cancels[1].request_id);
+      }
+    }
+    await page.reload();
+    assert.equal(page.data.run.turns, 1);
+    assert.equal(page.data.run.segments.length, 1);
+    assert.equal(page.data.hasPending, false);
+    assert.equal(memory.has("pending:run-a"), false);
+  });
+}
+
+test("本机不能保存原文切换意图时不取消旧口述", async () => {
+  const original = "我把信原封不动寄回去。";
+  const failedVoice = {
+    action: { request_id: "failed-voice", version: 1, kind: "turn", source: "voice", style: "voice", text: original },
+  };
+  const { page, calls, memory, storage } = harness(run, { "pending:run-a": failedVoice });
+  await page.onLoad({ id: run.id });
+  storage.putPrivate = () => { throw new Error("本机故障"); };
+  await page.useVoiceOriginal();
+  assert.deepEqual(actionCalls(calls), []);
+  assert.deepEqual(memory.get("pending:run-a"), failedVoice);
+  assert.equal(page.data.pendingText, original);
+  assert.match(page.data.status, /无法暂存/);
+});
+
+test("另一设备先续写时保留首页手稿，重进后由作者确认写入最新稿", async () => {
+  const original = "我把信原封不动寄回去。";
+  const staged = { request_id: "staged-first", source: "keyboard", text: original };
+  const otherTurn = { id: "different", source: "choice", text: "先翻看信封。" };
+  let saved = { ...run, version: 2, turns: 1, segments: [otherTurn] };
+  let status = "unknown";
+  const installBackend = (endpoint) => {
+    endpoint.handle = async (_path, method, action) => {
+      if (method !== "POST") return saved;
+      assert.deepEqual(action, { ...staged, kind: "turn", version: 2 });
+      saved = { ...saved, version: 3, turns: 2, segments: [otherTurn, { id: "mine", text: original, source: "keyboard" }] };
+      status = "committed";
+      return saved;
+    };
+    endpoint.receipt = async () => ({ status, run_version: saved.version });
+  };
+  const firstOpen = harness(saved, { "first:run-a": staged, "draft:run-a": "本机另一段手稿。" });
+  installBackend(firstOpen.endpoint);
+  await firstOpen.page.onLoad({ id: run.id });
+  assert.deepEqual(actionCalls(firstOpen.calls), []);
+  assert.deepEqual(firstOpen.page.data.run.segments, [otherTurn]);
+  assert.equal(firstOpen.page.data.pendingText, original);
+  assert.equal(firstOpen.page.data.pendingFirstKeyboard, true);
+  assert.equal(firstOpen.page.data.draft, "本机另一段手稿。");
+  firstOpen.page.onUnload();
+
+  const reopened = harness(saved, Object.fromEntries(firstOpen.memory));
+  installBackend(reopened.endpoint);
+  await reopened.page.onLoad({ id: run.id });
+  assert.deepEqual(actionCalls(reopened.calls), []);
+  assert.equal(reopened.page.data.pendingText, original);
+  await reopened.page.retryPending();
+  assert.deepEqual(reopened.page.data.run.segments.map(segment => segment.text), [otherTurn.text, original]);
+  assert.equal(reopened.page.data.run.turns, 2);
+  assert.equal(reopened.page.data.draft, "本机另一段手稿。");
+  assert.deepEqual([...reopened.memory.keys()], ["draft:run-a"]);
+});
+
+test("首页手稿的回执已入稿时重进不会再提交同一段", async () => {
+  const staged = { request_id: "staged-first", source: "keyboard", text: "我把信原封不动寄回去。" };
+  const written = { ...run, version: 2, turns: 1, segments: [{ id: "mine", text: staged.text, source: "keyboard" }] };
+  const { page, calls, endpoint, memory } = harness(written, { "first:run-a": staged });
+  endpoint.receipt = async () => ({ status: "committed", run_version: written.version });
+  await page.onLoad({ id: run.id });
+  assert.ok(calls.some(([path]) => path.endsWith("/receipts/staged-first")));
+  assert.deepEqual(actionCalls(calls), []);
+  assert.equal(page.data.hasPending, false);
+  assert.equal(memory.has("first:run-a"), false);
+  assert.equal(page.data.run.segments[0].text, staged.text);
+});
+
+test("普通模式关闭局规时在首个锁句旁说明可以继续转写", async () => {
+  const { readFileSync } = require("node:fs");
+  const locked = { ...run, version: 2, turns: 1, segments: [
+    { id: "passage", text: "我打开信封。" },
+    { id: "first-lock", locked: true, text: "邮戳是明天。" },
+    { id: "later-lock", locked: true, text: "门外没有人。" },
+  ] };
+  const { page } = harness(locked);
+  await page.onLoad({ id: run.id });
+  assert.equal(page.data.showRules, false);
+  assert.equal(page.data.firstLockId, "first-lock");
+  const template = readFileSync(require.resolve("../.build/pages/write/index.wxml"), "utf8");
+  assert.match(template, /class="manuscript"[\s\S]*?wx:if="{{item\.id === firstLockId}}"[^>]*>原句会保留，你仍可以写别的情节。/);
+});
+
+for (const keepDuringFinish of [false, true]) {
+  test(`整理失败后用识别原文时按当前收笔状态授权（${keepDuringFinish ? "保留后收笔" : "恢复继续写"}）`, async () => {
+    const original = "我把信原封不动寄回去。";
+    const voice = { request_id: "failed-voice", version: 2, kind: "turn", source: "voice", style: "voice", text: original };
+    let saved = { ...run, version: 2, finishing: true };
+    const receipts = new Map();
+    const { page, calls, endpoint } = harness(saved, { "pending:run-a": { action: voice } });
+    endpoint.receipt = async path => ({ status: receipts.get(path.split("/").at(-1)) ?? "unknown", run_version: saved.version });
+    endpoint.handle = async (_path, method, action) => {
+      if (method !== "POST") return saved;
+      if (action.kind === "resume") return saved = { ...saved, version: saved.version + 1, finishing: false };
+      if (action.kind === "cancel") {
+        receipts.set(action.target, "canceled");
+        return saved = { ...saved, version: saved.version + 1 };
+      }
+      if (Boolean(action.retain) !== saved.finishing) {
+        throw Object.assign(new Error("收笔暂停期间，请明确选择要保留的正文或返回继续写作。"), { status: 409 });
+      }
+      if (action.style === "voice") {
+        throw Object.assign(new Error("整理服务暂时不可用。"), { status: 502 });
+      }
+      receipts.set(action.request_id, "committed");
+      return saved = { ...saved, version: saved.version + 1, turns: 1,
+        segments: [{ id: "voice", text: action.text, source: "voice" }] };
+    };
+    await page.onLoad({ id: run.id });
+    await page.retryPending();
+    assert.equal(page.data.pendingText, original);
+    assert.equal(page.data.pauseConfirmed, true);
+    assert.match(page.data.status, /整理服务暂时不可用/);
+    if (!keepDuringFinish) await page.returnToWriting();
+    await page.useVoiceOriginal();
+    const submitted = actionCalls(calls).filter(action => action.kind === "turn");
+    assert.deepEqual(submitted.map(a => [a.style, a.text, Boolean(a.retain)]), [
+      ["voice", original, true], ["verbatim", original, keepDuringFinish],
+    ]);
+    assert.equal(page.data.run.turns, 1);
+    assert.equal(page.data.hasPending, false);
+    assert.equal(page.data.finishing, keepDuringFinish);
+  });
+}
+
+test("a committed replacement must not return as unentered local text", async () => {
+  const original = "这段口述后来已被永久删除。";
+  const previous = { request_id: "old-voice", kind: "turn", source: "voice", style: "voice", version: 1, text: original };
+  const { page, memory, calls, endpoint, storage } = harness(run, { "pending:run-a": { action: previous } });
+  const save = storage.putPrivate;
+  storage.putPrivate = (key, value) => {
+    if (value.action?.style === "verbatim") throw new Error("temporary storage failure");
+    save(key, value);
+  };
+  let saved = run;
+  const receipts = new Map();
+  let releaseReplacement;
+  endpoint.receipt = async path => ({ status: receipts.get(path.split("/").at(-1)) ?? "unknown", run_version: saved.version });
+  endpoint.handle = async (_path, method, action) => {
+    if (method !== "POST") return saved;
+    if (action.kind === "cancel") {
+      receipts.set(action.target, "canceled");
+      return saved = { ...saved, version: 2 };
+    }
+    assert.equal(action.style, "verbatim");
+    return new Promise(resolve => {
+      releaseReplacement = () => {
+        receipts.set(action.request_id, "committed");
+        resolve({ ...saved, version: 3, turns: 1 });
+      };
+    });
+  };
+  await page.onLoad({ id: run.id });
+  const switching = page.useVoiceOriginal();
+  await settle();
+  assert.equal(actionCalls(calls).length, 2, "replacement was submitted");
+  assert.equal(memory.get("pending:run-a").action.request_id, "old-voice", "only the previous cancellation is stored");
+  assert.equal(memory.get("pending:run-a").verbatimRequestId, actionCalls(calls).at(-1).request_id);
+  page.onUnload();
+  releaseReplacement();
+  await switching;
+  saved = { ...run, mode: "custom", status: "finished", version: 5, work_id: "work-a", turns: 2,
+    rules: { trigger: "automatic", action: "delete", recoverable: false },
+    segments: [{ id: "lock", text: "她没有开门。", locked: true }] };
+  const reopened = harness(saved, Object.fromEntries(memory));
+  Object.assign(reopened.endpoint, endpoint);
+  await reopened.page.onLoad({ id: run.id });
+  assert.deepEqual(reopened.page.data.finishedInputs, [], "a committed and deleted replacement is not an unsent draft");
+  assert.deepEqual(reopened.page.data.run.segments, saved.segments);
+  assert.equal(reopened.memory.has("pending:run-a"), false);
+});
+
+for (const replacementStatus of ['unknown', 'canceled', 'unreachable', 'pending']) {
+  test(`收笔后按替代回执决定是否可恢复原文（${replacementStatus}）`, async () => {
+    const original = "这段还未确认入稿的口述。";
+    const saved = { ...run, mode: "custom", status: "finished", version: 5, work_id: "work-a", turns: 2,
+      rules: { trigger: "automatic", action: "delete", recoverable: false } };
+    const { page, memory, calls, endpoint, navigation } = harness(saved, { "pending:run-a": {
+      action: { request_id: "old-voice", kind: "turn", source: "voice", style: "voice", version: 1, text: original },
+      verbatimRequestId: "verbatim-voice",
+    } });
+    let status = replacementStatus;
+    endpoint.receipt = async path => {
+      if (path.endsWith('/old-voice')) return { status: 'canceled', run_version: saved.version };
+      if (status === 'unreachable') throw Error('回执暂时无法读取。');
+      return { status, run_version: saved.version };
+    };
+    await page.onLoad({ id: run.id });
+    assert.ok(calls.some(([path]) => path.endsWith('/verbatim-voice')));
+    assert.deepEqual(actionCalls(calls), []);
+    assert.equal(memory.has('pending:run-a'), true);
+    assert.deepEqual(navigation, []);
+    if (status === 'unreachable' || status === 'pending') {
+      assert.equal(page.data.pendingText, '');
+      assert.deepEqual(page.data.finishedInputs, []);
+      assert.equal(page.data.needsReload, true);
+      status = 'unknown';
+      await page.reload();
+    }
+    assert.deepEqual(page.data.finishedInputs.map(input => input.text), [original]);
+  });
+}
+
+test("当刷新发现跨版本收笔时在显示原文前复核替代回执", async () => {
+  const original = "这段口述后来已被永久删除。";
+  const saved = { ...run, mode: "custom", status: "finished", version: 5, work_id: "work-a", turns: 2,
+    rules: { trigger: "automatic", action: "delete", recoverable: false } };
+  const pending = { action: { request_id: "old-voice", kind: "turn", source: "voice", style: "voice", version: 1,
+    text: original }, verbatimRequestId: "verbatim-voice" };
+  const { page, endpoint, memory, calls } = harness(run, { "pending:run-a": pending, "draft:run-a": original });
+  let latestRead = false;
+  endpoint.handle = async () => {
+    if (latestRead) return saved;
+    latestRead = true;
+    return run;
+  };
+  let reads = 0;
+  endpoint.receipt = async path => {
+    if (path.endsWith('/old-voice')) return { status: 'canceled', run_version: 2 };
+    if (++reads === 1) return { status: 'unknown', run_version: 2 };
+    return { status: 'committed', run_version: saved.version };
+  };
+  await page.onLoad({ id: run.id });
+  assert.deepEqual(page.data.finishedInputs, []);
+  assert.equal(page.data.run?.version, saved.version);
+  assert.equal(memory.has('pending:run-a'), false);
+  assert.equal(memory.has('draft:run-a'), false);
+  assert.deepEqual(actionCalls(calls), []);
+  assert.equal(reads, 2);
+});
+
+test("旧回执与替代回执跨版本时复核尚未确认的旧回执", async () => {
+  const original = "这段口述曾在取消前入稿，随后永久删除。";
+  const saved = { ...run, mode: "custom", status: "finished", version: 5, work_id: "work-a", turns: 2,
+    rules: { trigger: "automatic", action: "delete", recoverable: false } };
+  const pending = { action: { request_id: "old-voice", kind: "turn", source: "voice", style: "voice", version: 1,
+    text: original }, verbatimRequestId: "verbatim-voice" };
+  const { page, endpoint, memory } = harness(run, { "pending:run-a": pending });
+  let resumed = false;
+  endpoint.handle = async () => {
+    if (resumed) return saved;
+    resumed = true;
+    return run;
+  };
+  let oldReads = 0;
+  endpoint.receipt = async path => {
+    if (path.endsWith('/verbatim-voice')) return { status: 'unknown', run_version: saved.version };
+    return ++oldReads === 1 ? { status: 'unknown', run_version: 1 } : { status: 'committed', run_version: saved.version };
+  };
+  await page.onLoad({ id: run.id });
+  assert.deepEqual(page.data.finishedInputs, []);
+  assert.equal(memory.has('pending:run-a'), false);
+  assert.equal(oldReads, 2);
+});
+
+test("收笔恢复也会复核跨版本的首页首段回执", async () => {
+  const original = "已成功入稿的首页文字，随后永久删除。";
+  const saved = { ...run, mode: "custom", status: "finished", version: 5, work_id: "work-a", turns: 2,
+    rules: { trigger: "automatic", action: "delete", recoverable: false } };
+  const first = { request_id: "first-keyboard", source: "keyboard", text: original };
+  const { page, endpoint, memory } = harness(run, { "first:run-a": first, "draft:run-a": original });
+  let runReads = 0;
+  endpoint.handle = async () => ++runReads === 1 ? run : saved;
+  let receiptReads = 0;
+  endpoint.receipt = async () => ++receiptReads === 1 ? { status: 'unknown', run_version: 2 }
+    : { status: 'committed', run_version: saved.version };
+  await page.onLoad({ id: run.id });
+  assert.deepEqual(page.data.finishedInputs, []);
+  assert.equal(memory.has("first:run-a"), false);
+  assert.equal(memory.has("draft:run-a"), false);
+  assert.equal(receiptReads, 2);
+});

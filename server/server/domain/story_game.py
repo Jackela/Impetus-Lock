@@ -413,12 +413,17 @@ def apply_turn(
     text: str,
     generated: State,
     original: str | None = None,
+    *,
+    generation_failed: bool = False,
 ) -> State:
     """Commit one authorized passage and apply its eligible narrative effects."""
     _check_writing(state)
     result = deepcopy(state)
-    result["generation_pending"] = False
+    result["generation_pending"] = generation_failed
     result["pending_reward"] = False
+    if state["mode"] != "custom" and state.get("first_lock_seen"):
+        # A later turn supersedes a missed automatic effect, but never skips the first lock.
+        result["pending_intervention"] = False
     generated = _letter_effects(result, source, text, generated)
     _record_passage(result, source, text, generated, original)
     result["generation_passage"]["direction"] = _letter_direction(source, text, generated)
