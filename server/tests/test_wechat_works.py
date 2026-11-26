@@ -2,11 +2,14 @@
 
 import asyncio
 from collections.abc import AsyncIterator
+from functools import partial
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from server.application.services.wechat_works import save_mode
 from server.domain.errors import (
     AuthorizationError,
     ConflictError,
@@ -91,7 +94,11 @@ async def test_edit_work_cannot_overwrite_another_identity_or_a_newer_version(se
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("trigger", "trigger_label"),
-    [("manual", "由作者手动触发"), ("response", "回应后触发"), ("automatic", "满足条件时自动触发")],
+    [
+        ("manual", "由作者手动触发"),
+        ("response", "首次续写或回应后触发"),
+        ("automatic", "续写成功且本回合未回应干预时自动触发"),
+    ],
 )
 async def test_published_card_keeps_confirmed_version_and_fixed_initial_rules(
     sessions, trigger, trigger_label
@@ -221,9 +228,10 @@ async def test_existing_work_and_card_read_the_frozen_challenge(
             assert view["challenge_id"] == challenge_id
             assert view["rules_version"] == rules_version
             assert view["opening"] == "原始题句。"
+            assert rule_note in view["rules"]
         assert card["text"] == "发布时的正文。"
         assert card["requires_consent"] is False
-        assert rule_note in card["rules"]
+        assert work["rules"] == card["rules"]
         assert await wechat_works.card_initial(db, "published-card") == {
             **initial,
             "challenge_id": challenge_id,
@@ -337,23 +345,28 @@ async def test_personal_modes_only_use_discovered_rules_and_belong_to_the_writer
         "name": "留白 ",
         "trigger": trigger,
         "action": "delete",
-        "lock": True,
+        "lock": False,
         "recoverable": False,
     }
     async with sessions() as db:
-        with pytest.raises(AuthorizationError):
-            await wechat_works.create_mode(
-                db, "author", options, {"rewrite": True, "delete": False}
+
+        async def save(payload, progress):
+            return await save_mode(
+                payload,
+                transaction=db.begin,
+                read_progress=AsyncMock(return_value=progress),
+                write_mode=partial(wechat_works.write_mode, db, "author"),
             )
+
         with pytest.raises(AuthorizationError):
-            await wechat_works.create_mode(db, "author", {**options, "action": "insert"}, {})
+            await save(options, {"rewrite": True, "delete": False})
+        with pytest.raises(AuthorizationError):
+            await save({**options, "action": "insert"}, {})
         with pytest.raises(ValidationError):
-            await wechat_works.create_mode(
-                db, "author", {**options, "name": "  "}, {"rewrite": True, "delete": True}
-            )
-        saved = await wechat_works.create_mode(
-            db, "author", options, {"rewrite": True, "delete": True}
-        )
+            await save({**options, "name": "  "}, {"rewrite": True, "delete": True})
+        with pytest.raises(ValidationError):
+            await save({**options, "lock": True}, {"rewrite": True, "delete": True})
+        saved = await save(options, {"rewrite": True, "delete": True})
     expected = {"trigger": trigger, "action": "delete", "lock": False, "recoverable": False}
     assert saved == {"id": saved["id"], "name": "留白", **expected}
     async with sessions() as db:

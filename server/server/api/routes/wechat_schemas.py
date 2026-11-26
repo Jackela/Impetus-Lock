@@ -11,6 +11,8 @@ Mode = Literal["normal", "high", "custom"]
 InputSource = Literal["choice", "keyboard", "voice"]
 Style = Literal["verbatim", "voice", "polish"]
 Ability = Literal["returning", "interpret", "skip", "toggle_returning", "toggle_interpret", "keep"]
+RuleTrigger = Literal["manual", "response", "automatic"]
+RuleAction = Literal["insert", "rewrite", "delete"]
 Kind = Literal[
     "turn",
     "ability",
@@ -101,11 +103,11 @@ class Publish(InputBody):
 
 
 class NewMode(InputBody):
-    """A named rule configuration for later runs."""
+    """A named rule configuration to create or replace for later runs."""
 
     name: Annotated[str, Field(min_length=1, max_length=80)]
-    trigger: Literal["manual", "response", "automatic"]
-    action: Literal["insert", "rewrite", "delete"]
+    trigger: RuleTrigger
+    action: RuleAction
     lock: StrictBool
     recoverable: StrictBool
 
@@ -123,7 +125,7 @@ class CardView(BaseModel):
     ai_generated: bool
     requires_consent: bool
     opening: str
-    rules: str = ""
+    rules: str
 
 
 class CardList(BaseModel):
@@ -135,12 +137,33 @@ class CardList(BaseModel):
 class SegmentView(BaseModel):
     """Current text and private recovery information for an owned segment."""
 
-    model_config = ConfigDict(extra="allow")
     id: str
     text: str
     locked: bool
     source: str
     original: str | None = None
+    ai_generated: bool = False
+
+
+class RecoveryView(BaseModel):
+    """Original text and its position when the run allows recovery."""
+
+    id: str
+    target: str
+    segment: SegmentView
+    index: int
+    previous_id: str | None = None
+    following_id: str | None = None
+    replacement: str | None = None
+
+
+class RunRulesView(BaseModel):
+    """Personal rules captured at the start of a run, empty for built-in modes."""
+
+    trigger: RuleTrigger | None = None
+    action: RuleAction | None = None
+    lock: bool | None = None
+    recoverable: bool | None = None
 
 
 class AbilityView(BaseModel):
@@ -153,27 +176,34 @@ class AbilityView(BaseModel):
 class RunView(BaseModel):
     """An owned run including the rule engine's current narrative state."""
 
-    model_config = ConfigDict(extra="allow")
     id: str
     version: int
     theme: Theme
     mode: Mode
     opening: str
+    rules: RunRulesView = Field(default_factory=RunRulesView)
     segments: list[SegmentView]
     choices: list[str]
     offers: list[str]
     abilities: dict[str, AbilityView]
     lock_uses: int
     turns: int
+    responses: int = 0
     status: Literal["active", "finished"]
     finishing: bool = False
+    waiting_response: bool = False
+    generation_pending: bool = False
+    pending_intervention: bool = False
+    interpretation_options: list[str] = Field(default_factory=list)
+    interpretations: list[str] = Field(default_factory=list)
+    interpretation: str | None = None
+    recoveries: list[RecoveryView] = Field(default_factory=list)
     work_id: str | None = None
 
 
 class WorkView(BaseModel):
     """Private manuscript fields for editing, exporting and publication preview."""
 
-    model_config = ConfigDict(extra="allow")
     id: str
     version: int
     title: str
@@ -183,12 +213,14 @@ class WorkView(BaseModel):
     challenge_id: str
     rules_version: int
     ai_generated: bool
+    opening: str
+    rules: str
+    requires_consent: bool
 
 
 class ModeView(NewMode):
     """The stored recipe for a future personal challenge."""
 
-    model_config = ConfigDict(extra="allow")
     id: str
 
 
@@ -233,3 +265,24 @@ class ReceiptView(BaseModel):
 
     status: Literal["unknown", "pending", "committed", "canceled"]
     run_version: int
+
+
+class ActionConflictDetails(BaseModel):
+    """Owner-only command IDs that must be resolved before finishing a run."""
+
+    model_config = ConfigDict(extra="allow")
+    request_ids: list[str] | None = None
+
+
+class ActionConflictError(BaseModel):
+    """An application error for a stale or unresolved action."""
+
+    code: str
+    message: str
+    details: ActionConflictDetails | None
+
+
+class ActionConflictView(BaseModel):
+    """The application's structured HTTP 409 response for an action."""
+
+    error: ActionConflictError

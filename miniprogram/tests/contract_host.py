@@ -20,6 +20,23 @@ from server.infrastructure.security import wechat_identity
 
 
 async def model_turn(state, source, text):
+    deferred = state.get("deferred_generation", False)
+    if deferred:
+        return {
+            "paragraph": "",
+            "choices": ["去公园", "喝杯热茶"],
+            "lock_sentence": (
+                f"门外的人敲了{state['turns'] + 1}下门。"
+                if state["pending_intervention"] and state["mode"] != "custom"
+                else None
+            ),
+            "facts": [],
+            "eligible": ["returning", "interpret"],
+            "consequence": None,
+            "choice_context": [
+                {"requires_original": False, "follows_letter": False} for _ in range(2)
+            ],
+        }
     return {
         "paragraph": "我把信封转向窗前。" if source == "choice" else "",
         "choices": ["看看笔迹", "把信收好"], "lock_sentence": "邮戳上的日期，却是明天。",

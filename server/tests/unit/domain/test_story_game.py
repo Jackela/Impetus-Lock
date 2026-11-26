@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from server.domain import story_game
 from server.domain.story_game import (
     State,
     StoryRuleError,
@@ -362,6 +363,167 @@ def test_deferred_generation_gives_at_most_one_reward_and_filters_burned_origina
         apply_deferred_generation(resumed, {"eligible": ["returning"]})
 
 
+@pytest.mark.parametrize(
+    ("source", "action", "text", "expected"),
+    [
+        ("keyboard", "burn", "我把原信烧成了灰。", "burned"),
+        ("voice", "keep", "我把原信收好，放回抽屉。", "kept"),
+    ],
+)
+def test_deferred_generation_commits_evidenced_letter_actions(
+    source: str, action: str, text: str, expected: str
+) -> None:
+    """Deferred recognition uses the committed author segment and leaves progress untouched."""
+    written = apply_turn(
+        play_first_lock("high"), source, text, {"segment_id": "author-action"}, text
+    )
+    assert written["letter_state"] == "unopened"
+    assert story_game.deferred_passage(written) == (source, text)
+    generated = {
+        "paragraph": "这段模型续写没有入稿。",
+        "letter_action": action,
+        "letter_action_evidence": text,
+        "facts": [text, "这段模型续写没有入稿。"],
+        "choices": ["检查信封背后的寄件人", BREAKFAST],
+        "choice_context": [
+            {"requires_original": True, "follows_letter": True},
+            {"requires_original": False, "follows_letter": False},
+        ],
+        "eligible": ["interpret"],
+    }
+    resumed = apply_deferred_generation(written, generated)
+    assert resumed["letter_state"] == expected
+    assert resumed["facts"] == [text]
+    assert resumed["segments"] == written["segments"]
+    assert (resumed["turns"], resumed["responses"]) == (2, 1)
+    assert resumed["offers"] == ["interpret", "skip"]
+    assert ("检查信封背后的寄件人" in resumed["choices"]) == (action == "keep")
+    assert ("拆开原信" in resumed["choices"]) == (action == "keep")
+
+
+def test_deferred_action_rejects_evidence_from_another_passage_or_model_text() -> None:
+    """Neither an earlier paragraph nor a never-committed AI candidate authorizes an action."""
+    older = "我把信烧了。"
+    generated_text = "我把信收好了。"
+    state = apply_turn(create_state("letter", "normal"), "keyboard", older, {})
+    written = apply_turn(state, "voice", "我给她倒水。", {}, "我给她倒水。")
+    for action, evidence in (("burn", older), ("keep", generated_text)):
+        result = apply_deferred_generation(
+            written,
+            {
+                "paragraph": generated_text,
+                "letter_action": action,
+                "letter_action_evidence": evidence,
+                "lock_sentence": FIRST_LOCK,
+                "choices": ["拆开原信"],
+            },
+        )
+        assert result["letter_state"] == "unopened"
+        assert result["segments"] == written["segments"]
+        assert result["generation_pending"]
+
+
+def test_deferred_burn_removes_unclassified_new_choices_and_old_choices() -> None:
+    """A change to the letter's status invalidates prior choices and unclassified actions."""
+    text = "我把原信扔进炉子，直到烧成了灰。"
+    written = apply_turn(
+        play_first_lock("high"),
+        "keyboard",
+        text,
+        {"choices": ["看看信角的印记"]},
+    )
+    resumed = apply_deferred_generation(
+        written,
+        {
+            "letter_action": "burn",
+            "letter_action_evidence": text,
+            "choices": ["从炉边拾回信纸，读完它", BREAKFAST],
+            "eligible": [],
+        },
+    )
+    assert resumed["letter_state"] == "burned"
+    assert resumed["choices"] == [BREAKFAST]
+
+
+def test_deferred_consequence_only_counts_if_it_appears_in_the_story() -> None:
+    """A discarded continuation cannot consume the one automatic consequence."""
+    burned = apply_turn(
+        play_first_lock("high"), "choice", BURN, {"paragraph": "我把原信烧成了灰。"}
+    )
+    consequence = "看见我袖口上的灰，女儿把纸收回了口袋。"
+    written = apply_turn(burned, "keyboard", "我去拿牛奶。", {})
+    discarded = apply_deferred_generation(
+        written, {"paragraph": consequence, "consequence": consequence}
+    )
+    assert discarded["consequence"] is None
+    assert not discarded["consequence_presented"]
+    assert discarded["generation_pending"]
+    existed = apply_turn(burned, "keyboard", consequence, {})
+    resumed = apply_deferred_generation(
+        existed, {"consequence": consequence, "choices": [BREAKFAST], "eligible": []}
+    )
+    assert resumed["segments"] == existed["segments"]
+    assert resumed["consequence"] == consequence
+    assert resumed["consequence_presented"]
+
+
+def test_deferred_letter_turn_preserves_new_direction() -> None:
+    """A deferred departure blocks letter choices and stays effective after a revisit."""
+    burned = apply_turn(
+        play_first_lock("high"), "choice", BURN, {"paragraph": "我把原信烧成了灰。"}
+    )
+    turning = apply_turn(burned, "voice", "不查信了，我带她去放风筝。", {})
+    resumed = apply_deferred_generation(
+        turning,
+        {
+            "letter_thread": "leave",
+            "eligible": ["returning"],
+            "choices": ["问她信里是什么", "沿湖走一圈"],
+            "choice_context": [
+                {"requires_original": False, "follows_letter": True},
+                {"requires_original": False, "follows_letter": False},
+            ],
+        },
+    )
+    assert resumed["letter_thread_closed"]
+    assert resumed["letter_consequence_stopped"]
+    assert resumed["choices"] == ["沿湖走一圈"]
+    assert resumed["segments"] == turning["segments"]
+
+
+def test_preview_authorizes_the_same_targets_as_an_explicit_change() -> None:
+    """A pure authorization and actual application protect the same current locked draft."""
+    rules = {"trigger": "manual", "action": "rewrite", "lock": True, "recoverable": True}
+    state = create_state("detective", "custom", rules=rules)
+    drafted = apply_turn(state, "voice", "我听见脚步。", {}, "我听见、听见脚步。")
+    target = drafted["segments"][-1]["id"]
+    snapshot = json.dumps(drafted, ensure_ascii=False)
+    assert story_game.authorize_action(drafted, "restyle", target) == (
+        1,
+        drafted["segments"][1],
+    )
+    assert story_game.authorize_action(drafted, "rewrite", target) == (
+        1,
+        drafted["segments"][1],
+    )
+    assert json.dumps(drafted, ensure_ascii=False) == snapshot
+    locked = apply_action(drafted, "rewrite", target=target, text="有人走到了门外。")
+    paused = apply_action(drafted, "begin_finish")
+    for current, kind, chosen in (
+        (drafted, "rewrite", "opening"),
+        (drafted, "delete", target),
+        (drafted, "replace", target),
+        (locked, "restyle", target),
+        (locked, "rewrite", target),
+        (paused, "restyle", target),
+    ):
+        with pytest.raises(StoryRuleError) as preview:
+            story_game.authorize_action(current, kind, chosen)
+        with pytest.raises(StoryRuleError) as commit:
+            apply_action(current, kind, target=chosen, text="只有合规后才能写入。")
+        assert str(preview.value) == str(commit.value)
+
+
 def test_automatic_rule_rejects_unauthorized_action_and_opening_target() -> None:
     """Only the saved action on an eligible current passage can change a draft."""
     rules = {"trigger": "automatic", "action": "rewrite", "lock": False, "recoverable": True}
@@ -435,13 +597,33 @@ def test_begin_finish_pauses_interventions_and_only_retains_confirmed_input() ->
     assert retained["segments"][-1]["text"] == spoken
     assert retained["segments"][-1]["id"] == "retained-voice"
     assert retained["turns"] == 2
-    assert retained["responses"] == 0
+    assert retained["responses"] == 1
+    assert not retained["waiting_response"]
+    assert retained["pending_reward"]
     assert retained["offers"] == []
     assert retained["finishing"]
     finished = apply_action(retained, "finish")
     assert finished["status"] == "finished" and not finished["finishing"]
+    assert finished["responses"] == 1 and not finished["pending_reward"]
     with pytest.raises(StoryRuleError):
         apply_retained_turn(finished, "voice", spoken, generated, spoken)
+
+
+def test_resuming_a_retained_response_offers_the_reward_once() -> None:
+    """Resuming after a retained response gives its usual ability choice without a new lock."""
+    paused = apply_action(play_first_lock("high"), "begin_finish")
+    retained = apply_retained_turn(paused, "keyboard", "我去门口拿外套。", {})
+    resumed = apply_action(retained, "resume")
+    rewarded = apply_deferred_generation(
+        resumed,
+        {"eligible": ["returning"], "choices": [BREAKFAST], "lock_sentence": "不能多插一锁。"},
+    )
+    assert rewarded["offers"] == ["returning", "skip"]
+    assert rewarded["segments"] == retained["segments"]
+    assert (rewarded["turns"], rewarded["responses"]) == (2, 1)
+    assert not rewarded["pending_reward"]
+    with pytest.raises(StoryRuleError):
+        apply_deferred_generation(rewarded, {"eligible": ["interpret"]})
 
 
 def test_retained_first_choice_can_resume_but_discards_inflight_lock() -> None:

@@ -127,6 +127,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/wechat/modes/{mode_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update Mode
+     * @description Replace an owned mode for future runs.
+     */
+    put: operations["update_mode_api_wechat_modes__mode_id__put"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/wechat/runs": {
     parameters: {
       query?: never;
@@ -1431,6 +1451,34 @@ export interface components {
       version: number;
     };
     /**
+     * ActionConflictDetails
+     * @description Owner-only command IDs that must be resolved before finishing a run.
+     */
+    ActionConflictDetails: {
+      /** Request Ids */
+      request_ids?: string[] | null;
+    } & {
+      [key: string]: unknown;
+    };
+    /**
+     * ActionConflictError
+     * @description An application error for a stale or unresolved action.
+     */
+    ActionConflictError: {
+      /** Code */
+      code: string;
+      details: components["schemas"]["ActionConflictDetails"] | null;
+      /** Message */
+      message: string;
+    };
+    /**
+     * ActionConflictView
+     * @description The application's structured HTTP 409 response for an action.
+     */
+    ActionConflictView: {
+      error: components["schemas"]["ActionConflictError"];
+    };
+    /**
      * AnchorLockId
      * @description Reference anchor using existing lock ID.
      *
@@ -1565,11 +1613,8 @@ export interface components {
       opening: string;
       /** Requires Consent */
       requires_consent: boolean;
-      /**
-       * Rules
-       * @default
-       */
-      rules?: string;
+      /** Rules */
+      rules: string;
       /** Rules Version */
       rules_version: number;
       /** Text */
@@ -1957,12 +2002,10 @@ export interface components {
        * @enum {string}
        */
       trigger: "manual" | "response" | "automatic";
-    } & {
-      [key: string]: unknown;
     };
     /**
      * NewMode
-     * @description A named rule configuration for later runs.
+     * @description A named rule configuration to create or replace for later runs.
      */
     NewMode: {
       /**
@@ -2039,6 +2082,25 @@ export interface components {
       status: "unknown" | "pending" | "committed" | "canceled";
     };
     /**
+     * RecoveryView
+     * @description Original text and its position when the run allows recovery.
+     */
+    RecoveryView: {
+      /** Following Id */
+      following_id?: string | null;
+      /** Id */
+      id: string;
+      /** Index */
+      index: number;
+      /** Previous Id */
+      previous_id?: string | null;
+      /** Replacement */
+      replacement?: string | null;
+      segment: components["schemas"]["SegmentView"];
+      /** Target */
+      target: string;
+    };
+    /**
      * RegisterRequest
      * @description User registration request.
      * @example {
@@ -2056,6 +2118,20 @@ export interface components {
       password: string;
     };
     /**
+     * RunRulesView
+     * @description Personal rules captured at the start of a run, empty for built-in modes.
+     */
+    RunRulesView: {
+      /** Action */
+      action?: ("insert" | "rewrite" | "delete") | null;
+      /** Lock */
+      lock?: boolean | null;
+      /** Recoverable */
+      recoverable?: boolean | null;
+      /** Trigger */
+      trigger?: ("manual" | "response" | "automatic") | null;
+    };
+    /**
      * RunView
      * @description An owned run including the rule engine's current narrative state.
      */
@@ -2071,8 +2147,19 @@ export interface components {
        * @default false
        */
       finishing?: boolean;
+      /**
+       * Generation Pending
+       * @default false
+       */
+      generation_pending?: boolean;
       /** Id */
       id: string;
+      /** Interpretation */
+      interpretation?: string | null;
+      /** Interpretation Options */
+      interpretation_options?: string[];
+      /** Interpretations */
+      interpretations?: string[];
       /** Lock Uses */
       lock_uses: number;
       /**
@@ -2084,6 +2171,19 @@ export interface components {
       offers: string[];
       /** Opening */
       opening: string;
+      /**
+       * Pending Intervention
+       * @default false
+       */
+      pending_intervention?: boolean;
+      /** Recoveries */
+      recoveries?: components["schemas"]["RecoveryView"][];
+      /**
+       * Responses
+       * @default 0
+       */
+      responses?: number;
+      rules?: components["schemas"]["RunRulesView"];
       /** Segments */
       segments: components["schemas"]["SegmentView"][];
       /**
@@ -2100,16 +2200,24 @@ export interface components {
       turns: number;
       /** Version */
       version: number;
+      /**
+       * Waiting Response
+       * @default false
+       */
+      waiting_response?: boolean;
       /** Work Id */
       work_id?: string | null;
-    } & {
-      [key: string]: unknown;
     };
     /**
      * SegmentView
      * @description Current text and private recovery information for an owned segment.
      */
     SegmentView: {
+      /**
+       * Ai Generated
+       * @default false
+       */
+      ai_generated?: boolean;
       /** Id */
       id: string;
       /** Locked */
@@ -2120,8 +2228,6 @@ export interface components {
       source: string;
       /** Text */
       text: string;
-    } & {
-      [key: string]: unknown;
     };
     /**
      * SessionView
@@ -2763,6 +2869,12 @@ export interface components {
        * @enum {string}
        */
       mode: "normal" | "high" | "custom";
+      /** Opening */
+      opening: string;
+      /** Requires Consent */
+      requires_consent: boolean;
+      /** Rules */
+      rules: string;
       /** Rules Version */
       rules_version: number;
       /** Text */
@@ -2776,8 +2888,6 @@ export interface components {
       title: string;
       /** Version */
       version: number;
-    } & {
-      [key: string]: unknown;
     };
     /**
      * Anchor
@@ -2967,6 +3077,41 @@ export interface operations {
       };
     };
   };
+  update_mode_api_wechat_modes__mode_id__put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mode_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewMode"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ModeView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   new_run_api_wechat_runs_post: {
     parameters: {
       query?: never;
@@ -3053,6 +3198,15 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["RunView"];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ActionConflictView"];
         };
       };
       /** @description Validation Error */

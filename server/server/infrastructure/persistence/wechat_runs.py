@@ -25,6 +25,7 @@ from server.domain.story_game import (
     apply_retained_turn,
     apply_turn,
     create_state,
+    deferred_passage,
     progress_for,
 )
 from server.infrastructure.persistence import wechat_works
@@ -35,6 +36,8 @@ GenerateTurn = Callable[[Document, str, str], Awaitable[Document]]
 CorrectVoice = Callable[[str, str], Awaitable[str]]
 
 _LEASE_SECONDS = 180
+_PENDING_INPUT = "pending"
+_PENDING_DEFERRED = "deferred"
 _PUBLIC_STATE_FIELDS = (
     "theme",
     "mode",
@@ -216,8 +219,8 @@ async def action_receipt(db: AsyncSession, subject: str, run_id: str, request_id
     if row is None:
         raise NotFoundError("找不到这一局。")
     status = row.outcome or "unknown"
-    if status == "pending" and (row.expires_at is None or row.expires_at <= time()):
-        status = "unknown"
+    if status in {_PENDING_INPUT, _PENDING_DEFERRED}:
+        status = "pending" if row.expires_at is not None and row.expires_at > time() else "unknown"
     return {"status": status, "run_version": row.version}
 
 
@@ -274,7 +277,7 @@ async def _prior_result(db: AsyncSession, run: WechatRunModel, request_id: str) 
     if run.state["status"] == "finished":
         return _view(run)
     receipt = await _receipt(db, run.id, request_id)
-    if receipt is not None and receipt.outcome != "pending":
+    if receipt is not None and receipt.outcome in {"committed", "canceled"}:
         await db.refresh(run)
         return _view(run)
     return None
@@ -317,13 +320,6 @@ def _retained_turn(payload: Document) -> bool:
     return payload["kind"] == "turn" and payload.get("retain") is True
 
 
-def _last_passage(state: Document) -> str:
-    for segment in reversed(state["segments"]):
-        if isinstance(text := segment.get("text"), str) and text:
-            return text
-    raise ValidationError("本局没有可继续处理的正文。")
-
-
 async def _reserve_generation(
     db: AsyncSession, subject: str, run_id: str, payload: Document, attempt: str
 ) -> tuple[Document, bool]:
@@ -338,6 +334,10 @@ async def _reserve_generation(
         if retained and run.state.get("retained_for_finish"):
             raise ConflictError("这次收笔已经保留了一段正文。")
         receipt = await _receipt(db, run_id, request_id)
+        deferred = _generation_retry(payload)
+        outcome = _PENDING_DEFERRED if deferred else _PENDING_INPUT
+        if receipt is not None and receipt.outcome != outcome:
+            raise ConflictError("这个请求标识已用于另一类操作。")
         if not (retained and receipt is not None and receipt.attempt_version != run.version):
             _check_pending(receipt)
         if (
@@ -346,14 +346,12 @@ async def _reserve_generation(
             and payload["text"] not in run.state["choices"]
         ):
             raise ValidationError("这个剧情选项已失效。")
-        if _generation_retry(payload):
-            if not _needs_generation(run.state):
-                raise ValidationError("当前没有待生成的剧情或锁句。")
-            _last_passage(run.state)
+        if deferred and not _needs_generation(run.state):
+            raise ValidationError("当前没有待生成的剧情或锁句。")
         if receipt is None:
             receipt = WechatRunReceiptModel(run_id=run_id, request_id=request_id)
             db.add(receipt)
-        receipt.outcome = "pending"
+        receipt.outcome = outcome
         receipt.attempt = attempt
         receipt.attempt_version = run.version
         receipt.expires_at = int(time()) + _LEASE_SECONDS
@@ -445,7 +443,8 @@ async def _generate_and_commit(
         else:
             original = None
             text = ""
-            generated = await generate_turn(state, "keyboard", _last_passage(state))
+            source, passage = deferred_passage(state) or ("", "")
+            generated = await generate_turn({**state, "deferred_generation": True}, source, passage)
         return await _settle_generation(
             db,
             subject,
@@ -458,14 +457,21 @@ async def _generate_and_commit(
             pending,
         )
     except BaseException:
+        condition = (
+            WechatRunReceiptModel.run_id == run_id,
+            WechatRunReceiptModel.request_id == payload["request_id"],
+            WechatRunReceiptModel.attempt == attempt,
+        )
         async with db.begin():
-            await db.execute(
-                delete(WechatRunReceiptModel).where(
-                    WechatRunReceiptModel.run_id == run_id,
-                    WechatRunReceiptModel.request_id == payload["request_id"],
-                    WechatRunReceiptModel.attempt == attempt,
+            if _generation_retry(payload):
+                await db.execute(delete(WechatRunReceiptModel).where(*condition))
+            else:
+                # Preserve the author's unresolved input ID, while allowing a safe retry.
+                await db.execute(
+                    update(WechatRunReceiptModel)
+                    .where(*condition)
+                    .values(attempt=None, expires_at=None)
                 )
-            )
         raise
 
 
@@ -473,8 +479,26 @@ async def _cancel_target(db: AsyncSession, run_id: str, target: str) -> None:
     receipt = await _receipt(db, run_id, target)
     if receipt is None:
         db.add(WechatRunReceiptModel(run_id=run_id, request_id=target, outcome="canceled"))
-    elif receipt.outcome == "pending":
+    elif receipt.outcome in {_PENDING_INPUT, _PENDING_DEFERRED}:
         _seal_receipt(receipt, "canceled")
+
+
+async def _check_finish_inputs(db: AsyncSession, run_id: str) -> None:
+    pending_ids = await db.scalars(
+        select(WechatRunReceiptModel.request_id)
+        .where(
+            WechatRunReceiptModel.run_id == run_id,
+            WechatRunReceiptModel.outcome == _PENDING_INPUT,
+        )
+        .order_by(WechatRunReceiptModel.request_id)
+    )
+    if request_ids := list(pending_ids):
+        raise AppError(
+            "STORY_FINISH_INPUT_PENDING",
+            "还有输入待核对。请暂停收笔并保留或放弃这些输入。",
+            409,
+            {"request_ids": request_ids},
+        )
 
 
 def _apply_writer_action(state: Document, payload: Document) -> Document:
@@ -515,8 +539,8 @@ async def _commit_action(
         run, previous = await _at_version(db, subject, run_id, payload)
         if previous is not None:
             return previous
-        receipt = await _receipt(db, run_id, request_id)
-        _check_pending(receipt)
+        if await _receipt(db, run_id, request_id) is not None:
+            raise ConflictError("这个请求标识已用于另一类操作。")
         if run.state.get("finishing") and kind not in {
             "finish",
             "cancel",
@@ -525,9 +549,12 @@ async def _commit_action(
         }:
             raise ConflictError("请先完成收笔或返回继续写作。")
         if kind == "cancel":
-            if (target := payload.get("target")) and target != request_id:
-                await _cancel_target(db, run_id, target)
+            target = payload.get("target")
+            if not target or target == request_id:
+                raise ValidationError("请指定要放弃的输入或干预。")
+            await _cancel_target(db, run_id, target)
         elif kind == "finish":
+            await _check_finish_inputs(db, run_id)
             run.state = apply_action(run.state, "finish")
             run.work_id = await wechat_works.freeze_work(
                 db, subject, run_id, run.state, run.initial
@@ -538,17 +565,14 @@ async def _commit_action(
                 update(WechatRunReceiptModel)
                 .where(
                     WechatRunReceiptModel.run_id == run_id,
-                    WechatRunReceiptModel.outcome == "pending",
+                    WechatRunReceiptModel.outcome == _PENDING_DEFERRED,
                 )
                 .values(outcome="canceled", attempt=None, attempt_version=None, expires_at=None)
             )
         else:
             run.state = _apply_writer_action(run.state, payload)
         run.version += 1
-        if receipt is None:
-            db.add(WechatRunReceiptModel(run_id=run_id, request_id=request_id, outcome="committed"))
-        else:
-            _seal_receipt(receipt, "committed")
+        db.add(WechatRunReceiptModel(run_id=run_id, request_id=request_id, outcome="committed"))
         return _view(run)
 
 

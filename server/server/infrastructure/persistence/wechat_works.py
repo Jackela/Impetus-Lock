@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from server.application.services.wechat_works import (
     deliverable_manuscript,
     describe_rules,
-    personal_mode,
     versioned_initial,
 )
 from server.domain.errors import ConflictError, NotFoundError, ValidationError
@@ -39,6 +38,7 @@ def _challenge_payload(initial: dict[str, Any]) -> dict[str, Any]:
         "challenge_id": initial["challenge_id"],
         "rules_version": initial["rules_version"],
         "requires_consent": rules.get("action") == "delete" and rules.get("recoverable") is False,
+        "rules": describe_rules(initial),
     }
 
 
@@ -126,7 +126,6 @@ def _card_payload(card: WechatCardModel) -> dict[str, Any]:
         "id": card.id,
         "title": card.title,
         "text": card.text,
-        "rules": describe_rules(initial),
         "ai_generated": card.ai_generated,
         **_challenge_payload(initial),
     }
@@ -270,15 +269,28 @@ async def list_modes(db: AsyncSession, subject: str) -> list[dict[str, Any]]:
     return [_mode_payload(mode) for mode in modes]
 
 
-async def create_mode(
-    db: AsyncSession, subject: str, payload: dict[str, Any], progress: dict[str, Any]
+async def write_mode(
+    db: AsyncSession,
+    subject: str,
+    name: str,
+    rules: dict[str, Any],
+    *,
+    mode_id: str | None = None,
 ) -> dict[str, Any]:
-    """Persist a named rule set using only the player's discoveries."""
-    name, rules = personal_mode(payload, progress)
-    mode = WechatModeModel(id=uuid4().hex, subject=subject, name=name, rules=rules)
-    async with db.begin():
+    """Write a checked configuration in the application's transaction."""
+    if mode_id is None:
+        mode = WechatModeModel(id=uuid4().hex, subject=subject, name=name, rules=rules)
         db.add(mode)
         return _mode_payload(mode)
+    saved = await db.scalar(
+        update(WechatModeModel)
+        .where(WechatModeModel.id == mode_id, WechatModeModel.subject == subject)
+        .values(name=name, rules=rules)
+        .returning(WechatModeModel)
+    )
+    if saved is None:
+        raise NotFoundError("个人模式不存在。")
+    return _mode_payload(saved)
 
 
 async def mode_rules(db: AsyncSession, subject: str, mode_id: str) -> dict[str, Any]:

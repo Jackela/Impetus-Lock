@@ -252,6 +252,29 @@ async function verify() {
   assert.equal(readerWork.challenge_id, publicCard.challenge_id);
   assert.equal(readerWork.rules_version, publicCard.rules_version);
   console.log('PASS finishing an in-flight choice retains one narrative paragraph and its original receipt, without the stale passage or a new lock');
+
+  const firstBurn = await start(A);
+  const spokenBurn = '我把信点着了，信封和信纸烧成了灰。';
+  const awaitingLock = await command(A, firstBurn, 'turn', {
+    source: 'voice', style: 'verbatim', text: spokenBurn,
+  });
+  assert.equal(awaitingLock.generation_pending, true);
+  assert.equal(awaitingLock.turns, 1);
+  assert.equal(awaitingLock.responses, 0);
+  assert.equal(awaitingLock.segments.at(-1).text, spokenBurn);
+  assert.equal(awaitingLock.segments.some(segment => segment.locked), false);
+  const retry = {request_id: A.id()};
+  const recovered = await command(A, awaitingLock, 'intervene', retry);
+  assert.equal(recovered.generation_pending, false);
+  assert.equal(recovered.turns, 1);
+  assert.equal(recovered.responses, 0);
+  assert.deepEqual(recovered.segments.slice(0, -1), awaitingLock.segments);
+  assert.equal(recovered.segments.at(-1).locked, true);
+  assert.deepEqual(await command(A, awaitingLock, 'intervene', retry), recovered);
+  const next = await command(A, recovered, 'turn', {source: 'choice', text: '去买早饭'});
+  assert.equal(next.turns, 2);
+  assert.equal(next.responses, 1);
+  console.log('PASS voice burn recovers from provider failure using the committed passage, inserts one lock, and persists the burned original without replaying the author turn');
 }
 
 verify().catch(error => {

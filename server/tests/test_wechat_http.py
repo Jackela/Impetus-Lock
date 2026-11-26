@@ -17,6 +17,7 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 from server.api.auth.middleware import AuthenticationMiddleware
 from server.api.errors import app_error_handler
 from server.api.routes import wechat
+from server.application.services.wechat_preview import preview_text
 from server.domain.errors import AppError
 from server.infrastructure.persistence.models import Base
 from server.infrastructure.security import wechat_identity
@@ -64,6 +65,29 @@ async def http_client(tmp_path, monkeypatch):
         await admin.dispose()
 
 
+@pytest.fixture
+def wechat_login(http_client, monkeypatch):
+    """Sign real sessions for simulated devices using a stubbed WeChat exchange."""
+    client, _ = http_client
+    monkeypatch.setenv("WECHAT_APP_ID", "local-fixture-app")
+    monkeypatch.setenv("WECHAT_APP_SECRET", "fixture-app-secret")
+    monkeypatch.setenv("WECHAT_SESSION_SECRET", "local fixture signing secret for two test authors")
+    monkeypatch.delenv("TESTING", raising=False)
+
+    async def exchange(path, *, query=None, body=None):
+        assert path == "/sns/jscode2session"
+        return {"openid": "wx-user-" + query["js_code"][0], "session_key": "test-only"}
+
+    monkeypatch.setattr(wechat_identity, "_request_wx", exchange)
+
+    async def login(code):
+        response = await client.post("/api/wechat/session", json={"code": code})
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    return login
+
+
 async def test_private_run_and_frozen_public_card(http_client):
     """Only the owner can mutate the draft and public responses have a text-only shape."""
     client, app = http_client
@@ -107,6 +131,7 @@ async def test_private_run_and_frozen_public_card(http_client):
     snapshot = await client.get(public_path)
     assert snapshot.status_code == 200
     assert snapshot.json()["text"] == work["text"]
+    assert snapshot.json()["rules"] == work["rules"]
     assert (
         not {"subject", "run_id", "work_id", "segments", "original", "initial"}
         & snapshot.json().keys()
@@ -124,6 +149,29 @@ async def test_reject_invalid_commands_and_unknown_fields(http_client):
     for extra in ({"version": -1}, {"source": "injected"}, {"subject": "impersonated"}):
         payload = {"request_id": "bad", "version": 0, "kind": "turn", **extra}
         assert (await client.post("/api/wechat/runs/x/actions", json=payload)).status_code == 422
+
+
+def test_openapi_describes_writer_and_work_preview_fields(http_client):
+    """Publish the run and preview fields used by clients in the API contract."""
+    _, app = http_client
+    schema = app.openapi()
+    schemas = schema["components"]["schemas"]
+    assert {
+        "rules",
+        "generation_pending",
+        "waiting_response",
+        "pending_intervention",
+        "responses",
+        "interpretation_options",
+        "interpretations",
+        "interpretation",
+        "recoveries",
+    } <= schemas["RunView"]["properties"].keys()
+    assert {"opening", "rules", "requires_consent"} <= schemas["WorkView"]["properties"].keys()
+    assert schemas["RunView"]["properties"]["recoveries"]["items"]["$ref"].endswith("/RecoveryView")
+    assert "ai_generated" in schemas["SegmentView"]["properties"]
+    assert "request_ids" in schemas["ActionConflictDetails"]["properties"]
+    assert "409" in schema["paths"]["/api/wechat/runs/{run_id}/actions"]["post"]["responses"]
 
 
 @pytest.mark.parametrize("theme", ["letter", "detective"])
@@ -266,6 +314,13 @@ async def test_preview_is_private_and_never_commits_stale_voice_text(http_client
     }
     mock = AsyncMock(return_value="天色将明。")
     monkeypatch.setattr(wechat, "correct_voice", mock)
+    app.dependency_overrides[wechat.principal] = lambda: "another-writer"
+    assert (await client.post(base + "/preview", json=body)).status_code == 404
+    app.dependency_overrides[wechat.principal] = lambda: "voice-author"
+    assert (
+        await client.post(base + "/preview", json={**body, "target": "absent"})
+    ).status_code == 409
+    mock.assert_not_awaited()
     preview = await client.post(base + "/preview", json=body)
     assert preview.status_code == 200, preview.text
     assert preview.json() == {
@@ -295,10 +350,18 @@ async def test_preview_is_private_and_never_commits_stale_voice_text(http_client
     assert late.status_code == 409 and "过期候选" not in late.text
 
 
-async def test_finish_while_generating_freezes_only_committed_text(http_client, monkeypatch):
-    """Coordinate two real request sessions across an in-flight model call."""
-    client, app = http_client
-    app.dependency_overrides[wechat.principal] = lambda: "writer"
+async def test_finish_while_generating_freezes_only_committed_text(
+    http_client, wechat_login, monkeypatch
+):
+    """A second signed session can reconcile its author's pending input before finishing."""
+    client, _ = http_client
+    first_login = await wechat_login("a1")
+    second_login = await wechat_login("a2")
+    other_login = await wechat_login("b1")
+    assert first_login["subject"] == second_login["subject"] != other_login["subject"]
+    auth_first = {"Authorization": "Bearer " + first_login["token"]}
+    auth_second = {"Authorization": "Bearer " + second_login["token"]}
+    auth_other = {"Authorization": "Bearer " + other_login["token"]}
     entered, release = asyncio.Event(), asyncio.Event()
     calls = 0
 
@@ -320,6 +383,7 @@ async def test_finish_while_generating_freezes_only_committed_text(http_client, 
     run = (
         await client.post(
             "/api/wechat/runs",
+            headers=auth_first,
             json={
                 "request_id": "start",
                 "theme": "letter",
@@ -335,22 +399,53 @@ async def test_finish_while_generating_freezes_only_committed_text(http_client, 
         "source": "choice",
         "text": run["choices"][0],
     }
-    future = asyncio.create_task(client.post(path, json=turn))
+    future = asyncio.create_task(client.post(path, headers=auth_first, json=turn))
     try:
         await asyncio.wait_for(entered.wait(), 3)
-        duplicate = await client.post(path, json=turn)
+        duplicate = await client.post(path, headers=auth_first, json=turn)
         assert duplicate.status_code == 409
         finish = {"request_id": "end", "version": run["version"], "kind": "finish"}
-        ended = await client.post(path, json=finish)
+        blocked = await client.post(path, headers=auth_second, json=finish)
+        assert blocked.status_code == 409, blocked.text
+        assert blocked.json()["error"]["code"] == "STORY_FINISH_INPUT_PENDING"
+        assert blocked.json()["error"]["details"]["request_ids"] == [turn["request_id"]]
+        private = await client.post(path, headers=auth_other, json=finish)
+        assert private.status_code == 404 and turn["request_id"] not in private.text
+        paused = await client.post(
+            path,
+            headers=auth_second,
+            json={**finish, "request_id": "pause", "kind": "begin_finish"},
+        )
+        assert paused.status_code == 200 and paused.json()["finishing"]
+        paused_version = paused.json()["version"]
+        unresolved = await client.post(
+            path, headers=auth_second, json={**finish, "version": paused_version}
+        )
+        assert unresolved.status_code == 409, unresolved.text
+        canceled = await client.post(
+            path,
+            headers=auth_second,
+            json={
+                "request_id": "cancel-turn",
+                "version": paused_version,
+                "kind": "cancel",
+                "target": turn["request_id"],
+            },
+        )
+        assert canceled.status_code == 200, canceled.text
+        finish["version"] = canceled.json()["version"]
+        ended = await client.post(path, headers=auth_second, json=finish)
         assert ended.status_code == 200, ended.text
     finally:
         release.set()
         late = await asyncio.wait_for(future, 3)
     assert calls == 1
     assert late.json() == ended.json()
-    assert (await client.post(path, json=turn)).json() == ended.json()
-    assert (await client.post(path, json=finish)).json() == ended.json()
-    assert "迟到剧情" not in str((await client.get("/api/wechat/library")).json())
+    assert (await client.post(path, headers=auth_first, json=turn)).json() == ended.json()
+    assert (await client.post(path, headers=auth_second, json=finish)).json() == ended.json()
+    assert "迟到剧情" not in str(
+        (await client.get("/api/wechat/library", headers=auth_second)).json()
+    )
     assert ended.json()["turns"] == 0 and ended.json()["status"] == "finished"
 
 
@@ -360,6 +455,7 @@ async def test_finish_while_generating_freezes_only_committed_text(http_client, 
         ("replace", "high", "", True, 1, "候选"),
         ("replace", "normal", "", True, 1, 403),
         ("replace", "high", "", True, 0, 403),
+        ("replace", "high", "", True, 2, 403),
         ("rewrite", "custom", "rewrite", False, 0, "候选"),
         ("rewrite", "custom", "rewrite", True, 0, 403),
         ("rewrite", "custom", "delete", False, 0, 403),
@@ -372,6 +468,7 @@ async def test_preview_permission_checked_before_supplier(
 ):
     """A preview consumes provider resources only after checking the target and permission."""
     state = {
+        "status": "active",
         "mode": mode,
         "turns": 1,
         "waiting_response": False,
@@ -383,7 +480,7 @@ async def test_preview_permission_checked_before_supplier(
     provider = AsyncMock(return_value="候选")
 
     async def preview():
-        return await wechat.preview_text(
+        return await preview_text(
             state,
             kind,
             "s",
@@ -402,6 +499,101 @@ async def test_preview_permission_checked_before_supplier(
             await preview()
         assert error.value.status_code == expected
         provider.assert_not_awaited()
+
+
+async def test_inflight_lock_preview_cannot_apply_after_another_session_unlocks(
+    http_client, monkeypatch
+):
+    """An unlocked target keeps its original text and a late preview cannot spend again."""
+    client, app = http_client
+    app.dependency_overrides[wechat.principal] = lambda: "lock-author"
+
+    async def generate(state, source, text):
+        return {
+            "choices": ["查案头的线索", "追问后来的人"],
+            "lock_sentence": f"案上新添了第{state['turns'] + 1}张纸。",
+            "eligible": ["interpret"],
+        }
+
+    monkeypatch.setattr(wechat, "generate_turn", generate)
+
+    async def start(mode):
+        result = await client.post(
+            "/api/wechat/runs",
+            json={
+                "theme": "detective" if mode == "high" else "letter",
+                "mode": mode,
+                "accept_high": mode == "high",
+                "request_id": mode,
+            },
+        )
+        assert result.status_code == 200, result.text
+        return result.json()
+
+    async def command(run, kind, request_id, **fields):
+        return await client.post(
+            f"/api/wechat/runs/{run['id']}/actions",
+            json={"kind": kind, "request_id": request_id, "version": run["version"], **fields},
+        )
+
+    normal = await start("normal")
+    first = await command(normal, "turn", "first", source="keyboard", text="我走到窗边。")
+    assert first.status_code == 200, first.text
+    assert (await command(first.json(), "finish", "finish")).status_code == 200
+    run = await start("high")
+    for round_index in (1, 2):
+        for step, text in (("lock", "我拿起案头上的纸。"), ("reply", "我请书吏看印章。")):
+            result = await command(
+                run, "turn", f"{round_index}-{step}", source="keyboard", text=text
+            )
+            assert result.status_code == 200, result.text
+            run = result.json()
+        result = await command(run, "ability", f"{round_index}-ability", ability="interpret")
+        assert result.status_code == 200, result.text
+        run = result.json()
+    target = next(segment for segment in run["segments"] if segment["locked"])
+    assert run["lock_uses"] == 1
+    failed = await command(run, "replace", "unchanged", target=target["id"], text=target["text"])
+    assert failed.status_code == 422, failed.text
+
+    entered, release = asyncio.Event(), asyncio.Event()
+    replacement = "我终于看清纸背画的符号。"
+
+    async def delayed(state, original):
+        assert original == target["text"] and state["lock_uses"] == 1
+        entered.set()
+        await release.wait()
+        return replacement
+
+    monkeypatch.setattr(wechat.story_writer, "propose_lock_replacement", delayed)
+    path = f"/api/wechat/runs/{run['id']}"
+    preview = asyncio.create_task(
+        client.post(
+            path + "/preview",
+            json={"kind": "replace", "version": run["version"], "target": target["id"]},
+        )
+    )
+    try:
+        await asyncio.wait_for(entered.wait(), 3)
+        response = await command(run, "unlock", "winner", target=target["id"])
+        assert response.status_code == 200, response.text
+        unlocked = response.json()
+    finally:
+        release.set()
+        late = await asyncio.wait_for(preview, 3)
+
+    assert late.status_code == 409 and replacement not in late.text
+    assert unlocked["lock_uses"] == 0 and unlocked["version"] == run["version"] + 1
+    assert unlocked["segments"] == [
+        {**segment, "locked": False} if segment["id"] == target["id"] else segment
+        for segment in run["segments"]
+    ]
+    outdated = await command(run, "replace", "late", target=target["id"], text=replacement)
+    assert outdated.status_code == 409
+    used = await command(unlocked, "replace", "another", target=target["id"], text=replacement)
+    assert used.status_code == 422
+    assert (await command(run, "unlock", "winner", target=target["id"])).json() == unlocked
+    assert (await client.get(path)).json() == unlocked
 
 
 async def test_discover_modes_and_share_irreversible_game_without_its_history(
@@ -457,6 +649,11 @@ async def test_discover_modes_and_share_irreversible_game_without_its_history(
         assert progress["completed"] == stage
         assert progress["rewrite"] == (stage >= 2)
         assert progress["delete"] == (stage >= 3)
+        if stage == 2:
+            original = await post("modes", {**rules, "name": "最初设置", "action": "insert"})
+            response = await client.put(f"/api/wechat/modes/{original['id']}", json=rules)
+            assert response.status_code == 403, response.text
+            assert (await client.get("/api/wechat/library")).json()["modes"] == [original]
 
     for trigger in ("response", "automatic"):
         other = await post(
@@ -464,6 +661,14 @@ async def test_discover_modes_and_share_irreversible_game_without_its_history(
         )
         assert other["trigger"] == trigger
     mode = await post("modes", rules)
+    replacement = {
+        **rules,
+        "name": "  新模式名称  ",
+        "trigger": "automatic",
+        "action": "insert",
+        "lock": True,
+    }
+    path = f"/api/wechat/modes/{mode['id']}"
     initial = start_fields("begin-mode", mode="custom", mode_id=mode["id"])
     await post("runs", initial, 403)
     private = await post("runs", {**initial, "accept_irreversible": True})
@@ -474,6 +679,9 @@ async def test_discover_modes_and_share_irreversible_game_without_its_history(
     deleted = await act(recorded, "intervene", "delete", target=target)
     assert secret not in str(deleted)
     assert secret not in str(await act(private, "turn", "audio", **speaking))
+    fixed = await post(
+        "runs", {**initial, "request_id": "other-old-run", "accept_irreversible": True}
+    )
     ended = await act(deleted, "finish", "finished")
     work = (await client.get(f"/api/wechat/works/{ended['work_id']}")).json()
     assert secret not in work["text"]
@@ -481,12 +689,35 @@ async def test_discover_modes_and_share_irreversible_game_without_its_history(
         f"works/{work['id']}/cards", {"request_id": "shared", "version": work["version"]}
     )
     assert secret not in str(card) and card["requires_consent"]
+    app.dependency_overrides[wechat.principal] = lambda: "reader"
+    response = await client.put(path, json=replacement)
+    assert response.status_code == 404, response.text
+    app.dependency_overrides[wechat.principal] = lambda: "mode-author"
+    await post("modes", {**rules, "lock": True}, 422)
+    response = await client.put(path, json={**rules, "lock": True})
+    assert response.status_code == 422, response.text
+    response = await client.put(path, json=replacement)
+    assert response.status_code == 200, response.text
+    updated = {**replacement, "id": mode["id"], "name": "新模式名称"}
+    assert response.json() == updated
+    modes = (await client.get("/api/wechat/library")).json()["modes"]
+    assert [saved for saved in modes if saved["id"] == mode["id"]] == [updated]
+    assert len(modes) == 4
+    same_run = (await client.get(f"/api/wechat/runs/{fixed['id']}")).json()
+    assert same_run["rules"] == fixed["rules"] and same_run["rules"]["action"] == "delete"
+    new_run = await post("runs", {**initial, "request_id": "updated-run"})
+    assert new_run["rules"]["action"] == "insert" and new_run["rules"]["trigger"] == "automatic"
+    assert (await client.get(f"/api/wechat/works/{work['id']}")).json() == work
+    assert work["rules"] == card["rules"] and work["requires_consent"] is True
+    assert "由作者手动触发" in work["rules"]
 
     app.dependency_overrides[wechat.principal] = lambda: "reader"
+    assert (await client.get(f"/api/wechat/cards/{card['id']}")).json() == card
     same = start_fields("same", card_id=card["id"])
     await post("runs", same, 403)
     friend = await post("runs", {**same, "accept_irreversible": True})
     assert friend["mode"] == "custom" and friend["turns"] == 0 and friend["id"] != ended["id"]
+    assert friend["rules"] == fixed["rules"]
     assert (await client.get("/api/wechat/library")).json()["progress"]["delete"] is False
 
 
@@ -547,30 +778,14 @@ async def test_begin_finish_survives_refresh_and_only_keeps_explicit_text(http_c
 
 
 async def test_code_exchange_and_bearer_private_routes_share_real_identity_storage(
-    http_client, monkeypatch
+    http_client, wechat_login
 ):
     """Use signed mini-program tokens with only the upstream WeChat exchange stubbed."""
     client, _ = http_client
-    monkeypatch.setenv("WECHAT_APP_ID", "local-fixture-app")
-    monkeypatch.setenv("WECHAT_APP_SECRET", "fixture-app-secret")
-    monkeypatch.setenv("WECHAT_SESSION_SECRET", "local fixture signing secret for two test authors")
-    monkeypatch.delenv("TESTING", raising=False)
-
-    async def exchange(path, *, query=None, body=None):
-        assert path == "/sns/jscode2session"
-        return {"openid": "wx-user-" + query["js_code"][0], "session_key": "test-only"}
-
-    monkeypatch.setattr(wechat_identity, "_request_wx", exchange)
-
-    async def login(code):
-        response = await client.post("/api/wechat/session", json={"code": code})
-        assert response.status_code == 200
-        return response.json()
-
-    author = await login("a1")
+    author = await wechat_login("a1")
     assert set(author) == {"token", "subject"} and author["subject"] != "wx-user-a"
-    again = await login("a2")
-    reader = await login("b1")
+    again = await wechat_login("a2")
+    reader = await wechat_login("b1")
     assert reader["subject"] != author["subject"] == again["subject"]
     auth = {"Authorization": "Bearer " + author["token"]}
     incoming = {"request_id": "start", "mode": "normal", "theme": "letter"}

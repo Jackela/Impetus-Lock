@@ -21,10 +21,10 @@ from server.infrastructure.persistence.wechat_runs import (
     start_run,
 )
 from server.infrastructure.persistence.wechat_works import (
-    create_mode,
     freeze_work,
     get_work,
     publish_card,
+    write_mode,
 )
 from server.models.wechat_works import WechatCardModel
 
@@ -220,7 +220,7 @@ async def test_expired_generation_is_retryable_without_duplicate_input(
 
 
 @pytest.mark.asyncio
-async def test_finish_commits_original_work_while_provider_is_still_running(
+async def test_finish_requires_explicitly_discarding_an_in_flight_turn(
     sessions: async_sessionmaker[AsyncSession],
 ) -> None:
     run = await _start(sessions)
@@ -245,10 +245,26 @@ async def test_finish_commits_original_work_while_provider_is_still_running(
     )
     try:
         await wait_for(in_provider.wait(), 5)
-        finished = await wait_for(_action(sessions, run, "finish", "finish"), 5)
+        with pytest.raises(AppError) as direct:
+            await _action(sessions, run, "finish", "finish")
+        assert direct.value.code == "STORY_FINISH_INPUT_PENDING"
+        assert direct.value.details == {"request_ids": ["chosen"]}
+        paused = await _action(sessions, run, "pause", "begin_finish")
+        assert paused["finishing"]
+        with pytest.raises(AppError) as unresolved:
+            await _action(sessions, paused, "finish", "finish")
+        assert unresolved.value.code == "STORY_FINISH_INPUT_PENDING"
+        async with sessions() as db:
+            assert await action_receipt(db, "author", run["id"], "chosen") == {
+                "status": "pending",
+                "run_version": paused["version"],
+            }
+        discarded = await _action(sessions, paused, "discard", "cancel", target="chosen")
+        finished = await _action(sessions, discarded, "finish", "finish")
     finally:
         release_provider.set()
-    assert await wait_for(pending, 5) == finished
+        late = await wait_for(pending, 5)
+    assert late == finished
     assert await _action(sessions, run, "finish", "finish") == finished
     assert finished["status"] == "finished"
     assert finished["turns"] == 0
@@ -258,6 +274,122 @@ async def test_finish_commits_original_work_while_provider_is_still_running(
         assert await action_receipt(db, "author", run["id"], "chosen") == {
             "status": "canceled",
             "run_version": finished["version"],
+        }
+
+
+@pytest.mark.asyncio
+async def test_finish_cannot_discard_an_author_input_with_unknown_outcome(
+    sessions: async_sessionmaker[AsyncSession],
+) -> None:
+    run = await _start(sessions)
+
+    async def unavailable(text: str, style: str) -> str:
+        raise LLMProviderError(code="TEST_OUTAGE", message="暂时无法整理", status_code=502)
+
+    original = "我把信放回口袋，然后出门。"
+    with pytest.raises(LLMProviderError):
+        await _action(
+            sessions, run, "speech", "turn", source="voice", text=original, correct=unavailable
+        )
+    async with sessions() as db:
+        assert await action_receipt(db, "author", run["id"], "speech") == {
+            "status": "unknown",
+            "run_version": run["version"],
+        }
+    paused = await _action(sessions, run, "pause", "begin_finish")
+    with pytest.raises(AppError) as unresolved:
+        await _action(sessions, paused, "finish", "finish")
+    assert unresolved.value.code == "STORY_FINISH_INPUT_PENDING"
+    assert unresolved.value.details == {"request_ids": ["speech"]}
+    kept = await _action(
+        sessions,
+        paused,
+        "speech",
+        "turn",
+        source="voice",
+        style="verbatim",
+        text=original,
+        retain=True,
+    )
+    finished = await _action(sessions, kept, "finish", "finish")
+    async with sessions() as db:
+        assert (await get_work(db, "author", finished["work_id"]))["text"].count(original) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("record_instead", [False, True])
+async def test_active_deferred_intervention_can_yield_to_finishing_or_recording(
+    sessions: async_sessionmaker[AsyncSession], record_instead: bool
+) -> None:
+    run = await _start(sessions)
+    spoken = "我点燃了信，盯着它变成灰。"
+
+    async def missing(state: Document, source: str, text: str) -> Document:
+        raise LLMProviderError(code="TEST_OUTAGE", message="暂时无法生成干预", status_code=502)
+
+    written = await _action(
+        sessions,
+        run,
+        "first-voice",
+        "turn",
+        source="voice",
+        style="verbatim",
+        text=spoken,
+        generate=missing,
+    )
+    assert written["pending_intervention"]
+    entered, release = Event(), Event()
+    old_lock = "一盏灯忽然熄灭了。"
+
+    async def delayed(state: Document, source: str, text: str) -> Document:
+        entered.set()
+        await release.wait()
+        assert state["deferred_generation"] is True
+        assert (source, text) == ("voice", spoken)
+        return {"choices": ["走进屋里", "关上门"], "lock_sentence": old_lock}
+
+    background = create_task(
+        _action(sessions, written, "background", "intervene", generate=delayed)
+    )
+    try:
+        await wait_for(entered.wait(), 5)
+        async with sessions() as db:
+            assert await action_receipt(db, "author", run["id"], "background") == {
+                "status": "pending",
+                "run_version": written["version"],
+            }
+        if record_instead:
+            canceled = await _action(
+                sessions, written, "prioritize-voice", "cancel", target="background"
+            )
+            async with sessions() as db:
+                assert await action_receipt(db, "author", run["id"], "background") == {
+                    "status": "canceled",
+                    "run_version": canceled["version"],
+                }
+            updated = await _action(
+                sessions,
+                canceled,
+                "second-voice",
+                "turn",
+                source="voice",
+                style="verbatim",
+                text="我把余灰扫进簸箕。",
+            )
+            assert updated["turns"] == 2
+            assert updated["segments"][-1]["locked"]
+        else:
+            updated = await _action(sessions, written, "finish", "finish")
+            assert updated["status"] == "finished"
+    finally:
+        release.set()
+        late = await wait_for(background, 5)
+    assert late == updated
+    assert old_lock not in repr(updated)
+    async with sessions() as db:
+        assert await action_receipt(db, "author", run["id"], "background") == {
+            "status": "canceled",
+            "run_version": updated["version"],
         }
 
 
@@ -363,18 +495,17 @@ async def test_voice_restyle_commits_the_reviewed_candidate_without_generating_a
 async def test_permanent_deletion_never_replays_transcript_or_deleted_passage(
     sessions: async_sessionmaker[AsyncSession],
 ) -> None:
-    async with sessions() as db:
-        mode = await create_mode(
+    async with sessions.begin() as db:
+        mode = await write_mode(
             db,
             "author",
+            "干预试局",
             {
-                "name": "干预试局",
                 "action": "delete",
                 "trigger": "manual",
                 "lock": False,
                 "recoverable": False,
             },
-            {"completed": 3, "detective": True, "high": True, "rewrite": True, "delete": True},
         )
     with pytest.raises(AppError) as forbidden:
         await _start(sessions, mode="custom", mode_id=mode["id"])
@@ -386,7 +517,7 @@ async def test_permanent_deletion_never_replays_transcript_or_deleted_passage(
     async def corrected(text: str, style: str) -> str:
         return edited
 
-    fields = {"source": "voice", "text": original, "correct": corrected}
+    fields: Document = {"source": "voice", "text": original, "correct": corrected}
     written = await _action(sessions, run, "voice", "turn", **fields)
     target = next(segment["id"] for segment in written["segments"] if segment["source"] == "voice")
     assert original in repr(written) and edited in repr(written)
@@ -398,7 +529,14 @@ async def test_permanent_deletion_never_replays_transcript_or_deleted_passage(
         await _action(sessions, deleted, "restore", "restore", target=target)
     assert missing.value.status_code == 422
 
-    finished = await _action(sessions, deleted, "finish", "finish")
+    async def refreshed(state: Document, source: str, text: str) -> Document:
+        assert state["deferred_generation"] and not source and not text
+        assert original not in repr(state) and edited not in repr(state)
+        return {"choices": ["查看窗台", "关门离开"]}
+
+    regenerated = await _action(sessions, deleted, "refresh", "intervene", generate=refreshed)
+    assert regenerated["choices"] == ["查看窗台", "关门离开"]
+    finished = await _action(sessions, regenerated, "finish", "finish")
     async with sessions() as db:
         work = await get_work(db, "author", finished["work_id"])
         assert work["text"] == run["opening"]
@@ -554,18 +692,17 @@ async def test_pause_keeps_authored_turn_at_most_once_without_late_automatic_eff
 async def test_pausing_invalidates_in_flight_automatic_deletion(
     sessions: async_sessionmaker[AsyncSession],
 ) -> None:
-    async with sessions() as db:
-        mode = await create_mode(
+    async with sessions.begin() as db:
+        mode = await write_mode(
             db,
             "author",
+            "自动删除试局",
             {
-                "name": "自动删除试局",
                 "action": "delete",
                 "trigger": "automatic",
                 "lock": False,
                 "recoverable": False,
             },
-            {"completed": 3, "detective": True, "high": True, "rewrite": True, "delete": True},
         )
     run = await _start(sessions, mode="custom", mode_id=mode["id"], accept_irreversible=True)
     authored = "窗上的裂纹绕过了那道划痕。"

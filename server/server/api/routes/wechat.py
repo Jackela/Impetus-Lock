@@ -1,5 +1,6 @@
 """HTTP endpoints for WeChat sessions, story runs and published text."""
 
+from functools import partial
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Response
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.api.routes.wechat_schemas import (
     Action,
+    ActionConflictView,
     CardList,
     CardView,
     EditWork,
@@ -23,7 +25,8 @@ from server.api.routes.wechat_schemas import (
     Start,
     WorkView,
 )
-from server.application.services.wechat_preview import preview_text
+from server.application.services.wechat_preview import preview_action
+from server.application.services.wechat_works import save_mode
 from server.infrastructure.llm import story_writer
 from server.infrastructure.llm.story_writer import correct_voice, generate_turn
 from server.infrastructure.persistence import wechat_runs, wechat_works
@@ -69,7 +72,12 @@ async def run(run_id: str, subject: Subject, db: Database) -> Document:
     return await wechat_runs.get_run(db, subject, run_id)
 
 
-@router.post("/runs/{run_id}/actions", response_model=RunView, response_model_exclude_none=True)
+@router.post(
+    "/runs/{run_id}/actions",
+    response_model=RunView,
+    response_model_exclude_none=True,
+    responses={409: {"model": ActionConflictView}},
+)
 async def action(run_id: str, body: Action, subject: Subject, db: Database) -> Document:
     """Apply a command at the writer's expected version."""
     return await wechat_runs.act(
@@ -91,21 +99,18 @@ async def receipt(run_id: str, request_id: str, subject: Subject, db: Database) 
 @router.post("/runs/{run_id}/preview", response_model=PreviewView)
 async def preview(run_id: str, body: Preview, subject: Subject, db: Database) -> Document:
     """Preview an authorized change and discard candidates whose source version changed."""
-    async with db.begin():
-        state = await wechat_runs.model_state(db, subject, run_id, body.version)
-    text = await preview_text(
-        state,
+    return await preview_action(
+        body.version,
         body.kind,
         body.target,
         body.style,
+        transaction=db.begin,
+        read_state=partial(wechat_runs.model_state, db, subject, run_id, body.version),
         correct_voice=correct_voice,
         replace=story_writer.propose_lock_replacement,
         rewrite=story_writer.propose_rewrite,
         insert=story_writer.propose_insert,
     )
-    async with db.begin():
-        await wechat_runs.model_state(db, subject, run_id, body.version)
-    return {"version": body.version, "target": body.target, "text": text}
 
 
 @router.get("/works/{work_id}", response_model=WorkView, response_model_exclude_none=True)
@@ -152,6 +157,22 @@ async def revoke(work_id: str, card_id: str, subject: Subject, db: Database) -> 
 @router.post("/modes", response_model=ModeView, response_model_exclude_none=True)
 async def new_mode(body: NewMode, subject: Subject, db: Database) -> Document:
     """Save a personal mode using the author's discovered rules."""
-    async with db.begin():
-        progress = await wechat_runs.get_progress(db, subject)
-    return await wechat_works.create_mode(db, subject, body.model_dump(), progress)
+    return await _save_mode(body, subject, db)
+
+
+@router.put("/modes/{mode_id}", response_model=ModeView, response_model_exclude_none=True)
+async def update_mode(mode_id: str, body: NewMode, subject: Subject, db: Database) -> Document:
+    """Replace an owned mode for future runs."""
+    return await _save_mode(body, subject, db, mode_id)
+
+
+async def _save_mode(
+    body: NewMode, subject: str, db: AsyncSession, mode_id: str | None = None
+) -> Document:
+    return await save_mode(
+        body.model_dump(),
+        transaction=db.begin,
+        read_progress=partial(wechat_runs.get_progress, db, subject),
+        read_owned_mode=partial(wechat_works.mode_rules, db, subject, mode_id) if mode_id else None,
+        write_mode=partial(wechat_works.write_mode, db, subject, mode_id=mode_id),
+    )

@@ -50,7 +50,7 @@ class WechatCardModel(Base):
 
 
 class WechatModeModel(Base):
-    """Store a player's named immutable rules for future runs."""
+    """Store a player's named rules for future runs."""
 
     __tablename__ = "wechat_modes"
 

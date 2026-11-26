@@ -44,6 +44,15 @@ waiting_response 为 true 时如有本轮发生的后果，请写入 paragraph�
 facts 与 eligible 是字符串数组，consequence 是字符串或 null。
 可选字段为 interpretation_options（字符串数组）和 letter_action（burn、keep、read、check 或 null）。
 每个字段里只写符合其用途的文字，不用 Markdown、标题或说明。"""
+_DEFERRED_PROMPT = """这是补发生成的请求，没有新的玩家行动。text 只含本局已入稿的续写，
+source 是该已保存段的真实来源，两者均为空时当前没有可用的已入稿续写。
+此请求以本段规则为准。paragraph 必须为空字符串，不能重演、改写或补写已保存的段落。
+从当前正文提出后续选择和适用的能力。只有 pending_intervention 为 true 时才考虑提出新锁句。
+facts 只能原样摘录 text 中已经发生的新事实。来信动作及转线只能识别 text 里实际发生的事；
+letter_action_evidence 必须从 text 原样摘录。committed_letter_thread 是本轮已记录的转线决定，
+如有该字段则保留这一决定。text 为空时不标记新事实、来信动作、转线或后果。
+对已经烧掉的信不提出需要原件的选项。来信后果可以原样引用 text 中已经发生且尚未结算的后果。
+新后果只在规则允许且能放入待补的新锁句时提出，不为补发而主动拉回已经离开的故事线。"""
 _INTERVENTION_PROMPT = """按 intervention_request 提供至多一个个人模式候选。
 输出 intervention 对象，其中 action 必须等于请求的 action，target 必须来自请求列出的 targets，
 对应 recent_segments 中的 id。只能选当前未锁的非开场段，不补回已删除的文字。
@@ -423,14 +432,20 @@ def _has_action_evidence(action: str, passage: str, excerpt: str | None = None) 
 
 
 def _letter_thread_closed(
-    state: dict[str, Any], input_source: str, input_text: str, candidate: _TurnCandidate
+    state: dict[str, Any],
+    input_source: str,
+    input_text: str,
+    candidate: _TurnCandidate,
+    *,
+    deferred: bool,
 ) -> bool:
-    fixed = LETTER_ACTIONS.get(input_text) if input_source == "choice" else None
+    new_choice = input_source == "choice" and not deferred
+    fixed = LETTER_ACTIONS.get(input_text) if new_choice else None
     if fixed and candidate.letter_action != fixed:
         raise _format_error()
     evidence = candidate.letter_action_evidence
     if candidate.letter_action:
-        passage = candidate.paragraph if input_source == "choice" else input_text
+        passage = candidate.paragraph if new_choice else input_text
         if (
             not evidence
             or evidence not in passage
@@ -438,25 +453,24 @@ def _letter_thread_closed(
                 input_source == "choice"
                 and not _has_action_evidence(candidate.letter_action, passage, evidence)
             )
-            or (state.get("letter_state") == "burned" and input_source == "choice")
+            or (
+                state.get("letter_state") == "burned"
+                and (new_choice or (deferred and candidate.letter_action != "burn"))
+            )
         ):
             raise _format_error()
     elif evidence:
         raise _format_error()
 
-    park = input_source == "choice" and input_text == PARK
-    if (park and candidate.letter_thread == "revisit") or (
-        fixed and candidate.letter_thread == "leave"
-    ):
+    park = new_choice and input_text == PARK
+    recorded = (state.get("generation_passage") or {}).get("direction") if deferred else None
+    direction = recorded or candidate.letter_thread
+    if (park and direction == "revisit") or (fixed and direction == "leave"):
         raise _format_error()
     closed = (
         park
-        or candidate.letter_thread == "leave"
-        or (
-            state.get("letter_thread_closed")
-            and candidate.letter_thread != "revisit"
-            and fixed is None
-        )
+        or direction == "leave"
+        or (state.get("letter_thread_closed") and direction != "revisit" and fixed is None)
     )
     burned = state.get("letter_state") == "burned" or candidate.letter_action == "burn"
     if burned or closed:
@@ -471,8 +485,9 @@ def _letter_thread_closed(
 
 
 async def generate_turn(state: dict[str, Any], source: str, text: str) -> dict[str, Any]:
-    """Produce a candidate continuation and next actions from a challenge snapshot."""
-    if source not in {"choice", "keyboard", "voice"}:
+    """Produce candidates for a new turn or for a previously committed passage."""
+    deferred = state.get("deferred_generation") is True
+    if source not in {"choice", "keyboard", "voice"} and not (deferred and source == text == ""):
         raise ValueError("Unsupported story input source")
     if state.get("finishing") is True or state.get("status") == "finishing":
         paragraph = await _finish_choice(state, text) if source == "choice" else ""
@@ -482,6 +497,12 @@ async def generate_turn(state: dict[str, Any], source: str, text: str) -> dict[s
     context = _story_context(state, targets)
     context.update(source=source, text=text)
     prompt = f"{_TURN_PROMPT}\n{_THEME_PROMPTS[theme]}"
+    if deferred:
+        context["deferred_generation"] = True
+        direction = (state.get("generation_passage") or {}).get("direction")
+        if direction:
+            context["committed_letter_thread"] = direction
+        prompt += f"\n{_DEFERRED_PROMPT}"
     if action:
         context["intervention_request"] = {"action": action, "targets": list(targets)}
         prompt += f"\n{_INTERVENTION_PROMPT}"
@@ -493,12 +514,17 @@ async def generate_turn(state: dict[str, Any], source: str, text: str) -> dict[s
 
     closed_thread = False
     if theme == "letter":
-        closed_thread = _letter_thread_closed(state, source, text, candidate)
+        closed_thread = _letter_thread_closed(state, source, text, candidate, deferred=deferred)
     elif candidate.letter_action or candidate.letter_action_evidence or candidate.letter_thread:
         raise _format_error()
     if candidate.intervention is not None:
         _validate_intervention(candidate.intervention, action, targets)
-    if candidate.paragraph:
+    if deferred:
+        if candidate.paragraph or (
+            not source and (candidate.letter_thread or candidate.facts or candidate.consequence)
+        ):
+            raise _format_error()
+    elif candidate.paragraph:
         if not _plain_line(candidate.paragraph):
             raise _format_error()
         if source != "choice" and _repeats_passage(candidate.paragraph, text):
@@ -511,9 +537,10 @@ async def generate_turn(state: dict[str, Any], source: str, text: str) -> dict[s
     sentence = candidate.lock_sentence
     if sentence is not None and (
         context.get("mode") == "custom"
+        or (deferred and not context.get("pending_intervention"))
         or not _is_sentence(sentence)
         or sentence in candidate.paragraph
-        or (source != "choice" and sentence in text)
+        or ((deferred or source != "choice") and sentence in text)
         or sentence in context["opening"]
         or any(sentence in item["text"] for item in context["recent_segments"])
     ):
@@ -522,16 +549,23 @@ async def generate_turn(state: dict[str, Any], source: str, text: str) -> dict[s
     consequence_text = candidate.paragraph
     if sentence and not context.get("waiting_response"):
         consequence_text += f"\n{sentence}"
-    if consequence is not None and (
-        context.get("mode") != "high"
-        or context.get("letter_state") != "burned"
-        or context.get("consequence")
-        or context.get("consequence_presented")
-        or context.get("letter_consequence_stopped")
-        or closed_thread
-        or consequence not in consequence_text
-    ):
-        raise _format_error()
+    if consequence is not None:
+        already_written = deferred and consequence in text
+        if (
+            context.get("mode") != "high"
+            or context.get("letter_state") != "burned"
+            or context.get("consequence")
+            or context.get("consequence_presented")
+            or (
+                not already_written
+                and (
+                    context.get("letter_consequence_stopped")
+                    or closed_thread
+                    or consequence not in consequence_text
+                )
+            )
+        ):
+            raise _format_error()
     return candidate.model_dump(exclude_unset=True)
 
 

@@ -29,6 +29,7 @@ wire_code = re.compile(r"((?:author-a|reader-b)-[a-f0-9]{32})-[a-f0-9]{32}")
 used_codes: set[str] = set()
 devtools = os.getenv("WECHAT_WIRE_DEVTOOLS") == "1"
 logger = logging.getLogger("uvicorn.error")
+SPOKEN_BURN = "我把信点着了，信封和信纸烧成了灰。"
 
 
 async def fixture_wechat(path, *, query=None, body=None):
@@ -110,6 +111,25 @@ def story_candidate(context):
             paragraph="窗上出现一片迟到的影子。",
             lock_sentence="高处落下一只手套。",
         )
+    elif text == SPOKEN_BURN:
+        assert context["source"] == "voice"
+        if not context.get("deferred_generation"):
+            # The first model call fails after the story service receives the author's text.
+            return {"paragraph": ""}
+        assert context["pending_intervention"]
+        assert context["recent_segments"][-1]["text"] == text
+        return devtools_candidate(context)
+    elif text == "去买早饭":
+        assert context["source"] == "choice" and context["letter_state"] == "burned"
+        assert context["waiting_response"]
+        candidate.update(
+            paragraph="我牵着女儿走过街角，早饭摊刚支起蒸笼。",
+            choices=["挑两只包子", "问女儿想喝什么"],
+            choice_context=[
+                {"requires_original": False, "follows_letter": False},
+                {"requires_original": False, "follows_letter": False},
+            ],
+        )
     else:
         raise AssertionError(context)
     return candidate
@@ -125,6 +145,7 @@ def devtools_candidate(context):
         return {"text": "我重新看了一遍，发现边沿还留着一行小字。"}
 
     text = context["text"]
+    deferred = context.get("deferred_generation", False)
     passages = {
         "把信烧掉": ("burn", "信封和信纸烧成了灰"),
         "把信留下": ("keep", "我把信放进抽屉"),
@@ -143,6 +164,16 @@ def devtools_candidate(context):
         return {"paragraph": paragraph}
     turns = context["turns"]
     thread = "leave" if text == "不查信了，陪她放风筝" else None
+    if deferred:
+        action, evidence = next(
+            (
+                (action, evidence)
+                for action, evidence in passages.values()
+                if evidence in text and (context["letter_state"] != "burned" or action == "burn")
+            ),
+            (None, None),
+        )
+        thread = context.get("committed_letter_thread")
     if context["theme"] == "detective":
         choices = ["去档房核对文书", "追问书吏最后见到谁"]
         detail = "结案书落款的日子是明天。"
@@ -152,26 +183,40 @@ def devtools_candidate(context):
     if turns:
         detail = f"门外的人敲了{turns + 1}下门。"
     consequence = None
+    effect = "那天来取信的人因此再也没有出现。"
     if (
         context["mode"] == "high"
         and context["letter_state"] == "burned"
         and not context["consequence_presented"]
-        and not context["letter_thread_closed"]
-        and not thread
+        and (
+            (deferred and effect in text)
+            or (
+                not deferred
+                and not context["letter_thread_closed"]
+                and not context.get("letter_consequence_stopped")
+                and thread != "leave"
+            )
+        )
     ):
-        consequence = "那天来取信的人因此再也没有出现。"
+        consequence = effect
+    if deferred or context["source"] != "choice":
+        paragraph = ""
+    if consequence and not deferred:
+        paragraph += consequence
+    lock_due = not context["waiting_response"] and (not deferred or context["pending_intervention"])
     return {
-        "paragraph": (paragraph if context["source"] == "choice" else "") + (consequence or ""),
+        "paragraph": paragraph,
         "choices": choices,
-        "lock_sentence": None if context["waiting_response"] else detail,
-        "facts": [],
+        "lock_sentence": detail if lock_due and context["mode"] != "custom" else None,
+        "facts": [evidence] if deferred and evidence else [],
         "consequence": consequence,
         "eligible": ["returning", "interpret"],
         "letter_action": action,
         "letter_action_evidence": evidence,
         "letter_thread": thread,
         "choice_context": [
-            {"requires_original": False, "follows_letter": choice in passages} for choice in choices
+            {"requires_original": choice in passages, "follows_letter": choice in passages}
+            for choice in choices
         ],
     }
 

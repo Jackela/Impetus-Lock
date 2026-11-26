@@ -460,6 +460,128 @@ async def test_finishing_keyboard_text_needs_no_model(monkeypatch: pytest.Monkey
 
 
 @pytest.mark.parametrize(
+    ("source", "passage", "letter_action", "evidence", "direction"),
+    [
+        ("choice", "我看着原信烧成了灰。", "burn", "原信烧成了灰", None),
+        ("voice", "我把原信收进抽屉。", "keep", "原信收进抽屉", None),
+        ("keyboard", "我决定不查来信，带女儿去放风筝。", None, None, "leave"),
+        ("", "", None, None, None),
+    ],
+)
+async def test_deferred_generation_uses_the_committed_passage_as_evidence(
+    mock_completion: Callable[[httpx.MockTransport], None],
+    source: str,
+    passage: str,
+    letter_action: str | None,
+    evidence: str | None,
+    direction: str | None,
+) -> None:
+    """Recovery sends the original source and cannot treat committed prose as a new choice."""
+    candidate = {
+        "paragraph": "",
+        "choices": ["去公园", "和女儿吃早饭"],
+        "lock_sentence": None,
+        "facts": [passage] if passage else [],
+        "consequence": None,
+        "eligible": [],
+        "letter_action": letter_action,
+        "letter_action_evidence": evidence,
+        "letter_thread": direction,
+        "choice_context": [
+            {"requires_original": False, "follows_letter": False},
+            {"requires_original": False, "follows_letter": False},
+        ],
+    }
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        messages = json.loads(request.content)["messages"]
+        context = json.loads(messages[1]["content"])
+        assert context["deferred_generation"] is True
+        assert context["source"] == source
+        assert context["text"] == passage
+        assert context["turns"] == 2
+        assert "paragraph 必须为空字符串" in messages[0]["content"]
+        return completion(candidate)
+
+    mock_completion(httpx.MockTransport(respond))
+    state = {"theme": "letter", "turns": 2, "deferred_generation": True}
+    assert await story_writer.generate_turn(state, source, passage) == candidate
+
+
+@pytest.mark.parametrize("follows_letter", [False, True])
+async def test_deferred_choices_preserve_the_committed_departure(
+    mock_completion: Callable[[httpx.MockTransport], None], follows_letter: bool
+) -> None:
+    """A late model label cannot reopen a letter thread closed by the same passage."""
+    passage = "我不再查信，带上风筝和女儿出了门。"
+    candidate = {
+        "paragraph": "",
+        "choices": ["看看远处出现的人" if follows_letter else "把线轴交给女儿", "去买早饭"],
+        "lock_sentence": None,
+        "facts": [],
+        "consequence": None,
+        "eligible": [],
+        "letter_thread": "revisit",
+        "choice_context": [
+            {"requires_original": False, "follows_letter": follows_letter},
+            {"requires_original": False, "follows_letter": False},
+        ],
+    }
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        context = json.loads(json.loads(request.content)["messages"][1]["content"])
+        assert context["committed_letter_thread"] == "leave"
+        return completion(candidate)
+
+    mock_completion(httpx.MockTransport(respond))
+    state = {
+        "theme": "letter",
+        "letter_thread_closed": True,
+        "generation_passage": {"direction": "leave"},
+        "deferred_generation": True,
+    }
+    if follows_letter:
+        with pytest.raises(story_writer.StoryModelError, match="格式有误"):
+            await story_writer.generate_turn(state, "keyboard", passage)
+    else:
+        assert await story_writer.generate_turn(state, "keyboard", passage) == candidate
+
+
+@pytest.mark.parametrize("evidence_location", ["saved", "lock", "lock_not_pending", "unsaved"])
+async def test_deferred_burn_consequence_needs_prose_that_survives_recovery(
+    mock_completion: Callable[[httpx.MockTransport], None], evidence_location: str
+) -> None:
+    """A post-burn effect must already be saved or appear in the pending lock."""
+    consequence = "女儿看见我袖口的灰，把纸塞回了自己的口袋。"
+    passage = f"我去包子铺。{consequence}" if evidence_location == "saved" else "我去包子铺。"
+    candidate = {
+        "paragraph": consequence if evidence_location == "unsaved" else "",
+        "choices": ["去放风筝", "问她纸上写了什么"],
+        "lock_sentence": consequence if evidence_location.startswith("lock") else None,
+        "facts": [],
+        "consequence": consequence,
+        "eligible": [],
+        "choice_context": [
+            {"requires_original": False, "follows_letter": False},
+            {"requires_original": False, "follows_letter": False},
+        ],
+    }
+    mock_completion(httpx.MockTransport(lambda _request: completion(candidate)))
+    state = {
+        "theme": "letter",
+        "mode": "high",
+        "letter_state": "burned",
+        "pending_intervention": evidence_location == "lock",
+        "deferred_generation": True,
+    }
+    if evidence_location in {"unsaved", "lock_not_pending"}:
+        with pytest.raises(story_writer.StoryModelError, match="格式有误"):
+            await story_writer.generate_turn(state, "voice", passage)
+    else:
+        assert await story_writer.generate_turn(state, "voice", passage) == candidate
+
+
+@pytest.mark.parametrize(
     ("selected", "action", "paragraph", "evidence", "valid"),
     [
         ("把信烧掉", "burn", "我看着原信烧成了灰。", "原信烧成了灰", True),
