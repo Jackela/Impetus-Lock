@@ -177,6 +177,7 @@
         </block>
         <view class="writer-row">
           <button wx:if="{{hasPending && canRetryPending && (pendingKind === 'finish' || pendingKind === 'turn')}}" class="button-secondary" hover-class="button-pressed" bindtap="retryPending" disabled="{{busy}}">{{pendingKind === 'finish' ? '重试保存作品' : '核对并保留这段'}}</button>
+          <button wx:if="{{canUseVoiceOriginal && pendingText}}" class="button-secondary" hover-class="button-pressed" bindtap="useVoiceOriginal" disabled="{{busy}}">用识别原文并保留</button>
           <button wx:if="{{voicePhase === 'recording' || voicePhase === 'limit'}}" class="button-secondary" hover-class="button-pressed" bindtap="releaseRecording">结束录音，核对文字</button>
           <button wx:if="{{!hasPending && heldVoiceText}}" class="button-primary" hover-class="button-pressed" bindtap="submitHeldVoice" disabled="{{busy}}">写入这段口述</button>
           <button wx:if="{{!hasPending && draft && !voicePhase && !heldVoiceText}}" class="button-primary" hover-class="button-pressed" bindtap="includeDraft" disabled="{{busy}}">先写入这段</button>
@@ -188,7 +189,17 @@
       </block>
     </view>
 
+    <view wx:if="{{run.status === 'finished' && finishedInputs.length}}" class="panel writer-panel">
+      <text class="writer-heading" aria-role="heading">本机未入稿文字</text>
+      <view wx:for="{{finishedInputs}}" wx:key="requestId">
+        <text class="caption">{{item.kind === 'voice' ? '识别原文' : item.kind === 'first' ? '首页手稿' : '本机草稿'}}</text>
+        <text class="story-paragraph" user-select="{{true}}">{{item.text}}</text>
+        <button class="button-link" bindtap="copyFinishedInput" data-id="{{item.requestId}}">复制这段</button>
+      </view>
+    </view>
+
     <view wx:if="{{run.status === 'finished'}}" class="writer-row">
+      <button wx:if="{{run.work_id}}" class="button-secondary" bindtap="openWork">打开私密作品</button>
       <button class="button-link" bindtap="goHome">回首页</button>
     </view>
   </block>

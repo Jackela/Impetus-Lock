@@ -830,3 +830,45 @@ test("普通模式关闭局规时在首个锁句旁说明可以继续转写", as
   const template = readFileSync(require.resolve("../.build/pages/write/index.wxml"), "utf8");
   assert.match(template, /class="manuscript"[\s\S]*?wx:if="{{item\.id === firstLockId}}"[^>]*>原句会保留，你仍可以写别的情节。/);
 });
+
+for (const keepDuringFinish of [false, true]) {
+  test(`整理失败后用识别原文时按当前收笔状态授权（${keepDuringFinish ? "保留后收笔" : "恢复继续写"}）`, async () => {
+    const original = "我把信原封不动寄回去。";
+    const voice = { request_id: "failed-voice", version: 2, kind: "turn", source: "voice", style: "voice", text: original };
+    let saved = { ...run, version: 2, finishing: true };
+    const receipts = new Map();
+    const { page, calls, endpoint } = harness(saved, { "pending:run-a": { action: voice } });
+    endpoint.receipt = async path => ({ status: receipts.get(path.split("/").at(-1)) ?? "unknown", run_version: saved.version });
+    endpoint.handle = async (_path, method, action) => {
+      if (method !== "POST") return saved;
+      if (action.kind === "resume") return saved = { ...saved, version: saved.version + 1, finishing: false };
+      if (action.kind === "cancel") {
+        receipts.set(action.target, "canceled");
+        return saved = { ...saved, version: saved.version + 1 };
+      }
+      if (Boolean(action.retain) !== saved.finishing) {
+        throw Object.assign(new Error("收笔暂停期间，请明确选择要保留的正文或返回继续写作。"), { status: 409 });
+      }
+      if (action.style === "voice") {
+        throw Object.assign(new Error("整理服务暂时不可用。"), { status: 502 });
+      }
+      receipts.set(action.request_id, "committed");
+      return saved = { ...saved, version: saved.version + 1, turns: 1,
+        segments: [{ id: "voice", text: action.text, source: "voice" }] };
+    };
+    await page.onLoad({ id: run.id });
+    await page.retryPending();
+    assert.equal(page.data.pendingText, original);
+    assert.equal(page.data.pauseConfirmed, true);
+    assert.match(page.data.status, /整理服务暂时不可用/);
+    if (!keepDuringFinish) await page.returnToWriting();
+    await page.useVoiceOriginal();
+    const submitted = actionCalls(calls).filter(action => action.kind === "turn");
+    assert.deepEqual(submitted.map(a => [a.style, a.text, Boolean(a.retain)]), [
+      ["voice", original, true], ["verbatim", original, keepDuringFinish],
+    ]);
+    assert.equal(page.data.run.turns, 1);
+    assert.equal(page.data.hasPending, false);
+    assert.equal(page.data.finishing, keepDuringFinish);
+  });
+}

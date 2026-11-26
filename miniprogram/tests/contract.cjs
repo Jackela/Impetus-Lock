@@ -74,6 +74,11 @@ async function run() {
     assert.equal((await api(actionUrl,'POST',original)).turns,3);
     assert.equal(run.segments.filter(segment => segment.text === original.text).length,1);
     run = await api(actionUrl,'POST',{request_id:requestId(),version:run.version,kind:'finish'});
+    const finished = (await api('/library')).runs.find(item => item.id === run.id);
+    assert.equal(finished.status,'finished');
+    assert.equal(finished.work_id,run.work_id);
+    assert.deepEqual(await receipt(oldVoiceId), {status:'canceled', run_version:run.version});
+    assert.deepEqual(await receipt(requestId()), {status:'unknown', run_version:run.version});
     const workUrl = '/works/' + run.work_id;
     let work = await api(workUrl);
     work = await api(workUrl,'PATCH',{version:work.version,title:'私稿',text:'自己保存的独立文字。'});

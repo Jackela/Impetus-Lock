@@ -1,6 +1,7 @@
 import { api, currentSubject, ensureSession, requestId } from "../../lib/api";
 import { readingSize } from "../../lib/font";
 import { markCommitted } from "../../lib/perf";
+import { finishedDraft, finishedInput, pendingFinishedInput, type FinishedInput, type FirstTurn, type Pending } from "../../lib/run-input";
 import { getPrivate, putPrivate, removePrivate } from "../../lib/storage";
 import type { Action, Receipt, Run, VoiceStyle } from "../../lib/types";
 import { beginVoice, cancelVoice, voiceAvailable } from "../../lib/voice";
@@ -16,14 +17,6 @@ type TargetEvent = WechatMiniprogram.CustomEvent<{}, {}, { target: string; kind?
 type AbilityEvent = WechatMiniprogram.CustomEvent<{}, {}, { ability: NonNullable<Action["ability"]> }>;
 type PrivacyDecision = (choice: { event: "agree"; buttonId: string } | { event: "disagree" }) => void;
 type PreviewKind = "restyle" | "rewrite" | "insert" | "replace";
-interface Pending {
-  action: Action;
-  first?: boolean;
-  cancelRequestId?: string;
-  verbatimRequestId?: string;
-  reviewedVersion?: number;
-}
-
 interface Editor {
   kind: EditKind;
   target: string;
@@ -188,6 +181,7 @@ const initialData = {
   pauseConfirmed: false,
   blockedFinishCount: 0,
   heldVoiceText: "",
+  finishedInputs: [] as FinishedInput[],
   showRules: false,
   editor: null as Editor | null,
   originalTarget: "",
@@ -241,7 +235,8 @@ Page({
     this.rejectPrivacy();
     this.setData({ run: null, draft: "", busy: false, editor: null, originalTarget: "", showRules: false,
       opening: "", sections: [], pendingText: "", voiceReady: false, mustOpenSettings: false, privacyBusy: false,
-      originalText: "", showRecoveries: false, pauseConfirmed: false, blockedFinishCount: 0, heldVoiceText: "", loading: true, status: "" });
+      originalText: "", showRecoveries: false, pauseConfirmed: false, blockedFinishCount: 0, heldVoiceText: "",
+      finishedInputs: [], loading: true, status: "" });
   },
 
   notice(status: string, noticeKind: NoticeKind = "status") {
@@ -258,7 +253,7 @@ Page({
       pendingFirstKeyboard: false, canUseVoiceOriginal: false,
       offers: [], canChangeLock: false,
       canIntervene: false, showRecoveries: false,
-      needsReload: true, finishing: false, pauseConfirmed: false, blockedFinishCount: 0, heldVoiceText: "",
+      needsReload: true, finishing: false, pauseConfirmed: false, blockedFinishCount: 0, heldVoiceText: "", finishedInputs: [],
       voiceReady: false, privacyBusy: false, mustOpenSettings: false,
     });
     this.notice(message, "error");
@@ -316,21 +311,44 @@ Page({
           this.applyPendingOutcome(pending, receipt.status, run);
         }
       }
-      let firstAction: Action | undefined;
-      const first = runtime.firstConsumed || runtime.pending
-        ? undefined : readLocal<Omit<Action, "kind" | "version">>("first:" + runtime.id);
-      if (first?.text && first.source && first.request_id) {
-        const receipt = await receiptFor(runtime.id, first.request_id);
+      const first = runtime.firstConsumed || (run.status === "active" && runtime.pending)
+        ? undefined : readLocal<FirstTurn>("first:" + runtime.id);
+      let firstReceipt: Receipt | undefined;
+      if (first?.text && first.source && first.request_id && first.request_id !== runtime.pending?.action.request_id) {
+        firstReceipt = await receiptFor(runtime.id, first.request_id);
         if (!this.valid(runtime, sequence, subject)) return;
-        if (receipt.run_version > run.version) {
+        if (firstReceipt.run_version > run.version) {
           run = await api<Run>(path);
           if (!this.valid(runtime, sequence, subject)) return;
         }
-        if (receipt.status === "committed" || receipt.status === "canceled") {
+      }
+      if (run.status === "finished") {
+        const pendingInput = pendingFinishedInput(runtime.pending);
+        const firstInput = finishedInput(first);
+        const inputs = pendingInput ? [pendingInput] : [];
+        if (firstInput && firstReceipt) {
+          if (firstReceipt.status === "committed" || firstReceipt.status === "canceled") {
+            this.consumeFirst();
+            if (firstReceipt.status === "committed" && runtime.draft?.trim() === firstInput.text) this.updateDraft("");
+          } else {
+            inputs.push(firstInput);
+          }
+        }
+        const draft = finishedDraft(runtime.draft);
+        if (draft && !inputs.some(input => input.text.trim() === draft.text.trim())) inputs.push(draft);
+        if (runtime.pending && !pendingInput) this.clearPending(runtime.pending, runtime.pending.action.kind === "finish");
+        this.setRun(run);
+        this.setData({ loading: false });
+        this.openCompleted(run, inputs);
+        return;
+      }
+      let firstAction: Action | undefined;
+      if (first && firstReceipt) {
+        if (firstReceipt.status === "committed" || firstReceipt.status === "canceled") {
           this.consumeFirst();
-        } else if (run.status === "active") {
+        } else {
           const action = { ...first, kind: "turn", version: run.version } satisfies Action;
-          if (receipt.status === "pending" || (first.source === "keyboard" && (run.turns > 0 || run.finishing))) {
+          if (firstReceipt.status === "pending" || (first.source === "keyboard" && (run.turns > 0 || run.finishing))) {
             this.retainPending({ action, first: true });
           } else if (run.turns === 0 && !run.finishing) {
             firstAction = action;
@@ -351,11 +369,6 @@ Page({
       });
       this.setRun(run);
       this.presentPending();
-      if (run.status === "finished") {
-        if (runtime.pending) this.clearPending(runtime.pending, runtime.pending.action.kind === "finish");
-        this.openCompleted(run);
-        return;
-      }
       if (runtime.pending) {
         this.notice(this.data.pendingFirstKeyboard
           ? "首页这段尚未确认入稿。核对当前正文后，可以确认写入或放弃。"
@@ -450,10 +463,14 @@ Page({
   },
 
   applyPendingOutcome(pending: Pending, outcome: FinalReceipt, run: Run, keepOriginal = true) {
+    if (keepOriginal && outcome === "canceled" && run.status === "finished" &&
+      (pending.verbatimRequestId || pending.fromVoiceSwitch)) return;
     if (keepOriginal && outcome === "canceled" && pending.verbatimRequestId && run.status === "active") {
       this.retainPending({
-        action: { ...pending.action, request_id: pending.verbatimRequestId, version: run.version, style: "verbatim" },
+        action: { ...pending.action, request_id: pending.verbatimRequestId, version: run.version, style: "verbatim",
+          retain: Boolean(run.finishing) },
         first: pending.first,
+        fromVoiceSwitch: true,
       });
     } else {
       this.clearPending(pending, outcome === "committed");
@@ -499,7 +516,7 @@ Page({
       }
       if (result.id !== runtime.id) throw new Error("返回的稿件与当前故事不一致。请核对后重试。");
       if (outcome === "committed" && action.kind === "turn" && this.data.run?.turns === 0) markCommitted();
-      if (outcome === "committed" || outcome === "canceled") this.clearPending(pending, outcome === "committed");
+      if (outcome === "committed" || outcome === "canceled") this.applyPendingOutcome(pending, outcome, result);
       if (!this.data.run || result.version >= this.data.run.version) this.setRun(result);
       this.setData({ editor: null, originalTarget: "", busy: false });
       if (result.status === "finished") {
@@ -570,7 +587,10 @@ Page({
         this.notice("已更新正文。核对后，再点「重试这次操作」可写入当前版本。");
         return;
       }
-      pending.action = { ...pending.action, version: run.version, retain: false };
+      pending.action = { ...pending.action, version: run.version };
+    }
+    if (!run.finishing && pending.action.kind === "turn" && pending.action.retain) {
+      pending.action = { ...pending.action, retain: false };
     }
     this.retainPending(pending);
     await this.sendPending(pending);
@@ -679,8 +699,10 @@ Page({
   async useVoiceOriginal() {
     const runtime = this.runtime;
     const pending = runtime?.pending;
+    const run = this.data.run;
     if (!runtime || !pending || pending.action.kind !== "turn" || pending.action.source !== "voice" ||
-      !pending.action.text || pending.action.style === "verbatim" || !this.data.run || this.data.busy ||
+      !pending.action.text || pending.action.style === "verbatim" || run?.status !== "active" || this.data.busy ||
+      (this.data.finishing && !this.data.pauseConfirmed) ||
       !this.valid(runtime, runtime.sequence, runtime.subject)) return;
     const switching = { ...pending, verbatimRequestId: pending.verbatimRequestId ?? requestId(),
       cancelRequestId: pending.cancelRequestId ?? requestId() };
@@ -691,8 +713,11 @@ Page({
     }
     if (await this.cancelPending(false, true) !== "canceled") return;
     const replacement = runtime.pending;
-    if (replacement && replacement.action.request_id === switching.verbatimRequestId && this.data.run?.status === "active" &&
-      !this.data.finishing && !this.data.run.finishing) await this.sendPending(replacement);
+    const current = this.data.run;
+    if (replacement?.action.request_id === switching.verbatimRequestId && current?.status === "active") {
+      if (Boolean(current.finishing) === Boolean(run.finishing)) await this.sendPending(replacement);
+      else this.notice("收笔状态已有变化。请核对后确认是否写入这段原文。");
+    }
   },
 
   async takeOver() {
@@ -1049,14 +1074,41 @@ Page({
     await this.startAction({ kind: "finish", request_id: requestId(), version: run.version });
   },
 
-  openCompleted(run: Run) {
+  openCompleted(run: Run, inputs?: FinishedInput[]) {
+    const runtime = this.runtime;
     this.setData({ finishing: false, pauseConfirmed: false, heldVoiceText: "", busy: false });
-    if (run.work_id) {
-      const url = "/pages/work/index?id=" + encodeURIComponent(run.work_id);
+    if (!inputs && runtime && (pendingFinishedInput(runtime.pending) ||
+      finishedInput(readLocal<FirstTurn>("first:" + runtime.id)) ||
+      finishedDraft(runtime.draft ?? readLocal<string>("draft:" + runtime.id)))) {
+      void this.reload();
+      return;
+    }
+    this.setData({ finishedInputs: inputs ?? [] });
+    if (inputs?.length) this.notice("本局已收笔。本机还有未入稿文字，可以复制留存。");
+    else if (run.work_id) this.openWork();
+    else this.notice("已收笔。这局没有可以保存的正文。");
+  },
+
+  copyFinishedInput(event: WechatMiniprogram.BaseEvent) {
+    const runtime = this.runtime;
+    if (!runtime || !this.valid(runtime, runtime.sequence, runtime.subject)) return;
+    const input = this.data.finishedInputs.find(item => item.requestId === event.currentTarget.dataset.id);
+    if (!input) return;
+    const { sequence, subject } = runtime;
+    wx.setClipboardData({
+      data: input.text,
+      success: () => { if (this.valid(runtime, sequence, subject)) this.notice("已复制这段文字。"); },
+      fail: () => { if (this.valid(runtime, sequence, subject)) this.notice("复制未完成，可以长按文字复制。", "error"); },
+    });
+  },
+
+  openWork() {
+    const runtime = this.runtime;
+    const workId = this.data.run?.work_id;
+    if (workId && runtime && this.valid(runtime, runtime.sequence, runtime.subject)) {
+      const url = "/pages/work/index?id=" + encodeURIComponent(workId);
       if (wx.redirectTo) wx.redirectTo({ url, fail: () => this.notice("作品已保存，可在「我的写作」打开。", "error") });
       else wx.navigateTo({ url });
-    } else {
-      this.notice("已收笔。这局没有可以保存的正文。");
     }
   },
 
