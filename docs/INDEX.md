@@ -1,12 +1,14 @@
 # Documentation Index
 
-**Last updated**: 2026-11-11
+**Last updated**: 2026-11-26
 
 `AGENTS.md` is the authority for working rules and quality gates. This index is a map, not a second source of truth. Material under `docs/archive/`, `docs/sessions/`, and dated `docs/process/` phase notes is **historical evidence**, never current status.
 
 ## Start here
 
 - [`README.md`](../README.md) — product overview and quick start
+- [产品定义](../PRODUCT.md) · [首局功能设计](product/first-story.md) · [功能路线图](../ROADMAP.md) — agreed direction, example playthrough and milestone acceptance
+- [产品研究 Wiki](../wiki/README.md) · [口述校正与挑战改写 ADR](adr/0001-voice-correction-and-challenge-permissions.md) — research sources and the rationale for separate permissions
 - [`CONTEXT.md`](../CONTEXT.md) — current product and architecture context
 - [`AGENTS.md`](../AGENTS.md) — precedence, protected files, quality gates, task routing
 - [`DEVELOPMENT.md`](../DEVELOPMENT.md) — local development workflow
@@ -92,7 +94,7 @@ Current and recent delivery evidence:
 
 ## Navigation rules
 
-1. Current status: `README.md`, `CONTEXT.md`, `AGENTS.md`, `docs/reports/2026*`.
-2. Current behavior: code and tests, then `openspec/specs/`.
+1. Product direction and milestones: [PRODUCT.md](../PRODUCT.md) and [ROADMAP.md](../ROADMAP.md). Use dated reports as evidence for the recorded revision.
+2. Agreed behavior: `openspec/specs/`. Check implementation and runtime evidence separately.
 3. Historical context: `docs/archive/`, `docs/sessions/`, dated `docs/process/` notes.
 4. Do not cite archived material as a current requirement.
