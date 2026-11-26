@@ -37,7 +37,7 @@ function host(route, handle, query = {}, options = {}) {
   let definition;
   const navigate = (kind, value) => {
     paths.push({ kind, url: value.url });
-    value.success();
+    value.success?.();
   };
 
   global.wx = {
@@ -499,4 +499,150 @@ test('foreground identity changes clear the previous private work and cannot rep
   assert.equal(app.page.data.text, '');
   assert.match(app.page.data.error, /无法打开/);
   assert.ok([...app.storage.keys()].every(key => key.includes('owner-a')));
+});
+
+test('an author can publish unchanged private work after withdrawing a card with a lost response', async () => {
+  let active;
+  let existingRequest;
+  let nextId = 1;
+  const app = host('work', ({path,method,body}) => {
+    if (path === '/works/w1') return ok(work);
+    if (path === '/works/w1/cards' && method === 'GET') return ok({cards: active ? [active] : []});
+    if (path === '/works/w1/cards' && method === 'POST') {
+      if (body.request_id === existingRequest) {
+        return active ? ok(active) : fail(404, '作品卡已撤回。');
+      }
+      active = {...pageCard, id: 'created-' + nextId++};
+      if (!existingRequest) {
+        existingRequest = body.request_id;
+        throw new Error('The first correctly persisted publication loses its transport acknowledgement');
+      }
+      return ok(active);
+    }
+    if (path === '/works/w1/cards/created-1' && method === 'DELETE') {
+      active = undefined;
+      return {status:204};
+    }
+    throw new Error('unexpected ' + method + ' ' + path);
+  }, {id:'w1'}, {confirm: () => true});
+  await app.page.refresh();
+  await tick();
+  app.page.previewShare();
+  await app.page.publish();
+  assert.ok(active);
+  app.page.closePreview();
+  await tick();
+  assert.equal(app.page.data.cards[0].id, active.id);
+  await app.page.withdraw(dataset(active.id));
+  assert.equal(app.page.data.cards.length, 0);
+  app.page.previewShare();
+  await app.page.publish();
+  const operationIds = app.requests.filter(r => r.path === '/works/w1/cards' && r.method === 'POST').map(r => r.body.request_id);
+  assert.equal(operationIds[0], operationIds[1], 'The earlier result must be checked by its original ID');
+  assert.notEqual(operationIds[0], operationIds[2], 'An explicit new publication uses a fresh ID once the old receipt is known to be revoked');
+  assert.equal(app.page.data.cards[0].id, 'created-2');
+  assert.equal(app.page.data.text, work.text);
+});
+
+test('retrying the same publication confirmation cannot undo a withdrawal on another device', async () => {
+  let savedRequest;
+  const app = host('work', ({ path, method, body }) => {
+    if (path === '/works/w1') return ok(work);
+    if (method === 'GET') return ok({ cards: [] });
+    if (!savedRequest) {
+      savedRequest = body.request_id;
+      throw new Error('publication committed before the response was lost');
+    }
+    if (body.request_id === savedRequest) {
+      return { status: 404, data: { error: { code: 'NOT_FOUND', message: '作品卡已撤回。' } } };
+    }
+    return ok(pageCard);
+  }, { id: work.id });
+  await app.page.refresh();
+  await tick();
+  app.page.previewShare();
+  await app.page.publish();
+  await app.page.publish();
+  assert.equal(app.page.data.preview, null);
+  assert.equal(app.page.data.cards.length, 0);
+  assert.match(app.page.data.error, /重新预览并发布/);
+  assert.deepEqual(app.requests.filter(item => item.path === '/works/w1/cards' && item.method === 'POST')
+    .map(item => item.body.request_id), [savedRequest, savedRequest]);
+});
+
+test('recover canceled voice and unsent first text from My Writing after another device finishes', async () => {
+  const originalVoice = '这段识别原文还没有写入。';
+  const firstText = '另一段首页手稿也没有写入。';
+  const finishedRun = {
+    ...activeRun, id: 'finished-run', status: 'finished', work_id: work.id,
+    choices: [], offers: [], abilities: { returning: { level: 0 }, interpret: { level: 0 } },
+  };
+  const storage = new Map([
+    ['il:wechat:v1:owner-a:pending:finished-run', {
+      action: { request_id: 'old-voice', version: 2, kind: 'turn', source: 'voice', style: 'voice', text: originalVoice },
+      verbatimRequestId: 'new-voice', cancelRequestId: 'cancel-voice',
+    }],
+    ['il:wechat:v1:owner-a:first:finished-run', { request_id: 'first-keyboard', source: 'keyboard', text: firstText }],
+  ]);
+  const app = host('library', () => library({ runs: [finishedRun], works: [work] }), {}, { storage });
+  await app.page.refresh();
+  assert.equal(app.page.data.runs.length, 0);
+  assert.deepEqual(app.page.data.completedWithInput.map(item => item.id), ['finished-run']);
+  assert.equal(JSON.stringify(app.page.data).includes(originalVoice), false);
+  assert.equal(JSON.stringify(app.page.data).includes(firstText), false);
+  await app.page.openRun(dataset(finishedRun.id));
+  assert.deepEqual(app.paths, [{ kind: 'replace', url: '/pages/write/index?id=finished-run' }]);
+
+  invalidateSession();
+  const reopened = host('write', ({ path, method }) => {
+    assert.equal(method, 'GET');
+    if (path.endsWith('/receipts/old-voice')) return ok({ status: 'canceled', run_version: finishedRun.version });
+    if (path.includes('/receipts/')) return ok({ status: 'unknown', run_version: finishedRun.version });
+    if (path === '/runs/finished-run') return ok(finishedRun);
+    throw new Error('unexpected path ' + path);
+  }, { id: finishedRun.id }, { storage });
+  await tick();
+  assert.equal(reopened.page.data.run.status, 'finished');
+  assert.deepEqual(reopened.page.data.finishedInputs.map(item => item.text), [originalVoice, firstText]);
+  assert.deepEqual(reopened.paths, []);
+  for (const item of reopened.page.data.finishedInputs) reopened.page.copyFinishedInput(dataset(item.requestId));
+  assert.deepEqual(reopened.clipboard, [originalVoice, firstText]);
+  await reopened.page.openWork();
+  assert.deepEqual(reopened.paths, [{ kind: 'replace', url: '/pages/work/index?id=w1' }]);
+  assert.equal(reopened.requests.filter(r => r.path !== '/session').every(r => r.method === 'GET'), true);
+
+  invalidateSession();
+  const wrongIdentity = host('library', () => library({ runs: [finishedRun] }), {}, { storage, profile: 'owner-b' });
+  await wrongIdentity.page.refresh();
+  assert.deepEqual(wrongIdentity.page.data.completedWithInput, []);
+});
+
+test('the finished home replay draft is discoverable without a staged turn', async () => {
+  const localDraft = '首页重试开局后留在这台设备的原文。';
+  const finishedRun = {
+    ...activeRun, id: 'home-finished', status: 'finished', work_id: work.id,
+    choices: [], offers: [], abilities: { returning: { level: 0 }, interpret: { level: 0 } },
+  };
+  const draftKey = 'il:wechat:v1:owner-a:draft:home-finished';
+  const unrelatedKey = 'il:wechat:v1:owner-a:draft:other-run';
+  const storage = new Map([[draftKey, localDraft], [unrelatedKey, '另外一局自己的草稿。']]);
+  const app = host('library', () => library({ runs: [finishedRun], works: [work] }), {}, { storage });
+  await app.page.refresh();
+  assert.deepEqual(app.page.data.completedWithInput.map(item => item.id), [finishedRun.id]);
+  await app.page.openRun(dataset(finishedRun.id));
+  assert.deepEqual(app.paths, [{ kind: 'replace', url: '/pages/write/index?id=home-finished' }]);
+
+  invalidateSession();
+  const reopened = host('write', ({path, method}) => {
+    assert.equal(method, 'GET');
+    assert.equal(path, '/runs/home-finished');
+    return ok(finishedRun);
+  }, { id: finishedRun.id }, { storage });
+  await tick();
+  const [input] = reopened.page.data.finishedInputs;
+  assert.equal(input.text, localDraft);
+  reopened.page.copyFinishedInput(dataset(input.requestId));
+  assert.deepEqual(reopened.clipboard, [localDraft]);
+  assert.deepEqual([...storage], [[draftKey, localDraft], [unrelatedKey, '另外一局自己的草稿。']]);
+  assert.equal(reopened.requests.filter(r => r.path !== '/session').every(r => r.method === 'GET'), true);
 });

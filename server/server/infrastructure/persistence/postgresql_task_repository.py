@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.domain.entities.intervention_action import InterventionAction
 from server.domain.entities.task import Task
-from server.domain.errors import TaskVersionConflictError
+from server.domain.errors import TaskMissingError, TaskVersionConflictError
 from server.domain.repositories.task_repository import TaskRepository
 from server.infrastructure.persistence.models import (
     InterventionActionModel,
@@ -90,7 +90,8 @@ class PostgreSQLTaskRepository(TaskRepository):
             Task: Updated task entity with incremented version.
 
         Raises:
-            ValueError: If task not found or version mismatch (optimistic locking).
+            TaskMissingError: If the task disappeared.
+            TaskVersionConflictError: If the version changed (optimistic locking).
 
         Example:
             ```python
@@ -128,7 +129,7 @@ class PostgreSQLTaskRepository(TaskRepository):
             )
             actual_version = current.scalar_one_or_none()
             if actual_version is None:
-                raise ValueError(f"Task {task.id} not found")
+                raise TaskMissingError(task.id)
             raise TaskVersionConflictError(expected_version, actual_version)
 
         return self._to_entity(model)

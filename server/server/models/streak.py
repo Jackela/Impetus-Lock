@@ -6,7 +6,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Index
+from sqlalchemy import TIMESTAMP, ForeignKey, Index, false, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,23 +28,27 @@ class Streak(Base):
 
     __tablename__ = "streaks"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid4,
+        server_default=func.gen_random_uuid(),
+    )
     user_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
-        index=True,
     )
-    current_streak_days: Mapped[int] = mapped_column(nullable=False, default=0)
-    longest_streak_days: Mapped[int] = mapped_column(nullable=False, default=0)
+    current_streak_days: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
+    longest_streak_days: Mapped[int] = mapped_column(nullable=False, default=0, server_default="0")
     streak_start_date: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
     last_activity_date: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
-    grace_used: Mapped[bool] = mapped_column(nullable=False, default=False)
+    grace_used: Mapped[bool] = mapped_column(nullable=False, default=False, server_default=false())
 
     __table_args__ = (Index("idx_streaks_user_id", "user_id"),)
 

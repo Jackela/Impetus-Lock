@@ -22,6 +22,7 @@ from sqlalchemy import (
     Text,
     Uuid,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -62,7 +63,9 @@ class InterventionActionModel(Base):
     action_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     lock_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     content: Mapped[str | None] = mapped_column(Text, nullable=True)
-    anchor: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    anchor: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=False
+    )
     mode: Mapped[str] = mapped_column(String(10), nullable=False)
     context: Mapped[str] = mapped_column(Text, nullable=False)
     issued_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)

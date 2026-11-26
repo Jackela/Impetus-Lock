@@ -800,3 +800,96 @@ async def _publish_snapshot(
                     .values(initial=initial)
                 )
         return card
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("retry", [True, False])
+async def test_outage_after_keeping_letter_remains_retryable_with_fallback_choices(
+    sessions: async_sessionmaker[AsyncSession],
+    retry: bool,
+) -> None:
+    async def keep_letter(state: Document, source: str, text: str) -> Document:
+        return {
+            "paragraph": "我把信放回抽屉，暂时把它留了下来。",
+            "letter_action": "keep",
+            "letter_action_evidence": "把它留了下来",
+            "choices": [],
+            "eligible": ["returning"],
+        }
+
+    async def unavailable(state: Document, source: str, text: str) -> Document:
+        raise LLMProviderError(code="TEST_OUTAGE", message="暂时无法成文", status_code=502)
+
+    async def followup(state: Document, source: str, text: str) -> Document:
+        assert state["deferred_generation"]
+        assert source == "keyboard" and text == "女儿从书柜拿起一只杯子。"
+        return {
+            "choices": ["请女儿说说杯子的来历"],
+            "lock_sentence": "她指着杯底说，那是去年留下的纪念。",
+        }
+
+    run = await _start(sessions)
+    first = await _action(sessions, run, "first", "turn", source="choice", text=run["choices"][0])
+    kept = await _action(
+        sessions,
+        first,
+        "keep-letter",
+        "turn",
+        source="choice",
+        text="把信留下",
+        generate=keep_letter,
+    )
+    ability = await _action(sessions, kept, "pick-ability", "ability", ability="returning")
+    author_text = "女儿从书柜拿起一只杯子。"
+    written = await _action(
+        sessions,
+        ability,
+        "third",
+        "turn",
+        source="keyboard",
+        text=author_text,
+        generate=unavailable,
+    )
+    assert written["turns"] == 3
+    assert written["segments"][-1]["text"] == author_text
+    assert written["choices"] == ["拆开原信", "核对原信的邮戳"]
+    assert written["generation_pending"], "Fallback letter choices hide the provider failure"
+    if retry:
+        recovered = await _action(
+            sessions, written, "recover-third", "intervene", generate=followup
+        )
+        assert recovered["turns"] == 3
+        assert "请女儿说说杯子的来历" in recovered["choices"]
+        assert not recovered["generation_pending"]
+        assert any(segment["text"] == author_text for segment in recovered["segments"])
+        assert any(
+            segment["locked"] and "纪念" in segment["text"] for segment in recovered["segments"]
+        )
+        replay = await _action(
+            sessions, written, "recover-third", "intervene", generate=unavailable
+        )
+        assert replay == recovered
+        with pytest.raises(AppError) as obsolete:
+            await _action(sessions, recovered, "retry-again", "intervene", generate=unavailable)
+        assert obsolete.value.status_code == 422
+    else:
+        recovered = written
+
+    async def next_scene(state: Document, source: str, text: str) -> Document:
+        assert not state.get("deferred_generation")
+        return {"choices": ["询问下一班车"], "eligible": []}
+
+    next_run = await _action(
+        sessions,
+        recovered,
+        "fourth",
+        "turn",
+        source="keyboard",
+        text="我走到车站。",
+        generate=next_scene,
+    )
+    assert next_run["turns"] == 4
+    assert sum(segment["text"] == author_text for segment in next_run["segments"]) == 1
+    assert "询问下一班车" in next_run["choices"]
+    assert not next_run["generation_pending"]
+    assert not next_run["pending_intervention"]

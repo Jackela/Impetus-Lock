@@ -127,3 +127,23 @@ test('a wx.login that had not dispatched an exchange cannot prove the owner of h
   await invalidated
   assert.deepEqual(requests, [])
 })
+
+test('a business validation error retains the suggested correction', async () => {
+  await confirm('A')
+  const write = api.api('/runs', 'POST', {opening:'……'})
+  await tick()
+  response(1, 422, {error:{code:'VALIDATION_ERROR',details:null,message:'请输入有实际内容的文字。'}})
+  await assert.rejects(write, error => error.status === 422 && error.message === '请输入有实际内容的文字。')
+})
+test('structured field validation shows a generic correction without schema details', async () => {
+  await confirm('A')
+  for (const payload of [
+    {error:{code:'VALIDATION_ERROR',message:'Request validation failed',details:{errors:[{field:'body.opening',message:'String required'}]}}},
+    {detail:[{loc:['body','opening'],msg:'String required'}]},
+  ]) {
+    const write = api.api('/runs', 'POST', {opening:723})
+    await tick()
+    response(requests.length - 1, 422, payload)
+    await assert.rejects(write, error => error.status === 422 && error.message === '填写的内容不符合要求，请检查后重试。')
+  }
+})

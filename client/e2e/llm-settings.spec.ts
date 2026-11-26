@@ -44,6 +44,42 @@ test.describe("LLM Settings", () => {
     expect(stored).toBeNull();
   });
 
+  test("offers an explicit migration for a retired saved Gemini model", async ({ page }) => {
+    const previousConfig = {
+      provider: "gemini",
+      model: "gemini-2.0-flash-lite",
+      apiKey: "AI-controlled-browser-model-key",
+    };
+
+    await page.goto("/");
+    await page.evaluate((config) => {
+      localStorage.setItem("impetus.llmConfig", JSON.stringify(config));
+    }, previousConfig);
+    await page.reload();
+    await openLLMSettings(page);
+
+    const modelInput = page.getByRole("textbox", { name: "Model" });
+    const replaceModel = page.getByRole("button", { name: "Use recommended model" });
+    await expect(modelInput).toHaveValue(previousConfig.model);
+    await expect(modelInput).toHaveAccessibleDescription(/retired/i);
+    await replaceModel.press("Enter");
+    await expect(modelInput).toHaveValue("gemini-3.1-flash-lite");
+    await expect(modelInput).toBeFocused();
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await openLLMSettings(page);
+    await expect(modelInput).toHaveValue(previousConfig.model);
+    await replaceModel.click();
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(modelInput).not.toBeVisible();
+
+    await page.reload();
+    await openLLMSettings(page);
+    await expect(modelInput).toHaveValue("gemini-3.1-flash-lite");
+    await expect(replaceModel).not.toBeVisible();
+    await expect(page.getByTestId("llm-key-input")).toHaveValue(previousConfig.apiKey);
+  });
+
   test("encrypted storage requires passphrase to unlock across reloads", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => localStorage.clear());

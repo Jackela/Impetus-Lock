@@ -23,7 +23,7 @@ test("BYOK onboarding guides provider setup and key removal", async ({ page }) =
     "href",
     "https://ai.google.dev/gemini-api/docs"
   );
-  await expect(page.getByTestId("llm-model-input")).toHaveValue("gemini-2.0-flash-lite");
+  await expect(page.getByTestId("llm-model-input")).toHaveValue("gemini-3.1-flash-lite");
   await page.getByTestId("llm-key-input").fill("AIza-controlled-browser-fixture-only0000000000");
   const save = page.getByTestId("llm-settings-save");
   await expect(save).toBeEnabled();

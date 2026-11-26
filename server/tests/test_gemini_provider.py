@@ -61,7 +61,7 @@ class TestGeminiProviderInitialization:
         provider = GeminiLLMProvider(api_key="test-key")
 
         assert provider.provider_name == "gemini"
-        assert provider.model == "gemini-1.5-flash"
+        assert provider.model == "gemini-3.1-flash-lite"
         assert provider.temperature == 0.7
         assert provider.api_key == "test-key"
 
@@ -395,6 +395,7 @@ class TestGeminiProviderSupportedModels:
             "gemini-1.5-flash-latest",
             "gemini-2.0-flash",
             "gemini-2.0-flash-lite",
+            "gemini-3.1-flash-lite",
         }
 
         assert GeminiLLMProvider.SUPPORTED_MODELS == expected_models  # noqa: SIM300

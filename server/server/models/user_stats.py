@@ -6,7 +6,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, ForeignKey, Index, Uuid
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from server.infrastructure.persistence.models import Base
@@ -28,22 +28,22 @@ class UserStats(Base):
 
     __tablename__ = "user_stats"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4, server_default=func.gen_random_uuid()
+    )
     user_id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
-        index=True,
     )
-    total_tasks: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    total_muse_interventions: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    total_loki_interventions: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    total_locks_created: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
-    writing_minutes: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    total_tasks: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    total_muse_interventions: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    total_loki_interventions: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    total_locks_created: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
+    writing_minutes: Mapped[int] = mapped_column(BigInteger, default=0, server_default="0")
     last_activity_at: Mapped[datetime | None] = mapped_column(
-        nullable=True,
-        default=None,
+        TIMESTAMP(timezone=True),
     )
 
     __table_args__ = (Index("idx_user_stats_user_id", "user_id"),)

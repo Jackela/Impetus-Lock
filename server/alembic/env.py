@@ -13,15 +13,30 @@ import asyncio
 import os
 from logging.config import fileConfig
 
-from alembic import context
-from sqlalchemy import pool
+from alembic.migration import MigrationContext
+from sqlalchemy import Column, cast, literal_column, pool, select
+from sqlalchemy.dialects.postgresql import JSON, JSONB
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from alembic import context
 from server.infrastructure.persistence.models import Base
 
-# Import mapped tables before reading the shared metadata.
-from server.models import user, wechat_identity, wechat_runs, wechat_works
+# Register every production mapping without importing the application at startup.
+from server.models import (
+    achievement,
+    intervention_receipt,
+    streak,
+    style,
+    style_history,
+    task,
+    template,
+    user,
+    user_stats,
+    wechat_identity,
+    wechat_runs,
+    wechat_works,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -72,10 +87,38 @@ def do_run_migrations(connection: Connection) -> None:
     Args:
         connection: SQLAlchemy connection to use for migrations.
     """
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_server_default=compare_server_default,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
+
+
+def compare_server_default(
+    migration_context: MigrationContext,
+    inspected_column: Column,
+    _metadata_column: Column,
+    inspected_default: str | None,
+    _metadata_default: object,
+    rendered_metadata_default: str | None,
+) -> bool | None:
+    """Compare JSON defaults through JSONB because PostgreSQL JSON lacks equality."""
+    if type(inspected_column.type) is not JSON:
+        return None
+    if inspected_default is None or rendered_metadata_default is None:
+        return None
+    connection = migration_context.connection
+    assert connection is not None
+    return connection.scalar(
+        select(
+            cast(literal_column(inspected_default), JSONB).is_distinct_from(
+                cast(literal_column(rendered_metadata_default), JSONB)
+            )
+        )
+    )
 
 
 async def run_async_migrations() -> None:
