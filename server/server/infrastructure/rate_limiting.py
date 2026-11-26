@@ -67,7 +67,10 @@ class RateLimiter:
 
         if redis is not None:
             try:
-                self._redis = redis.from_url(url)
+                # A busy local pool should wait briefly for a connection before
+                # the Redis outage fallback can allow unchecked requests.
+                pool = redis.BlockingConnectionPool.from_url(url, max_connections=100, timeout=5)
+                self._redis = redis.Redis.from_pool(pool)
             except Exception as exc:
                 # Redis connection failed - fall back to allowing all
                 self._redis = None

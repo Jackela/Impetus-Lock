@@ -40,6 +40,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import httpx
+import httpx2
 import pytest
 
 from server.domain.errors import LLMProviderError
@@ -572,6 +573,84 @@ class TestHealthCheck:
         _patch_outbound_send(provider, tokens_client=True, handler=lambda request: _http_503())
 
         assert provider.health_check() is False
+
+
+class TestSDKWireContract:
+    """Exercise SDK serializers and exception types through its HTTP transport boundary."""
+
+    @pytest.mark.parametrize(("api_version", "expected"), [(None, "v1beta"), ("v1", "v1")])
+    def test_model_endpoints_with_real_sdk(
+        self, monkeypatch: pytest.MonkeyPatch, api_version: str | None, expected: str
+    ) -> None:
+        """Generation, token counting and streaming preserve the configured API version."""
+        monkeypatch.delenv("GOOGLE_GENAI_USE_VERTEXAI", raising=False)
+        monkeypatch.delenv("GOOGLE_GENAI_USE_ENTERPRISE", raising=False)
+        monkeypatch.delenv("GOOGLE_GENAI_API_VERSION", raising=False)
+        monkeypatch.delenv("GOOGLE_GENAI_HTTP_CLIENT", raising=False)
+        if api_version:
+            monkeypatch.setenv("GOOGLE_GENAI_API_VERSION", api_version)
+
+        calls: list[str] = []
+        draft = json.dumps({"action": "provoke", "content": "门外有脚步。"}, ensure_ascii=False)
+        reply = _ok_generate_body(draft)
+
+        def send(request: httpx2.Request, *, stream: bool = False) -> httpx2.Response:
+            endpoint = request.url.path
+            calls.append(endpoint)
+            assert request.headers["x-goog-api-key"] == "offline-key"
+            assert isinstance(request, httpx2.Request)
+            if endpoint.endswith(":countTokens"):
+                return httpx2.Response(200, json={"totalTokens": 7}, request=request)
+            if stream:
+                event = f"data: {json.dumps(reply)}\n\n"
+                return httpx2.Response(
+                    200,
+                    content=event,
+                    headers={"content-type": "text/event-stream"},
+                    request=request,
+                )
+            body = json.loads(request.content)
+            assert body["generationConfig"]["responseMimeType"] == "application/json"
+            return httpx2.Response(200, json=reply, request=request)
+
+        model = "gemini-flash-latest"
+        provider = GeminiLLMProvider(api_key="offline-key", model=model)
+        try:
+            for client in (provider._client, provider._tokens_client):
+                monkeypatch.setattr(client._api_client._httpx_client, "send", send)
+            assert provider._complete("system", "user").content == "门外有脚步。"
+            assert provider.count_tokens("手稿") == 7
+            assert list(provider.stream_intervention("故事", "muse")) == [draft]
+            assert calls == [
+                f"/{expected}/models/{model}:generateContent",
+                f"/{expected}/models/{model}:countTokens",
+                f"/{expected}/models/{model}:streamGenerateContent",
+            ]
+        finally:
+            provider.close()
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_native_transport_timeout_stays_504(
+        self, monkeypatch: pytest.MonkeyPatch, fast_retries: None, stream: bool
+    ) -> None:
+        """The SDK's new default transport timeout keeps the provider error contract."""
+        monkeypatch.delenv("GOOGLE_GENAI_HTTP_CLIENT", raising=False)
+
+        def send(request: httpx2.Request, **_options: Any) -> httpx2.Response:
+            raise httpx2.ReadTimeout("offline timeout", request=request)
+
+        provider = GeminiLLMProvider(api_key="offline-key")
+        try:
+            monkeypatch.setattr(provider._client._api_client._httpx_client, "send", send)
+            with pytest.raises(LLMProviderError) as exc_info:
+                if stream:
+                    list(provider.stream_intervention("故事", "muse"))
+                else:
+                    provider._complete("system", "user")
+            assert exc_info.value.status_code == 504
+            assert exc_info.value.code == "timeout"
+        finally:
+            provider.close()
 
 
 class TestStreaming:

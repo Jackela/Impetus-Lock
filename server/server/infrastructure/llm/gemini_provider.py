@@ -32,6 +32,9 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Any
 
+import httpx
+import httpx2
+
 from server.domain.errors import LLMProviderError
 from server.infrastructure.llm.base_provider import BasePromptLLMProvider, LLMInterventionDraft
 from server.infrastructure.llm.prompts.loki_prompt import get_loki_prompts
@@ -87,10 +90,18 @@ _BLOCKED_FINISH_REASONS = {"SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII"}
 
 
 def _build_retry_options(attempts: int) -> Any:
-    """Build explicit HTTP retry options mirroring the characterized legacy budget."""
+    """Keep the Developer API version and bounded retries used before SDK 3."""
     from google.genai.types import HttpOptions, HttpRetryOptions
 
+    vertexai = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "")
+    enterprise = os.getenv("GOOGLE_GENAI_USE_ENTERPRISE", vertexai)
+    api_version = None
+    if not os.getenv("GOOGLE_GENAI_API_VERSION") and enterprise.lower() not in {"1", "true"}:
+        # Some model aliases supported by SDK 2 are available only in v1beta.
+        api_version = "v1beta"
+
     return HttpOptions(
+        api_version=api_version,
         retry_options=HttpRetryOptions(
             attempts=attempts,
             initial_delay=_RETRY_INITIAL_DELAY_SECONDS,
@@ -285,7 +296,6 @@ class GeminiLLMProvider(BasePromptLLMProvider):
         Raises:
             LLMProviderError: If the API call fails.
         """
-        import httpx
         from google.genai import errors as genai_errors
 
         try:
@@ -317,7 +327,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
                 status_code=502,
                 provider=self.provider_name,
             ) from exc
-        except httpx.TimeoutException as exc:
+        except (httpx.TimeoutException, httpx2.TimeoutException) as exc:
             raise LLMProviderError(
                 code="timeout",
                 message="Gemini request timed out.",
@@ -531,8 +541,6 @@ class GeminiLLMProvider(BasePromptLLMProvider):
 
         full_prompt = f"{system_prompt}\n\n{user_message}"
 
-        import httpx
-
         generation_config = self._create_generation_config()
 
         try:
@@ -543,7 +551,7 @@ class GeminiLLMProvider(BasePromptLLMProvider):
             ):
                 if chunk.text:
                     yield chunk.text
-        except httpx.TimeoutException as exc:
+        except (httpx.TimeoutException, httpx2.TimeoutException) as exc:
             raise LLMProviderError(
                 code="timeout",
                 message="Gemini streaming request timed out.",
