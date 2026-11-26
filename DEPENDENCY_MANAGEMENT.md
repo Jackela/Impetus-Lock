@@ -23,7 +23,7 @@ Commit lockfile changes with the manifest change that caused them. Never hand-ed
 - GitHub Actions at `/`
 - Docker in `/server` and `/client`
 
-Updates are grouped (minor/patch where practical), labelled, and scheduled weekly/monthly. Dependabot PRs still need a human review/merge decision; a green check is not approval. Security advisories should be handled ahead of the normal schedule.
+Updates are grouped (minor/patch where practical), labelled, and scheduled weekly/monthly. Every Dependabot PR requires human review and a manual merge after its required CI checks pass. Security advisories should be handled ahead of the normal schedule.
 
 If a Dependabot label is missing, the PR is created without it. Labels used by the config must exist in the repository.
 
