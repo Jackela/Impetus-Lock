@@ -90,7 +90,7 @@ def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "requires_postgres: Needs a live PostgreSQL")
 
 
-def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
+def pytest_ignore_collect(collection_path: Path) -> bool | None:
     """Skip test files that import optional SDKs when dependencies unavailable.
 
     Files that import optional SDKs (anthropic, google-genai) at module
@@ -98,15 +98,14 @@ def pytest_ignore_collect(path: Any, config: pytest.Config) -> bool | None:
     dependencies are not available.
 
     Args:
-        path: Path to the test file/directory.
-        config: Pytest configuration object.
+        collection_path: Path to the test file or directory.
 
     Returns:
         True to skip collection, None to proceed normally.
     """
     import importlib.util
 
-    str_path = str(path)
+    str_path = str(collection_path)
 
     # Map test file/directory patterns to their optional dependencies
     optional_deps: dict[str, str] = {
